@@ -51,6 +51,18 @@ document.addEventListener("DOMContentLoaded", function(){
 
     document.getElementById("addCashflowEntryBtn")
         .addEventListener("click", function(){ openCashflowModal(null); });
+
+    /* The global toolbar's branch switcher (sidebar.js) lets staff change
+       branch without leaving this page. Without this listener, switching
+       branches left #branchReadout and the in-memory cashflowEntries
+       pointed at the OLD branch — so the next Add/Edit/Delete would
+       persist the old branch's entries under the new branch's storage
+       key, silently overwriting its real data. */
+    window.addEventListener("crownGlobalFiltersChanged", function(){
+        document.getElementById("branchReadout").textContent = getSelectedCashflowBranch();
+        document.getElementById("cashflowDateFilter").value = "";
+        loadCashflowEntries();
+    });
 });
 
 function setCurrentCashflowMonth(){

@@ -859,7 +859,8 @@ function migrateBranchReferences(oldName, newName){
     const prefixes = [
         "crownDailySales_",
         "crownExpenses_",
-        "crownSchedule_"
+        "crownSchedule_",
+        "crownCashflow_"
     ];
 
     const moves = [];
