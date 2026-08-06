@@ -1,0 +1,890 @@
+/* ==========================================================================
+   Crown Head Spa — Navy Sidebar Theme
+   Full replacement for sidebar.css
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&display=swap');
+
+:root{
+    --app-sidebar-width:255px;
+    --app-sidebar-collapsed-width:76px;
+}
+
+body.with-app-sidebar{
+    padding-left:var(--app-sidebar-width);
+}
+
+.app-sidebar{
+    position:fixed;
+    inset:0 auto 0 0;
+    z-index:1050;
+    width:var(--app-sidebar-width);
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding:18px 14px 16px;
+    color:#fff;
+    background:
+        linear-gradient(180deg, #000000 0%, #0E1B3D 55%, #16245C 100%);
+    border-right:1px solid rgba(255,255,255,.08);
+    box-shadow:8px 0 28px rgba(11,24,73,.18);
+}
+
+.app-sidebar-brand{
+    display:block;
+    padding:0 10px 24px;
+    border-bottom:1px solid rgba(255,255,255,.12);
+    text-decoration:none;
+}
+
+.app-sidebar-brand strong{
+    display:block;
+    color:var(--gold);
+    font-size:21px;
+    font-weight:900;
+    letter-spacing:.03em;
+}
+
+.app-sidebar-brand span{
+    display:block;
+    margin-top:5px;
+    color:rgba(255,255,255,.68);
+    font-size:12px;
+}
+
+.app-sidebar-nav{
+    flex:1;
+    margin-top:20px;
+    overflow-y:auto;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(255,255,255,.25) transparent;
+}
+
+.app-sidebar-link{
+    display:flex;
+    align-items:center;
+    min-height:43px;
+    margin-bottom:5px;
+    padding:10px 12px;
+    color:rgba(255,255,255,.86);
+    font-size:14px;
+    font-weight:700;
+    line-height:1.2;
+    text-decoration:none;
+    border:1px solid transparent;
+    border-radius:10px;
+    transition:.18s ease;
+}
+
+.app-sidebar-link:hover{
+    color:#fff;
+    background:rgba(255,255,255,.08);
+}
+
+.app-sidebar-link.active{
+    color:#fff;
+    background:var(--green);
+    border-color:rgba(255,255,255,.08);
+    box-shadow:inset 3px 0 0 var(--gold);
+}
+
+.app-sidebar-link.disabled{
+    opacity:.42;
+    cursor:not-allowed;
+}
+
+.app-sidebar-link.disabled:hover{
+    background:transparent;
+}
+
+.app-sidebar-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:18px;
+    height:18px;
+    margin-left:auto;
+    padding:0 5px;
+    color:#1a1300;
+    font-size:11px;
+    font-weight:900;
+    background:var(--gold);
+    border-radius:999px;
+}
+
+.app-sidebar-section{
+    margin:22px 12px 9px;
+    color:var(--gold);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.11em;
+    text-transform:uppercase;
+}
+
+.app-sidebar-sub-link{
+    min-height:39px;
+    padding-left:18px;
+    color:rgba(255,255,255,.72);
+    font-size:13px;
+}
+
+.app-sidebar-branch{
+    margin:14px 4px 12px;
+    padding:12px;
+    background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:10px;
+}
+
+.app-sidebar-branch span{
+    display:block;
+    margin-bottom:4px;
+    color:rgba(255,255,255,.56);
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+
+.app-sidebar-branch strong{
+    display:block;
+    overflow:hidden;
+    color:#fff;
+    font-size:12px;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.app-sidebar-sync-status{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin:0 4px 12px;
+    padding:8px 10px;
+    border-radius:8px;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+}
+
+.app-sidebar-sync-status.online{
+    color:#8FE3A6;
+    background:rgba(85,207,130,.14);
+    border:1px solid rgba(85,207,130,.3);
+}
+
+.app-sidebar-sync-status.offline{
+    color:#FFB4B4;
+    background:rgba(229,72,77,.16);
+    border:1px solid rgba(229,72,77,.35);
+}
+
+body.sidebar-collapsed .app-sidebar-sync-status{
+    display:none;
+}
+
+.app-sidebar-logout{
+    width:100%;
+    padding:9px 12px;
+    color:var(--navy);
+    background:var(--gold);
+    border:1px solid var(--gold);
+    border-radius:8px;
+    font-weight:900;
+    transition:.18s ease;
+}
+
+.app-sidebar-logout:hover{
+    background:#D8A20F;
+    border-color:#D8A20F;
+}
+
+.sidebar-mobile-toggle{
+    display:none;
+    position:fixed;
+    top:12px;
+    left:12px;
+    z-index:1060;
+    width:42px;
+    height:42px;
+    color:#fff;
+    background:var(--navy);
+    border:1px solid var(--navy-soft);
+    border-radius:10px;
+    box-shadow:var(--shadow-soft);
+    font-size:19px;
+}
+
+body.with-app-sidebar .btn-dashboard{
+    display:none !important;
+}
+
+body.with-app-sidebar .app-shell{
+    display:block;
+    min-height:100vh;
+}
+
+body.with-app-sidebar .app-shell > .sidebar{
+    display:none !important;
+}
+
+body.with-app-sidebar .main-content{
+    min-width:0;
+}
+
+body.with-app-sidebar > .container,
+body.with-app-sidebar > .container-fluid{
+    max-width:none;
+}
+
+@media(max-width:900px){
+    body.with-app-sidebar{
+        padding-left:0;
+        padding-top:64px;
+    }
+
+    .sidebar-mobile-toggle{
+        display:block;
+    }
+
+    .app-sidebar{
+        width:min(300px,86vw);
+        transform:translateX(-105%);
+        transition:transform .22s ease;
+        box-shadow:12px 0 35px rgba(11,24,73,.28);
+    }
+
+    body.sidebar-open .app-sidebar{
+        transform:translateX(0);
+    }
+
+    body.sidebar-open::after{
+        content:"";
+        position:fixed;
+        inset:0;
+        z-index:1040;
+        background:rgba(7,16,51,.42);
+    }
+
+    body.with-app-sidebar .main-content{
+        padding:16px;
+    }
+}
+
+
+/* Dashboard branch and date controls inside sidebar */
+.app-sidebar-dashboard-controls{
+    margin:14px 4px 10px;
+    padding:12px;
+    background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:11px;
+}
+
+.sidebar-control-group + .sidebar-control-group{
+    margin-top:12px;
+}
+
+.sidebar-control-group label{
+    display:block;
+    margin-bottom:6px;
+    color:var(--gold);
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+
+.sidebar-control-select,
+.sidebar-control-input{
+    width:100%;
+    min-height:38px;
+    padding:7px 9px;
+    color:#fff;
+    background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.17);
+    border-radius:8px;
+    font-size:12px;
+    outline:none;
+}
+
+.sidebar-control-select option{
+    color:var(--ink);
+    background:#fff;
+}
+
+.sidebar-control-select:focus,
+.sidebar-control-input:focus{
+    border-color:var(--gold);
+    box-shadow:0 0 0 3px rgba(232,179,33,.14);
+}
+
+.sidebar-control-input{
+    color-scheme:dark;
+}
+
+.sidebar-today-button{
+    width:100%;
+    margin-top:7px;
+    padding:7px 9px;
+    color:var(--navy);
+    background:var(--gold);
+    border:0;
+    border-radius:8px;
+    font-size:11px;
+    font-weight:900;
+}
+
+.sidebar-today-button:hover{
+    background:#D8A20F;
+}
+
+
+/* ==========================================================================
+   Collapsible Desktop Sidebar
+   ========================================================================== */
+
+.app-sidebar{
+    transition:
+        width .22s ease,
+        padding .22s ease,
+        transform .22s ease;
+}
+
+.app-sidebar-brand{
+    display:flex;
+    align-items:center;
+    min-height:58px;
+    gap:10px;
+}
+
+.app-sidebar-brand-mark{
+    display:none;
+    flex:0 0 42px;
+    width:42px;
+    height:42px;
+    object-fit:contain;
+}
+
+.app-sidebar-brand-copy{
+    display:block;
+    min-width:0;
+}
+
+.app-sidebar-brand-copy > strong{
+    display:block;
+    color:var(--gold);
+    font-family:'Cinzel Decorative', serif;
+    font-size:18px;
+    font-weight:700;
+    letter-spacing:.02em;
+    white-space:nowrap;
+}
+
+.app-sidebar-brand-copy > span{
+    display:block;
+    margin-top:5px;
+    color:rgba(255,255,255,.68);
+    font-size:12px;
+    white-space:nowrap;
+}
+
+.app-sidebar-link{
+    gap:11px;
+}
+
+.app-sidebar-link-icon{
+    position:relative;
+    display:flex;
+    flex:0 0 25px;
+    width:25px;
+    height:25px;
+    align-items:center;
+    justify-content:center;
+    font-size:15px;
+    font-weight:950;
+    line-height:1;
+}
+
+.app-sidebar-link-dot{
+    position:absolute;
+    top:-2px;
+    right:-2px;
+    width:9px;
+    height:9px;
+    background:#E5484D;
+    border:2px solid var(--navy, #0B1849);
+    border-radius:50%;
+}
+
+.app-sidebar-link-label{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.sidebar-collapse-toggle{
+    position:absolute;
+    top:18px;
+    right:-14px;
+    z-index:3;
+    display:flex;
+    width:29px;
+    height:29px;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    color:var(--navy);
+    background:var(--gold);
+    border:3px solid #fff;
+    border-radius:50%;
+    box-shadow:0 5px 14px rgba(7,16,51,.22);
+    font-size:20px;
+    font-weight:950;
+    line-height:1;
+    cursor:pointer;
+    transition:.18s ease;
+}
+
+.sidebar-collapse-toggle:hover{
+    transform:scale(1.07);
+    background:#D8A20F;
+}
+
+/* Desktop collapsed state */
+@media(min-width:901px){
+    body.sidebar-collapsed{
+        padding-left:var(--app-sidebar-collapsed-width);
+    }
+
+    body.sidebar-collapsed .app-sidebar{
+        width:var(--app-sidebar-collapsed-width);
+        padding:20px 10px 16px;
+    }
+
+    body.sidebar-collapsed .app-sidebar-brand{
+        justify-content:center;
+        min-height:52px;
+        padding:0 0 18px;
+    }
+
+    body.sidebar-collapsed .app-sidebar-brand-mark{
+        display:flex;
+    }
+
+    body.sidebar-collapsed .app-sidebar-brand-copy,
+    body.sidebar-collapsed .app-sidebar-section,
+    body.sidebar-collapsed .app-sidebar-link-label,
+    body.sidebar-collapsed .app-sidebar-dashboard-controls,
+    body.sidebar-collapsed .app-sidebar-branch,
+    body.sidebar-collapsed .sidebar-health-card,
+    body.sidebar-collapsed .app-sidebar-logout{
+        display:none !important;
+    }
+
+    body.sidebar-collapsed .app-sidebar-nav{
+        margin-top:16px;
+        overflow-x:hidden;
+    }
+
+    body.sidebar-collapsed .app-sidebar-link,
+    body.sidebar-collapsed .app-sidebar-sub-link{
+        justify-content:center;
+        width:52px;
+        min-height:45px;
+        margin:0 auto 7px;
+        padding:9px;
+        border-radius:11px;
+    }
+
+    body.sidebar-collapsed .app-sidebar-link-icon{
+        flex-basis:28px;
+        width:28px;
+        height:28px;
+        font-size:16px;
+    }
+
+    body.sidebar-collapsed .app-sidebar-link.active{
+        box-shadow:inset 0 -3px 0 var(--gold);
+    }
+
+    body.sidebar-collapsed .sidebar-collapse-toggle{
+        right:-14px;
+    }
+}
+
+/* On mobile, retain the slide-out sidebar and hide desktop collapse control. */
+@media(max-width:900px){
+    .sidebar-collapse-toggle{
+        display:none;
+    }
+
+    .app-sidebar-brand-mark{
+        display:none;
+    }
+}
+
+
+/* ==========================================================================
+   CrownOS UI v2 — Global Branch and Date Toolbar
+   ========================================================================== */
+
+body.with-app-sidebar{
+    padding-top:70px;
+}
+
+.crown-global-toolbar{
+    position:fixed;
+    top:0;
+    left:var(--app-sidebar-width);
+    right:0;
+    z-index:1035;
+    min-height:54px;
+    display:grid;
+    grid-template-columns:minmax(180px,1fr) auto auto;
+    align-items:center;
+    gap:16px;
+    padding:8px 16px;
+    background:rgba(255,255,255,.97);
+    border-bottom:1px solid var(--border-light);
+    box-shadow:0 8px 24px rgba(11,24,73,.08);
+    backdrop-filter:blur(12px);
+}
+
+.global-toolbar-context{
+    min-width:0;
+}
+
+.global-toolbar-eyebrow{
+    display:block;
+    margin-bottom:2px;
+    color:var(--green);
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+}
+
+.global-toolbar-page{
+    display:block;
+    overflow:hidden;
+    color:var(--navy);
+    font-size:15px;
+    font-weight:900;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.global-toolbar-filters{
+    display:flex;
+    align-items:flex-end;
+    gap:9px;
+}
+
+.global-toolbar-field{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    margin:0;
+}
+
+.global-toolbar-field > span{
+    color:var(--muted);
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.07em;
+    text-transform:uppercase;
+}
+
+.global-toolbar-select,
+.global-toolbar-input{
+    min-height:34px;
+    padding:6px 10px;
+    color:var(--ink);
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:9px;
+    outline:none;
+    font-size:12px;
+    font-weight:700;
+}
+
+.global-toolbar-select{
+    width:210px;
+}
+
+.global-toolbar-input{
+    width:145px;
+}
+
+.date-stepper-group{
+    display:flex;
+    align-items:stretch;
+    gap:4px;
+}
+
+.date-stepper-group .global-toolbar-input{
+    width:120px;
+}
+
+.date-step-btn{
+    display:flex;
+    flex:0 0 auto;
+    align-items:center;
+    justify-content:center;
+    width:26px;
+    min-height:34px;
+    padding:0;
+    color:var(--navy);
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:9px;
+    font-size:15px;
+    font-weight:900;
+    line-height:1;
+    transition:.18s ease;
+}
+
+.date-step-btn:hover{
+    color:#fff;
+    background:var(--green);
+    border-color:var(--green);
+}
+
+.global-toolbar-select:focus,
+.global-toolbar-input:focus{
+    border-color:var(--green);
+    box-shadow:0 0 0 3px rgba(18,77,28,.10);
+}
+
+.global-toolbar-button{
+    min-height:34px;
+    padding:6px 12px;
+    border-radius:9px;
+    font-size:11px;
+    font-weight:900;
+    transition:.18s ease;
+}
+
+.global-toolbar-today{
+    color:var(--navy);
+    background:var(--gold);
+    border:1px solid var(--gold);
+}
+
+.global-toolbar-refresh{
+    color:var(--green);
+    background:#fff;
+    border:1px solid rgba(18,77,28,.24);
+}
+
+.global-toolbar-button:hover{
+    transform:translateY(-1px);
+}
+
+.global-toolbar-user{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    min-width:145px;
+    padding-left:16px;
+    border-left:1px solid var(--border-light);
+}
+
+.global-toolbar-avatar{
+    display:flex;
+    flex:0 0 36px;
+    width:36px;
+    height:36px;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    background:var(--navy);
+    border:2px solid var(--gold);
+    border-radius:50%;
+    font-size:14px;
+    font-weight:950;
+}
+
+.global-toolbar-user-copy{
+    min-width:0;
+}
+
+.global-toolbar-user-copy strong,
+.global-toolbar-user-copy small{
+    display:block;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.global-toolbar-user-copy strong{
+    color:var(--navy);
+    font-size:12px;
+}
+
+.global-toolbar-user-copy small{
+    margin-top:2px;
+    color:var(--muted);
+    font-size:9px;
+}
+
+@media(min-width:901px){
+    body.sidebar-collapsed .crown-global-toolbar{
+        left:var(--app-sidebar-collapsed-width);
+    }
+}
+
+@media(max-width:1180px){
+    .crown-global-toolbar{
+        grid-template-columns:auto 1fr;
+    }
+
+    .global-toolbar-context{
+        display:none;
+    }
+
+    .global-toolbar-filters{
+        justify-content:flex-start;
+    }
+}
+
+@media(max-width:900px){
+    body.with-app-sidebar{
+        padding-top:100px;
+    }
+
+    .crown-global-toolbar{
+        top:0;
+        left:0;
+        grid-template-columns:1fr auto;
+        min-height:88px;
+        padding:8px 14px 8px 60px;
+    }
+
+    .global-toolbar-filters{
+        grid-column:1 / -1;
+        width:100%;
+        overflow-x:auto;
+        padding-bottom:2px;
+    }
+
+    .global-toolbar-select{
+        width:190px;
+    }
+
+    .global-toolbar-user{
+        min-width:0;
+        padding-left:10px;
+    }
+
+    .global-toolbar-user-copy{
+        display:none;
+    }
+}
+
+@media(max-width:600px){
+    .global-toolbar-refresh{
+        display:none;
+    }
+
+    .global-toolbar-select{
+        width:165px;
+    }
+
+    .global-toolbar-input{
+        width:135px;
+    }
+}
+
+/* Old dashboard sidebar controls are retired in UI v2. */
+.app-sidebar-dashboard-controls,
+.sidebar-health-card{
+    display:none !important;
+}
+
+
+/* ==========================================================================
+   CrownOS UI v2.1 — Clean Professional Sidebar
+   Expanded: text-only navigation
+   Collapsed: icon-only navigation with native tooltips
+   ========================================================================== */
+
+/* Expanded sidebar: remove icons for a cleaner professional appearance. */
+body:not(.sidebar-collapsed) .app-sidebar-link-icon{
+    display:none;
+}
+
+body:not(.sidebar-collapsed) .app-sidebar-link{
+    gap:0;
+    padding-left:14px;
+    padding-right:14px;
+}
+
+body:not(.sidebar-collapsed) .app-sidebar-sub-link{
+    padding-left:22px;
+}
+
+/* Replace visible section titles with subtle separators. */
+.app-sidebar-section{
+    height:1px;
+    margin:18px 10px 12px;
+    overflow:hidden;
+    padding:0;
+    color:transparent;
+    background:rgba(255,255,255,.13);
+    font-size:0;
+    line-height:0;
+}
+
+/* Refined text navigation states. */
+body:not(.sidebar-collapsed) .app-sidebar-link{
+    min-height:41px;
+    margin-bottom:3px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:700;
+}
+
+body:not(.sidebar-collapsed) .app-sidebar-link:hover{
+    padding-left:17px;
+    background:rgba(255,255,255,.07);
+}
+
+body:not(.sidebar-collapsed) .app-sidebar-link.active{
+    padding-left:17px;
+    background:rgba(255,255,255,.10);
+    border-color:rgba(255,255,255,.05);
+    box-shadow:inset 3px 0 0 var(--gold);
+}
+
+/* Collapsed sidebar: retain icons and keep links centered. */
+@media(min-width:901px){
+    body.sidebar-collapsed .app-sidebar-link-icon{
+        display:flex;
+    }
+
+    body.sidebar-collapsed .app-sidebar-section{
+        display:block !important;
+        width:34px;
+        height:1px;
+        margin:15px auto 11px;
+        background:rgba(255,255,255,.14);
+    }
+}
+
+/* Mobile sidebar remains text-first and icon-free. */
+@media(max-width:900px){
+    .app-sidebar-link-icon{
+        display:none !important;
+    }
+
+    .app-sidebar-link{
+        gap:0;
+    }
+
+    .app-sidebar-section{
+        display:block;
+    }
+}

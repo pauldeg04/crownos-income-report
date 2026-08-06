@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Crown Head Spa - Scheduling</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="shared.css">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="scheduling.css">
+
+    
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="pwa-register.js"></script>
+    <script src="firebase-sync.js"></script>
+    <script src="access-control.js"></script>
+    <script src="notifications.js"></script>
+</head>
+
+<body>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+
+            <div class="page-heading">
+                <div>
+                    <h2 class="fw-bold text-primary mb-0">
+                        Scheduling
+                    </h2>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="schedule-controls-card">
+        <div>
+            <label class="form-label">Branch</label>
+
+            <select id="scheduleBranch" class="form-select">
+                <option value="">Select Branch</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label">Date</label>
+
+            <div class="date-control-row">
+                <div class="date-stepper-group">
+                    <button
+                        type="button"
+                        class="date-step-btn"
+                        id="prevDayBtn"
+                        aria-label="Previous day"
+                        title="Previous day"
+                    >
+                        ‹
+                    </button>
+
+                    <input
+                        type="date"
+                        id="scheduleDate"
+                        class="form-control"
+                    >
+
+                    <button
+                        type="button"
+                        class="date-step-btn"
+                        id="nextDayBtn"
+                        aria-label="Next day"
+                        title="Next day"
+                    >
+                        ›
+                    </button>
+                </div>
+
+                <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm"
+                    id="blockDateBtn"
+                >
+                    🚫 Block Date
+                </button>
+            </div>
+        </div>
+
+        <div class="schedule-control-summary">
+            <span>Beds</span>
+            <strong id="bedCount">0</strong>
+        </div>
+
+        <div class="schedule-control-summary">
+            <span>Operating Hours</span>
+            <strong id="operatingHours">—</strong>
+        </div>
+
+        <div class="schedule-control-summary">
+            <span>Scheduled</span>
+            <strong id="scheduledCount">0</strong>
+        </div>
+    </div>
+
+    <div class="schedule-grid-card">
+
+        <div class="schedule-grid-header">
+            <div>
+                <h3 id="scheduleGridTitle">
+                    Branch Schedule
+                </h3>
+
+                <p id="scheduleGridSubtitle">
+                    Select a branch and date.
+                </p>
+            </div>
+
+            <div class="schedule-grid-legend">
+                <span>
+                    <i class="legend-available"></i>
+                    Available
+                </span>
+
+                <span>
+                    <i class="legend-booked"></i>
+                    Scheduled
+                </span>
+
+                <span>
+                    <i class="legend-companion"></i>
+                    Companion
+                </span>
+
+                <span>
+                    <i class="legend-current"></i>
+                    Current Time
+                </span>
+            </div>
+        </div>
+
+        <div class="blocked-date-banner d-none" id="blockedDateBanner">
+            <div>
+                <strong>🚫 This date is blocked for online booking.</strong>
+                <span id="blockedDateReasonText"></span>
+            </div>
+
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                id="unblockDateBtn"
+            >
+                Unblock
+            </button>
+        </div>
+
+        <div class="schedule-empty-state" id="scheduleEmptyState">
+            Select a branch to display the schedule grid.
+        </div>
+
+        <div class="schedule-table-wrapper d-none" id="scheduleTableWrapper">
+            <div class="timeline-grid">
+                <div class="timeline-header" id="scheduleHead"></div>
+                <div class="timeline-body" id="scheduleBody"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="schedule-grid-card upcoming-schedule-card">
+
+        <div class="schedule-grid-header">
+            <div>
+                <h3>
+                    Upcoming Schedules
+                </h3>
+
+                <p>
+                    All scheduled appointments across every branch, soonest first.
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="showScheduleHistoryBtn"
+            >
+                Show History
+            </button>
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table table-bordered table-hover align-middle upcoming-schedule-table">
+
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Client</th>
+                        <th>Service</th>
+                        <th>Branch</th>
+                        <th>Schedule</th>
+                        <th>Contact</th>
+                        <th>Note</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody id="upcomingScheduleBody"></tbody>
+
+            </table>
+
+        </div>
+
+        <div
+            class="empty-state d-none"
+            id="upcomingScheduleEmptyState"
+        >
+            No upcoming schedules.
+        </div>
+
+    </div>
+
+    <div class="schedule-grid-card">
+
+        <div class="schedule-grid-header">
+            <div>
+                <h3>
+                    Blocked Dates
+                </h3>
+
+                <p>
+                    Dates hidden from online booking on the Crown Head Spa website.
+                </p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="table table-bordered table-hover align-middle upcoming-schedule-table">
+
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Branch</th>
+                        <th>Reason</th>
+                        <th>Blocked By</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody id="blockedDatesBody"></tbody>
+
+            </table>
+
+        </div>
+
+        <div
+            class="empty-state d-none"
+            id="blockedDatesEmptyState"
+        >
+            No blocked dates.
+        </div>
+
+    </div>
+
+</div>
+
+<div class="schedule-modal-backdrop d-none" id="scheduleHistoryModalBackdrop">
+
+    <div class="schedule-modal schedule-modal-large">
+
+        <div class="schedule-modal-header">
+            <div>
+                <p class="modal-eyebrow">
+                    Records
+                </p>
+
+                <h3>
+                    Schedule History
+                </h3>
+
+                <p>
+                    Completed and past appointments across every branch.
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close-btn"
+                id="closeScheduleHistoryModalBtn"
+                aria-label="Close"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="schedule-modal-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered table-hover align-middle upcoming-schedule-table">
+
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Service</th>
+                            <th>Branch</th>
+                            <th>Schedule</th>
+                            <th>Contact</th>
+                            <th>Note</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="historyScheduleBody"></tbody>
+
+                </table>
+
+            </div>
+
+            <div
+                class="empty-state d-none"
+                id="historyScheduleEmptyState"
+            >
+                No history yet.
+            </div>
+
+        </div>
+
+        <div class="schedule-modal-footer">
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="closeScheduleHistoryBtn"
+            >
+                Close
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+<div class="schedule-modal-backdrop d-none" id="scheduleModalBackdrop">
+
+    <div class="schedule-modal" role="dialog" aria-modal="true">
+
+        <div class="schedule-modal-header">
+            <div>
+                <p class="modal-eyebrow" id="modalModeLabel">
+                    New Schedule
+                </p>
+
+                <h3 id="modalTitle">
+                    Add Appointment
+                </h3>
+
+                <p id="selectedSlotLabel">
+                    —
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close-btn"
+                id="closeModalBtn"
+                aria-label="Close"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="schedule-modal-body">
+
+            <div class="row g-3">
+
+                <div class="col-12">
+                    <label class="form-label">
+                        Client Name *
+                    </label>
+
+                    <input
+                        type="text"
+                        id="modalClient"
+                        class="form-control"
+                        list="clientOptions"
+                        placeholder="Type or select client"
+                        autocomplete="off"
+                    >
+
+                    <datalist id="clientOptions"></datalist>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">
+                        Services *
+                    </label>
+
+                    <div id="modalServicesList" class="modal-services-list"></div>
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-success btn-sm mt-2"
+                        id="addServiceBtn"
+                    >
+                        + Add Service
+                    </button>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">
+                        Therapist
+                        <small class="text-muted fw-normal">(optional — leave blank for advance bookings)</small>
+                    </label>
+
+                    <select
+                        id="modalTherapist"
+                        class="form-select"
+                    >
+                        <option value="">
+                            To be Assigned
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">
+                        Bed
+                    </label>
+
+                    <select
+                        id="modalBed"
+                        class="form-select"
+                    ></select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">
+                        Start Time
+                    </label>
+
+                    <input
+                        type="time"
+                        id="modalStartTime"
+                        class="form-control"
+                        step="60"
+                    >
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">
+                        End Time
+                    </label>
+
+                    <div class="modal-readout" id="modalEndTime">
+                        —
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Status
+                    </label>
+
+                    <select
+                        id="modalStatus"
+                        class="form-select"
+                    >
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Walk-in">Walk-in</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Duration
+                    </label>
+
+                    <div class="modal-readout" id="modalDuration">
+                        —
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div id="modalCompanionsList" class="modal-companions-list"></div>
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-success btn-sm"
+                        id="addCompanionBtn"
+                    >
+                        + Add Companion
+                    </button>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">
+                        Notes
+                    </label>
+
+                    <textarea
+                        id="modalNotes"
+                        class="form-control"
+                        rows="2"
+                        placeholder="Special requests or reminders"
+                    ></textarea>
+                </div>
+
+            </div>
+
+            <div class="modal-message d-none" id="modalMessage"></div>
+
+        </div>
+
+        <div class="schedule-modal-footer">
+
+            <button
+                type="button"
+                class="btn btn-danger d-none"
+                id="deleteScheduleBtn"
+            >
+                Delete
+            </button>
+
+            <div class="modal-footer-actions">
+                <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    id="cancelModalBtn"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-success"
+                    id="saveModalBtn"
+                >
+                    Save Schedule
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="schedule-modal-backdrop d-none" id="blockDateModalBackdrop">
+
+    <div class="schedule-modal" role="dialog" aria-modal="true">
+
+        <div class="schedule-modal-header">
+            <div>
+                <p class="modal-eyebrow">
+                    Availability
+                </p>
+
+                <h3>
+                    Block Date
+                </h3>
+
+                <p>
+                    Hides this date from online booking on the Crown Head Spa website. Staff can still add appointments manually.
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close-btn"
+                id="closeBlockDateModalBtn"
+                aria-label="Close"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="schedule-modal-body">
+
+            <div class="row g-3">
+
+                <div class="col-12">
+                    <label class="form-label">
+                        Branch
+                    </label>
+
+                    <select id="blockDateBranch" class="form-select">
+                        <option value="All Branches">All Branches</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">
+                        Date
+                    </label>
+
+                    <input
+                        type="date"
+                        id="blockDateInput"
+                        class="form-control"
+                    >
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">
+                        Reason (optional)
+                    </label>
+
+                    <input
+                        type="text"
+                        id="blockDateReasonInput"
+                        class="form-control"
+                        placeholder="e.g. Holiday, fully booked, maintenance"
+                        maxlength="120"
+                    >
+                </div>
+
+            </div>
+
+            <div class="modal-message d-none" id="blockDateModalMessage"></div>
+
+        </div>
+
+        <div class="schedule-modal-footer">
+
+            <div class="modal-footer-actions">
+                <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    id="cancelBlockDateBtn"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-danger"
+                    id="saveBlockDateBtn"
+                >
+                    Block Date
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="sidebar.js"></script>
+<script src="scheduling.js"></script>
+
+</body>
+</html>

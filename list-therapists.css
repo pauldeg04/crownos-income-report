@@ -1,0 +1,275 @@
+/* ==========================================================================
+   Crown Head Spa — Therapist Branch Assignment
+   ========================================================================== */
+
+body.modal-open{
+    overflow:hidden;
+}
+
+.therapist-table{
+    table-layout:fixed;
+    min-width:1050px;
+}
+
+.therapist-table th,
+.therapist-table td{
+    text-align:center;
+    vertical-align:middle;
+}
+
+.therapist-table th:nth-child(1),
+.therapist-table td:nth-child(1){
+    width:6%;
+}
+
+.therapist-table th:nth-child(2),
+.therapist-table td:nth-child(2){
+    width:24%;
+}
+
+.therapist-table th:nth-child(3),
+.therapist-table td:nth-child(3){
+    width:42%;
+}
+
+.therapist-table th:nth-child(4),
+.therapist-table td:nth-child(4){
+    width:12%;
+}
+
+.therapist-table th:nth-child(5),
+.therapist-table td:nth-child(5){
+    width:16%;
+}
+
+.branch-badge-list{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:6px;
+}
+
+.branch-assignment-badge{
+    display:inline-flex;
+    align-items:center;
+    padding:6px 9px;
+    color:var(--navy);
+    background:var(--gold-soft);
+    border:1px solid var(--accent-border);
+    border-radius:999px;
+    font-size:11px;
+    font-weight:800;
+}
+
+.no-branch-badge{
+    display:inline-flex;
+    padding:6px 9px;
+    color:var(--state-red);
+    background:var(--state-red-bg);
+    border:1px solid var(--state-red-border);
+    border-radius:999px;
+    font-size:11px;
+    font-weight:800;
+}
+
+.therapist-status{
+    display:inline-flex;
+    min-width:80px;
+    justify-content:center;
+    padding:6px 10px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:900;
+}
+
+.status-active{
+    color:#fff;
+    background:var(--green);
+}
+
+.status-leave{
+    color:var(--navy);
+    background:var(--gold);
+}
+
+.status-inactive{
+    color:#fff;
+    background:#7B8086;
+}
+
+.action-buttons{
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:5px;
+}
+
+.save-note{
+    margin-top:14px;
+    padding:12px 14px;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:10px;
+    font-size:14px;
+}
+
+/* Modal */
+
+.therapist-modal-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:2000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(7,16,51,.48);
+    backdrop-filter:blur(3px);
+}
+
+.therapist-modal{
+    width:100%;
+    max-width:620px;
+    max-height:calc(100vh - 40px);
+    overflow:auto;
+    background:#fff;
+    border-radius:20px;
+    box-shadow:0 28px 70px rgba(7,16,51,.28);
+}
+
+.therapist-modal-header{
+    display:flex;
+    justify-content:space-between;
+    gap:18px;
+    padding:22px 24px 18px;
+    border-bottom:1px solid var(--border-light);
+}
+
+.modal-eyebrow{
+    margin:0 0 5px;
+    color:var(--green);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+}
+
+.therapist-modal-header h3{
+    margin:0;
+    color:var(--navy);
+    font-size:23px;
+    font-weight:900;
+}
+
+.modal-close-btn{
+    width:36px;
+    height:36px;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-size:23px;
+    line-height:1;
+}
+
+.modal-close-btn:hover{
+    color:var(--navy);
+    background:var(--gold-soft);
+}
+
+.therapist-modal-body{
+    padding:22px 24px;
+}
+
+.branch-checkbox-list{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    padding:10px;
+    background:var(--surface-soft);
+    border:1px solid var(--border);
+    border-radius:12px;
+}
+
+.branch-checkbox-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-height:42px;
+    margin:0;
+    padding:9px 10px;
+    color:var(--ink);
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-radius:9px;
+    cursor:pointer;
+}
+
+.branch-checkbox-item:hover{
+    border-color:var(--accent);
+    background:var(--gold-soft);
+}
+
+.branch-checkbox-item input{
+    margin:0;
+}
+
+.branch-checkbox-item span{
+    font-size:13px;
+    font-weight:700;
+}
+
+.no-branches-message{
+    grid-column:1 / -1;
+    padding:18px;
+    color:var(--state-red);
+    text-align:center;
+}
+
+.therapist-modal-footer{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    padding:16px 24px 22px;
+    border-top:1px solid var(--border-light);
+}
+
+@media(max-width:768px){
+    #addTherapistBtn{
+        width:100%;
+    }
+
+    .branch-checkbox-list{
+        grid-template-columns:1fr;
+    }
+
+    .therapist-modal-backdrop{
+        align-items:flex-end;
+        padding:0;
+    }
+
+    .therapist-modal{
+        max-height:92vh;
+        border-radius:20px 20px 0 0;
+    }
+
+    .therapist-modal-footer{
+        flex-direction:column;
+    }
+
+    .therapist-modal-footer .btn{
+        width:100%;
+    }
+}
+
+
+/* Linked User Account indicator */
+
+.linked-account-label{
+    display:block;
+    margin-top:3px;
+    color:var(--muted);
+    font-size:10px;
+    font-weight:700;
+}

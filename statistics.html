@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CrownOS - Statistics</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="crownos-theme.css">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="statistics.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="pwa-register.js"></script>
+    <script src="firebase-sync.js"></script>
+    <script src="access-control.js"></script>
+<script src="crownos-theme.js"></script>
+</head>
+
+<body>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+
+            <div class="page-heading statistics-page-heading">
+                <div>
+                    <p class="page-eyebrow">
+                        Operations Analytics
+                    </p>
+
+                    <h2 class="fw-bold text-primary mb-0">
+                        Statistics
+                    </h2>
+                </div>
+
+                <div class="statistics-filter-panel">
+
+                    <div>
+                        <label
+                            for="statisticsMonth"
+                            class="form-label"
+                        >
+                            Report Month
+                        </label>
+
+                        <input
+                            type="month"
+                            id="statisticsMonth"
+                            class="form-control"
+                        >
+                    </div>
+
+                    <div class="active-branch-box">
+                        <span>
+                            Active Branch
+                        </span>
+
+                        <strong id="activeBranchLabel">
+                            No branch selected
+                        </strong>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn btn-purple"
+                        id="exportStatisticsPdfBtn"
+                        onclick="exportStatisticsPDF()"
+                    >
+                        Export to PDF
+                    </button>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <section class="statistics-overview-grid mb-4">
+
+        <article class="overview-card">
+            <span>Services Availed</span>
+            <strong id="overviewServicesCount">0</strong>
+            <small id="overviewServicesAmount">₱0.00</small>
+        </article>
+
+        <article class="overview-card">
+            <span>Products Sold</span>
+            <strong id="overviewProductsCount">0</strong>
+            <small id="overviewProductsAmount">₱0.00</small>
+        </article>
+
+        <article class="overview-card">
+            <span>VIP Cards Sold</span>
+            <strong id="overviewVipCount">0</strong>
+            <small id="overviewVipAmount">₱0.00</small>
+        </article>
+
+        <article class="overview-card">
+            <span>Voucher Sales</span>
+            <strong id="overviewVoucherSalesCount">0</strong>
+            <small id="overviewVoucherSalesAmount">₱0.00</small>
+        </article>
+
+        <article class="overview-card">
+            <span>Voucher Redeemed</span>
+            <strong id="overviewVoucherRedeemCount">0</strong>
+            <small id="overviewVoucherRedeemAmount">₱0.00</small>
+        </article>
+
+    </section>
+
+    <div
+        class="statistics-empty-state d-none"
+        id="noBranchState"
+    >
+        Select a branch from the Dashboard before opening Statistics.
+    </div>
+
+    <main id="statisticsContent">
+
+        <section class="statistics-section analytics-dashboard-section">
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">Business Intelligence</p>
+                    <h3>Business Analytics Dashboard</h3>
+                    <span>
+                        Visual performance overview for the selected branch and month.
+                    </span>
+                </div>
+            </div>
+
+            <div class="analytics-dashboard-grid">
+                <article class="analytics-chart-card analytics-chart-wide">
+                    <div class="analytics-chart-heading">
+                        <div>
+                            <span>Revenue Trend</span>
+                            <h4>Monthly Sales Trend</h4>
+                        </div>
+                        <strong id="analyticsSalesTotal">₱0.00</strong>
+                    </div>
+
+                    <div class="monthly-trend-kpis">
+                        <div>
+                            <span>Highest Day</span>
+                            <strong id="monthlyTrendHighest">₱0.00</strong>
+                            <small id="monthlyTrendHighestDate">—</small>
+                        </div>
+
+                        <div>
+                            <span>Daily Average</span>
+                            <strong id="monthlyTrendAverage">₱0.00</strong>
+                            <small>Across the selected month</small>
+                        </div>
+
+                        <div>
+                            <span>Lowest Day</span>
+                            <strong id="monthlyTrendLowest">₱0.00</strong>
+                            <small id="monthlyTrendLowestDate">—</small>
+                        </div>
+                    </div>
+
+                    <div id="monthlySalesTrendChart" class="analytics-chart-canvas"></div>
+                </article>
+
+                <article class="analytics-chart-card">
+                    <div class="analytics-chart-heading">
+                        <div>
+                            <span>Service Demand</span>
+                            <h4>Most Availed Services</h4>
+                        </div>
+                    </div>
+                    <div id="topServicesChart" class="analytics-chart-canvas"></div>
+                </article>
+
+                <article class="analytics-chart-card">
+                    <div class="analytics-chart-heading">
+                        <div>
+                            <span>Team Performance</span>
+                            <h4>Therapist Performance</h4>
+                        </div>
+                    </div>
+                    <div id="therapistPerformanceChart" class="analytics-chart-canvas"></div>
+                </article>
+
+                <article class="analytics-chart-card">
+                    <div class="analytics-chart-heading">
+                        <div>
+                            <span>Collections</span>
+                            <h4>Payment Method Distribution</h4>
+                        </div>
+                    </div>
+                    <div id="paymentDistributionChart" class="analytics-chart-canvas"></div>
+                </article>
+
+                <article class="analytics-chart-card">
+                    <div class="analytics-chart-heading">
+                        <div>
+                            <span>Client Acquisition</span>
+                            <h4>Client Acquisition Sources</h4>
+                        </div>
+                    </div>
+                    <div id="sourceAcquisitionChart" class="analytics-chart-canvas"></div>
+                </article>
+            </div>
+        </section>
+
+
+
+        <section class="statistics-section">
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">Service Performance</p>
+                    <h3>Services</h3>
+                    <span>
+                        All services from Service Master, including zero sales.
+                    </span>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table statistics-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Category</th>
+                            <th>Quantity Availed</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="servicesStatisticsBody"></tbody>
+
+                    <tfoot>
+                        <tr>
+                            <th colspan="2">Services Summary</th>
+                            <th id="servicesSummaryCount">0</th>
+                            <th id="servicesSummaryAmount">₱0.00</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="statistics-section">
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">Retail Performance</p>
+                    <h3>Products</h3>
+                    <span>
+                        Regular products only. VIP Card and voucher products are excluded.
+                    </span>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table statistics-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Quantity Sold</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="productsStatisticsBody"></tbody>
+
+                    <tfoot>
+                        <tr>
+                            <th colspan="2">Products Summary</th>
+                            <th id="productsSummaryCount">0</th>
+                            <th id="productsSummaryAmount">₱0.00</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="statistics-section compact-section">
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">Membership Performance</p>
+                    <h3>VIP Card</h3>
+                    <span>
+                        Total VIP Cards sold during the selected month.
+                    </span>
+                </div>
+            </div>
+
+            <div class="vip-statistics-card">
+                <div>
+                    <span>Total Number Sold</span>
+                    <strong id="vipCardCount">0</strong>
+                </div>
+
+                <div>
+                    <span>Total Sales Amount</span>
+                    <strong id="vipCardAmount">₱0.00</strong>
+                </div>
+
+                <div>
+                    <span>Average Selling Price</span>
+                    <strong id="vipCardAverage">₱0.00</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="statistics-section">
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">Voucher Revenue</p>
+                    <h3>Voucher Sales</h3>
+                    <span>
+                        Purchases of vouchers equivalent to voucher-enabled services.
+                    </span>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table statistics-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Service Voucher</th>
+                            <th>Voucher Value</th>
+                            <th>Quantity Sold</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="voucherSalesBody"></tbody>
+
+                    <tfoot>
+                        <tr>
+                            <th colspan="2">Voucher Sales Summary</th>
+                            <th id="voucherSalesSummaryCount">0</th>
+                            <th id="voucherSalesSummaryAmount">₱0.00</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="statistics-section">
+            <div class="section-heading">
+                <div>
+                    <p class="section-eyebrow">Voucher Usage</p>
+                    <h3>Voucher Redeem</h3>
+                    <span>
+                        Voucher-enabled services redeemed during the selected month.
+                    </span>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table statistics-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Service Voucher</th>
+                            <th>Voucher Value</th>
+                            <th>Times Redeemed</th>
+                            <th>Total Redeemed Value</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="voucherRedeemBody"></tbody>
+
+                    <tfoot>
+                        <tr>
+                            <th colspan="2">Voucher Redeem Summary</th>
+                            <th id="voucherRedeemSummaryCount">0</th>
+                            <th id="voucherRedeemSummaryAmount">₱0.00</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+
+      </main>
+
+</div>
+
+<script src="statistics-access-guard.js"></script>
+<script src="sidebar.js"></script>
+<script src="statistics.js"></script>
+
+</body>
+</html>

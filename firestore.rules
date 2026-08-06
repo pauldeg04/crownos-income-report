@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* Public visitor booking requests.
+       Writes now happen ONLY through the submitBookingRequest Cloud
+       Function (Admin SDK, bypasses these rules) — see
+       Income Report/functions/index.js. It validates shape, checks live
+       capacity, and creates the matching scheduleHolds doc in the same
+       transaction, none of which a client-side rules whitelist could do
+       safely. Visitors therefore get no direct read/write access at all.
+       Staff (authenticated) may list/read pending requests and update
+       only the review fields when converting/declining one. */
+    match /bookingRequests/{requestId} {
+
+      allow create: if false;
+
+      allow get, list: if request.auth != null;
+
+      allow update: if request.auth != null &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'reviewedAt', 'reviewedBy', 'convertedScheduleId']) &&
+        request.resource.data.status in ['converted', 'declined'];
+
+      allow delete: if false;
+    }
+
+    /* Tentative capacity holds created by submitBookingRequest and
+       cleared by releaseExpiredHolds / releaseHoldOnRequestReview (see
+       Income Report/functions/index.js). Staff (CrownOS) may read them to
+       show hold status next to a pending request; only Functions write. */
+    match /scheduleHolds/{holdId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    /* Server-created staff notifications (see
+       notifyReceptionistsOnNewBookingRequest in
+       Income Report/functions/index.js) — a plain per-doc collection,
+       separate from the client-owned "crownNotifications" list mirrored
+       under appData, since only Functions (Admin SDK) ever write here.
+       A signed-in staff member may only see/touch notifications addressed
+       to their own synthetic sync email (recipientEmail), and may only
+       ever flip the "read" flag. */
+    match /staffNotifications/{notificationId} {
+      allow create: if false;
+
+      allow get, list: if request.auth != null &&
+        request.auth.token.email == resource.data.recipientEmail;
+
+      allow update: if request.auth != null &&
+        request.auth.token.email == resource.data.recipientEmail &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+
+      allow delete: if false;
+    }
+
+    /* Existing staff data-sync collection (firebase-sync.js mirrors every
+       crown*-prefixed localStorage key here, one doc per key). INFERRED
+       rule — no rules file existed for this collection before now. Confirm
+       against the live Firebase Console rules before deploying; this must
+       not silently replace different console-managed rules. */
+    match /appData/{docId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

@@ -1,0 +1,3857 @@
+/* Page-specific overrides only — shared.css provides body/.page-heading/
+   .btn-dashboard/.premium-alert/.btn-purple/.settled/.pdf-mode base styles */
+
+.sales-table{
+  width:100%;
+  min-width:1150px;
+  table-layout:fixed;
+}
+
+.sales-table th,
+.sales-table td{
+  text-align:center;
+  vertical-align:top;
+  padding:8px;
+}
+
+.sales-table th:nth-child(1),
+.sales-table td:nth-child(1){width:12%;}
+
+.sales-table th:nth-child(2),
+.sales-table td:nth-child(2){width:9%;}
+
+.sales-table th:nth-child(3),
+.sales-table td:nth-child(3){width:11%;}
+
+.sales-table th:nth-child(4),
+.sales-table td:nth-child(4){width:38%;}
+
+.sales-table th:nth-child(5),
+.sales-table td:nth-child(5){width:10%;}
+
+.sales-table th:nth-child(6),
+.sales-table td:nth-child(6){width:10%;}
+
+.sales-table th:nth-child(7),
+.sales-table td:nth-child(7){width:10%;}
+
+.service-box{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+.service-item{
+  display:grid;
+  grid-template-columns:minmax(210px,2fr) minmax(100px,1fr) 34px;
+  gap:6px;
+  align-items:start;
+}
+
+.add-small{
+  background:var(--state-green-strong);
+  color:white;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:12px;
+  margin-top:7px;
+}
+
+.add-small:hover{
+  background:var(--state-green-strong-dark);
+}
+
+.remove-small{
+  background:var(--state-red);
+  color:white;
+  border:none;
+  width:34px;
+  height:31px;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.remove-small:hover{
+  background:var(--state-red-dark);
+}
+
+.button-area{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+}
+
+.summary-box{
+  background:#fafafa;
+  border:1px solid #ddd;
+  padding:14px;
+  text-align:center;
+  border-radius:10px;
+  font-size:14px;
+  height:100%;
+}
+
+.summary-box h5{
+  font-weight:bold;
+  margin-top:6px;
+  margin-bottom:0;
+}
+
+.total-highlight{
+  font-size:26px;
+  font-weight:bold;
+  text-align:center;
+  padding:14px;
+  background:#e8f0ff;
+  border-radius:12px;
+  border:1px solid #c7d2fe;
+}
+
+.summary-card,
+.sales-table,
+.sales-table tr,
+.total-highlight{
+  page-break-inside:avoid;
+  break-inside:avoid;
+}
+
+.pdf-mode{
+  padding:8px !important;
+}
+
+.pdf-mode .sales-table{
+  min-width:0;
+}
+
+.pdf-mode .sales-table th,
+.pdf-mode .sales-table td{
+  padding:4px;
+  font-size:11px;
+}
+
+.pdf-mode input,
+.pdf-mode select{
+  font-size:10px;
+  padding:4px;
+}
+
+.pdf-mode .service-item{
+  grid-template-columns:minmax(150px,2fr) minmax(75px,1fr);
+}
+
+.pdf-mode .remove-small,
+.pdf-mode .add-small{
+  display:none !important;
+}
+
+.pdf-mode .calendar-widget{
+  display:none !important;
+}
+
+.pdf-mode .summary-box{
+  padding:8px;
+}
+
+.pdf-mode .total-highlight{
+  font-size:21px;
+  padding:9px;
+}
+
+/* ---- Calendar date picker ---- */
+
+.calendar-widget{
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-radius:16px;
+  padding:16px;
+  max-width:420px;
+}
+
+.calendar-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:12px;
+}
+
+.calendar-title{
+  font-weight:700;
+  color:var(--brand-blue-dark);
+}
+
+.calendar-nav{
+  background:var(--brand-blue-tint);
+  border:1px solid var(--brand-blue-border);
+  color:var(--brand-blue-dark);
+  width:32px;
+  height:32px;
+  border-radius:8px;
+  font-size:18px;
+  line-height:1;
+  cursor:pointer;
+}
+
+.calendar-nav:hover{
+  background:var(--brand-blue-border);
+}
+
+.calendar-weekdays{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  text-align:center;
+  font-size:11px;
+  font-weight:700;
+  color:var(--muted);
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+
+.calendar-grid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:4px;
+}
+
+.calendar-cell{
+  position:relative;
+  aspect-ratio:1;
+  border:none;
+  background:#f8fafc;
+  border-radius:8px;
+  font-size:14px;
+  color:var(--ink);
+  cursor:pointer;
+  transition:.15s;
+}
+
+.calendar-cell:hover{
+  background:var(--brand-blue-tint);
+}
+
+.calendar-cell.empty{
+  background:transparent;
+  cursor:default;
+}
+
+.calendar-cell.today{
+  box-shadow:inset 0 0 0 2px var(--brand-blue);
+  font-weight:700;
+}
+
+.calendar-cell.selected{
+  background:var(--brand-blue);
+  color:#fff;
+  font-weight:700;
+}
+
+.calendar-cell.has-data::after{
+  content:"";
+  position:absolute;
+  bottom:4px;
+  left:50%;
+  transform:translateX(-50%);
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:var(--state-green-strong);
+}
+
+.calendar-cell.selected.has-data::after{
+  background:#fff;
+}
+
+.calendar-legend{
+  display:flex;
+  gap:16px;
+  margin-top:12px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.calendar-legend span{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+.legend-dot{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--state-green-strong);
+  display:inline-block;
+}
+
+.legend-today{
+  width:10px;
+  height:10px;
+  border-radius:3px;
+  box-shadow:inset 0 0 0 2px var(--brand-blue);
+  display:inline-block;
+}
+
+@media(max-width:576px){
+  .calendar-widget{
+    max-width:100%;
+  }
+}
+
+/* ==========================================================================
+   Daily Income — Time Start Column
+   ========================================================================== */
+
+.sales-table{
+    min-width:1450px;
+}
+
+.sales-table th:first-child,
+.sales-table td:first-child{
+    width:112px;
+    min-width:112px;
+}
+
+.time-start-cell{
+    text-align:center;
+    vertical-align:middle;
+}
+
+.time-start-input{
+    min-width:92px;
+    text-align:center;
+    font-weight:800;
+    color:var(--navy);
+}
+
+.time-start-display{
+    display:none;
+    margin-top:4px;
+    color:var(--navy);
+    font-size:10px;
+    font-weight:800;
+    white-space:nowrap;
+}
+
+.pdf-mode .time-start-input{
+    display:none !important;
+}
+
+.pdf-mode .time-start-display{
+    display:block !important;
+}
+
+.pdf-mode .sales-table{
+    min-width:0;
+    width:100%;
+}
+
+@media(max-width:768px){
+    .sales-table{
+        min-width:1400px;
+    }
+}
+
+/* ==========================================================================
+   Daily Income — Automatic Service and Product Pricing
+   Add this to the bottom of style.css
+   ========================================================================== */
+
+.service-box{
+    display:flex;
+    flex-direction:column;
+    gap:9px;
+}
+
+.service-item{
+    display:grid;
+    grid-template-columns:70px minmax(190px,2fr) minmax(105px,1fr) minmax(105px,1fr) 34px;
+    gap:6px;
+    align-items:center;
+    padding:8px;
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:9px;
+}
+
+.product-sale-item{
+    grid-template-columns:70px minmax(180px,2fr) 70px minmax(95px,1fr) minmax(100px,1fr) 34px;
+}
+
+.item-type-label{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:31px;
+    padding:5px 7px;
+    color:#fff;
+    background:var(--navy);
+    border-radius:7px;
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+}
+
+.product-label{
+    background:var(--green);
+}
+
+.item-button-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+    margin-top:8px;
+}
+
+.add-product-btn{
+    background:var(--navy);
+}
+
+.add-product-btn:hover{
+    background:var(--navy-dark);
+}
+
+.quantity-input{
+    text-align:center;
+}
+
+.amount-input[readonly]{
+    color:var(--navy);
+    background:var(--gold-soft);
+    font-weight:800;
+}
+
+.vip-client-badge{
+    display:inline-flex;
+    margin-top:5px;
+    padding:4px 8px;
+    color:var(--navy);
+    background:var(--gold);
+    border-radius:999px;
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.04em;
+}
+
+.pdf-mode .item-button-row,
+.pdf-mode .remove-small{
+    display:none !important;
+}
+
+.pdf-mode .service-item{
+    grid-template-columns:55px minmax(125px,2fr) minmax(75px,1fr) minmax(75px,1fr);
+    padding:4px;
+    gap:3px;
+}
+
+.pdf-mode .product-sale-item{
+    grid-template-columns:55px minmax(115px,2fr) 45px minmax(65px,1fr) minmax(70px,1fr);
+}
+
+@media(max-width:1200px){
+    .service-item,
+    .product-sale-item{
+        grid-template-columns:1fr;
+    }
+
+    .item-type-label{
+        justify-content:flex-start;
+    }
+
+    .remove-small{
+        width:100%;
+    }
+}
+
+/* ==========================================================================
+   Daily Income — Pop-out Sales Entry
+   ========================================================================== */
+
+body.modal-open{
+    overflow:hidden;
+}
+
+.sales-table-note{
+    margin-bottom:12px;
+    padding:11px 14px;
+    color:var(--muted);
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-radius:10px;
+    font-size:12px;
+}
+
+.sales-table{
+    width:100%;
+    min-width:1120px;
+    table-layout:fixed;
+}
+
+.sales-table th:nth-child(1),
+.sales-table td:nth-child(1){
+    width:9%;
+}
+
+.sales-table th:nth-child(2),
+.sales-table td:nth-child(2){
+    width:17%;
+}
+
+.sales-table th:nth-child(3),
+.sales-table td:nth-child(3){
+    width:15%;
+}
+
+.sales-table th:nth-child(4),
+.sales-table td:nth-child(4){
+    width:29%;
+}
+
+.sales-table th:nth-child(5),
+.sales-table td:nth-child(5){
+    width:11%;
+}
+
+.sales-table th:nth-child(6),
+.sales-table td:nth-child(6){
+    width:10%;
+}
+
+.sales-table th:nth-child(7),
+.sales-table td:nth-child(7){
+    width:9%;
+}
+
+.sale-summary-row{
+    cursor:default;
+}
+
+.summary-time-cell{
+    color:var(--navy);
+    font-weight:900;
+    white-space:nowrap;
+}
+
+.summary-client-cell{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:6px;
+}
+
+.summary-client-cell strong{
+    color:var(--navy);
+}
+
+.summary-vip-badge{
+    display:inline-flex;
+    padding:3px 7px;
+    color:var(--navy);
+    background:var(--gold);
+    border-radius:999px;
+    font-size:8px;
+    font-weight:900;
+}
+
+.summary-items-cell{
+    display:table-cell !important;
+    text-align:left !important;
+    vertical-align:middle;
+}
+
+.summary-items-wrap{
+    width:100%;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:5px;
+}
+
+.summary-items-wrap span{
+    display:inline-flex;
+    max-width:100%;
+    padding:4px 7px;
+    color:var(--navy);
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:999px;
+    font-size:9px;
+    font-weight:700;
+    line-height:1.3;
+    white-space:normal;
+    overflow-wrap:anywhere;
+}
+
+.summary-items-empty{
+    color:var(--muted) !important;
+    background:transparent !important;
+    border:0 !important;
+    padding:0 !important;
+}
+
+.summary-amount-cell{
+    color:var(--green);
+    font-weight:900;
+    white-space:nowrap;
+}
+
+.payment-badge{
+    display:inline-flex;
+    padding:5px 8px;
+    color:#fff;
+    background:var(--navy);
+    border-radius:999px;
+    font-size:9px;
+    font-weight:900;
+}
+
+.summary-action-buttons{
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:4px;
+}
+
+/* Modal */
+
+.sale-modal-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:2300;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(7,16,51,.52);
+    backdrop-filter:blur(3px);
+}
+
+.sale-modal{
+    width:100%;
+    max-width:920px;
+    max-height:calc(100vh - 40px);
+    overflow:auto;
+    background:#fff;
+    border-radius:20px;
+    box-shadow:0 28px 70px rgba(7,16,51,.30);
+}
+
+.sale-modal-header{
+    display:flex;
+    justify-content:space-between;
+    gap:18px;
+    padding:22px 24px 18px;
+    border-bottom:1px solid var(--border-light);
+}
+
+.sale-modal-eyebrow{
+    margin:0 0 5px;
+    color:var(--green);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+}
+
+.sale-modal-header h3{
+    margin:0;
+    color:var(--navy);
+    font-size:24px;
+    font-weight:900;
+}
+
+.sale-modal-header small{
+    display:block;
+    margin-top:5px;
+    color:var(--muted);
+}
+
+.sale-modal-close{
+    width:36px;
+    height:36px;
+    flex:0 0 auto;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-size:23px;
+}
+
+.sale-modal-body{
+    padding:22px 24px;
+}
+
+.modal-vip-badge{
+    display:inline-flex;
+    margin-top:6px;
+    padding:4px 8px;
+    color:var(--navy);
+    background:var(--gold);
+    border-radius:999px;
+    font-size:9px;
+    font-weight:900;
+}
+
+.modal-section-heading{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    margin-top:4px;
+    margin-bottom:10px;
+}
+
+.modal-section-heading h4{
+    margin:0;
+    color:var(--navy);
+    font-size:16px;
+    font-weight:900;
+}
+
+.modal-section-heading p{
+    margin:4px 0 0;
+    color:var(--muted);
+    font-size:11px;
+}
+
+.modal-client-details-card{
+    padding:16px;
+    background:var(--surface-soft);
+    border:1px dashed var(--border);
+    border-radius:12px;
+}
+
+.modal-item-buttons{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+}
+
+.modal-items-list{
+    display:grid;
+    gap:8px;
+}
+
+.modal-item-row{
+    display:grid;
+    grid-template-columns:70px minmax(220px,2fr) minmax(115px,1fr) minmax(110px,1fr) 34px;
+    gap:7px;
+    align-items:center;
+    padding:9px;
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:10px;
+}
+
+.modal-product-row{
+    grid-template-columns:70px minmax(210px,2fr) 72px minmax(105px,1fr) minmax(110px,1fr) 34px;
+}
+
+.modal-item-type{
+    display:flex;
+    justify-content:center;
+    padding:7px;
+    color:#fff;
+    background:var(--navy);
+    border-radius:7px;
+    font-size:9px;
+    font-weight:900;
+    text-transform:uppercase;
+}
+
+.modal-item-type.product{
+    background:var(--green);
+}
+
+.modal-remove-item{
+    width:34px;
+    height:34px;
+    color:#fff;
+    background:var(--state-red);
+    border:0;
+    border-radius:8px;
+    font-size:18px;
+}
+
+.item-amount[readonly]{
+    color:var(--navy);
+    background:var(--gold-soft);
+    font-weight:800;
+}
+
+.modal-total-readout{
+    min-height:42px;
+    display:flex;
+    align-items:center;
+    padding:8px 12px;
+    color:var(--green);
+    background:var(--gold-soft);
+    border:1px solid var(--accent-border);
+    border-radius:10px;
+    font-size:18px;
+    font-weight:900;
+}
+
+.sale-modal-message{
+    margin-top:15px;
+    padding:11px 13px;
+    border-radius:10px;
+    font-size:12px;
+    font-weight:700;
+}
+
+.sale-message-danger{
+    color:#8D3B44;
+    background:var(--state-red-bg);
+    border:1px solid var(--state-red-border);
+}
+
+.sale-modal-footer{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    padding:16px 24px 22px;
+    border-top:1px solid var(--border-light);
+}
+
+.pdf-mode .sales-table-note,
+.pdf-mode .summary-action-buttons,
+.pdf-mode .button-area{
+    display:none !important;
+}
+
+.pdf-mode .sales-table th:nth-child(7),
+.pdf-mode .sales-table td:nth-child(7){
+    display:none;
+}
+
+@media(max-width:900px){
+    .sale-modal-backdrop{
+        align-items:flex-end;
+        padding:0;
+    }
+
+    .sale-modal{
+        max-height:94vh;
+        border-radius:20px 20px 0 0;
+    }
+
+    .modal-item-row,
+    .modal-product-row{
+        grid-template-columns:1fr;
+    }
+
+    .modal-item-type{
+        justify-content:flex-start;
+    }
+
+    .modal-remove-item{
+        width:100%;
+    }
+}
+
+@media(max-width:650px){
+    .modal-section-heading{
+        flex-direction:column;
+    }
+
+    .sale-modal-footer{
+        flex-direction:column;
+    }
+
+    .sale-modal-footer .btn{
+        width:100%;
+    }
+}
+
+/* ==========================================================================
+   Daily Income — Sales Record Card
+   ========================================================================== */
+
+.sales-record-card{
+    position:relative;
+    min-height:100%;
+    overflow:hidden;
+    padding:22px;
+    color:#fff;
+    background:
+        linear-gradient(
+            145deg,
+            var(--navy) 0%,
+            #10255E 62%,
+            var(--green-dark) 100%
+        );
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:16px;
+    box-shadow:var(--shadow-card);
+}
+
+.sales-record-card::after{
+    content:"";
+    position:absolute;
+    top:-85px;
+    right:-65px;
+    width:190px;
+    height:190px;
+    background:rgba(232,179,33,.12);
+    border-radius:50%;
+    pointer-events:none;
+}
+
+.sales-record-heading{
+    position:relative;
+    z-index:1;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+}
+
+.sales-record-eyebrow{
+    display:block;
+    margin-bottom:5px;
+    color:var(--gold);
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+}
+
+.sales-record-heading h3{
+    margin:0;
+    color:#fff;
+    font-size:20px;
+    font-weight:900;
+}
+
+.sales-record-trophy{
+    width:42px;
+    height:42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 auto;
+    color:var(--navy);
+    background:var(--gold);
+    border-radius:13px;
+    font-size:19px;
+    font-weight:900;
+    box-shadow:0 8px 20px rgba(0,0,0,.18);
+}
+
+.sales-record-main{
+    position:relative;
+    z-index:1;
+    margin-top:28px;
+}
+
+.sales-record-main > span,
+.selected-day-performance span{
+    display:block;
+    color:rgba(255,255,255,.65);
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.07em;
+    text-transform:uppercase;
+}
+
+.sales-record-main > strong{
+    display:block;
+    margin-top:5px;
+    color:var(--gold);
+    font-size:34px;
+    line-height:1.1;
+    font-weight:900;
+}
+
+.sales-record-main > small{
+    display:block;
+    margin-top:7px;
+    color:rgba(255,255,255,.78);
+    font-size:11px;
+    line-height:1.4;
+}
+
+.sales-record-divider{
+    position:relative;
+    z-index:1;
+    height:1px;
+    margin:22px 0 17px;
+    background:rgba(255,255,255,.13);
+}
+
+.selected-day-performance{
+    position:relative;
+    z-index:1;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:14px;
+}
+
+.selected-day-performance strong{
+    display:block;
+    margin-top:4px;
+    color:#fff;
+    font-size:18px;
+    font-weight:900;
+}
+
+.record-percentage{
+    color:var(--gold);
+    font-size:18px;
+    font-weight:900;
+}
+
+.record-progress-track{
+    position:relative;
+    z-index:1;
+    height:8px;
+    overflow:hidden;
+    margin-top:13px;
+    background:rgba(255,255,255,.13);
+    border-radius:999px;
+}
+
+.record-progress-bar{
+    width:0;
+    height:100%;
+    background:var(--gold);
+    border-radius:999px;
+    transition:width .35s ease;
+}
+
+.record-message{
+    position:relative;
+    z-index:1;
+    min-height:36px;
+    margin:12px 0 0;
+    color:rgba(255,255,255,.70);
+    font-size:11px;
+    line-height:1.5;
+}
+
+.new-record-badge{
+    position:relative;
+    z-index:1;
+    display:inline-flex;
+    margin-top:10px;
+    padding:7px 10px;
+    color:var(--navy);
+    background:var(--gold);
+    border-radius:999px;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.06em;
+}
+
+.sales-record-card.record-achieved{
+    box-shadow:
+        0 0 0 2px rgba(232,179,33,.45),
+        0 20px 45px rgba(11,24,73,.22);
+}
+
+.pdf-mode .sales-record-card{
+    min-height:0;
+    color:#111;
+    background:#fff;
+    border:1px solid #D5D5D0;
+    box-shadow:none;
+}
+
+.pdf-mode .sales-record-card::after,
+.pdf-mode .sales-record-trophy,
+.pdf-mode .record-progress-track,
+.pdf-mode .new-record-badge{
+    display:none !important;
+}
+
+.pdf-mode .sales-record-heading h3,
+.pdf-mode .selected-day-performance strong{
+    color:#111;
+}
+
+.pdf-mode .sales-record-main > strong,
+.pdf-mode .record-percentage{
+    color:#8A6500;
+}
+
+.pdf-mode .sales-record-eyebrow,
+.pdf-mode .sales-record-main > span,
+.pdf-mode .selected-day-performance span,
+.pdf-mode .sales-record-main > small,
+.pdf-mode .record-message{
+    color:#555;
+}
+
+@media(max-width:991px){
+    .sales-record-card{
+        min-height:auto;
+    }
+}
+
+/* ==========================================================================
+   Services / Products Column — Full Width Fix
+   ========================================================================== */
+
+.sales-table td.summary-items-cell{
+    display:table-cell !important;
+}
+
+.summary-items-wrap{
+    width:100%;
+    min-width:0;
+}
+
+/* ==========================================================================
+   Daily Income — Action Buttons and Services Text Proportion
+   ========================================================================== */
+
+/* Smaller, cleaner action buttons */
+.summary-action-buttons{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-wrap:nowrap;
+    gap:3px;
+}
+
+.summary-action-buttons .btn{
+    min-width:auto;
+    padding:3px 7px;
+    border-radius:6px;
+    font-size:9px;
+    line-height:1.2;
+    font-weight:800;
+}
+
+/* Match Services / Products content closer to Client text proportions */
+.summary-items-wrap{
+    gap:4px;
+}
+
+.summary-items-wrap span{
+    padding:3px 5px;
+    font-size:11px;
+    font-weight:700;
+    line-height:1.35;
+    border-radius:7px;
+}
+
+/* Keep service/product text readable and less compressed */
+.sales-table th:nth-child(4),
+.sales-table td:nth-child(4){
+    width:31%;
+}
+
+.sales-table th:nth-child(7),
+.sales-table td:nth-child(7){
+    width:7%;
+}
+
+/* Client and Services / Products now feel visually balanced */
+.summary-client-cell strong,
+.summary-items-wrap span{
+    font-size:11px;
+}
+
+/* Prevent action column from forcing extra width */
+.summary-action-buttons .btn-warning,
+.summary-action-buttons .btn-danger{
+    white-space:nowrap;
+}
+
+@media(max-width:1200px){
+    .summary-action-buttons{
+        flex-wrap:wrap;
+    }
+}
+
+/* ==========================================================================
+   CrownOS — Daily Income Final Typography (12px)
+   ========================================================================== */
+
+/* Use 12px consistently across visible transaction content. */
+.sales-table tbody td{
+    font-size:12px !important;
+    line-height:1.45;
+    vertical-align:middle;
+}
+
+/* Time */
+.summary-time-cell{
+    font-size:12px !important;
+    font-weight:700;
+}
+
+/* Client */
+.summary-client-cell strong{
+    font-size:12px !important;
+    font-weight:700;
+}
+
+/* Therapist */
+.sales-table tbody td:nth-child(3){
+    font-size:12px !important;
+    font-weight:700;
+}
+
+/* Services / Products */
+.summary-items-wrap span{
+    font-size:12px !important;
+    font-weight:700;
+    line-height:1.35;
+}
+
+/* Total Amount */
+.summary-amount-cell{
+    font-size:12px !important;
+    font-weight:800;
+}
+
+/* Payment */
+.payment-badge{
+    font-size:12px !important;
+    font-weight:700;
+}
+
+/* Keep Action buttons exactly at the compact size from the previous update. */
+.summary-action-buttons .btn{
+    font-size:9px !important;
+}
+
+
+/* ==========================================================================
+   Companion Transactions
+   ========================================================================== */
+
+.companion-section{
+  margin-top:4px;
+}
+
+.companion-section-header,
+.companion-card-header,
+.companion-actions,
+.companion-subtotal{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.companion-section-header{
+  padding:15px 16px;
+  background:#F4F8F5;
+  border:1px solid #D6E5DA;
+  border-radius:14px;
+}
+
+.companion-section-header h4{
+  margin:0;
+  color:var(--navy);
+  font-size:16px;
+  font-weight:900;
+}
+
+.companion-section-header p{
+  margin:3px 0 0;
+  color:#667085;
+  font-size:12px;
+}
+
+.companions-list{
+  display:grid;
+  gap:14px;
+  margin-top:12px;
+}
+
+.companions-empty{
+  padding:16px;
+  color:#7B8494;
+  background:#FAFBFC;
+  border:1px dashed #CBD5E1;
+  border-radius:12px;
+  text-align:center;
+}
+
+.companion-card{
+  padding:16px;
+  background:#fff;
+  border:1px solid #D8E1E8;
+  border-radius:15px;
+  box-shadow:0 5px 18px rgba(7,16,51,.06);
+}
+
+.companion-card-header{
+  margin-bottom:14px;
+  padding-bottom:11px;
+  border-bottom:1px solid #E9EEF2;
+}
+
+.companion-number{
+  color:var(--navy);
+  font-weight:900;
+}
+
+.companion-vip-badge{
+  display:inline-flex;
+  margin-left:8px;
+  padding:4px 8px;
+  color:#184D2B;
+  background:#DDF4E4;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:900;
+}
+
+.companion-remove-btn{
+  padding:5px 9px;
+  color:#B42318;
+  background:#FFF1F0;
+  border:1px solid #F4C7C3;
+  border-radius:8px;
+  font-size:11px;
+  font-weight:800;
+}
+
+.companion-actions{
+  justify-content:flex-end;
+  margin:14px 0 10px;
+}
+
+.companion-items-list{
+  display:grid;
+  gap:8px;
+}
+
+.companion-subtotal{
+  margin-top:12px;
+  padding:11px 13px;
+  color:var(--navy);
+  background:#F7F9FC;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:800;
+}
+
+.modal-item-row{
+  grid-template-columns:minmax(210px,1.7fr) minmax(115px,.8fr) minmax(110px,.7fr) 36px;
+  align-items:start;
+}
+
+.modal-product-row{
+  grid-template-columns:minmax(210px,1.6fr) 74px minmax(105px,.8fr) minmax(105px,.8fr) 36px;
+  align-items:center;
+}
+
+.modal-item-type{
+  display:none !important;
+}
+
+.modal-freebie-row{
+  background:var(--gold-soft, #FDF3DC);
+  border-color:var(--gold, #C9A44C);
+}
+
+.item-name-wrap{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.item-duration-label{
+  color:var(--text-muted, #6B7280);
+  font-size:11px;
+  padding-left:2px;
+}
+
+.modal-item-row .item-price-type,
+.modal-item-row .item-amount,
+.modal-item-row .modal-remove-item{
+  align-self:center;
+}
+
+@media(max-width:767px){
+  .companion-section-header,
+  .companion-card-header,
+  .companion-actions,
+  .companion-subtotal{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .companion-actions{
+    align-items:stretch;
+  }
+
+  .companion-actions .btn{
+    width:100%;
+  }
+
+  .modal-item-row,
+  .modal-product-row{
+    grid-template-columns:1fr;
+  }
+}
+
+
+/* Dedicated Add VIP Card button */
+.add-vip-card-btn{
+  color:#5B4300;
+  background:linear-gradient(180deg,#FFE89A,#F4C84E);
+  border:1px solid #D7A91A;
+  font-weight:900;
+  box-shadow:0 3px 10px rgba(180,135,0,.18);
+}
+
+.add-vip-card-btn:hover,
+.add-vip-card-btn:focus{
+  color:#453200;
+  background:linear-gradient(180deg,#FFEBAD,#EFC13F);
+  border-color:#C99A08;
+}
+
+.add-vip-card-btn:disabled{
+  color:#6C5A20;
+  background:#F4E7B8;
+  border-color:#D8C78A;
+  opacity:.85;
+  cursor:not-allowed;
+  box-shadow:none;
+}
+
+
+/* Multiple voucher selector */
+
+.multiple-voucher-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.no-voucher-state{
+  padding:10px 12px;
+  color:#7A6A35;
+  background:#FFF9E8;
+  border:1px dashed #E5CE80;
+  border-radius:9px;
+  font-size:12px;
+  text-align:center;
+}
+
+.multiple-voucher-row{
+  display:grid;
+  grid-template-columns:30px minmax(0,1fr) 105px 36px;
+  align-items:center;
+  gap:7px;
+  padding:8px;
+  background:#FFFCF2;
+  border:1px solid #EAD99C;
+  border-radius:10px;
+}
+
+.voucher-row-number{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:26px;
+  height:26px;
+  color:#6D5200;
+  background:#FCE7A0;
+  border-radius:50%;
+  font-size:11px;
+  font-weight:900;
+}
+
+.voucher-row-value{
+  color:#725900;
+  font-size:12px;
+  font-weight:900;
+  text-align:right;
+}
+
+.modal-remove-voucher{
+  width:34px;
+  height:34px;
+  padding:0;
+  font-size:20px;
+  line-height:1;
+}
+
+@media(max-width:600px){
+  .multiple-voucher-row{
+    grid-template-columns:28px minmax(0,1fr) 34px;
+  }
+
+  .voucher-row-value{
+    grid-column:2 / 3;
+    text-align:left;
+  }
+
+  .modal-remove-voucher{
+    grid-column:3;
+    grid-row:1;
+  }
+}
+
+
+/* Companion button stays below the last companion */
+
+.companion-add-bottom-btn{
+  display:block;
+  width:100%;
+  margin-top:14px;
+  padding:11px 16px;
+  border-width:2px;
+  border-style:dashed;
+  font-weight:800;
+}
+
+.companion-add-bottom-btn:hover{
+  transform:translateY(-1px);
+}
+
+/* Sticky total and save bar */
+
+.sale-modal{
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+.sale-modal-body{
+  overflow-y:auto;
+  flex:1 1 auto;
+}
+
+.sale-modal-footer{
+  position:sticky;
+  bottom:0;
+  z-index:20;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:12px 18px;
+  background:rgba(255,255,255,.97);
+  backdrop-filter:blur(10px);
+  box-shadow:0 -10px 24px rgba(15,23,42,.08);
+}
+
+.sticky-sale-summary{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.sticky-summary-item{
+  min-width:88px;
+  padding:7px 10px;
+  background:#F8FAFC;
+  border:1px solid #E2E8F0;
+  border-radius:9px;
+}
+
+.sticky-summary-item span{
+  display:block;
+  color:#64748B;
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+}
+
+.sticky-summary-item strong{
+  display:block;
+  margin-top:1px;
+  color:#1E293B;
+  font-size:13px;
+}
+
+.sticky-summary-total{
+  min-width:118px;
+  background:#ECFDF3;
+  border-color:#B7E4C7;
+}
+
+.sticky-summary-total strong{
+  color:#166534;
+  font-size:15px;
+}
+
+.sale-modal-footer-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-shrink:0;
+}
+
+@media(max-width:760px){
+  .sale-modal-footer{
+    align-items:stretch;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .sticky-sale-summary{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .sticky-summary-item{
+    min-width:0;
+  }
+
+  .sale-modal-footer-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+
+  .sale-modal-footer-actions .btn{
+    width:100%;
+  }
+}
+
+
+/* Aligned principal and companion rows in Daily Income table */
+
+.aligned-participant-cell{
+  padding:0 !important;
+  vertical-align:top !important;
+}
+
+.aligned-sale-block{
+  min-height:52px;
+  padding:10px 12px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap:6px;
+}
+
+.aligned-sale-block + .aligned-sale-block{
+  border-top:1px solid #E5E7EB;
+}
+
+.aligned-client-name{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:5px;
+}
+
+.aligned-items-block{
+  flex-direction:column;
+  align-items:stretch;
+  gap:4px;
+}
+
+.aligned-item-entry{
+  display:block;
+  line-height:1.35;
+}
+
+.participant-type-badge{
+  display:inline-flex;
+  align-items:center;
+  padding:2px 6px;
+  border-radius:999px;
+  background:#EEF2FF;
+  color:#4338CA;
+  font-size:9px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+
+.companion-line{
+  background:#FAFCFF;
+}
+
+.sales-table .summary-time-cell,
+.sales-table .summary-amount-cell{
+  vertical-align:middle !important;
+}
+
+@media(max-width:900px){
+  .aligned-sale-block{
+    min-height:48px;
+    padding:8px;
+  }
+
+  .participant-type-badge{
+    display:none;
+  }
+}
+
+
+/* Cleaner client column hierarchy */
+
+.aligned-client-name{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:3px;
+  min-width:0;
+  width:100%;
+}
+
+.aligned-client-primary-name{
+  display:block;
+  width:100%;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+.aligned-client-subinfo{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:4px 8px;
+  color:#6B7280;
+  font-size:10px;
+  font-weight:700;
+  line-height:1.25;
+}
+
+.aligned-client-subinfo span{
+  position:relative;
+  white-space:nowrap;
+}
+
+.aligned-client-subinfo span + span::before{
+  content:"•";
+  margin-right:8px;
+  color:#CBD5E1;
+}
+
+.aligned-client-subinfo .vip-subinfo{
+  color:#A16207;
+}
+
+.participant-type-badge{
+  display:none !important;
+}
+
+
+/* Left-aligned Daily Income participant details */
+
+.sales-table .aligned-participant-cell{
+  text-align:left !important;
+  vertical-align:top !important;
+}
+
+.sales-table .aligned-sale-block{
+  justify-content:flex-start !important;
+  align-items:flex-start !important;
+  text-align:left !important;
+  padding:9px 8px !important;
+}
+
+.sales-table .aligned-client-name,
+.sales-table .aligned-client-primary-name,
+.sales-table .aligned-client-subinfo,
+.sales-table .aligned-items-block,
+.sales-table .aligned-item-entry{
+  text-align:left !important;
+}
+
+.sales-table th:nth-child(2),
+.sales-table th:nth-child(3),
+.sales-table th:nth-child(4){
+  text-align:left !important;
+  padding-left:8px !important;
+  padding-right:8px !important;
+}
+
+.sales-table td:nth-child(2),
+.sales-table td:nth-child(3),
+.sales-table td:nth-child(4){
+  padding-left:0 !important;
+  padding-right:0 !important;
+}
+
+.sales-table .summary-time-cell,
+.sales-table .summary-amount-cell,
+.sales-table td:nth-child(6),
+.sales-table td:nth-child(7){
+  vertical-align:middle !important;
+}
+
+@media(max-width:900px){
+  .sales-table .aligned-sale-block{
+    padding:8px 7px !important;
+  }
+}
+
+
+/* Multiple payment methods */
+
+.multiple-payment-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.multiple-payment-row{
+  display:grid;
+  grid-template-columns:minmax(125px,1fr) minmax(100px,.8fr) 32px;
+  gap:7px;
+  align-items:center;
+}
+
+.payment-remove-btn{
+  width:32px;
+  height:32px;
+  border:0;
+  border-radius:8px;
+  background:#FEE2E2;
+  color:#B91C1C;
+  font-size:20px;
+  line-height:1;
+}
+
+.payment-balance-summary{
+  margin-top:3px;
+  padding:7px 9px;
+  border-radius:8px;
+  font-size:11px;
+  font-weight:800;
+}
+
+.payment-balanced{
+  background:#DCFCE7;
+  color:#166534;
+}
+
+.payment-pending{
+  background:#FEF3C7;
+  color:#92400E;
+}
+
+.payment-over{
+  background:#FEE2E2;
+  color:#991B1B;
+}
+
+.voucher-only-payment-note{
+  padding:10px 12px;
+  border:1px dashed #D97706;
+  border-radius:10px;
+  background:#FFFBEB;
+  color:#92400E;
+  font-size:12px;
+  font-weight:700;
+}
+
+.payment-method-with-amount{
+  display:flex !important;
+  flex-direction:column;
+  align-items:center;
+  gap:1px;
+}
+
+.payment-method-with-amount small{
+  font-size:9px;
+  opacity:.78;
+  font-weight:700;
+}
+
+@media(max-width:600px){
+  .multiple-payment-row{
+    grid-template-columns:1fr 1fr 32px;
+  }
+}
+
+
+/* Color-coded payment method badges */
+
+.payment-badge-stack{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+
+.payment-badge.payment-method-with-amount{
+  min-width:92px;
+  padding:7px 11px;
+  border:0;
+  border-radius:999px;
+  color:#FFFFFF;
+  box-shadow:0 2px 7px rgba(15,23,42,.12);
+}
+
+.payment-badge.payment-method-with-amount strong{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  font-size:11px;
+  line-height:1.15;
+  color:inherit;
+}
+
+.payment-badge.payment-method-with-amount small{
+  display:block;
+  margin-top:2px;
+  color:inherit;
+  font-size:9px;
+  font-weight:800;
+  line-height:1.1;
+  opacity:.92;
+}
+
+.payment-cash{
+  background:var(--crown-payment-cash) !important;
+}
+
+.payment-gcash{
+  background:var(--crown-payment-gcash) !important;
+}
+
+.payment-bank{
+  background:var(--crown-payment-bank) !important;
+}
+
+.payment-terminal{
+  background:var(--crown-payment-terminal) !important;
+}
+
+.payment-default{
+  background:#64748B !important;
+}
+
+.voucher-used-badge{
+  display:inline-flex !important;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  min-width:92px;
+  padding:6px 10px !important;
+  border-radius:999px !important;
+  background:var(--crown-warning) !important;
+  color:#111827 !important;
+  border:0 !important;
+  box-shadow:0 2px 7px rgba(15,23,42,.10);
+  font-size:10px !important;
+  font-weight:900 !important;
+}
+
+.voucher-used-badge i,
+.payment-badge i{
+  font-size:10px;
+}
+
+@media(max-width:700px){
+  .payment-badge.payment-method-with-amount,
+  .voucher-used-badge{
+    min-width:82px;
+    padding-left:8px;
+    padding-right:8px;
+  }
+}
+
+
+/* Executive Voucher */
+.voucher-action-buttons{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.executive-voucher-btn{border:1px solid #B78A24;background:#D4AF37;color:#2B2108;font-weight:800;box-shadow:0 2px 6px rgba(180,138,36,.18);}
+.executive-voucher-btn:hover,.executive-voucher-btn:focus{border-color:#A77A17;background:#C89B1D;color:#211805;}
+.executive-voucher-btn.executive-voucher-selected{border-color:#8B6914;background:#8B6914;color:#fff;}
+.executive-voucher-active{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;padding:10px 12px;border:1px solid rgba(183,138,36,.35);border-radius:10px;background:linear-gradient(135deg,#FFF8DE,#F7E8AD);color:#51400E;}
+.executive-voucher-active strong{display:flex;align-items:center;gap:7px;font-size:12px;}
+.executive-voucher-active small{display:block;margin-top:2px;font-size:10px;color:#75601B;}
+.executive-voucher-remove{width:27px;height:27px;border:0;border-radius:50%;background:rgba(81,64,14,.10);color:#51400E;font-size:18px;line-height:1;cursor:pointer;}
+.executive-voucher-remove:hover{background:rgba(81,64,14,.20);}
+.payment-badge-stack .voucher-used-badge{max-width:150px;white-space:normal;text-align:center;}
+
+
+/* Statistics: Source Summary */
+
+.source-summary-statistics{
+  margin-top:22px;
+}
+
+.source-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(145px, 1fr));
+  gap:12px;
+  margin-top:14px;
+}
+
+.source-summary-card{
+  padding:16px;
+  border:1px solid rgba(15,23,42,.08);
+  border-radius:14px;
+  background:#FFFFFF;
+  box-shadow:0 4px 14px rgba(15,23,42,.05);
+}
+
+.source-summary-label{
+  display:block;
+  color:#64748B;
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.source-summary-count{
+  display:block;
+  margin-top:4px;
+  color:#1F2937;
+  font-size:24px;
+  line-height:1.1;
+}
+
+.source-summary-card small{
+  color:#94A3B8;
+  font-size:10px;
+}
+
+.summary-empty-state{
+  grid-column:1 / -1;
+  padding:18px;
+  border:1px dashed rgba(15,23,42,.15);
+  border-radius:12px;
+  color:#64748B;
+  font-size:12px;
+  text-align:center;
+}
+
+
+/* ==========================================================================
+   Daily Income — Vertical Action Buttons + Sticky Header
+   ========================================================================== */
+
+/* Keep the Action column compact. */
+.sales-table th:nth-child(7),
+.sales-table td:nth-child(7){
+    width:6% !important;
+    min-width:76px;
+    text-align:center;
+}
+
+/* Stack Edit and Delete vertically. */
+.summary-action-buttons{
+    display:flex !important;
+    flex-direction:column !important;
+    flex-wrap:nowrap !important;
+    justify-content:center !important;
+    align-items:stretch !important;
+    gap:5px !important;
+    width:100%;
+    max-width:72px;
+    margin:0 auto;
+}
+
+.summary-action-buttons .btn{
+    width:100% !important;
+    min-width:0 !important;
+    padding:5px 8px !important;
+    border-radius:6px !important;
+    font-size:10px !important;
+    line-height:1.2 !important;
+    font-weight:800 !important;
+    white-space:nowrap;
+    box-shadow:none !important;
+}
+
+/* Edit: blue outline, solid blue on hover/focus. */
+.summary-action-buttons .edit-sale-btn{
+    background:#FFFFFF !important;
+    border:1px solid #0D6EFD !important;
+    color:#0D6EFD !important;
+}
+
+.summary-action-buttons .edit-sale-btn:hover,
+.summary-action-buttons .edit-sale-btn:focus,
+.summary-action-buttons .edit-sale-btn:active{
+    background:#0D6EFD !important;
+    border-color:#0D6EFD !important;
+    color:#FFFFFF !important;
+}
+
+/* Delete: red outline, solid red on hover/focus. */
+.summary-action-buttons .delete-sale-btn{
+    background:#FFFFFF !important;
+    border:1px solid var(--crown-danger) !important;
+    color:var(--crown-danger) !important;
+}
+
+.summary-action-buttons .delete-sale-btn:hover,
+.summary-action-buttons .delete-sale-btn:focus,
+.summary-action-buttons .delete-sale-btn:active{
+    background:var(--crown-danger) !important;
+    border-color:var(--crown-danger) !important;
+    color:#FFFFFF !important;
+}
+
+/* Sticky Daily Income table header. */
+.sales-table thead th{
+    position:sticky;
+    top:0;
+    z-index:20;
+    background:#CFE2FF !important;
+    box-shadow:0 1px 0 rgba(15,23,42,.12);
+}
+
+/* Allow sticky headers to behave correctly while retaining horizontal scroll. */
+.sales-table{
+    border-collapse:separate;
+    border-spacing:0;
+}
+
+.table-responsive{
+    overflow-x:auto;
+}
+
+/* Keep row content top-aligned while actions remain centered. */
+.sales-table tbody td{
+    vertical-align:top;
+}
+
+.sales-table tbody td:nth-child(7){
+    vertical-align:middle !important;
+}
+
+@media(max-width:900px){
+    .sales-table th:nth-child(7),
+    .sales-table td:nth-child(7){
+        min-width:72px;
+    }
+
+    .summary-action-buttons{
+        max-width:68px;
+    }
+}
+
+
+/* ==========================================================================
+   Daily Income — CrownOS Header + Outline Payment Labels
+   ========================================================================== */
+
+/* Match the Daily Income header with the sidebar theme. */
+.sales-table thead th{
+    background:#0B1849 !important;
+    color:#FFFFFF !important;
+    border-color:#16245C !important;
+    border-bottom:2px solid #E8B321 !important;
+    font-weight:800 !important;
+    letter-spacing:.02em;
+}
+
+/* Keep the sticky header crisp while scrolling. */
+.sales-table thead{
+    position:relative;
+    z-index:21;
+}
+
+/* Shared payment/voucher label shape — same visual language as Action buttons. */
+.payment-method-badge,
+.voucher-used-badge{
+    display:inline-flex !important;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    min-width:72px;
+    min-height:28px;
+    padding:5px 8px !important;
+    border-radius:6px !important;
+    background:#FFFFFF !important;
+    border-width:1px !important;
+    border-style:solid !important;
+    box-shadow:none !important;
+    font-size:10px !important;
+    font-weight:800 !important;
+    line-height:1.2 !important;
+    white-space:nowrap;
+}
+
+/* Payment color coding retained as clean outlines. */
+.payment-cash{
+    background:#FFFFFF !important;
+    border-color:var(--crown-payment-cash) !important;
+    color:var(--crown-payment-cash) !important;
+}
+
+.payment-gcash{
+    background:#FFFFFF !important;
+    border-color:var(--crown-payment-gcash) !important;
+    color:var(--crown-payment-gcash) !important;
+}
+
+.payment-bank{
+    background:#FFFFFF !important;
+    border-color:var(--crown-payment-bank) !important;
+    color:var(--crown-payment-bank) !important;
+}
+
+.payment-terminal{
+    background:#FFFFFF !important;
+    border-color:var(--crown-payment-terminal) !important;
+    color:var(--crown-payment-terminal) !important;
+}
+
+.payment-default{
+    background:#FFFFFF !important;
+    border-color:#64748B !important;
+    color:#64748B !important;
+}
+
+/* Regular Voucher */
+.voucher-used-badge{
+    background:#FFFFFF !important;
+    border-color:#D99A00 !important;
+    color:#B77900 !important;
+}
+
+/* Executive Voucher keeps its premium gold identity. */
+.voucher-used-badge.executive-voucher-active,
+.executive-voucher-active.voucher-used-badge{
+    background:#FFFFFF !important;
+    border-color:#B88809 !important;
+    color:#B88809 !important;
+}
+
+/* Subtle transaction row tracking aid. */
+.sales-table tbody tr{
+    transition:background-color .15s ease;
+}
+
+.sales-table tbody tr:hover > td{
+    background:#F3F7FF !important;
+}
+
+/* Preserve aligned participant blocks during row hover. */
+.sales-table tbody tr:hover .aligned-participant-cell,
+.sales-table tbody tr:hover .aligned-sale-block{
+    background:transparent !important;
+}
+
+
+/* ==========================================================================
+   Daily Income — Compact Rectangular Payment Labels
+   ========================================================================== */
+
+.payment-method-badge,
+.voucher-used-badge{
+    display:inline-flex !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:max-content !important;
+    min-height:0 !important;
+    padding:4px 8px !important;
+    border-radius:4px !important;
+    justify-content:flex-start !important;
+    align-items:center !important;
+    gap:4px !important;
+    line-height:1.1 !important;
+    white-space:nowrap !important;
+    font-size:10px !important;
+    font-weight:800 !important;
+}
+
+/* Add clean spacing when multiple payment labels appear together. */
+.payment-badges-container,
+.payment-methods-container,
+.payment-summary-badges{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:flex-start !important;
+    gap:4px !important;
+}
+
+
+/* ==========================================================================
+   Daily Income — Correct Payment Badge Selector Fix
+   ========================================================================== */
+
+/* Actual rendered payment classes: Cash, GCash, Bank Transfer, Terminal. */
+.payment-badge.payment-method-with-amount{
+    display:inline-flex !important;
+    flex-direction:column !important;
+    align-items:flex-start !important;
+    justify-content:center !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:max-content !important;
+    padding:5px 8px !important;
+    border:1px solid currentColor !important;
+    border-radius:6px !important;
+    background:#FFFFFF !important;
+    box-shadow:none !important;
+    line-height:1.1 !important;
+    white-space:nowrap !important;
+}
+
+.payment-badge.payment-method-with-amount strong{
+    justify-content:flex-start !important;
+    color:inherit !important;
+}
+
+.payment-badge.payment-method-with-amount small{
+    color:inherit !important;
+}
+
+/* Keep each payment method's original color coding as an outline. */
+.payment-badge.payment-method-with-amount.payment-cash{
+    color:var(--crown-payment-cash) !important;
+    border-color:var(--crown-payment-cash) !important;
+    background:#FFFFFF !important;
+}
+
+.payment-badge.payment-method-with-amount.payment-gcash{
+    color:var(--crown-payment-gcash) !important;
+    border-color:var(--crown-payment-gcash) !important;
+    background:#FFFFFF !important;
+}
+
+.payment-badge.payment-method-with-amount.payment-bank{
+    color:var(--crown-payment-bank) !important;
+    border-color:var(--crown-payment-bank) !important;
+    background:#FFFFFF !important;
+}
+
+.payment-badge.payment-method-with-amount.payment-terminal{
+    color:var(--crown-payment-terminal) !important;
+    border-color:var(--crown-payment-terminal) !important;
+    background:#FFFFFF !important;
+}
+
+.payment-badge.payment-method-with-amount.payment-default{
+    color:#64748B !important;
+    border-color:#64748B !important;
+    background:#FFFFFF !important;
+}
+
+/* Align multiple payment labels neatly without stretching them. */
+.payment-badge-stack{
+    align-items:flex-start !important;
+    gap:5px !important;
+}
+
+/* Restore the earlier Executive Voucher appearance the user preferred. */
+.payment-badge-stack .voucher-used-badge{
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:auto !important;
+    min-width:72px !important;
+    max-width:150px !important;
+    min-height:28px !important;
+    padding:5px 8px !important;
+    border-radius:6px !important;
+    border:1px solid #B88809 !important;
+    background:#FFFFFF !important;
+    color:#B88809 !important;
+    box-shadow:none !important;
+    white-space:normal !important;
+    text-align:center !important;
+}
+
+
+/* ==========================================================================
+   Daily Income — Final Payment Column Centering
+   Exact markup:
+   td.payment-column-cell > div.payment-badge-stack
+   ========================================================================== */
+
+.sales-table tbody td.payment-column-cell{
+    text-align:center !important;
+    vertical-align:middle !important;
+}
+
+.sales-table tbody td.payment-column-cell > .payment-badge-stack{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:100% !important;
+    margin:0 auto !important;
+    gap:6px !important;
+}
+
+.sales-table tbody td.payment-column-cell
+.payment-badge.payment-method-with-amount,
+.sales-table tbody td.payment-column-cell
+.voucher-used-badge{
+    align-self:center !important;
+    margin:0 auto !important;
+}
+
+.sales-table tbody td.payment-column-cell
+.payment-badge.payment-method-with-amount{
+    align-items:center !important;
+    justify-content:center !important;
+    text-align:center !important;
+}
+
+.sales-table tbody td.payment-column-cell
+.payment-badge.payment-method-with-amount strong,
+.sales-table tbody td.payment-column-cell
+.payment-badge.payment-method-with-amount small{
+    width:100% !important;
+    text-align:center !important;
+    justify-content:center !important;
+}
+
+
+/* ==========================================================================
+   Daily Income — Clean PNG Export
+   ========================================================================== */
+
+.png-export-mode .export-excluded-overview,
+.png-export-mode .calendar-widget,
+.png-export-mode .sales-record-card,
+.png-export-mode .btn-dashboard,
+.png-export-mode .button-area,
+.png-export-mode .sales-table-note,
+.png-export-mode .summary-action-buttons{
+    display:none !important;
+}
+
+.png-export-mode{
+    color:#172033;
+}
+
+.png-export-mode .card{
+    box-shadow:none !important;
+}
+
+.png-export-mode .sales-table{
+    min-width:0 !important;
+    width:100% !important;
+}
+
+.png-export-mode .sales-table th,
+.png-export-mode .sales-table td{
+    font-size:12px;
+    vertical-align:middle;
+}
+
+.png-export-mode .sales-table th:nth-child(7),
+.png-export-mode .sales-table td:nth-child(7){
+    display:none !important;
+}
+
+.png-export-mode .summary-card{
+    margin-top:18px;
+}
+
+.png-export-mode .page-heading{
+    margin-bottom:18px;
+}
+
+.png-export-mode .page-heading h2{
+    color:#17345d !important;
+}
+
+.png-export-mode .time-start-input{
+    display:none !important;
+}
+
+.png-export-mode .time-start-display{
+    display:block !important;
+}
+
+.png-export-mode .remove-small,
+.png-export-mode .add-small,
+.png-export-mode .item-button-row{
+    display:none !important;
+}
+
+
+/* ==========================================================================
+   Daily Income — Compact Services / Products List
+   ========================================================================== */
+
+.sales-table .aligned-items-block{
+    flex-direction:row !important;
+    align-items:center !important;
+    min-height:44px;
+}
+
+.compact-items-list{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:3px;
+    width:100%;
+    min-width:0;
+    line-height:1.45;
+}
+
+.compact-item-wrapper{
+    display:inline-flex;
+    align-items:center;
+    gap:2px;
+    min-width:0;
+}
+
+.compact-item-chip{
+    display:inline;
+    padding:2px 5px;
+    border-radius:6px;
+    font-size:10px;
+    font-weight:700;
+    line-height:1.45;
+    white-space:normal;
+    overflow-wrap:anywhere;
+}
+
+.compact-item-service{
+    color:#17345d;
+    background:#edf3fb;
+    border:1px solid #cbd9eb;
+}
+
+.compact-item-product{
+    color:#256247;
+    background:#edf8f2;
+    border:1px solid #c5e5d2;
+}
+
+.compact-item-vip{
+    color:#875f08;
+    background:#fff8df;
+    border:1px solid #ead28f;
+}
+
+.compact-item-voucher{
+    color:#6d4a8c;
+    background:#f7f0fb;
+    border:1px solid #ddc9ea;
+}
+
+.compact-item-comma{
+    color:#7b8494;
+    font-size:10px;
+    font-weight:700;
+}
+
+.compact-more-toggle{
+    display:inline-flex;
+    align-items:center;
+    padding:2px 6px;
+    color:#17345d;
+    background:#fff;
+    border:1px dashed #9aabc1;
+    border-radius:6px;
+    font-size:10px;
+    font-weight:800;
+    line-height:1.45;
+    cursor:pointer;
+}
+
+.compact-more-toggle:hover{
+    background:#f3f6fa;
+    border-color:#c6a15b;
+}
+
+.compact-hidden-items{
+    display:none;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:3px;
+}
+
+.compact-items-list.is-expanded .compact-hidden-items{
+    display:inline-flex;
+}
+
+.png-export-mode .compact-more-toggle{
+    display:none !important;
+}
+
+.png-export-mode .compact-hidden-items{
+    display:inline-flex !important;
+}
+
+@media(max-width:900px){
+    .compact-item-chip,
+    .compact-item-comma,
+    .compact-more-toggle{
+        font-size:9px;
+    }
+}
+
+
+/* ==========================================================================
+   Daily Income — Equal Participant Heights and Transaction Dividers
+   ========================================================================== */
+
+.sales-table tbody{
+    counter-reset:daily-transaction;
+}
+
+.sale-summary-row{
+    counter-increment:daily-transaction;
+    position:relative;
+}
+
+.sale-summary-row + .sale-summary-row td{
+    border-top:0 !important;
+}
+
+.sale-summary-row:hover{
+    background:#fbfcfe;
+}
+
+.sales-table .aligned-participant-cell{
+    height:1px;
+}
+
+.sales-table .aligned-sale-block{
+    box-sizing:border-box;
+    width:100%;
+}
+
+.sales-table .summary-time-cell{
+    position:relative;
+    padding-top:28px !important;
+}
+
+.sales-table .summary-time-cell::before{
+    content:"Transaction " counter(daily-transaction, decimal-leading-zero);
+    position:absolute;
+    top:7px;
+    left:50%;
+    transform:translateX(-50%);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:82px;
+    padding:3px 7px;
+    color:#17345d;
+    background:#edf3fb;
+    border:1px solid #cbd9eb;
+    border-radius:999px;
+    font-size:8px;
+    font-weight:900;
+    line-height:1;
+    letter-spacing:.04em;
+    white-space:nowrap;
+    text-transform:uppercase;
+}
+
+@media(max-width:900px){
+    .sales-table .summary-time-cell::before{
+        min-width:70px;
+        font-size:7px;
+    }
+}
+
+
+/* ==========================================================================
+   Daily Income — Executive Summary
+   ========================================================================== */
+
+.executive-summary-card{
+    overflow:hidden;
+    border:1px solid #dfe5ed !important;
+}
+
+.executive-summary-card .card-body{
+    padding:22px;
+}
+
+.executive-summary-heading{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:20px;
+    margin-bottom:18px;
+}
+
+.executive-summary-eyebrow{
+    margin:0 0 3px;
+    color:#9b741d;
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+}
+
+.executive-summary-note{
+    margin:0;
+    color:#758094;
+    font-size:10px;
+    font-weight:600;
+}
+
+.executive-summary-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    border:1px solid #dfe5ed;
+    border-radius:16px;
+    overflow:hidden;
+    background:#fff;
+}
+
+.executive-summary-panel{
+    min-width:0;
+    padding:20px;
+}
+
+.executive-summary-panel + .executive-summary-panel{
+    border-left:1px solid #dfe5ed;
+}
+
+.executive-summary-panel h4{
+    margin:0 0 13px;
+    color:#17345d;
+    font-size:13px;
+    font-weight:900;
+}
+
+.breakdown-list{
+    display:flex;
+    flex-direction:column;
+}
+
+.breakdown-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    min-height:35px;
+    padding:7px 0;
+    border-bottom:1px dotted #d8dee8;
+}
+
+.breakdown-row:last-child{
+    border-bottom:0;
+}
+
+.breakdown-row span{
+    min-width:0;
+    color:#5f6b7c;
+    font-size:11px;
+    font-weight:700;
+}
+
+.breakdown-row strong{
+    flex:0 0 auto;
+    color:#172033;
+    font-size:12px;
+    font-weight:900;
+    white-space:nowrap;
+}
+
+.breakdown-row-primary{
+    margin-bottom:3px;
+}
+
+.breakdown-row-primary span,
+.breakdown-row-primary strong{
+    color:#17345d;
+}
+
+.breakdown-row-primary strong{
+    font-size:18px;
+}
+
+.breakdown-total-row{
+    margin-top:5px;
+    padding-top:11px;
+    border-top:2px solid #dfe5ed;
+    border-bottom:0;
+}
+
+.breakdown-total-row span,
+.breakdown-total-row strong{
+    color:#17345d;
+    font-weight:900;
+}
+
+.kpi-summary-panel{
+    background:#f8fafc;
+}
+
+/* ==========================================================================
+   Daily Income — Daily KPI
+   ========================================================================== */
+
+.daily-kpi-card{
+    overflow:hidden;
+    border:1px solid #dfe5ed !important;
+}
+
+.daily-kpi-card .card-body{
+    padding:22px;
+}
+
+.daily-kpi-title{
+    margin:0 0 18px;
+    color:#17345d;
+    font-size:16px;
+    font-weight:900;
+}
+
+.daily-kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:0;
+    border:1px solid #dfe5ed;
+    border-radius:16px;
+    overflow:hidden;
+    background:#fff;
+}
+
+.daily-kpi-column{
+    min-width:0;
+    padding:20px;
+}
+
+.daily-kpi-column + .daily-kpi-column{
+    border-left:1px solid #dfe5ed;
+}
+
+.daily-kpi-column h4{
+    margin:0 0 13px;
+    color:#17345d;
+    font-size:13px;
+    font-weight:900;
+}
+
+.daily-kpi-list{
+    display:flex;
+    flex-direction:column;
+}
+
+.daily-kpi-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    min-height:38px;
+    padding:7px 0;
+    border-bottom:1px dotted #d8dee8;
+}
+
+.daily-kpi-row:last-child{
+    border-bottom:0;
+}
+
+.daily-kpi-row span{
+    min-width:0;
+    color:#5f6b7c;
+    font-size:12px;
+    font-weight:700;
+}
+
+.daily-kpi-value{
+    flex:0 0 auto;
+    color:#172033;
+    font-size:14px;
+    font-weight:900;
+    white-space:nowrap;
+}
+
+@media(max-width:650px){
+    .daily-kpi-grid{
+        grid-template-columns:1fr;
+    }
+
+    .daily-kpi-column + .daily-kpi-column{
+        border-left:0;
+        border-top:1px solid #dfe5ed;
+    }
+
+    .daily-kpi-card .card-body{
+        padding:15px;
+    }
+
+    .daily-kpi-column{
+        padding:16px;
+    }
+}
+
+.png-export-mode .executive-summary-card{
+    box-shadow:none !important;
+}
+
+@media(max-width:991px){
+    .executive-summary-grid{
+        grid-template-columns:1fr;
+    }
+
+    .executive-summary-panel + .executive-summary-panel{
+        border-left:0;
+        border-top:1px solid #dfe5ed;
+    }
+}
+
+@media(max-width:650px){
+    .executive-summary-heading{
+        align-items:flex-start;
+        flex-direction:column;
+        gap:5px;
+    }
+
+    .executive-summary-card .card-body{
+        padding:15px;
+    }
+
+    .executive-summary-panel{
+        padding:16px;
+    }
+}
+
+
+/* ==========================================================================
+   Daily Income — Compact Top Overview
+   ========================================================================== */
+
+.compact-top-overview{
+    align-items:stretch;
+}
+
+.compact-top-overview > div{
+    display:flex;
+    flex-direction:column;
+}
+
+.compact-overview-label{
+    margin-bottom:6px;
+    color:#17345d;
+    font-size:11px;
+}
+
+.compact-calendar-widget,
+.compact-sales-record-card,
+.daily-schedule-overview-card{
+    height:100%;
+    min-height:236px;
+}
+
+.compact-calendar-widget{
+    padding:8px;
+    min-height:190px;
+}
+
+.compact-calendar-widget .calendar-header{
+    margin-bottom:5px;
+}
+
+.compact-calendar-widget .calendar-title{
+    font-size:12px;
+}
+
+.compact-calendar-widget .calendar-nav{
+    width:22px;
+    height:22px;
+    font-size:14px;
+}
+
+.compact-calendar-widget .calendar-weekdays{
+    margin-bottom:2px;
+}
+
+.compact-calendar-widget .calendar-weekdays span{
+    font-size:7px;
+}
+
+.compact-calendar-widget .calendar-grid{
+    gap:2px;
+}
+
+.compact-calendar-widget .calendar-cell{
+    min-height:19px;
+    padding:1px;
+    font-size:8px;
+    border-radius:5px;
+}
+
+.compact-calendar-widget .calendar-legend{
+    margin-top:5px;
+    padding-top:5px;
+    font-size:7px;
+}
+
+.compact-sales-record-card{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:16px;
+}
+
+.compact-record-topline{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+}
+
+.compact-record-topline > div:first-child{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+}
+
+.compact-record-topline strong{
+    margin-top:4px;
+    color:#fff;
+    font-size:25px;
+    line-height:1.1;
+}
+
+.compact-record-topline small{
+    margin-top:5px;
+    color:rgba(255,255,255,.72);
+    font-size:9px;
+    line-height:1.35;
+}
+
+.compact-sales-record-card .sales-record-trophy{
+    width:34px;
+    height:34px;
+    flex:0 0 auto;
+    font-size:16px;
+}
+
+.compact-record-bottom{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:15px;
+    margin-top:15px;
+    padding-top:12px;
+    border-top:1px solid rgba(255,255,255,.18);
+}
+
+.compact-record-bottom > div:first-child{
+    display:flex;
+    flex-direction:column;
+}
+
+.compact-record-bottom span{
+    color:rgba(255,255,255,.68);
+    font-size:9px;
+    font-weight:700;
+}
+
+.compact-record-bottom strong{
+    margin-top:2px;
+    color:#fff;
+    font-size:15px;
+}
+
+.compact-sales-record-card .record-progress-track{
+    margin-top:9px;
+}
+
+.compact-sales-record-card .record-message{
+    min-height:0;
+    margin:8px 0 0;
+    font-size:8px;
+}
+
+.daily-schedule-overview-card{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:18px;
+    background:#f8fafc;
+    border:1px solid #dfe5ed;
+    border-radius:16px;
+}
+
+.daily-schedule-stat,
+.daily-next-schedule{
+    display:flex;
+    flex-direction:column;
+}
+
+.daily-schedule-stat span,
+.daily-next-schedule span{
+    color:#788397;
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+}
+
+.daily-schedule-stat strong{
+    margin-top:3px;
+    color:#17345d;
+    font-size:31px;
+    line-height:1;
+}
+
+.daily-next-schedule strong{
+    margin-top:4px;
+    color:#17345d;
+    font-size:19px;
+    line-height:1.15;
+}
+
+.daily-schedule-stat small,
+.daily-next-schedule small{
+    margin-top:5px;
+    color:#697588;
+    font-size:9px;
+    line-height:1.35;
+}
+
+.daily-schedule-divider{
+    height:1px;
+    margin:16px 0;
+    background:#dfe5ed;
+}
+
+.daily-view-schedule-link{
+    align-self:flex-start;
+    margin-top:14px;
+    color:#9b741d;
+    font-size:9px;
+    font-weight:900;
+    text-decoration:none;
+}
+
+.daily-view-schedule-link:hover{
+    color:#17345d;
+}
+
+.png-export-mode .export-excluded-overview{
+    display:none !important;
+}
+
+@media(max-width:1199px){
+    .compact-calendar-widget,
+    .compact-sales-record-card,
+    .daily-schedule-overview-card{
+        min-height:220px;
+    }
+}
+
+@media(max-width:991px){
+    .compact-calendar-widget,
+    .compact-sales-record-card,
+    .daily-schedule-overview-card{
+        min-height:auto;
+    }
+}
+
+
+/* ==========================================================================
+   Daily Income — Combined Top Overview and PDF Export
+   ========================================================================== */
+
+.combined-record-schedule-card{
+    display:grid;
+    grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);
+    gap:0;
+    min-height:236px;
+    padding:0;
+    overflow:hidden;
+}
+
+.combined-record-section{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    min-width:0;
+    padding:16px;
+}
+
+.combined-schedule-section{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    min-width:0;
+    padding:16px;
+    background:rgba(255,255,255,.08);
+    border-left:1px solid rgba(255,255,255,.16);
+}
+
+.combined-schedule-item{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+}
+
+.combined-schedule-item + .combined-schedule-item{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid rgba(255,255,255,.16);
+}
+
+.combined-schedule-item span{
+    color:rgba(255,255,255,.66);
+    font-size:8px;
+    font-weight:900;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+}
+
+.combined-schedule-item strong{
+    margin-top:3px;
+    color:#fff;
+    font-size:18px;
+    line-height:1.15;
+    overflow-wrap:anywhere;
+}
+
+.combined-schedule-item:first-child strong{
+    font-size:25px;
+}
+
+.combined-schedule-item small{
+    margin-top:4px;
+    color:rgba(255,255,255,.68);
+    font-size:8px;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+}
+
+.combined-schedule-section .daily-view-schedule-link{
+    margin-top:14px;
+    color:#f1d38c;
+}
+
+.combined-schedule-section .daily-view-schedule-link:hover{
+    color:#fff;
+}
+
+/* Schedule-only card — replaces the old record+schedule split now that
+   Highest Sales Day / Selected Day Sales live in Statistics instead. */
+.schedule-only-card{
+    min-height:190px;
+    padding:0;
+}
+
+.schedule-only-section{
+    height:100%;
+    padding:16px 18px;
+    background:transparent;
+    border-left:0;
+}
+
+.schedule-only-section .combined-schedule-item + .combined-schedule-item{
+    margin-top:10px;
+    padding-top:10px;
+}
+
+/* ---- Date dropdown (collapsed calendar) -------------------------------- */
+
+.date-picker-field{
+    position:relative;
+}
+
+.date-picker-trigger{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    width:100%;
+    padding:11px 14px;
+    background:#fff;
+    color:#17345d;
+    font-size:14px;
+    font-weight:700;
+    border:1px solid #dfe5ed;
+    border-radius:12px;
+    cursor:pointer;
+    box-shadow:var(--shadow-card);
+}
+
+.date-picker-trigger:hover{
+    border-color:var(--gold);
+}
+
+.date-picker-icon{
+    font-size:15px;
+    line-height:1;
+}
+
+.date-picker-value{
+    flex:1;
+    text-align:left;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.date-picker-caret{
+    color:#9aa6b8;
+    font-size:11px;
+}
+
+.calendar-popover{
+    position:absolute;
+    top:calc(100% + 8px);
+    left:0;
+    z-index:60;
+    width:100%;
+    max-width:300px;
+    background:#fff;
+    border:1px solid #dfe5ed;
+    border-radius:16px;
+    box-shadow:0 18px 40px rgba(15,23,42,.20);
+}
+
+.calendar-popover .compact-calendar-widget{
+    height:auto;
+    min-height:0;
+}
+
+/* ---- Schedule — single compact line ------------------------------------ */
+
+.schedule-compact-card{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px 16px;
+    min-height:0;
+    padding:14px 18px;
+}
+
+.schedule-compact-line{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    gap:6px;
+    min-width:0;
+    color:#fff;
+    font-size:12.5px;
+}
+
+.schedule-compact-icon{
+    font-size:13px;
+}
+
+.schedule-compact-text{
+    color:#fff;
+    font-weight:700;
+    white-space:nowrap;
+}
+
+.schedule-compact-text strong{
+    font-weight:800;
+}
+
+.schedule-compact-divider{
+    color:rgba(255,255,255,.5);
+}
+
+.schedule-compact-meta{
+    color:rgba(255,255,255,.7);
+    font-weight:500;
+    overflow-wrap:anywhere;
+}
+
+.schedule-compact-link{
+    margin-top:0;
+    white-space:nowrap;
+}
+
+.top-kpi-card{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    height:100%;
+    min-height:236px;
+    padding:18px;
+    background:#f8fafc;
+    border:1px solid #dfe5ed;
+    border-radius:16px;
+}
+
+.top-kpi-primary{
+    display:flex;
+    flex-direction:column;
+    padding-bottom:15px;
+    border-bottom:1px solid #dfe5ed;
+}
+
+.top-kpi-primary span,
+.top-kpi-grid span{
+    color:#778296;
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+}
+
+.top-kpi-primary strong{
+    margin-top:4px;
+    color:#17345d;
+    font-size:28px;
+    line-height:1.1;
+}
+
+.top-kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+    margin-top:15px;
+}
+
+.top-kpi-grid > div{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+}
+
+.top-kpi-grid strong{
+    margin-top:3px;
+    color:#172033;
+    font-size:16px;
+    line-height:1.15;
+}
+
+.top-kpi-average{
+    grid-column:1 / -1;
+    padding-top:11px;
+    border-top:1px dotted #d8dee8;
+}
+
+.two-panel-summary-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+}
+
+@media(max-width:1199px){
+    .combined-record-schedule-card,
+    .top-kpi-card{
+        min-height:220px;
+    }
+}
+
+@media(max-width:767px){
+    .combined-record-schedule-card{
+        grid-template-columns:1fr;
+    }
+
+    .combined-schedule-section{
+        border-left:0;
+        border-top:1px solid rgba(255,255,255,.16);
+    }
+
+    .two-panel-summary-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+@page{
+    size:A4 landscape;
+    margin:10mm;
+}
+
+@media print{
+    html,
+    body{
+        width:auto !important;
+        min-width:0 !important;
+        height:auto !important;
+        overflow:visible !important;
+        background:#fff !important;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+    }
+
+    body{
+        margin:0 !important;
+        padding:0 !important;
+        color:#172033 !important;
+    }
+
+    .sidebar,
+    .app-sidebar,
+    .sidebar-overlay,
+    .export-excluded-overview,
+    .btn-dashboard,
+    .button-area,
+    .sales-table-note,
+    .change-branch-link,
+    .summary-action-buttons,
+    .backup-reminder,
+    .backup-reminder-banner{
+        display:none !important;
+    }
+
+    #reportArea{
+        width:100% !important;
+        max-width:none !important;
+        margin:0 !important;
+        padding:0 !important;
+    }
+
+    #reportArea > .card:first-child{
+        margin-bottom:10px !important;
+        border:0 !important;
+        box-shadow:none !important;
+    }
+
+    #reportArea > .card:first-child .card-body{
+        padding:0 0 8px !important;
+    }
+
+    .page-heading{
+        margin-bottom:8px !important;
+    }
+
+    .page-heading h2{
+        color:#17345d !important;
+        font-size:18px !important;
+    }
+
+    .premium-alert{
+        margin:6px 0 0 !important;
+        padding:7px 10px !important;
+        font-size:9px !important;
+        border:1px solid #dfe5ed !important;
+        background:#f8fafc !important;
+        color:#172033 !important;
+    }
+
+    .card{
+        box-shadow:none !important;
+        break-inside:auto;
+    }
+
+    .table-responsive{
+        overflow:visible !important;
+    }
+
+    .sales-table{
+        width:100% !important;
+        min-width:0 !important;
+        table-layout:fixed !important;
+        border-collapse:collapse !important;
+    }
+
+    .sales-table thead{
+        display:table-header-group;
+    }
+
+    .sales-table tr{
+        break-inside:avoid;
+        page-break-inside:avoid;
+    }
+
+    .sales-table th,
+    .sales-table td{
+        padding:5px 4px !important;
+        font-size:8px !important;
+        vertical-align:middle !important;
+        overflow-wrap:anywhere;
+    }
+
+    .sales-table th:nth-child(1),
+    .sales-table td:nth-child(1){
+        width:9%;
+    }
+
+    .sales-table th:nth-child(2),
+    .sales-table td:nth-child(2){
+        width:16%;
+    }
+
+    .sales-table th:nth-child(3),
+    .sales-table td:nth-child(3){
+        width:14%;
+    }
+
+    .sales-table th:nth-child(4),
+    .sales-table td:nth-child(4){
+        width:28%;
+    }
+
+    .sales-table th:nth-child(5),
+    .sales-table td:nth-child(5){
+        width:12%;
+    }
+
+    .sales-table th:nth-child(6),
+    .sales-table td:nth-child(6){
+        width:21%;
+    }
+
+    .sales-table th:nth-child(7),
+    .sales-table td:nth-child(7){
+        display:none !important;
+    }
+
+    .time-start-input,
+    .remove-small,
+    .add-small,
+    .item-button-row,
+    .compact-more-toggle{
+        display:none !important;
+    }
+
+    .time-start-display{
+        display:block !important;
+    }
+
+    .compact-hidden-items{
+        display:inline-flex !important;
+    }
+
+    .compact-item-chip,
+    .compact-item-comma{
+        font-size:7px !important;
+    }
+
+    .payment-badge.payment-method-with-amount{
+        padding:3px 4px !important;
+        font-size:7px !important;
+    }
+
+    .summary-card{
+        margin-top:10px !important;
+        break-inside:avoid;
+        page-break-inside:avoid;
+    }
+
+    .executive-summary-card .card-body{
+        padding:12px !important;
+    }
+
+    .executive-summary-heading{
+        margin-bottom:8px !important;
+    }
+
+    .executive-summary-heading h3{
+        font-size:14px !important;
+    }
+
+    .executive-summary-note,
+    .executive-summary-eyebrow{
+        font-size:7px !important;
+    }
+
+    .executive-summary-panel{
+        padding:12px !important;
+    }
+
+    .executive-summary-panel h4{
+        margin-bottom:6px !important;
+        font-size:10px !important;
+    }
+
+    .breakdown-row{
+        min-height:24px !important;
+        padding:4px 0 !important;
+    }
+
+    .breakdown-row span,
+    .breakdown-row strong{
+        font-size:9px !important;
+    }
+
+    .sale-summary-row + .sale-summary-row{
+        border-top:2px solid #cfd6df !important;
+    }
+}
+
+
+.pdf-export-mode .export-excluded-overview,
+.pdf-export-mode .btn-dashboard,
+.pdf-export-mode .button-area,
+.pdf-export-mode .sales-table-note,
+.pdf-export-mode .change-branch-link{
+    display:none !important;
+}
+
+
+/* Monthly Revenue in Sales Summary */
+.monthly-revenue-row{
+    margin-bottom:5px;
+    padding:10px 12px !important;
+    background:#f7f9fc;
+    border:1px solid #dfe5ed;
+    border-radius:10px;
+}
+
+.monthly-revenue-row > span{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+}
+
+.monthly-revenue-row small{
+    color:#8a94a6;
+    font-size:8px;
+    font-weight:700;
+    letter-spacing:0;
+    text-transform:none;
+}
+
+.monthly-revenue-row strong{
+    color:#17345d;
+    font-size:15px;
+}
+
+
+/* ==========================================================================
+   Daily Income — Full-Width Transaction Row Separator
+   border-collapse:separate (needed by the sticky header) stops Bootstrap's
+   <tr> borders from rendering, so each cell draws its own bottom line.
+   ========================================================================== */
+
+.sales-table tbody td{
+    border-bottom:1px solid #CBD5E1 !important;
+}
+
+/* ==========================================================================
+   Voucher Generator + Voucher Number Verification
+   ========================================================================== */
+
+.voucher-gen-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:2400;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(11,24,73,.55);
+  padding:20px;
+}
+
+.voucher-gen-modal{
+  width:100%;
+  max-width:440px;
+  background:#fff;
+  border-radius:var(--radius-lg);
+  box-shadow:0 22px 60px rgba(7,16,51,.35);
+  padding:22px 24px;
+}
+
+.voucher-gen-modal h4{
+  color:var(--navy);
+  font-weight:800;
+  margin-bottom:4px;
+}
+
+.voucher-gen-subtitle{
+  color:var(--muted);
+  font-size:13px;
+  margin-bottom:16px;
+}
+
+.voucher-gen-result{
+  margin-top:16px;
+  padding:14px 16px;
+  background:var(--gold-soft);
+  border:1px dashed var(--gold);
+  border-radius:var(--radius-md);
+  text-align:center;
+}
+
+.voucher-gen-result span{
+  display:block;
+  font-size:11px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--muted);
+}
+
+.voucher-gen-result strong{
+  display:block;
+  font-size:24px;
+  letter-spacing:.06em;
+  color:var(--navy);
+  font-variant-numeric:tabular-nums;
+  margin:4px 0;
+  user-select:all;
+}
+
+.voucher-gen-result small{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.45;
+}
+
+.voucher-gen-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:18px;
+}
+
+.voucher-code-line{
+  grid-column:1 / -1;
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:2px;
+}
+
+.voucher-code-line .modal-voucher-code{
+  max-width:220px;
+  text-transform:uppercase;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.04em;
+}
+
+.voucher-code-status{
+  font-size:12px;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+.voucher-code-valid{
+  color:var(--state-green-text);
+}
+
+.voucher-code-invalid{
+  color:var(--state-red);
+}
+
+.voucher-code-legacy{
+  color:var(--muted);
+}
+
+/* ==========================================================================
+   Issue Invoice toggle (Daily Income sale modal)
+   ========================================================================== */
+
+.invoice-toggle-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 14px;
+  background:var(--surface-soft);
+  border:1px solid var(--border-light);
+  border-radius:var(--radius-sm);
+}
+
+.invoice-toggle-row .form-check-input{
+  width:18px;
+  height:18px;
+  margin:0;
+  cursor:pointer;
+}
+
+.invoice-toggle-row .form-check-label{
+  font-weight:700;
+  color:var(--navy);
+  cursor:pointer;
+}
+
+.invoice-fields-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:10px;
+  padding:14px;
+  background:var(--gold-soft);
+  border:1px dashed var(--gold);
+  border-radius:var(--radius-sm);
+}
+
+@media(max-width:576px){
+  .invoice-fields-row{
+    grid-template-columns:1fr;
+  }
+}

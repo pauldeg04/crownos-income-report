@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CrownOS - Therapist Sales</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="shared.css">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="therapist-sales.css">
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="pwa-register.js"></script>
+    <script src="firebase-sync.js"></script>
+    <script src="access-control.js"></script>
+</head>
+
+<body>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+
+            <div class="page-heading therapist-page-heading">
+
+                <div>
+                    <p class="page-eyebrow">
+                        Operations Report
+                    </p>
+
+                    <h2 class="fw-bold text-primary mb-0">
+                        Therapist Sales
+                    </h2>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <div
+        class="therapist-empty-state d-none"
+        id="noBranchState"
+    >
+        Select a branch from the Dashboard before opening Therapist Sales.
+    </div>
+
+    <main id="therapistSalesContent">
+
+        <section class="daily-layout mb-4">
+
+            <div>
+                <label
+                    for="therapistSelect"
+                    class="form-label fw-bold"
+                >
+                    Therapist
+                </label>
+
+                <select
+                    id="therapistSelect"
+                    class="form-select mb-3"
+                >
+                    <option value="">
+                        Select Therapist
+                    </option>
+                </select>
+
+                <label class="form-label fw-bold">
+                    Date
+                </label>
+
+                <div class="date-stepper-group date-picker-stepper-group">
+                    <button
+                        type="button"
+                        class="date-step-btn"
+                        id="prevSalesDayBtn"
+                        aria-label="Previous day"
+                        title="Previous day"
+                    >
+                        ‹
+                    </button>
+
+                <div class="date-picker-field">
+                    <button type="button" class="date-picker-trigger" id="dateDropdownTrigger">
+                        <span class="date-picker-value" id="dateDropdownValue">Select date</span>
+                        <span class="date-picker-caret" aria-hidden="true">▾</span>
+                    </button>
+
+                    <div class="calendar-popover d-none" id="calendarPopover">
+                        <div
+                            class="calendar-widget"
+                            id="calendarWidget"
+                        >
+
+                            <div class="calendar-header">
+
+                                <button
+                                    type="button"
+                                    class="calendar-nav"
+                                    id="prevMonthBtn"
+                                    aria-label="Previous month"
+                                >
+                                    ‹
+                                </button>
+
+                                <div
+                                    class="calendar-title"
+                                    id="calendarTitle"
+                                >
+                                    Month Year
+                                </div>
+
+                                <button
+                                    type="button"
+                                    class="calendar-nav"
+                                    id="nextMonthBtn"
+                                    aria-label="Next month"
+                                >
+                                    ›
+                                </button>
+
+                            </div>
+
+                            <div class="calendar-weekdays">
+                                <span>Sun</span>
+                                <span>Mon</span>
+                                <span>Tue</span>
+                                <span>Wed</span>
+                                <span>Thu</span>
+                                <span>Fri</span>
+                                <span>Sat</span>
+                            </div>
+
+                            <div
+                                class="calendar-grid"
+                                id="calendarGrid"
+                            ></div>
+
+                            <div class="calendar-legend">
+                                <span>
+                                    <i class="legend-dot"></i>
+                                    Has therapist sales
+                                </span>
+
+                                <span>
+                                    <i class="legend-today"></i>
+                                    Today
+                                </span>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                    <button
+                        type="button"
+                        class="date-step-btn"
+                        id="nextSalesDayBtn"
+                        aria-label="Next day"
+                        title="Next day"
+                    >
+                        ›
+                    </button>
+                </div>
+
+                <input
+                    type="date"
+                    id="selectedDate"
+                    class="form-control d-none"
+                >
+            </div>
+
+            <div class="daily-sales-panel">
+
+                <div class="section-heading">
+                    <div>
+                        <p class="section-eyebrow">
+                            Selected Date
+                        </p>
+
+                        <h3 id="dailyReportTitle">
+                            Daily Service Sales
+                        </h3>
+
+                        <span id="dailyReportSubtitle">
+                            Select a therapist to view activity.
+                        </span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table therapist-sales-table align-middle">
+
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Client's Name</th>
+                                <th>Service</th>
+                                <th>Service Cost</th>
+                                <th>Commission</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="dailySalesBody"></tbody>
+
+                        <tfoot>
+                            <tr>
+                                <th colspan="3">
+                                    Daily Total
+                                </th>
+
+                                <th id="dailySalesTotal">
+                                    ₱0.00
+                                </th>
+
+                                <th id="dailyCommissionTotal">
+                                    ₱0.00
+                                </th>
+                            </tr>
+                        </tfoot>
+
+                    </table>
+                </div>
+
+            </div>
+
+        </section>
+
+        <section class="monthly-sales-section">
+
+            <div class="section-heading monthly-heading">
+
+                <div>
+                    <p class="section-eyebrow">
+                        Entire Month
+                    </p>
+
+                    <h3 id="monthlyReportTitle">
+                        Monthly Service Sales
+                    </h3>
+
+                    <span id="monthlyReportSubtitle">
+                        Complete service activity for the selected month.
+                    </span>
+                </div>
+
+                <div class="monthly-summary-cards">
+
+                    <div>
+                        <span>Services</span>
+                        <strong id="monthlyServiceCount">0</strong>
+                    </div>
+
+                    <div>
+                        <span>Service Sales</span>
+                        <strong id="monthlySalesCard">₱0.00</strong>
+                    </div>
+
+                    <div>
+                        <span>Commission</span>
+                        <strong id="monthlyCommissionCard">₱0.00</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="table-responsive">
+                <table class="table therapist-sales-table monthly-table align-middle">
+
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Service Rendered</th>
+                            <th>Total Sales</th>
+                            <th>Total Commission</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="monthlySalesBody"></tbody>
+
+                </table>
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script src="therapist-sales-access-guard.js"></script>
+<script src="sidebar.js"></script>
+<script src="therapist-sales.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,41 @@
+/* Add to the bottom of sidebar.css */
+
+.sidebar-health-card{
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+    margin:10px 4px;
+    padding:11px 12px;
+    color:#fff;
+    background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:10px;
+    text-decoration:none;
+}
+
+.sidebar-health-card:hover{
+    color:#fff;
+    background:rgba(255,255,255,.11);
+}
+
+.sidebar-health-card > span{
+    margin-bottom:3px;
+    color:var(--gold);
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+
+.sidebar-health-card strong,
+.sidebar-health-card small{
+    font-size:10px;
+}
+
+.sidebar-health-card .health-ok{
+    color:#BEE8C3;
+}
+
+.sidebar-health-card .health-alert{
+    color:#FFD76B;
+}

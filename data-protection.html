@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CrownOS - Data Protection</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="shared.css">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="data-protection.css">
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="pwa-register.js"></script>
+    <script src="firebase-sync.js"></script>
+    <script src="access-control.js"></script>
+</head>
+
+<body>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+
+            <div class="page-heading">
+                <div>
+                    <p class="page-eyebrow">CrownOS Version 1.0 Stable</p>
+
+                    <h2 class="fw-bold text-primary mb-0">
+                        Data Protection Center
+                    </h2>
+
+                    <small class="text-muted">
+                        Backup, restore, verify, and export CrownOS data
+                    </small>
+                </div>
+            </div>
+
+            <div class="alert premium-alert mt-3 mb-0">
+                Export a backup after completing the Daily Income Report.
+                Keep one copy locally and another copy on Google Drive, iCloud, or USB.
+            </div>
+
+        </div>
+    </div>
+
+    <section class="health-grid mb-4">
+
+        <div class="health-card">
+            <span>Database</span>
+            <strong id="databaseHealth">Checking...</strong>
+            <small id="databaseHealthNote">Local browser storage</small>
+        </div>
+
+        <div class="health-card">
+            <span>Last Backup</span>
+            <strong id="lastBackupHealth">Never</strong>
+            <small id="lastBackupHealthNote">No manual backup found</small>
+        </div>
+
+        <div class="health-card">
+            <span>Storage Used</span>
+            <strong id="storageHealth">0 KB</strong>
+            <small id="storageHealthNote">Approximate CrownOS data size</small>
+        </div>
+
+        <div class="health-card">
+            <span>Version</span>
+            <strong>1.0 Stable</strong>
+            <small>Local development version</small>
+        </div>
+
+    </section>
+
+    <section class="protection-grid">
+
+        <article class="protection-card">
+            <p class="section-eyebrow">Recommended Daily</p>
+            <h3>Backup</h3>
+
+            <p>
+                Download all CrownOS data in one secure JSON backup file.
+            </p>
+
+            <div class="detail-list">
+                <span>Users and permissions</span>
+                <span>Branches and operating hours</span>
+                <span>Services and products</span>
+                <span>Therapists and assignments</span>
+                <span>Clients and VIP records</span>
+                <span>Schedules and bookings</span>
+                <span>Daily income and expenses</span>
+                <span>System preferences</span>
+            </div>
+
+            <button
+                type="button"
+                class="btn btn-success w-100 mt-4"
+                id="exportBackupBtn"
+            >
+                Export Full Backup
+            </button>
+        </article>
+
+        <article class="protection-card">
+            <p class="section-eyebrow">Recovery Tool</p>
+            <h3>Restore</h3>
+
+            <p>
+                Select and verify a CrownOS backup before restoring it.
+            </p>
+
+            <label class="file-picker" for="restoreFileInput">
+                <input
+                    type="file"
+                    id="restoreFileInput"
+                    accept=".json,application/json"
+                >
+
+                <strong>Choose Backup File</strong>
+                <span id="restoreFileName">No file selected</span>
+            </label>
+
+            <div class="verification-panel d-none" id="verificationPanel">
+
+                <div class="verification-title">
+                    <strong id="verificationStatus">
+                        Valid Backup
+                    </strong>
+
+                    <span id="verificationVersion">
+                        Version —
+                    </span>
+                </div>
+
+                <div class="verification-grid">
+                    <div>
+                        <span>Backup Date</span>
+                        <strong id="verificationDate">—</strong>
+                    </div>
+
+                    <div>
+                        <span>Created By</span>
+                        <strong id="verificationCreator">—</strong>
+                    </div>
+
+                    <div>
+                        <span>Records</span>
+                        <strong id="verificationRecords">0</strong>
+                    </div>
+
+                    <div>
+                        <span>Data Keys</span>
+                        <strong id="verificationKeys">0</strong>
+                    </div>
+                </div>
+
+                <div class="coverage-list" id="coverageList"></div>
+            </div>
+
+            <button
+                type="button"
+                class="btn btn-warning w-100 mt-3"
+                id="restoreBackupBtn"
+                disabled
+            >
+                Restore Selected Backup
+            </button>
+        </article>
+
+        <article class="protection-card">
+            <p class="section-eyebrow">Emergency Access</p>
+            <h3>Emergency Export</h3>
+
+            <p>
+                Download readable CSV files for clients, income records, and schedules.
+            </p>
+
+            <div class="emergency-export-list">
+                <button type="button" class="export-row" data-export="clients">
+                    <span>Clients</span>
+                    <strong>Export CSV</strong>
+                </button>
+
+                <button type="button" class="export-row" data-export="income">
+                    <span>Daily Income</span>
+                    <strong>Export CSV</strong>
+                </button>
+
+                <button type="button" class="export-row" data-export="schedules">
+                    <span>Schedules</span>
+                    <strong>Export CSV</strong>
+                </button>
+
+                <button type="button" class="export-row" data-export="all">
+                    <span>All Readable Data</span>
+                    <strong>Export ZIP</strong>
+                </button>
+            </div>
+        </article>
+
+    </section>
+
+    <div class="card shadow-sm border-0 mt-4">
+        <div class="card-body">
+
+            <div class="history-heading">
+                <div>
+                    <p class="section-eyebrow">Local Activity Record</p>
+                    <h3>Backup History</h3>
+                    <p>
+                        This list records backup and restore activity performed on this browser.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    id="clearHistoryBtn"
+                >
+                    Clear History
+                </button>
+            </div>
+
+            <div class="history-empty d-none" id="historyEmpty">
+                No backup history yet.
+            </div>
+
+            <div class="history-list" id="historyList"></div>
+
+        </div>
+    </div>
+
+</div>
+
+<div class="protection-modal-backdrop d-none" id="restoreModal">
+
+    <div class="protection-modal">
+
+        <div class="protection-modal-header">
+            <div>
+                <p class="modal-eyebrow">Final Confirmation</p>
+                <h3>Restore CrownOS Backup?</h3>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close-btn"
+                id="closeRestoreModalBtn"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="protection-modal-body">
+            <p>
+                Current CrownOS data in this browser will be replaced by the selected backup.
+            </p>
+
+            <div class="safety-message">
+                A safety backup of the current data will download automatically before restore.
+            </div>
+
+            <label class="confirmation-box">
+                <input
+                    type="checkbox"
+                    class="form-check-input"
+                    id="restoreConfirmation"
+                >
+
+                <span>
+                    I understand that the current browser data will be replaced.
+                </span>
+            </label>
+        </div>
+
+        <div class="protection-modal-footer">
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="cancelRestoreBtn"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-danger"
+                id="confirmRestoreBtn"
+                disabled
+            >
+                Confirm Restore
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+<script src="sidebar.js"></script>
+<script src="data-protection.js"></script>
+
+</body>
+</html>

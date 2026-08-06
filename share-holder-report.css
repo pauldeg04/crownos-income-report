@@ -1,0 +1,327 @@
+/* Page-specific overrides — shared.css/crownos-theme.css provide the base
+   card/color system. The .executive-summary-* / .breakdown-* component
+   below is ported from style.css (Daily Income's "Sales Summary" card,
+   under "Executive Summary") rather than loading that whole 70KB
+   index.html-specific stylesheet just for these few classes. */
+
+.executive-summary-card{
+    overflow:hidden;
+    border:1px solid #dfe5ed !important;
+}
+
+.executive-summary-heading{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:20px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+}
+
+.executive-summary-eyebrow{
+    margin:0 0 3px;
+    color:#9b741d;
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+}
+
+.executive-summary-note{
+    margin:0;
+    color:#758094;
+    font-size:10px;
+    font-weight:600;
+}
+
+.executive-summary-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    border:1px solid #dfe5ed;
+    border-radius:16px;
+    overflow:hidden;
+    background:#fff;
+}
+
+.executive-summary-panel{
+    min-width:0;
+    padding:20px;
+}
+
+.executive-summary-panel + .executive-summary-panel{
+    border-left:1px solid #dfe5ed;
+}
+
+.executive-summary-panel h4{
+    margin:0 0 13px;
+    color:#17345d;
+    font-size:13px;
+    font-weight:900;
+}
+
+.breakdown-list{
+    display:flex;
+    flex-direction:column;
+}
+
+.breakdown-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    min-height:35px;
+    padding:7px 0;
+    border-bottom:1px dotted #d8dee8;
+}
+
+.breakdown-row:last-child{
+    border-bottom:0;
+}
+
+.breakdown-row span{
+    min-width:0;
+    color:#5f6b7c;
+    font-size:11px;
+    font-weight:700;
+}
+
+.breakdown-row strong{
+    flex:0 0 auto;
+    color:#172033;
+    font-size:12px;
+    font-weight:900;
+    white-space:nowrap;
+}
+
+.breakdown-total-row{
+    margin-top:5px;
+    padding-top:11px;
+    border-top:2px solid #dfe5ed;
+    border-bottom:0;
+}
+
+.breakdown-total-row span,
+.breakdown-total-row strong{
+    color:#17345d;
+    font-weight:900;
+}
+
+.monthly-revenue-row{
+    margin-bottom:5px;
+    padding:10px 12px !important;
+    background:#f7f9fc;
+    border:1px solid #dfe5ed;
+    border-radius:10px;
+}
+
+.monthly-revenue-row > span{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+}
+
+.monthly-revenue-row small{
+    color:#8a94a6;
+    font-size:8px;
+    font-weight:700;
+    letter-spacing:0;
+    text-transform:none;
+}
+
+.monthly-revenue-row strong{
+    color:#17345d;
+    font-size:15px;
+}
+
+@media(max-width:991px){
+    .executive-summary-grid{
+        grid-template-columns:1fr;
+    }
+
+    .executive-summary-panel + .executive-summary-panel{
+        border-left:0;
+        border-top:1px solid #dfe5ed;
+    }
+}
+
+@media(max-width:650px){
+    .executive-summary-heading{
+        align-items:flex-start;
+        flex-direction:column;
+        gap:5px;
+    }
+
+    .executive-summary-card .card-body{
+        padding:15px;
+    }
+
+    .executive-summary-panel{
+        padding:16px;
+    }
+}
+
+.single-panel-summary-grid{
+    grid-template-columns:minmax(0,1fr);
+}
+
+.btn-navy{
+    background:var(--crown-navy);
+    border:1px solid var(--crown-navy);
+    color:#ffffff;
+    font-weight:700;
+}
+
+.btn-navy:hover,
+.btn-navy:focus{
+    background:#0c1b33;
+    border-color:#0c1b33;
+    color:#ffffff;
+}
+
+.export-pdf-btn{
+    padding-left:36px;
+    padding-right:36px;
+    letter-spacing:.02em;
+}
+
+/* Monthly Net turns danger-red only when the branch actually ran a loss
+   this month — stays navy (the default breakdown-total-row color)
+   otherwise, matching crownos-theme.css's status-negative convention. */
+.breakdown-total-row.negative-net span,
+.breakdown-total-row.negative-net strong{
+    color:var(--crown-danger)!important;
+}
+
+/* ==========================================================================
+   Shareholders editor
+   ========================================================================== */
+
+.shareholder-edit-table{
+    border-collapse:separate;
+    border-spacing:0;
+}
+
+.shareholder-edit-table thead th{
+    background:var(--crown-navy);
+    color:#ffffff;
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    border:0;
+    padding:10px 12px;
+}
+
+.shareholder-edit-table thead th:first-child{
+    border-top-left-radius:8px;
+}
+
+.shareholder-edit-table thead th:last-child{
+    border-top-right-radius:8px;
+}
+
+.shareholder-edit-table td{
+    vertical-align:middle;
+    border-bottom:1px solid #e7ebf1;
+    padding:10px 12px;
+}
+
+.shareholder-edit-table .percentage-input{
+    max-width:140px;
+}
+
+.percentage-check{
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+}
+
+.percentage-check.percentage-ok{
+    color:var(--crown-revenue);
+}
+
+.percentage-check.percentage-warn{
+    color:var(--crown-danger);
+}
+
+/* ==========================================================================
+   Dividend Report table
+   ========================================================================== */
+
+.dividend-table{
+    border-collapse:separate;
+    border-spacing:0;
+}
+
+.dividend-table thead th{
+    background:var(--crown-navy);
+    color:#ffffff;
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    text-align:center;
+    border:0;
+    padding:10px 12px;
+}
+
+.dividend-table thead th:first-child{
+    border-top-left-radius:8px;
+    text-align:left;
+}
+
+.dividend-table thead th:last-child{
+    border-top-right-radius:8px;
+}
+
+.dividend-table td{
+    text-align:center;
+    vertical-align:middle;
+    border-bottom:1px solid #e7ebf1;
+    padding:10px 12px;
+    font-weight:600;
+    color:#172033;
+}
+
+.dividend-table td:first-child{
+    text-align:left;
+    font-weight:700;
+}
+
+.dividend-total-row td{
+    background:var(--crown-gold-soft);
+    color:var(--crown-navy);
+    font-weight:900;
+    font-size:15px;
+    border-top:2px solid var(--crown-brand-gold);
+}
+
+/* ==========================================================================
+   Notes
+   ========================================================================== */
+
+.note-row{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:10px;
+}
+
+.note-number{
+    font-weight:900;
+    color:var(--crown-brand-gold);
+    padding-top:8px;
+    min-width:22px;
+}
+
+.note-row textarea{
+    flex:1;
+    resize:vertical;
+    border-color:#dfe5ed;
+}
+
+.note-row textarea:focus{
+    border-color:var(--crown-brand-gold);
+    box-shadow:0 0 0 .2rem rgba(198,161,91,.2);
+}

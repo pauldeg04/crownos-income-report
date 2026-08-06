@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CrownOS - Product Master</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="shared.css">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="list-products.css">
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="pwa-register.js"></script>
+    <script src="firebase-sync.js"></script>
+    <script src="access-control.js"></script>
+</head>
+
+<body>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+
+            <div class="page-heading">
+                <div>
+                    <p class="page-eyebrow">
+                        Master Data
+                    </p>
+
+                    <h2 class="fw-bold text-primary mb-0">
+                        Product Master
+                    </h2>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="product-toolbar">
+
+        <div class="toolbar-search">
+            <label class="form-label">
+                Search Product
+            </label>
+
+            <input
+                type="search"
+                id="productSearch"
+                class="form-control"
+                placeholder="Search by product name or code"
+            >
+        </div>
+
+        <div>
+            <label class="form-label">
+                Category
+            </label>
+
+            <select
+                id="categoryFilter"
+                class="form-select"
+            >
+                <option value="">
+                    All Categories
+                </option>
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label">
+                Status
+            </label>
+
+            <select
+                id="statusFilter"
+                class="form-select"
+            >
+                <option value="">
+                    All Status
+                </option>
+
+                <option value="Active">
+                    Active
+                </option>
+
+                <option value="Archived">
+                    Archived
+                </option>
+            </select>
+        </div>
+
+        <div class="toolbar-action">
+            <button
+                type="button"
+                class="btn btn-success"
+                id="addProductBtn"
+            >
+                + Add Product
+            </button>
+        </div>
+
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+
+            <div class="product-list-header">
+                <div>
+                    <h3>
+                        Products
+                    </h3>
+
+                    <p>
+                        Total:
+                        <strong id="productCount">0</strong>
+                    </p>
+                </div>
+
+                <div class="product-list-summary">
+                    <span>
+                        Active:
+                        <strong id="activeCount">0</strong>
+                    </span>
+
+                    <span>
+                        Archived:
+                        <strong id="archivedCount">0</strong>
+                    </span>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered table-hover align-middle product-table">
+
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Selling Price</th>
+                            <th>Voucher</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="productsBody"></tbody>
+
+                </table>
+
+            </div>
+
+            <div
+                class="empty-state d-none"
+                id="productEmptyState"
+            >
+                No products found.
+            </div>
+
+            <div class="save-note mt-3">
+                <strong>VIP Card:</strong>
+                Keep this product Active. When it is sold in the Daily Income
+                Report, the client is automatically marked as VIP and service
+                prices in the same transaction change to VIP Price.
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<div
+    class="product-modal-backdrop d-none"
+    id="productModalBackdrop"
+>
+
+    <div class="product-modal">
+
+        <div class="product-modal-header">
+            <div>
+                <p class="modal-eyebrow" id="modalEyebrow">
+                    New Product
+                </p>
+
+                <h3 id="modalTitle">
+                    Add Product
+                </h3>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close-btn"
+                id="closeModalBtn"
+                aria-label="Close"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="product-modal-tabs">
+
+            <button
+                type="button"
+                class="product-tab active"
+                data-tab="general"
+            >
+                General
+            </button>
+
+            <button
+                type="button"
+                class="product-tab"
+                data-tab="internal"
+            >
+                Internal
+            </button>
+
+        </div>
+
+        <div class="product-modal-body">
+
+            <section
+                class="product-tab-panel active"
+                data-panel="general"
+            >
+
+                <div class="row g-3">
+
+                    <div class="col-md-7">
+                        <label class="form-label">
+                            Product Name *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="productNameInput"
+                            class="form-control"
+                            placeholder="Example: VIP Card"
+                        >
+                    </div>
+
+                    <div class="col-md-5">
+                        <label class="form-label">
+                            Category *
+                        </label>
+
+                        <select
+                            id="productCategoryInput"
+                            class="form-select"
+                        >
+                            <option value="">
+                                Select Category
+                            </option>
+
+                            <option value="Membership">
+                                Membership
+                            </option>
+
+                            <option value="Hair Care">
+                                Hair Care
+                            </option>
+
+                            <option value="Skin Care">
+                                Skin Care
+                            </option>
+
+                            <option value="Home Care">
+                                Home Care
+                            </option>
+
+                            <option value="Retail">
+                                Retail
+                            </option>
+
+                            <option value="Other">
+                                Other
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-5">
+                        <label class="form-label">
+                            Product Code
+                        </label>
+
+                        <input
+                            type="text"
+                            id="productCodeInput"
+                            class="form-control"
+                            maxlength="20"
+                            placeholder="VIP-CARD"
+                        >
+                    </div>
+
+                    <div class="col-md-7">
+                        <label class="form-label">
+                            Selling Price *
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                ₱
+                            </span>
+
+                            <input
+                                type="number"
+                                id="sellingPriceInput"
+                                class="form-control"
+                                min="0"
+                                step="0.01"
+                                placeholder="0.00"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">
+                            Description
+                        </label>
+
+                        <textarea
+                            id="productDescriptionInput"
+                            class="form-control"
+                            rows="3"
+                            placeholder="Product description or customer-facing details"
+                        ></textarea>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <section
+                class="product-tab-panel"
+                data-panel="internal"
+            >
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            Status
+                        </label>
+
+                        <select
+                            id="productStatusInput"
+                            class="form-select"
+                        >
+                            <option value="Active">
+                                Active
+                            </option>
+
+                            <option value="Archived">
+                                Archived
+                            </option>
+                        </select>
+                    </div>
+
+
+                    <div class="col-12">
+                        <div class="voucher-availability-box">
+                            <label class="voucher-checkbox-label">
+                                <input type="checkbox" id="voucherAvailableInput" class="form-check-input">
+                                <span>Available for Voucher</span>
+                            </label>
+
+                            <small>
+                                When enabled, this product will appear in the Voucher dropdown of the Daily Income Report.
+                            </small>
+
+                            <div class="voucher-value-field d-none" id="voucherValueField">
+                                <label class="form-label">Voucher Value *</label>
+
+                                <div class="input-group">
+                                    <span class="input-group-text">₱</span>
+                                    <input
+                                        type="number"
+                                        id="voucherValueInput"
+                                        class="form-control"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                    >
+                                </div>
+
+                                <small>
+                                    This is the amount deducted when the product voucher is redeemed.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">
+                            Internal Notes
+                        </label>
+
+                        <textarea
+                            id="internalNotesInput"
+                            class="form-control"
+                            rows="4"
+                            placeholder="Internal reminders or product notes"
+                        ></textarea>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <div
+                class="duplicate-warning d-none"
+                id="duplicateWarning"
+            >
+                A product with the same name or code already exists.
+            </div>
+
+        </div>
+
+        <div class="product-modal-footer">
+
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="cancelModalBtn"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-success"
+                id="saveProductBtn"
+            >
+                Save Product
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="sidebar.js"></script>
+<script src="list-products.js"></script>
+
+</body>
+</html>

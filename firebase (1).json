@@ -1,0 +1,16 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "*.xlsx",
+      "*.pdf",
+      "*.zip",
+      "CrownOS_Full_Backup_*.json",
+      "FILE-INVENTORY.txt",
+      "firestore.rules"
+    ]
+  }
+}

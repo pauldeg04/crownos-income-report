@@ -1,0 +1,95 @@
+/* ==========================================================================
+   CrownOS Global Color System v1.0
+   One source of truth for payment methods and system states.
+   ========================================================================== */
+
+:root{
+    /* Payment methods */
+    --crown-payment-cash:#3D8B5A;
+    --crown-payment-gcash:#007DFF;
+    --crown-payment-bank:#003DA5;
+    --crown-payment-terminal:#6F42C1;
+    --crown-payment-other:#64748B;
+
+    /* Core system semantics */
+    --crown-revenue:#3D8B5A;
+    --crown-brand-gold:#C6A15B;
+    --crown-warning:#F59E0B;
+    --crown-danger:#DC3545;
+    --crown-neutral:#CBD5E1;
+    --crown-neutral-dark:#64748B;
+    --crown-navy:#13233F;
+    --crown-no-data:#CBD5E1;
+
+    /* Soft background variants */
+    --crown-cash-soft:#EDF7F0;
+    --crown-gcash-soft:#EEF6FF;
+    --crown-bank-soft:#EEF2FA;
+    --crown-terminal-soft:#F5F0FB;
+    --crown-gold-soft:#FBF7ED;
+    --crown-warning-soft:#FFF7E6;
+    --crown-danger-soft:#FFF0F1;
+}
+
+/* Reusable semantic text and surface classes */
+.crown-text-revenue{color:var(--crown-revenue)!important;}
+.crown-text-gold{color:var(--crown-brand-gold)!important;}
+.crown-text-warning{color:var(--crown-warning)!important;}
+.crown-text-danger{color:var(--crown-danger)!important;}
+.crown-text-muted{color:var(--crown-neutral-dark)!important;}
+
+.crown-bg-revenue{background:var(--crown-revenue)!important;color:#fff!important;}
+.crown-bg-gold{background:var(--crown-brand-gold)!important;color:var(--crown-navy)!important;}
+.crown-bg-warning{background:var(--crown-warning)!important;color:var(--crown-navy)!important;}
+.crown-bg-danger{background:var(--crown-danger)!important;color:#fff!important;}
+.crown-bg-neutral{background:var(--crown-neutral)!important;color:var(--crown-navy)!important;}
+
+/* Global payment badges */
+.payment-cash,
+.payment-badge.payment-method-with-amount.payment-cash{
+    color:var(--crown-payment-cash)!important;
+    border-color:var(--crown-payment-cash)!important;
+}
+
+.payment-gcash,
+.payment-badge.payment-method-with-amount.payment-gcash{
+    color:var(--crown-payment-gcash)!important;
+    border-color:var(--crown-payment-gcash)!important;
+}
+
+.payment-bank,
+.payment-badge.payment-method-with-amount.payment-bank{
+    color:var(--crown-payment-bank)!important;
+    border-color:var(--crown-payment-bank)!important;
+}
+
+.payment-terminal,
+.payment-badge.payment-method-with-amount.payment-terminal{
+    color:var(--crown-payment-terminal)!important;
+    border-color:var(--crown-payment-terminal)!important;
+}
+
+.payment-default,
+.payment-badge.payment-method-with-amount.payment-default{
+    color:var(--crown-payment-other)!important;
+    border-color:var(--crown-payment-other)!important;
+}
+
+/* Payment values in Daily Income and Monthly Report */
+#cash,#sumCash{color:var(--crown-payment-cash)!important;}
+#gcash,#sumGcash{color:var(--crown-payment-gcash)!important;}
+#bank,#sumBank{color:var(--crown-payment-bank)!important;}
+#terminal,#sumTerminal{color:var(--crown-payment-terminal)!important;}
+
+/* Optional row accents for payment summaries */
+.payment-summary-cash{border-left:4px solid var(--crown-payment-cash)!important;}
+.payment-summary-gcash{border-left:4px solid var(--crown-payment-gcash)!important;}
+.payment-summary-bank{border-left:4px solid var(--crown-payment-bank)!important;}
+.payment-summary-terminal{border-left:4px solid var(--crown-payment-terminal)!important;}
+
+/* Standard semantic status classes */
+.status-positive,.revenue-positive{color:var(--crown-revenue)!important;}
+.status-warning,.pending-state{color:var(--crown-warning)!important;}
+.status-negative,.refund-state,.void-state,.cancelled-state{color:var(--crown-danger)!important;}
+.status-neutral,.no-data-state,.inactive-state{color:var(--crown-neutral-dark)!important;}
+.vip-state,.premium-state,.highlight-gold{color:var(--crown-brand-gold)!important;}

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CrownOS - Service Master</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="shared.css">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="list-services.css">
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="pwa-register.js"></script>
+    <script src="firebase-sync.js"></script>
+    <script src="access-control.js"></script>
+</head>
+
+<body>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+
+            <div class="page-heading">
+                <div>
+                    <p class="page-eyebrow">
+                        Master Data
+                    </p>
+
+                    <h2 class="fw-bold text-primary mb-0">
+                        Service Master
+                    </h2>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="service-toolbar">
+
+        <div class="toolbar-search">
+            <label class="form-label">
+                Search Service
+            </label>
+
+            <input
+                type="search"
+                id="serviceSearch"
+                class="form-control"
+                placeholder="Search by service name or code"
+            >
+        </div>
+
+        <div>
+            <label class="form-label">
+                Category
+            </label>
+
+            <select
+                id="categoryFilter"
+                class="form-select"
+            >
+                <option value="">
+                    All Categories
+                </option>
+            </select>
+        </div>
+
+        <div>
+            <label class="form-label">
+                Status
+            </label>
+
+            <select
+                id="statusFilter"
+                class="form-select"
+            >
+                <option value="">
+                    All Status
+                </option>
+
+                <option value="Active">
+                    Active
+                </option>
+
+                <option value="Archived">
+                    Archived
+                </option>
+            </select>
+        </div>
+
+        <div class="toolbar-action">
+            <button
+                type="button"
+                class="btn btn-success"
+                id="addServiceBtn"
+            >
+                + Add Service
+            </button>
+        </div>
+
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+
+            <div class="service-list-header">
+                <div>
+                    <h3>
+                        Services
+                    </h3>
+
+                    <p>
+                        Total:
+                        <strong id="serviceCount">0</strong>
+                    </p>
+                </div>
+
+                <div class="service-list-summary">
+                    <span>
+                        Active:
+                        <strong id="activeCount">0</strong>
+                    </span>
+
+                    <span>
+                        Archived:
+                        <strong id="archivedCount">0</strong>
+                    </span>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered table-hover align-middle service-table">
+
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Category</th>
+                            <th>Duration</th>
+                            <th>Regular</th>
+                            <th>First Timer</th>
+                            <th>VIP</th>
+                            <th>Senior/PWD</th>
+                            <th>Commission</th>
+                            <th>Voucher</th>
+                            <th>Freebie</th>
+                            <th>Online Booking</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="serviceTableBody"></tbody>
+
+                </table>
+
+            </div>
+
+            <div
+                class="empty-state d-none"
+                id="serviceEmptyState"
+            >
+                No services found.
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<div
+    class="service-modal-backdrop d-none"
+    id="serviceModalBackdrop"
+>
+
+    <div class="service-modal">
+
+        <div class="service-modal-header">
+            <div>
+                <p class="modal-eyebrow" id="modalEyebrow">
+                    New Service
+                </p>
+
+                <h3 id="modalTitle">
+                    Add Service
+                </h3>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close-btn"
+                id="closeModalBtn"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="service-modal-tabs">
+
+            <button
+                type="button"
+                class="service-tab active"
+                data-tab="general"
+            >
+                General
+            </button>
+
+            <button
+                type="button"
+                class="service-tab"
+                data-tab="pricing"
+            >
+                Pricing
+            </button>
+
+            <button
+                type="button"
+                class="service-tab"
+                data-tab="internal"
+            >
+                Internal
+            </button>
+
+        </div>
+
+        <div class="service-modal-body">
+
+            <section
+                class="service-tab-panel active"
+                data-panel="general"
+            >
+
+                <div class="row g-3">
+
+                    <div class="col-md-7">
+                        <label class="form-label">
+                            Service Name *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="serviceNameInput"
+                            class="form-control"
+                            placeholder="Example: Crown Serenity"
+                        >
+                    </div>
+
+                    <div class="col-md-5">
+                        <label class="form-label">
+                            Category *
+                        </label>
+
+                        <select
+                            id="serviceCategoryInput"
+                            class="form-select"
+                        >
+                            <option value="">
+                                Select Category
+                            </option>
+
+                            <option value="Head Spa">
+                                Head Spa
+                            </option>
+
+                            <option value="Massage">
+                                Massage
+                            </option>
+
+                            <option value="Package">
+                                Package
+                            </option>
+
+                            <option value="Add-on">
+                                Add-on
+                            </option>
+
+                            <option value="Kiddie">
+                                Kiddie
+                            </option>
+
+                            <option value="Other">
+                                Other
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">
+                            Duration (Minutes) *
+                        </label>
+
+                        <input
+                            type="number"
+                            id="serviceDurationInput"
+                            class="form-control"
+                            min="1"
+                            step="1"
+                            placeholder="25"
+                        >
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">
+                            Service Code
+                        </label>
+
+                        <input
+                            type="text"
+                            id="serviceCodeInput"
+                            class="form-control"
+                            maxlength="12"
+                            placeholder="CRS"
+                        >
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">
+                            Bed Occupancy
+                        </label>
+
+                        <input
+                            type="number"
+                            id="bedOccupancyInput"
+                            class="form-control"
+                            min="1"
+                            step="1"
+                            placeholder="Same as duration"
+                        >
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">
+                            Description
+                        </label>
+
+                        <textarea
+                            id="serviceDescriptionInput"
+                            class="form-control"
+                            rows="3"
+                            placeholder="Internal or booking description"
+                        ></textarea>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <section
+                class="service-tab-panel"
+                data-panel="pricing"
+            >
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            Regular Price
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text">₱</span>
+
+                            <input
+                                type="number"
+                                id="regularPriceInput"
+                                class="form-control"
+                                min="0"
+                                step="0.01"
+                                placeholder="0.00"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            First Timer Price
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text">₱</span>
+
+                            <input
+                                type="number"
+                                id="firstTimerPriceInput"
+                                class="form-control"
+                                min="0"
+                                step="0.01"
+                                placeholder="0.00"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            VIP Price
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text">₱</span>
+
+                            <input
+                                type="number"
+                                id="vipPriceInput"
+                                class="form-control"
+                                min="0"
+                                step="0.01"
+                                placeholder="0.00"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            Senior/PWD Price
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text">₱</span>
+
+                            <input
+                                type="number"
+                                id="seniorPwdPriceInput"
+                                class="form-control"
+                                min="0"
+                                step="0.01"
+                                placeholder="0.00"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            Therapist Commission
+                        </label>
+
+                        <div class="input-group">
+                            <input
+                                type="number"
+                                id="commissionInput"
+                                class="form-control"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                placeholder="0"
+                            >
+
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            Overtime Commission
+                        </label>
+
+                        <div class="input-group">
+                            <input
+                                type="number"
+                                id="overtimeCommissionInput"
+                                class="form-control"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                placeholder="0"
+                            >
+
+                            <span class="input-group-text">%</span>
+                        </div>
+
+                        <small>
+                            Used instead of Therapist Commission when this
+                            service is rendered past the therapist's 9-hour
+                            shift.
+                        </small>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <section
+                class="service-tab-panel"
+                data-panel="internal"
+            >
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            Color Tag
+                        </label>
+
+                        <select
+                            id="colorTagInput"
+                            class="form-select"
+                        >
+                            <option value="Navy">
+                                Navy
+                            </option>
+
+                            <option value="Green">
+                                Green
+                            </option>
+
+                            <option value="Gold">
+                                Gold
+                            </option>
+
+                            <option value="Purple">
+                                Purple
+                            </option>
+
+                            <option value="Blue">
+                                Blue
+                            </option>
+
+                            <option value="Black">
+                                Black
+                            </option>
+
+                            <option value="Gray">
+                                Gray
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            Status
+                        </label>
+
+                        <select
+                            id="serviceStatusInput"
+                            class="form-select"
+                        >
+                            <option value="Active">
+                                Active
+                            </option>
+
+                            <option value="Archived">
+                                Archived
+                            </option>
+                        </select>
+                    </div>
+
+
+                    <div class="col-12">
+                        <div class="voucher-availability-box">
+
+                            <label class="voucher-checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    id="voucherAvailableInput"
+                                    class="form-check-input"
+                                >
+
+                                <span>
+                                    Available for Voucher
+                                </span>
+                            </label>
+
+                            <small>
+                                When enabled, this service will appear in the
+                                Voucher dropdown of the Daily Income Report.
+                            </small>
+
+                            <div
+                                class="voucher-value-field d-none"
+                                id="voucherValueField"
+                            >
+                                <label class="form-label">
+                                    Voucher Values *
+                                </label>
+
+                                <div class="row g-2 voucher-tier-grid">
+
+                                    <div class="col-md-4">
+                                        <small class="voucher-tier-label">Regular</small>
+
+                                        <div class="input-group">
+                                            <span class="input-group-text">₱</span>
+
+                                            <input
+                                                type="number"
+                                                id="voucherValueRegularInput"
+                                                class="form-control"
+                                                min="0"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <small class="voucher-tier-label">First Timer</small>
+
+                                        <div class="input-group">
+                                            <span class="input-group-text">₱</span>
+
+                                            <input
+                                                type="number"
+                                                id="voucherValueFirstTimerInput"
+                                                class="form-control"
+                                                min="0"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <small class="voucher-tier-label">VIP</small>
+
+                                        <div class="input-group">
+                                            <span class="input-group-text">₱</span>
+
+                                            <input
+                                                type="number"
+                                                id="voucherValueVipInput"
+                                                class="form-control"
+                                                min="0"
+                                                step="0.01"
+                                                placeholder="0.00"
+                                            >
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <small>
+                                    Each price tier with a value appears as its own
+                                    entry in the Daily Income voucher and product
+                                    dropdowns. Leave a tier at 0 to hide it.
+                                </small>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="voucher-availability-box">
+
+                            <label class="voucher-checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    id="freebieAvailableInput"
+                                    class="form-check-input"
+                                >
+
+                                <span>
+                                    Available as Freebies
+                                </span>
+                            </label>
+
+                            <small>
+                                When enabled, this service will appear in the
+                                Freebies picker of the Daily Income Report.
+                                It will not be added to the client's total,
+                                but the therapist still earns commission
+                                for it based on the Therapist Commission
+                                above.
+                            </small>
+
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="voucher-availability-box">
+
+                            <label class="voucher-checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    id="onlineBookingAvailableInput"
+                                    class="form-check-input"
+                                >
+
+                                <span>
+                                    Available for Online Booking
+                                </span>
+                            </label>
+
+                            <small>
+                                When enabled, this service will appear in the
+                                list of bookable services on the public
+                                website. Leave unchecked to keep it staff-only.
+                            </small>
+
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">
+                            Internal Notes
+                        </label>
+
+                        <textarea
+                            id="internalNotesInput"
+                            class="form-control"
+                            rows="4"
+                            placeholder="Internal reminders, staff instructions, or notes"
+                        ></textarea>
+                    </div>
+
+                </div>
+
+            </section>
+
+            <div
+                class="duplicate-warning d-none"
+                id="duplicateWarning"
+            >
+                A service with the same name or code already exists.
+            </div>
+
+        </div>
+
+        <div class="service-modal-footer">
+
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="cancelModalBtn"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-success"
+                id="saveServiceBtn"
+            >
+                Save Service
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="sidebar.js"></script>
+<script src="list-services.js"></script>
+
+</body>
+</html>

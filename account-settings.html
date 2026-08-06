@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>Crown Head Spa - Account Settings</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="shared.css">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="account-settings.css">
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-functions-compat.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="pwa-register.js"></script>
+    <script src="firebase-sync.js"></script>
+    <script src="access-control.js"></script>
+</head>
+
+<body>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+
+            <div class="page-heading">
+                <div>
+                    <h2 class="fw-bold text-primary mb-0">
+                        Account Settings
+                    </h2>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="account-action-grid">
+
+        <button
+            type="button"
+            class="account-action-card"
+            id="openMyAccountBtn"
+        >
+            <span class="account-action-eyebrow">
+                Personal Settings
+            </span>
+
+            <strong>
+                My Account
+            </strong>
+        </button>
+
+        <button
+            type="button"
+            class="account-action-card admin-only-action d-none"
+            id="openCreateUserBtn"
+        >
+            <span class="account-action-eyebrow">
+                Admin Access
+            </span>
+
+            <strong>
+                Create User Account
+            </strong>
+        </button>
+
+    </div>
+
+    <div
+        class="card shadow-sm border-0 mt-4 d-none"
+        id="adminUserListSection"
+    >
+        <div class="card-body">
+
+            <div class="section-heading">
+                <div>
+                    <h3>
+                        User Accounts
+                    </h3>
+                </div>
+
+                <div class="user-count-box">
+                    Total Users:
+                    <strong id="userCount">0</strong>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered table-hover align-middle user-table">
+
+                    <thead>
+                        <tr>
+                            <th>Account</th>
+                            <th>User Type</th>
+                            <th>Assigned Branches</th>
+                            <th>Status</th>
+                            <th>Last Login</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="userTableBody"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- MY ACCOUNT MODAL -->
+
+<div
+    class="account-modal-backdrop d-none"
+    id="myAccountModalBackdrop"
+>
+
+    <div class="account-modal">
+
+        <div class="account-modal-header">
+            <div>
+                <p class="modal-eyebrow">
+                    Personal Settings
+                </p>
+
+                <h3>
+                    My Account
+                </h3>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close-btn"
+                id="closeMyAccountModalBtn"
+                aria-label="Close"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="account-modal-body">
+
+            <div class="account-profile-grid">
+
+                <div class="profile-readout">
+                    <span>
+                        Account
+                    </span>
+
+                    <strong id="currentAccount">
+                        —
+                    </strong>
+                </div>
+
+                <div class="profile-readout">
+                    <span>
+                        User Type
+                    </span>
+
+                    <strong id="currentRole">
+                        —
+                    </strong>
+                </div>
+
+                <div class="profile-readout">
+                    <span>
+                        Assigned Branches
+                    </span>
+
+                    <strong id="currentBranches">
+                        —
+                    </strong>
+                </div>
+
+            </div>
+
+            <hr class="my-4">
+
+            <h4 class="modal-section-title">
+                Change Password
+            </h4>
+
+            <div class="row g-3">
+
+                <div class="col-12">
+                    <label class="form-label">
+                        Current Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="currentPassword"
+                        class="form-control"
+                        autocomplete="current-password"
+                    >
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        New Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="newPassword"
+                        class="form-control"
+                        autocomplete="new-password"
+                    >
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Confirm New Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="confirmNewPassword"
+                        class="form-control"
+                        autocomplete="new-password"
+                    >
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="account-modal-footer">
+
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="cancelMyAccountModalBtn"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-success"
+                id="changePasswordBtn"
+            >
+                Change Password
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- CREATE / EDIT USER MODAL -->
+
+<div
+    class="account-modal-backdrop d-none"
+    id="userAccountModalBackdrop"
+>
+
+    <div class="account-modal account-modal-large">
+
+        <div class="account-modal-header">
+            <div>
+                <p class="modal-eyebrow" id="userModalEyebrow">
+                    Admin Access
+                </p>
+
+                <h3 id="userFormTitle">
+                    Create User Account
+                </h3>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close-btn"
+                id="closeUserAccountModalBtn"
+                aria-label="Close"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="account-modal-body">
+
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        User Account *
+                    </label>
+
+                    <input
+                        type="text"
+                        id="userAccountInput"
+                        class="form-control"
+                        placeholder="Email or username"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Nominate Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="userPasswordInput"
+                        class="form-control"
+                        placeholder="Required for new account"
+                        autocomplete="new-password"
+                    >
+                </div>
+
+                <div class="col-12">
+                    <hr class="my-1">
+                    <h4 class="modal-section-title mb-2">
+                        Personal Information
+                    </h4>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        First Name *
+                    </label>
+
+                    <input
+                        type="text"
+                        id="userFirstNameInput"
+                        class="form-control"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Last Name *
+                    </label>
+
+                    <input
+                        type="text"
+                        id="userLastNameInput"
+                        class="form-control"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Middle Name
+                    </label>
+
+                    <input
+                        type="text"
+                        id="userMiddleNameInput"
+                        class="form-control"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Nickname
+                    </label>
+
+                    <input
+                        type="text"
+                        id="userNicknameInput"
+                        class="form-control"
+                        placeholder="Used in List of Therapist"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Type of User *
+                    </label>
+
+                    <select
+                        id="userRoleInput"
+                        class="form-select"
+                    >
+                        <option value="">
+                            Select Type of User
+                        </option>
+
+                        <option value="Admin">
+                            Admin
+                        </option>
+
+                        <option value="Executive Assistant">
+                            Executive Assistant
+                        </option>
+
+                        <option value="Receptionist">
+                            Receptionist
+                        </option>
+
+                        <option value="Therapist">
+                            Therapist
+                        </option>
+
+                        <option value="Marketing Agent">
+                            Marketing Agent
+                        </option>
+                    </select>
+
+                    <small class="text-muted">
+                        Executive Assistant has full access except Data Protection
+                        and User Account management.
+                    </small>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Status
+                    </label>
+
+                    <select
+                        id="userStatusInput"
+                        class="form-select"
+                    >
+                        <option value="Active">
+                            Active
+                        </option>
+
+                        <option value="Inactive">
+                            Inactive
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Compensation Schedule
+                    </label>
+
+                    <select
+                        id="compensationScheduleInput"
+                        class="form-select"
+                    >
+                        <option value="Weekly">
+                            Weekly
+                        </option>
+
+                        <option value="Bi-Monthly">
+                            Bi-Monthly
+                        </option>
+                    </select>
+
+                    <small class="text-muted">
+                        Bi-Monthly accounts are automatically placed under the
+                        Admin Staff payroll group. Weekly accounts appear
+                        under their assigned branch(es) instead.
+                    </small>
+                </div>
+
+                <div class="col-12 d-none" id="hideFromAdminGroupField">
+                    <div class="form-check">
+                        <input
+                            type="checkbox"
+                            class="form-check-input"
+                            id="hideFromAdminGroupInput"
+                        >
+
+                        <label
+                            class="form-check-label"
+                            for="hideFromAdminGroupInput"
+                        >
+                            Hide from Admin Staff payroll group
+                        </label>
+                    </div>
+
+                    <small class="text-muted">
+                        The account still works normally — it is only left
+                        out of the Admin Staff list on the Payroll page.
+                    </small>
+                </div>
+
+                <div class="col-12 d-none" id="linkedTherapistField">
+                    <label class="form-label">
+                        Linked Therapist *
+                    </label>
+
+                    <select
+                        id="linkedTherapistInput"
+                        class="form-select"
+                    >
+                        <option value="">
+                            Select Therapist
+                        </option>
+                    </select>
+
+                    <small class="text-muted">
+                        Links this account to a record in List of Therapist so
+                        this user sees only their own Therapist Sales summary.
+                    </small>
+                </div>
+
+                <div class="col-12 d-none" id="secondaryRoleField">
+                    <div class="form-check">
+                        <input
+                            type="checkbox"
+                            class="form-check-input"
+                            id="secondaryRoleInput"
+                        >
+
+                        <label
+                            class="form-check-label"
+                            for="secondaryRoleInput"
+                        >
+                            Enable Secondary Role: Receptionist
+                        </label>
+                    </div>
+
+                    <small class="text-muted">
+                        For a Therapist who sometimes fills in as
+                        Receptionist reliever. They will be asked to pick
+                        their duty for the day each time they log in, and
+                        Payroll will use the matching rate/formula for that
+                        day automatically.
+                    </small>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">
+                        Assigned Branches
+                    </label>
+
+                    <div
+                        class="branch-checkbox-list"
+                        id="userBranchCheckboxList"
+                    ></div>
+
+                    <small class="text-muted">
+                        Admin and Executive Assistant accounts automatically
+                        receive access to all branches.
+                    </small>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">
+                        Additional Access
+                    </label>
+
+                    <div
+                        class="branch-checkbox-list"
+                        id="extraAccessCheckboxList"
+                    ></div>
+
+                    <small class="text-muted">
+                        Optional. Grant access to specific pages beyond what
+                        this Type of User normally sees. Data Protection can
+                        never be granted this way — only a full Admin account
+                        has it.
+                    </small>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="account-modal-footer">
+
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="cancelUserModalBtn"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-success"
+                id="saveUserBtn"
+            >
+                Create Account
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="sidebar.js"></script>
+<script src="account-settings.js"></script>
+
+</body>
+</html>

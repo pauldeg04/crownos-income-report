@@ -1,0 +1,154 @@
+/* Page-specific styles for the Voucher Masterlist. */
+
+.voucher-summary-tiles{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));
+    gap:14px;
+    margin-top:16px;
+}
+
+.voucher-tile{
+    padding:14px 18px;
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-md);
+    border-left:4px solid var(--navy);
+}
+
+.voucher-tile span{
+    display:block;
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--muted);
+}
+
+.voucher-tile strong{
+    display:block;
+    font-size:24px;
+    font-weight:800;
+    color:var(--navy);
+    line-height:1.3;
+}
+
+.voucher-tile small{
+    color:var(--muted);
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+}
+
+.voucher-tile-active{ border-left-color:var(--green); }
+.voucher-tile-redeemed{ border-left-color:var(--gold); }
+.voucher-tile-cancelled{ border-left-color:var(--state-red); }
+
+.voucher-count-box{
+    background:var(--brand-blue-tint);
+    border:1px solid var(--brand-blue-border);
+    border-radius:10px;
+    padding:10px 15px;
+    color:#1e3a8a;
+}
+
+/* ---- Table ---- */
+
+.voucher-list-table{
+    margin-bottom:0;
+    min-width:900px;
+}
+
+.voucher-list-table th{
+    background:var(--surface-soft);
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    border-bottom:2px solid var(--border);
+    padding:10px 12px;
+    white-space:nowrap;
+}
+
+.voucher-list-table td{
+    padding:10px 12px;
+    font-size:13px;
+    color:var(--ink);
+    border-color:var(--border-light);
+}
+
+.voucher-code-cell{
+    font-family:"Courier New", monospace;
+    font-weight:700;
+    letter-spacing:.04em;
+    color:var(--navy);
+    white-space:nowrap;
+}
+
+.voucher-item-cell{
+    font-weight:700;
+    color:var(--navy);
+}
+
+.voucher-item-cell small,
+.voucher-issued-cell small{
+    display:block;
+    color:var(--muted);
+    font-weight:600;
+    font-size:11px;
+}
+
+.voucher-value-cell{
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+}
+
+.voucher-status-badge{
+    display:inline-flex;
+    align-items:center;
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:800;
+    white-space:nowrap;
+}
+
+.voucher-status-active{
+    color:var(--state-green-text);
+    background:var(--state-green-bg);
+    border:1px solid var(--state-green-border);
+}
+
+.voucher-status-redeemed{
+    color:var(--navy);
+    background:var(--gold-soft);
+    border:1px solid var(--accent-border);
+}
+
+.voucher-status-cancelled{
+    color:var(--state-red);
+    background:var(--state-red-bg);
+    border:1px solid var(--state-red-border);
+}
+
+.empty-state{
+    padding:26px;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border-radius:var(--radius-md);
+    text-align:center;
+}
+
+@media(max-width:768px){
+    .voucher-summary-tiles{
+        grid-template-columns:repeat(2, 1fr);
+    }
+}
+
+.voucher-action-cell{
+    white-space:nowrap;
+}
+
+.voucher-action-cell .btn{
+    margin-right:4px;
+}

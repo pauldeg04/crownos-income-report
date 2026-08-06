@@ -1,0 +1,215 @@
+/* Crown Head Spa Login */
+
+:root{
+    --navy:#0B1849;
+    --navy-dark:#071033;
+    --green:#124D1C;
+    --green-dark:#0E3A16;
+    --gold:#E8B321;
+    --cream:#F4F3EC;
+    --muted:#74786F;
+}
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    min-height:100vh;
+    margin:0;
+    font-family:Inter, "Segoe UI", Arial, sans-serif;
+    background:var(--cream);
+}
+
+.login-shell{
+    min-height:100vh;
+    display:grid;
+    grid-template-columns:minmax(340px,42%) minmax(0,1fr);
+}
+
+.login-brand-panel{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
+    padding:60px;
+    color:#fff;
+    background:
+        linear-gradient(
+            160deg,
+            var(--navy) 0%,
+            #0A1E45 62%,
+            var(--green-dark) 100%
+        );
+}
+
+.brand-mark{
+    width:80px;
+    height:80px;
+    display:block;
+    object-fit:contain;
+    margin-bottom:20px;
+}
+
+.login-brand-panel h1{
+    margin:0;
+    color:var(--gold);
+    font-size:42px;
+    font-weight:900;
+}
+
+.login-brand-panel p{
+    margin:8px 0 0;
+    color:rgba(255,255,255,.82);
+    font-size:18px;
+}
+
+.brand-line{
+    width:72px;
+    height:4px;
+    margin:26px 0 18px;
+    background:var(--gold);
+    border-radius:999px;
+}
+
+.login-brand-panel small{
+    color:rgba(255,255,255,.65);
+}
+
+.login-form-panel{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:36px;
+}
+
+.login-card{
+    width:100%;
+    max-width:430px;
+    padding:38px;
+    background:#fff;
+    border:1px solid #E3E3DD;
+    border-radius:22px;
+    box-shadow:0 22px 55px rgba(11,24,73,.12);
+}
+
+.eyebrow{
+    margin:0 0 7px;
+    color:var(--green);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+}
+
+.login-card h2{
+    margin:0;
+    color:var(--navy);
+    font-size:30px;
+    font-weight:900;
+}
+
+.login-subtitle{
+    margin:9px 0 26px;
+    color:var(--muted);
+}
+
+.form-label{
+    color:#3E4555;
+    font-weight:700;
+}
+
+.form-control{
+    min-height:44px;
+    border:1px solid #D5D7D2;
+    border-radius:10px;
+}
+
+.form-control:focus{
+    border-color:var(--gold);
+    box-shadow:0 0 0 .2rem rgba(232,179,33,.15);
+}
+
+.login-btn{
+    min-height:44px;
+    color:#fff;
+    background:var(--navy);
+    border:none;
+    border-radius:10px;
+    font-weight:800;
+}
+
+.login-btn:hover{
+    color:#fff;
+    background:var(--navy-dark);
+}
+
+.error-msg{
+    display:none;
+    margin-top:14px;
+    color:#B44049;
+    text-align:center;
+    font-size:14px;
+}
+
+.duty-picker-options{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.duty-picker-btn{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:3px;
+    width:100%;
+    padding:16px 18px;
+    color:var(--navy);
+    background:#fff;
+    border:2px solid #D5D7D2;
+    border-radius:12px;
+    text-align:left;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+}
+
+.duty-picker-btn:hover{
+    border-color:var(--gold);
+    background:#FFFBF0;
+}
+
+.duty-picker-btn strong{
+    font-size:16px;
+    font-weight:800;
+}
+
+.duty-picker-btn small{
+    color:var(--muted);
+}
+
+.note{
+    margin-top:18px;
+    color:#8A8E87;
+    text-align:center;
+    font-size:12px;
+}
+
+@media(max-width:850px){
+    .login-shell{
+        display:block;
+    }
+
+    .login-brand-panel{
+        min-height:280px;
+        padding:38px 28px;
+    }
+
+    .login-brand-panel h1{
+        font-size:34px;
+    }
+
+    .login-form-panel{
+        padding:24px 16px 36px;
+    }
+}

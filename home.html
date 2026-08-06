@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>Crown Head Spa - Dashboard</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="client-forms.css">
+
+    
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="pwa-register.js"></script>
+    <script src="firebase-sync.js"></script>
+    <script src="access-control.js"></script>
+    <script src="notifications.js"></script>
+</head>
+
+<body>
+
+<div class="app-shell">
+<main class="main-content">
+
+        <div class="dashboard-hidden-controls" aria-hidden="true">
+            <select id="branchSelect" tabindex="-1"></select>
+            <input type="date" id="scheduleDate" tabindex="-1">
+            <button type="button" id="todayBtn" tabindex="-1">Today</button>
+            <div id="branchHint"></div>
+            <div id="selectedDateLabel"></div>
+            <div id="bedCount"></div>
+            <div id="operatingHours"></div>
+        </div>
+
+
+        <header class="main-header">
+            <div>
+                <p class="eyebrow">Operations Dashboard</p>
+
+                <h2>
+                    Branch Schedule
+                </h2>
+            </div>
+
+            <div class="notification-bell-wrap d-none" id="notificationBellWrap">
+                <button
+                    type="button"
+                    class="notification-bell-btn"
+                    id="notificationBellBtn"
+                    aria-label="Notifications"
+                >
+                    <span aria-hidden="true">🔔</span>
+                    <span class="notification-badge d-none" id="notificationBadge">0</span>
+                </button>
+
+                <div class="notification-panel d-none" id="notificationPanel">
+                    <div class="notification-panel-header">
+                        <strong>Notifications</strong>
+
+                        <button type="button" id="notificationMarkAllBtn">
+                            Mark all read
+                        </button>
+                    </div>
+
+                    <div class="notification-list" id="notificationList"></div>
+                </div>
+            </div>
+        </header>
+
+        <section class="clock-widget-card" id="clockWidgetCard">
+            <div class="clock-widget-copy">
+                <p class="clock-widget-eyebrow">
+                    Attendance
+                </p>
+
+                <h3 id="clockWidgetTitle">
+                    Not Clocked In
+                </h3>
+
+                <p id="clockWidgetSubtitle">
+                    Tap Clock In when your shift starts.
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="clock-widget-btn clock-widget-btn-in"
+                id="clockActionBtn"
+            >
+                Clock In
+            </button>
+        </section>
+
+        <div class="shift-picker-backdrop d-none" id="shiftPickerBackdrop">
+            <div class="shift-picker-card">
+                <p class="clock-widget-eyebrow">
+                    Attendance
+                </p>
+
+                <h3>
+                    Opening or Closing Duty?
+                </h3>
+
+                <p class="shift-picker-subtitle">
+                    This decides your shift's official schedule for today's pay computation.
+                </p>
+
+                <div class="shift-picker-options">
+                    <button type="button" class="shift-picker-btn" id="shiftOpeningBtn">
+                        <strong>Opening</strong>
+                        <small>9:00 AM – 6:00 PM</small>
+                    </button>
+
+                    <button type="button" class="shift-picker-btn" id="shiftClosingBtn">
+                        <strong>Closing</strong>
+                        <small>1:00 PM – 10:00 PM</small>
+                    </button>
+                </div>
+
+                <button type="button" class="shift-picker-cancel-btn" id="shiftPickerCancelBtn">
+                    Cancel
+                </button>
+            </div>
+        </div>
+
+<section class="schedule-card">
+
+            <div class="schedule-card-header">
+                <div>
+                    <h3 id="scheduleTitle">
+                        Today's Schedule
+                    </h3>
+
+                    <p id="scheduleSubtitle">
+                        Select a branch to display its schedule.
+                    </p>
+                </div>
+
+                <div class="schedule-summary compact-summary">
+
+                    <div>
+                        <span>Scheduled</span>
+                        <strong id="scheduledCount">0</strong>
+                    </div>
+
+                    <div class="next-schedule-summary">
+                        <span>Next Schedule</span>
+                        <strong id="nextSchedule">—</strong>
+                    </div>
+
+                </div>
+            </div>
+
+            <div
+                class="schedule-empty-state"
+                id="scheduleEmptyState"
+            >
+                Select a branch to view the schedule.
+            </div>
+
+            <div class="schedule-legend d-none" id="scheduleLegend">
+                <span>
+                    <i class="legend-available"></i>
+                    Available
+                </span>
+
+                <span>
+                    <i class="legend-booked"></i>
+                    <span id="legendBookedLabel">Scheduled</span>
+                </span>
+
+                <span class="d-none" id="legendOtherTherapist">
+                    <i class="legend-other"></i>
+                    Other Therapist
+                </span>
+
+                <span>
+                    <i class="legend-companion"></i>
+                    Companion
+                </span>
+
+                <span>
+                    <i class="legend-completed"></i>
+                    Completed
+                </span>
+
+                <span>
+                    <i class="legend-current"></i>
+                    Current Time
+                </span>
+            </div>
+
+            <div
+                class="schedule-table-wrapper d-none"
+                id="scheduleTableWrapper"
+            >
+                <div class="timeline-grid">
+                    <div class="timeline-header" id="scheduleHead"></div>
+                    <div class="timeline-body" id="scheduleBody"></div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+</div>
+
+<div class="schedule-detail-backdrop d-none" id="scheduleDetailBackdrop">
+    <div class="schedule-detail-card">
+
+        <div class="schedule-detail-header">
+            <div>
+                <p class="schedule-detail-eyebrow" id="scheduleDetailEyebrow">
+                    Scheduled Appointment
+                </p>
+
+                <h3 id="scheduleDetailName">
+                    —
+                </h3>
+
+                <p class="schedule-detail-companion d-none" id="scheduleDetailCompanion"></p>
+            </div>
+
+            <button
+                type="button"
+                class="schedule-detail-close-btn"
+                id="scheduleDetailCloseBtn"
+                aria-label="Close"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="schedule-detail-body">
+
+            <div class="schedule-detail-row">
+                <span class="schedule-detail-label">
+                    Services to Avail
+                </span>
+
+                <ul class="schedule-detail-services" id="scheduleDetailServices"></ul>
+            </div>
+
+            <div class="schedule-detail-grid">
+                <div>
+                    <span class="schedule-detail-label">Therapist</span>
+                    <p id="scheduleDetailTherapist">—</p>
+                </div>
+
+                <div>
+                    <span class="schedule-detail-label">Bed</span>
+                    <p id="scheduleDetailBed">—</p>
+                </div>
+
+                <div>
+                    <span class="schedule-detail-label">Date</span>
+                    <p id="scheduleDetailDate">—</p>
+                </div>
+
+                <div>
+                    <span class="schedule-detail-label">Time</span>
+                    <p id="scheduleDetailTime">—</p>
+                </div>
+
+                <div>
+                    <span class="schedule-detail-label">Status</span>
+                    <p id="scheduleDetailStatus">—</p>
+                </div>
+            </div>
+
+            <div class="schedule-detail-notes d-none" id="scheduleDetailNotesWrapper">
+                <span class="schedule-detail-label">Notes</span>
+                <p id="scheduleDetailNotes">—</p>
+            </div>
+
+            <div class="schedule-detail-row">
+                <span class="schedule-detail-label">
+                    Forms
+                </span>
+
+                <div id="scheduleDetailForms"></div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<!-- Client Form modal (Consent / Head Spa / Body Massage / Combo) -->
+<div class="client-modal-backdrop d-none" id="clientFormBackdrop">
+    <div class="client-modal client-modal-wide">
+        <div class="client-modal-header">
+            <h4 id="clientFormTitle">Form</h4>
+            <button type="button" class="client-modal-close" id="closeClientFormBtn">&times;</button>
+        </div>
+
+        <div class="client-modal-body">
+            <div id="clientFormBody"></div>
+        </div>
+
+        <div class="client-modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="cancelClientFormBtn">
+                Close
+            </button>
+
+            <button type="button" class="btn btn-success" id="saveClientFormBtn">
+                Save Form
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="dashboard.js"></script>
+<script src="client-forms.js"></script>
+<script src="clock-widget.js"></script>
+
+<script src="sidebar.js"></script>
+</body>
+</html>

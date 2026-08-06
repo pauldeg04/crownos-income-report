@@ -1,0 +1,1045 @@
+/* ==========================================================================
+   Crown Head Spa — Dashboard Theme
+   Navy + Deep Green + Gold + Warm Cream
+   Full replacement for dashboard.css
+   ========================================================================== */
+
+body{
+    overflow-x:hidden;
+}
+
+body.modal-open{
+    overflow:hidden;
+}
+
+.main-content{
+    min-width:0;
+    padding:30px;
+}
+
+.main-header{
+    position:relative;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:24px;
+    margin-bottom:24px;
+}
+
+/* ---- Notification bell ---- */
+
+.notification-bell-wrap{
+    position:absolute;
+    top:0;
+    right:0;
+}
+
+.notification-bell-btn{
+    position:relative;
+    width:42px;
+    height:42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#fff;
+    color:var(--navy);
+    border:1px solid var(--border-light);
+    border-radius:50%;
+    font-size:18px;
+    box-shadow:var(--shadow-soft);
+    cursor:pointer;
+}
+
+.notification-bell-btn:hover{
+    border-color:var(--gold);
+}
+
+.notification-badge{
+    position:absolute;
+    top:-4px;
+    right:-4px;
+    min-width:18px;
+    height:18px;
+    padding:0 4px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--state-red);
+    color:#fff;
+    font-size:10px;
+    font-weight:900;
+    border-radius:999px;
+    line-height:1;
+}
+
+.notification-panel{
+    position:absolute;
+    top:calc(100% + 10px);
+    right:0;
+    z-index:70;
+    width:320px;
+    max-width:calc(100vw - 32px);
+    max-height:400px;
+    overflow-y:auto;
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-radius:16px;
+    box-shadow:0 18px 40px rgba(15,23,42,.20);
+}
+
+.notification-panel-header{
+    position:sticky;
+    top:0;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 14px;
+    background:#fff;
+    border-bottom:1px solid var(--border-light);
+    color:var(--navy);
+    font-size:13px;
+}
+
+.notification-panel-header button{
+    background:none;
+    border:none;
+    color:var(--green);
+    font-size:11px;
+    font-weight:800;
+    cursor:pointer;
+}
+
+.notification-item{
+    padding:12px 14px;
+    border-bottom:1px solid var(--border-light);
+    font-size:12.5px;
+    color:var(--ink);
+    cursor:pointer;
+}
+
+.notification-item:last-child{
+    border-bottom:none;
+}
+
+.notification-item.unread{
+    background:var(--gold-soft);
+}
+
+.notification-item strong{
+    display:block;
+    margin-bottom:2px;
+    color:var(--navy);
+    font-size:12.5px;
+}
+
+.notification-item small{
+    display:block;
+    margin-top:4px;
+    color:var(--muted);
+    font-size:10.5px;
+}
+
+.notification-empty{
+    padding:24px 14px;
+    text-align:center;
+    color:var(--muted);
+    font-size:12px;
+}
+
+@media(max-width:768px){
+    .notification-panel{
+        width:290px;
+    }
+}
+
+.eyebrow{
+    margin:0 0 6px;
+    color:var(--green);
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+
+.main-header h2{
+    margin:0;
+    color:var(--navy);
+    font-size:31px;
+    font-weight:900;
+}
+
+.main-header-description{
+    max-width:700px;
+    margin:8px 0 0;
+    color:var(--muted);
+}
+
+.date-picker-card{
+    min-width:310px;
+    padding:16px 18px;
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-radius:15px;
+    box-shadow:var(--shadow-card);
+}
+
+.date-picker-card label{
+    display:block;
+    margin-bottom:7px;
+    color:var(--green);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+
+.date-picker-row{
+    display:flex;
+    gap:8px;
+    align-items:center;
+}
+
+.date-picker-row .form-control{
+    min-width:165px;
+}
+
+.date-picker-card > strong{
+    display:block;
+    margin-top:8px;
+    color:var(--navy);
+    font-size:12px;
+}
+
+.branch-selection-card{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:24px;
+    margin-bottom:24px;
+    padding:22px 24px;
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-radius:16px;
+    box-shadow:var(--shadow-soft);
+}
+
+.branch-selection-copy h3{
+    margin:0 0 5px;
+    color:var(--navy);
+    font-size:18px;
+    font-weight:900;
+}
+
+.branch-selection-copy p{
+    max-width:620px;
+    margin:0;
+    color:var(--muted);
+    font-size:14px;
+}
+
+.branch-select-area{
+    min-width:310px;
+}
+
+.branch-hint{
+    margin-top:8px;
+    color:var(--muted);
+    font-size:12px;
+}
+
+.branch-hint strong{
+    color:var(--green);
+}
+
+.schedule-card{
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-radius:18px;
+    box-shadow:var(--shadow-card);
+    overflow:hidden;
+}
+
+.schedule-card-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:24px;
+    padding:22px 24px;
+    border-bottom:1px solid var(--border-light);
+}
+
+.schedule-card-header h3{
+    margin:0;
+    color:var(--navy);
+    font-size:20px;
+    font-weight:900;
+}
+
+.schedule-card-header p{
+    margin:5px 0 0;
+    color:var(--muted);
+    font-size:13px;
+}
+
+.schedule-summary{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.schedule-summary > div{
+    min-width:115px;
+    padding:11px 13px;
+    color:#fff;
+    background:var(--navy);
+    border:1px solid var(--navy-soft);
+    border-radius:11px;
+    box-shadow:0 8px 18px rgba(11,24,73,.12);
+}
+
+.schedule-summary > div:nth-child(2){
+    background:var(--green);
+    border-color:var(--green);
+}
+
+.schedule-summary > div:nth-child(3){
+    color:var(--navy);
+    background:var(--gold);
+    border-color:var(--gold);
+}
+
+.schedule-summary > .next-schedule-summary{
+    min-width:230px !important;
+    color:var(--ink);
+    background:#fff;
+    border-color:var(--border);
+}
+
+.schedule-summary span{
+    display:block;
+    margin-bottom:3px;
+    color:inherit;
+    opacity:.78;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+}
+
+.schedule-summary strong{
+    color:inherit;
+    font-size:13px;
+}
+
+.next-schedule-summary strong{
+    display:block;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.schedule-empty-state{
+    padding:70px 24px;
+    color:var(--muted);
+    text-align:center;
+}
+
+.schedule-table-wrapper{
+    max-height:680px;
+    overflow:auto;
+}
+
+/* Timeline grid: hour gridlines only, but every appointment card is
+   still positioned by its exact minute (top/height in px, 1.5px per
+   minute) — the compact hourly look never touches placement precision. */
+.timeline-grid{
+    min-width:850px;
+}
+
+.timeline-header,
+.timeline-body{
+    display:grid;
+    grid-template-columns:100px repeat(var(--bed-count, 1), 1fr);
+}
+
+.timeline-body{
+    position:relative;
+}
+
+.timeline-header{
+    position:sticky;
+    top:0;
+    z-index:4;
+}
+
+.timeline-header-cell{
+    height:48px;
+    padding:10px;
+    color:#fff;
+    background:var(--navy);
+    border-right:1px solid var(--border-light);
+    text-align:center;
+    font-size:12px;
+    font-weight:900;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.timeline-header-cell.timeline-corner{
+    position:sticky;
+    left:0;
+    z-index:6;
+}
+
+.timeline-time-col{
+    position:sticky;
+    left:0;
+    z-index:2;
+    background:var(--surface-soft);
+    border-right:1px solid var(--border-light);
+}
+
+.timeline-hour-label{
+    position:absolute;
+    left:0;
+    right:0;
+    padding:2px 10px 0 0;
+    color:#4D535A;
+    text-align:right;
+    font-size:11px;
+    font-weight:800;
+    white-space:nowrap;
+    transform:translateY(-6px);
+}
+
+.timeline-bed-col{
+    position:relative;
+    background-image:linear-gradient(to bottom, var(--border-light) 1px, transparent 1px);
+    background-size:100% var(--schedule-hour-height, 90px);
+    border-right:1px solid var(--border-light);
+}
+
+.timeline-current-line{
+    position:absolute;
+    left:0;
+    right:0;
+    height:0;
+    border-top:2px solid var(--gold);
+    z-index:3;
+}
+
+.timeline-current-line::before{
+    content:"";
+    position:absolute;
+    left:96px;
+    top:-4px;
+    width:8px;
+    height:8px;
+    background:var(--gold);
+    border-radius:50%;
+}
+
+.available-label{
+    display:none;
+}
+
+.appointment-card{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:2px;
+    position:absolute;
+    left:3px;
+    right:3px;
+    min-height:30px;
+    padding:5px 8px;
+    overflow:hidden;
+    color:#fff;
+    background:var(--green);
+    border:0;
+    border-left:3px solid var(--gold);
+    border-radius:7px;
+    box-shadow:0 4px 12px rgba(18,77,28,.16);
+    text-align:left;
+    font:inherit;
+}
+
+.appointment-card strong{
+    max-width:100%;
+    overflow:hidden;
+    font-size:11px;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.appointment-card span{
+    max-width:100%;
+    overflow:hidden;
+    color:rgba(255,255,255,.82);
+    font-size:10px;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.appointment-card small{
+    color:var(--gold-soft);
+    font-size:9px;
+    font-weight:800;
+}
+
+.appointment-card.other-appointment{
+    background:#8E959B;
+    border-left-color:#C7CCD1;
+    box-shadow:0 4px 12px rgba(70,76,82,.14);
+}
+
+.appointment-card.other-appointment small{
+    color:rgba(255,255,255,.75);
+}
+
+.appointment-card.companion-entry-card{
+    background:#2E7D42;
+    box-shadow:0 4px 12px rgba(46,125,66,.18);
+}
+
+.appointment-card.past-appointment{
+    filter:grayscale(1) opacity(.6);
+}
+
+.schedule-legend{
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+    padding:14px 24px;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border-top:1px solid var(--border-light);
+    font-size:11px;
+}
+
+.schedule-legend span{
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+
+.schedule-legend i{
+    width:12px;
+    height:12px;
+    border-radius:3px;
+}
+
+.legend-available{
+    background:#fff;
+    border:1px solid var(--border);
+}
+
+.legend-booked{
+    background:var(--green);
+    border:1px solid var(--green);
+}
+
+.legend-other{
+    background:#8E959B;
+    border:1px solid #8E959B;
+}
+
+.legend-companion{
+    background:#2E7D42;
+    border:1px solid #2E7D42;
+}
+
+.legend-completed{
+    background:var(--green);
+    border:1px solid var(--green);
+    filter:grayscale(1) opacity(.6);
+}
+
+.legend-current{
+    background:var(--gold-soft);
+    border-top:2px solid var(--gold);
+}
+
+@media(max-width:1100px){
+    .main-content{
+        padding:22px;
+    }
+
+    .branch-selection-card,
+    .schedule-card-header{
+        align-items:stretch;
+        flex-direction:column;
+    }
+
+    .branch-select-area{
+        min-width:0;
+        width:100%;
+    }
+}
+
+@media(max-width:768px){
+    .main-content{
+        padding:16px;
+    }
+
+    .main-header{
+        flex-direction:column;
+    }
+
+    .date-picker-card{
+        min-width:0;
+        width:100%;
+    }
+
+    .date-picker-row{
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .date-picker-row .btn{
+        width:100%;
+    }
+
+    .schedule-summary{
+        width:100%;
+    }
+
+    .schedule-summary > div{
+        flex:1;
+        min-width:100px;
+    }
+
+    .schedule-summary > .next-schedule-summary{
+        min-width:100% !important;
+    }
+}
+
+
+/* Clean dashboard layout */
+.dashboard-hidden-controls{
+    display:none !important;
+}
+
+.main-header{
+    margin-bottom:18px;
+}
+
+.schedule-card-header{
+    align-items:center;
+}
+
+.schedule-summary.compact-summary{
+    justify-content:flex-end;
+}
+
+.schedule-summary.compact-summary > div{
+    min-width:150px;
+}
+
+.schedule-summary.compact-summary .next-schedule-summary{
+    min-width:300px !important;
+}
+
+@media(max-width:768px){
+    .schedule-summary.compact-summary{
+        width:100%;
+    }
+
+    .schedule-summary.compact-summary > div,
+    .schedule-summary.compact-summary .next-schedule-summary{
+        min-width:100% !important;
+    }
+}
+
+/* Fix: Light Next Schedule card */
+.schedule-summary.compact-summary > div{
+    min-height:76px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:14px 18px;
+    color:var(--navy);
+    background:#FFFFFF;
+    border:1px solid var(--border-light);
+    border-top:4px solid var(--gold);
+    border-radius:12px;
+    box-shadow:var(--shadow-soft);
+}
+
+.schedule-summary.compact-summary > div span{
+    display:block;
+    margin-bottom:6px;
+    color:var(--muted);
+    opacity:1;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+}
+
+.schedule-summary.compact-summary > div strong{
+    color:var(--navy);
+    font-size:18px;
+    font-weight:900;
+}
+
+.schedule-summary.compact-summary .next-schedule-summary{
+    min-width:300px !important;
+    color:var(--navy) !important;
+    background:#FFFFFF !important;
+    border:1px solid var(--border-light) !important;
+    border-top:4px solid var(--gold) !important;
+}
+
+.schedule-summary.compact-summary .next-schedule-summary span{
+    color:var(--muted) !important;
+}
+
+.schedule-summary.compact-summary .next-schedule-summary strong{
+    color:var(--navy) !important;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+
+/* ==========================================================================
+   Dashboard — Clock In / Clock Out Widget
+   ========================================================================== */
+
+.clock-widget-card{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:20px;
+    margin-bottom:18px;
+    padding:20px 24px;
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-left:5px solid var(--gold);
+    border-radius:16px;
+    box-shadow:var(--shadow-soft);
+}
+
+.clock-widget-eyebrow{
+    margin:0 0 6px;
+    color:var(--green);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+}
+
+.clock-widget-copy h3{
+    margin:0;
+    color:var(--navy);
+    font-size:20px;
+    font-weight:900;
+}
+
+.clock-widget-copy p{
+    max-width:520px;
+    margin:6px 0 0;
+    color:var(--muted);
+    font-size:13px;
+}
+
+.clock-widget-copy p strong{
+    color:var(--navy);
+}
+
+.clock-widget-btn{
+    flex:0 0 auto;
+    min-width:150px;
+    padding:14px 22px;
+    border:0;
+    border-radius:12px;
+    font-size:14px;
+    font-weight:900;
+    letter-spacing:.02em;
+    transition:.18s ease;
+}
+
+.clock-widget-btn:hover{
+    transform:translateY(-1px);
+}
+
+.clock-widget-btn-in{
+    color:#fff;
+    background:var(--green);
+    box-shadow:0 8px 20px rgba(18,77,28,.20);
+}
+
+.clock-widget-btn-in:hover{
+    background:var(--green-dark);
+}
+
+.clock-widget-btn-out{
+    color:#fff;
+    background:var(--state-red);
+    box-shadow:0 8px 20px rgba(201,75,85,.22);
+}
+
+.clock-widget-btn-out:hover{
+    background:var(--state-red-dark);
+}
+
+@media(max-width:650px){
+    .clock-widget-card{
+        flex-direction:column;
+        align-items:stretch;
+        text-align:center;
+    }
+
+    .clock-widget-copy p{
+        max-width:none;
+    }
+
+    .clock-widget-btn{
+        width:100%;
+    }
+}
+
+
+/* ==========================================================================
+   Dashboard — Opening/Closing Shift Picker (shown on the first clock-in
+   of the day; decides which shift schedule today's pay is clamped to)
+   ========================================================================== */
+
+.shift-picker-backdrop{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:fixed;
+    inset:0;
+    z-index:1200;
+    padding:20px;
+    background:rgba(11,24,73,.55);
+}
+
+.shift-picker-card{
+    width:100%;
+    max-width:420px;
+    padding:28px;
+    background:#fff;
+    border-radius:18px;
+    box-shadow:0 24px 60px rgba(11,24,73,.28);
+}
+
+.shift-picker-card h3{
+    margin:0;
+    color:var(--navy);
+    font-size:20px;
+    font-weight:900;
+}
+
+.shift-picker-subtitle{
+    margin:6px 0 20px;
+    color:var(--muted);
+    font-size:13px;
+}
+
+.shift-picker-options{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.shift-picker-btn{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:3px;
+    width:100%;
+    padding:16px 18px;
+    color:var(--navy);
+    background:#fff;
+    border:2px solid var(--border-light);
+    border-radius:12px;
+    text-align:left;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+}
+
+.shift-picker-btn:hover{
+    border-color:var(--gold);
+    background:#FFFBF0;
+}
+
+.shift-picker-btn strong{
+    font-size:16px;
+    font-weight:800;
+}
+
+.shift-picker-btn small{
+    color:var(--muted);
+}
+
+.shift-picker-cancel-btn{
+    width:100%;
+    margin-top:14px;
+    padding:10px;
+    color:var(--muted);
+    background:transparent;
+    border:0;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+}
+
+.shift-picker-cancel-btn:hover{
+    color:var(--navy);
+}
+
+/* ==========================================================================
+   Dashboard — Schedule Detail popup (opened by tapping/clicking a scheduled
+   appointment card in the dashboard's read-only schedule grid)
+   ========================================================================== */
+
+.appointment-card{
+    cursor:pointer;
+}
+
+.appointment-card:hover,
+.appointment-card:focus-visible{
+    filter:brightness(1.05);
+}
+
+.schedule-detail-backdrop{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:fixed;
+    inset:0;
+    z-index:1200;
+    padding:20px;
+    background:rgba(11,24,73,.55);
+}
+
+.schedule-detail-card{
+    width:100%;
+    max-width:440px;
+    max-height:calc(100vh - 40px);
+    overflow:auto;
+    background:#fff;
+    border-radius:18px;
+    box-shadow:0 24px 60px rgba(11,24,73,.28);
+}
+
+.schedule-detail-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    padding:24px 24px 16px;
+    border-bottom:1px solid var(--border-light);
+}
+
+.schedule-detail-eyebrow{
+    margin:0 0 4px;
+    color:var(--green);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+}
+
+.schedule-detail-header h3{
+    margin:0;
+    color:var(--navy);
+    font-size:21px;
+    font-weight:900;
+}
+
+.schedule-detail-companion{
+    margin:5px 0 0;
+    color:#2E7D42;
+    font-size:12px;
+    font-weight:700;
+    font-style:italic;
+}
+
+.schedule-detail-close-btn{
+    width:34px;
+    height:34px;
+    flex:0 0 auto;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-size:20px;
+    line-height:1;
+}
+
+.schedule-detail-close-btn:hover{
+    color:var(--navy);
+    background:var(--gold-soft);
+}
+
+.schedule-detail-body{
+    padding:20px 24px 24px;
+}
+
+.schedule-detail-label{
+    display:block;
+    margin-bottom:4px;
+    color:var(--muted);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+}
+
+.schedule-detail-row{
+    margin-bottom:18px;
+}
+
+.schedule-detail-services{
+    margin:0;
+    padding-left:18px;
+    color:var(--navy);
+    font-size:14px;
+    font-weight:700;
+}
+
+.schedule-detail-services li{
+    margin-bottom:3px;
+}
+
+.schedule-detail-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:14px 16px;
+}
+
+.schedule-detail-grid p{
+    margin:0;
+    color:var(--navy);
+    font-size:14px;
+    font-weight:700;
+}
+
+.schedule-detail-notes{
+    margin-top:18px;
+    padding-top:16px;
+    border-top:1px solid var(--border-light);
+}
+
+.schedule-detail-notes p{
+    margin:0;
+    color:var(--navy);
+    font-size:13px;
+}
+
+@media(max-width:480px){
+    .schedule-detail-backdrop{
+        align-items:flex-end;
+        padding:0;
+    }
+
+    .schedule-detail-card{
+        max-height:88vh;
+        border-radius:20px 20px 0 0;
+    }
+}

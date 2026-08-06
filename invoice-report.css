@@ -1,0 +1,71 @@
+/* Page-specific styles for the Invoice Report. */
+
+.invoice-count-box{
+    background:var(--brand-blue-tint);
+    border:1px solid var(--brand-blue-border);
+    border-radius:10px;
+    padding:10px 15px;
+    color:#1e3a8a;
+}
+
+.invoice-table{
+    margin-bottom:0;
+}
+
+.invoice-table th{
+    background:var(--surface-soft);
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    border-bottom:2px solid var(--border);
+    padding:10px 12px;
+}
+
+.invoice-table td{
+    padding:10px 12px;
+    font-size:14px;
+    color:var(--ink);
+    border-color:var(--border-light);
+    vertical-align:middle;
+}
+
+.invoice-table small{
+    display:block;
+    color:var(--muted);
+    font-weight:600;
+    font-size:11px;
+    margin-top:2px;
+}
+
+.invoice-particulars-cell{
+    font-weight:700;
+    color:var(--navy);
+}
+
+.invoice-amount-cell{
+    text-align:right;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+}
+
+.invoice-grand-row td{
+    background:var(--gold-soft);
+    border-top:2px solid var(--gold);
+    font-size:15px;
+    font-weight:800;
+    color:var(--navy);
+}
+
+.invoice-grand-row td:first-child{
+    text-align:right;
+}
+
+.empty-state{
+    padding:26px;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border-radius:var(--radius-md);
+    text-align:center;
+}

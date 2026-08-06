@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Crown Head Spa - Client Database</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="clients.css">
+    <link rel="stylesheet" href="client-forms.css">
+
+    
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="pwa-register.js"></script>
+    <script src="firebase-sync.js"></script>
+    <script src="access-control.js"></script>
+</head>
+
+<body>
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <div class="page-heading">
+                <div>
+                    <h2 class="fw-bold text-primary mb-0">Client Database</h2>
+                </div>
+
+                <a href="home.html" class="btn-dashboard text-decoration-none">
+                    ← Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                <div>
+                    <h3 class="fw-bold mb-0">Birthday Celebrants This Month</h3>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle client-table client-birthday-table">
+                    <thead class="table-primary text-center">
+                        <tr>
+                            <th>Client</th>
+                            <th>Birthday</th>
+                            <th>Contact Number</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="birthdayClientsBody"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state d-none" id="birthdayEmptyState">
+                No clients with a birthday this month.
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                <div>
+                    <h3 class="fw-bold mb-0">Clients</h3>
+                    <small class="text-muted">
+                        Total Clients: <strong id="clientCount">0</strong>
+                    </small>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <div class="client-search">
+                        <input
+                            type="search"
+                            id="searchClient"
+                            class="form-control"
+                            placeholder="Search client, contact, email, loyalty card, or remarks"
+                        >
+                    </div>
+
+                    <button type="button" class="btn btn-outline-primary" id="openImportClientsBtn">
+                        Import Clients
+                    </button>
+
+                    <button type="button" class="btn btn-success" id="openAddClientBtn">
+                        + Add Client
+                    </button>
+                </div>
+            </div>
+
+            <div class="client-vip-tabs" id="clientVipTabs">
+                <button type="button" class="client-vip-tab active" id="vipTabBtn" data-vip="Yes">
+                    VIP Clients <span class="client-vip-tab-count" id="vipTabCount">0</span>
+                </button>
+
+                <button type="button" class="client-vip-tab" id="nonVipTabBtn" data-vip="No">
+                    Non-VIP Clients <span class="client-vip-tab-count" id="nonVipTabCount">0</span>
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle client-table">
+                    <thead class="table-primary text-center">
+                        <tr>
+                            <th>No.</th>
+                            <th>Client</th>
+                            <th>Visits</th>
+                            <th>Last Visit</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="clientsBody"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state d-none" id="emptyState">
+                No clients found.
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Add Client modal -->
+<div class="client-modal-backdrop d-none" id="addClientBackdrop">
+    <div class="client-modal">
+        <div class="client-modal-header">
+            <h4>Add Client</h4>
+            <button type="button" class="client-modal-close" id="closeAddClientBtn">&times;</button>
+        </div>
+
+        <div class="client-modal-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label fw-bold">Loyalty Card Number</label>
+                    <input type="text" id="loyaltyCardNumber" class="form-control" placeholder="Enter loyalty card number">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Last Name *</label>
+                    <input type="text" id="clientLastName" class="form-control" placeholder="Dela Cruz">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">First Name *</label>
+                    <input type="text" id="clientFirstName" class="form-control" placeholder="Juan">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Middle Initial</label>
+                    <input type="text" id="clientMiddleInitial" class="form-control" placeholder="D." maxlength="5">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Sex</label>
+                    <select id="clientSex" class="form-select">
+                        <option value="">Select Sex</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Contact Number</label>
+                    <div class="input-group">
+                        <span class="input-group-text">+63</span>
+                        <input type="tel" id="contactNumber" class="form-control" placeholder="9XXXXXXXXX" maxlength="10">
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Email Address</label>
+                    <input type="email" id="emailAddress" class="form-control" placeholder="client@email.com">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Birthday</label>
+                    <input type="date" id="birthday" class="form-control">
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold">Home Address</label>
+                    <input type="text" id="homeAddress" class="form-control" placeholder="Street, Barangay, City">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Home Branch</label>
+                    <select id="homeBranch" class="form-select">
+                        <option value="">Select Branch</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">VIP Status</label>
+                    <select id="vipStatus" class="form-select">
+                        <option value="No">Non-VIP</option>
+                        <option value="Yes">VIP</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold">Remarks</label>
+                    <textarea id="clientNotes" class="form-control" rows="2" placeholder="Preferences, concerns, reminders, etc."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="client-modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="cancelAddClientBtn">
+                Cancel
+            </button>
+
+            <button type="button" class="btn btn-success" id="saveClientBtn">
+                Save Client
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- View Client modal -->
+<div class="client-modal-backdrop d-none" id="viewClientBackdrop">
+    <div class="client-modal client-modal-wide">
+        <div class="client-modal-header">
+            <h4>Client Information</h4>
+            <button type="button" class="client-modal-close" id="closeViewClientBtn">&times;</button>
+        </div>
+
+        <div class="client-modal-body">
+            <div class="client-view-grid" id="viewClientInfo"></div>
+
+            <h5 class="client-visit-history-title">Visit History</h5>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle client-visit-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Branch</th>
+                            <th>Services / Products</th>
+                            <th>Therapist</th>
+                            <th>Payment</th>
+                            <th>Amount</th>
+                            <th>Forms</th>
+                        </tr>
+                    </thead>
+                    <tbody id="viewClientVisitsBody"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state d-none" id="viewClientVisitsEmpty">
+                No visit records found for this client.
+            </div>
+        </div>
+
+        <div class="client-modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="closeViewClientFooterBtn">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Client modal -->
+<div class="client-modal-backdrop d-none" id="editClientBackdrop">
+    <div class="client-modal">
+        <div class="client-modal-header">
+            <h4>Edit Client</h4>
+            <button type="button" class="client-modal-close" id="closeEditClientBtn">&times;</button>
+        </div>
+
+        <div class="client-modal-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label fw-bold">Loyalty Card Number</label>
+                    <input type="text" id="editLoyaltyCardNumber" class="form-control" placeholder="Enter loyalty card number">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Last Name *</label>
+                    <input type="text" id="editClientLastName" class="form-control" placeholder="Dela Cruz">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">First Name *</label>
+                    <input type="text" id="editClientFirstName" class="form-control" placeholder="Juan">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Middle Initial</label>
+                    <input type="text" id="editClientMiddleInitial" class="form-control" placeholder="D." maxlength="5">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">Sex</label>
+                    <select id="editClientSex" class="form-select">
+                        <option value="">Select Sex</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Contact Number</label>
+                    <div class="input-group">
+                        <span class="input-group-text">+63</span>
+                        <input type="tel" id="editContactNumber" class="form-control" placeholder="9XXXXXXXXX" maxlength="10">
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Email Address</label>
+                    <input type="email" id="editEmailAddress" class="form-control" placeholder="client@email.com">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Birthday</label>
+                    <input type="date" id="editBirthday" class="form-control">
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold">Home Address</label>
+                    <input type="text" id="editHomeAddress" class="form-control" placeholder="Street, Barangay, City">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Home Branch</label>
+                    <select id="editHomeBranch" class="form-select">
+                        <option value="">Select Branch</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">VIP Status</label>
+                    <select id="editVipStatus" class="form-select">
+                        <option value="No">Non-VIP</option>
+                        <option value="Yes">VIP</option>
+                    </select>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="client-modal-footer client-modal-footer-split">
+            <button type="button" class="btn btn-danger" id="deleteClientBtn">
+                Delete Client
+            </button>
+
+            <div class="client-modal-footer-right">
+                <button type="button" class="btn btn-outline-secondary" id="cancelEditClientBtn">
+                    Cancel
+                </button>
+
+                <button type="button" class="btn btn-success" id="updateClientBtn">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Import Clients modal -->
+<div class="client-modal-backdrop d-none" id="importClientsBackdrop">
+    <div class="client-modal">
+        <div class="client-modal-header">
+            <h4>Import Clients</h4>
+            <button type="button" class="client-modal-close" id="closeImportClientsBtn">&times;</button>
+        </div>
+
+        <div class="client-modal-body">
+            <p class="text-muted">
+                Select a client list JSON file (e.g. a converted masterlist). Clients whose name
+                already exists in the database are skipped by default — existing records are
+                never overwritten with different data, only optionally filled in where blank
+                (see checkbox below). Visits and Total Spent always start at 0 for newly imported
+                clients; these are only tracked automatically once settled sales are recorded for
+                them.
+            </p>
+
+            <input type="file" id="importClientsFileInput" class="form-control" accept="application/json,.json">
+
+            <div class="form-check mt-3">
+                <input type="checkbox" class="form-check-input" id="importFillBlanksCheckbox">
+                <label class="form-check-label" for="importFillBlanksCheckbox">
+                    For names that already exist, fill in only their missing/blank fields (won't overwrite fields that already have a value)
+                </label>
+            </div>
+
+            <div class="import-clients-result d-none" id="importClientsResult"></div>
+        </div>
+
+        <div class="client-modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="cancelImportClientsBtn">
+                Cancel
+            </button>
+
+            <button type="button" class="btn btn-success" id="runImportClientsBtn">
+                Import
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Client Form modal (Consent / Head Spa / Body Massage / Combo) -->
+<div class="client-modal-backdrop d-none" id="clientFormBackdrop">
+    <div class="client-modal client-modal-wide">
+        <div class="client-modal-header">
+            <h4 id="clientFormTitle">Form</h4>
+            <button type="button" class="client-modal-close" id="closeClientFormBtn">&times;</button>
+        </div>
+
+        <div class="client-modal-body">
+            <div id="clientFormBody"></div>
+        </div>
+
+        <div class="client-modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="cancelClientFormBtn">
+                Close
+            </button>
+
+            <button type="button" class="btn btn-success" id="saveClientFormBtn">
+                Save Form
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="clients.js"></script>
+<script src="client-forms.js"></script>
+<script src="sidebar.js"></script>
+</body>
+</html>

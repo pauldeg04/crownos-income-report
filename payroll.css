@@ -1,0 +1,370 @@
+/* Page-specific styles for Payroll — matches the elegant navy/gold
+   ledger treatment used elsewhere (Expenses Report, Invoice Summary). */
+
+.rate-setup-row{
+    display:flex;
+    gap:8px;
+}
+
+.rate-setup-row select{
+    flex:1;
+    min-width:0;
+}
+
+.payroll-table{
+    margin-bottom:0;
+}
+
+.payroll-table th{
+    background:var(--surface-soft);
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    border-bottom:2px solid var(--border);
+    padding:10px 12px;
+    white-space:nowrap;
+    text-align:left;
+}
+
+.payroll-table td{
+    padding:10px 12px;
+    font-size:14px;
+    color:var(--ink);
+    border-color:var(--border-light);
+    vertical-align:middle;
+}
+
+.payroll-staff-cell{
+    font-weight:700;
+    color:var(--navy);
+}
+
+.payroll-staff-cell small{
+    display:block;
+    color:var(--muted);
+    font-weight:600;
+    font-size:11px;
+}
+
+.payroll-salary-cell{
+    font-weight:800;
+    color:var(--navy);
+    font-variant-numeric:tabular-nums;
+}
+
+.payroll-bank-cell small{
+    display:block;
+    color:var(--muted);
+    font-weight:600;
+    font-size:11px;
+}
+
+.payslip-duty-badge{
+    display:inline-block;
+    margin-top:3px;
+    padding:1px 7px;
+    border-radius:999px;
+    font-size:10px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    white-space:nowrap;
+}
+
+.payslip-duty-therapist{
+    color:var(--navy);
+    background:var(--surface-soft);
+    border:1px solid var(--border);
+}
+
+.payslip-duty-receptionist{
+    color:var(--gold-dark);
+    background:var(--gold-soft);
+    border:1px solid var(--accent-border);
+}
+
+.payslip-duty-mixed{
+    color:#B02A2A;
+    background:#FBEAEA;
+    border:1px solid #E9B4B4;
+    cursor:help;
+}
+
+.payslip-shift-badge{
+    display:inline-block;
+    margin-top:3px;
+    padding:1px 7px;
+    border-radius:999px;
+    font-size:10px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    white-space:nowrap;
+    color:#1F6F78;
+    background:#E7F4F5;
+    border:1px solid #BEE0E3;
+    cursor:help;
+}
+
+.payslip-rate-warning{
+    display:flex;
+    gap:10px;
+    padding:12px 14px;
+    margin-bottom:16px;
+    border-radius:var(--radius-md);
+    background:var(--warning-bg);
+    border:1px solid var(--warning-border);
+    color:var(--warning-dark);
+    font-size:13px;
+    font-weight:600;
+    line-height:1.4;
+}
+
+.payroll-status-badge{
+    display:inline-flex;
+    align-items:center;
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:800;
+    white-space:nowrap;
+}
+
+.payroll-status-paid{
+    color:var(--state-green-text);
+    background:var(--state-green-bg);
+    border:1px solid var(--state-green-border);
+}
+
+.payroll-status-pending{
+    color:var(--gold-dark);
+    background:var(--gold-soft);
+    border:1px solid var(--accent-border);
+}
+
+.empty-state{
+    padding:26px;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border-radius:var(--radius-md);
+    text-align:center;
+}
+
+/* ---- Modals (Individual Rate Setup / Payslip) ---- */
+
+.payroll-modal-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:2300;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(11,24,73,.55);
+    padding:20px;
+}
+
+.payroll-modal{
+    width:100%;
+    max-width:640px;
+    max-height:90vh;
+    display:flex;
+    flex-direction:column;
+    background:#fff;
+    border-radius:var(--radius-lg);
+    box-shadow:0 22px 60px rgba(7,16,51,.35);
+    overflow:hidden;
+}
+
+.payroll-modal-wide{
+    max-width:920px;
+}
+
+.payroll-modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 22px;
+    background:linear-gradient(120deg,var(--navy),var(--navy-soft));
+    color:#fff;
+}
+
+.payroll-modal-header h4{
+    margin:0;
+    font-weight:800;
+}
+
+.payroll-modal-close{
+    border:none;
+    background:transparent;
+    color:#fff;
+    font-size:24px;
+    line-height:1;
+    cursor:pointer;
+    opacity:.85;
+}
+
+.payroll-modal-close:hover{
+    opacity:1;
+}
+
+.payroll-modal-body{
+    padding:22px;
+    overflow-y:auto;
+}
+
+.payroll-modal-footer{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    padding:16px 22px;
+    border-top:1px solid var(--border-light);
+    background:var(--surface-soft);
+}
+
+.payroll-modal-footer-split{
+    justify-content:space-between;
+}
+
+.payroll-modal-footer-right{
+    display:flex;
+    gap:8px;
+}
+
+/* ---- Payslip ---- */
+
+.payslip-info-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+    gap:14px 20px;
+    margin-bottom:20px;
+    padding-bottom:16px;
+    border-bottom:1px solid var(--border-light);
+}
+
+.payslip-info-grid > div{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+}
+
+.payslip-info-grid span{
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--muted);
+}
+
+.payslip-info-grid strong{
+    font-size:14px;
+    color:var(--ink);
+    font-weight:700;
+}
+
+.payslip-table{
+    min-width:620px;
+    margin-bottom:16px;
+}
+
+.payslip-table th{
+    background:var(--surface-soft);
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    border-bottom:2px solid var(--border);
+    padding:8px 10px;
+    text-align:center;
+}
+
+.payslip-table td{
+    padding:7px 10px;
+    font-size:13px;
+    text-align:center;
+    border-color:var(--border-light);
+    font-variant-numeric:tabular-nums;
+}
+
+.payslip-adjustment-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    gap:14px;
+    padding:14px;
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-md);
+    margin-bottom:16px;
+}
+
+.payslip-adjustment-field{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px;
+    flex:1;
+    min-width:260px;
+}
+
+.payslip-adjustment-field input[type="number"]{
+    max-width:130px;
+}
+
+.payslip-adjustment-field input[type="text"]{
+    flex:1;
+    min-width:140px;
+}
+
+.payslip-adjustment-readout{
+    padding:12px 14px;
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-md);
+    margin-bottom:16px;
+    font-size:13px;
+    color:var(--ink);
+}
+
+.payslip-summary{
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-md);
+    padding:14px 16px;
+}
+
+.payslip-summary > div{
+    display:flex;
+    justify-content:space-between;
+    gap:18px;
+    padding:5px 0;
+    font-size:13px;
+}
+
+.payslip-summary span{
+    color:var(--muted);
+}
+
+.payslip-summary strong{
+    font-variant-numeric:tabular-nums;
+    color:var(--ink);
+}
+
+.payslip-summary-subtotal{
+    border-top:1px solid var(--border-light);
+    margin-top:4px;
+    padding-top:8px !important;
+}
+
+.payslip-summary-net{
+    border-top:2px solid var(--gold);
+    margin-top:6px;
+    padding-top:8px !important;
+}
+
+.payslip-summary-net strong{
+    color:var(--navy);
+    font-size:17px;
+}

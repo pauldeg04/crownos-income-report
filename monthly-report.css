@@ -1,0 +1,64 @@
+/* Page-specific overrides only — shared.css provides body/.btn-purple/
+   .pdf-mode base styles */
+
+.report-table th,
+.report-table td{
+    text-align:center;
+    vertical-align:middle;
+}
+
+.report-table th:nth-child(1),
+.report-table td:nth-child(1){
+    width:20%;
+}
+
+.report-table th:nth-child(2),
+.report-table td:nth-child(2),
+.report-table th:nth-child(3),
+.report-table td:nth-child(3),
+.report-table th:nth-child(4),
+.report-table td:nth-child(4),
+.report-table th:nth-child(5),
+.report-table td:nth-child(5),
+.report-table th:nth-child(6),
+.report-table td:nth-child(6){
+    width:16%;
+}
+
+.summary-table td{
+    text-align:center;
+    font-weight:600;
+}
+
+.summary-table td:first-child{
+    text-align:left;
+}
+
+.grand-total{
+    background:#e8f0ff;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.has-sales{
+    background:var(--state-green-bg);
+    font-weight:600;
+}
+
+.no-sales{
+    color:#9ca3af;
+}
+
+.pdf-mode table th,
+.pdf-mode table td{
+    font-size:12px;
+    padding:5px;
+}
+
+.summary-card,
+.report-table,
+.summary-table,
+tr{
+    page-break-inside:avoid;
+    break-inside:avoid;
+}

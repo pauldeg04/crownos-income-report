@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crown Head Spa - Daily Income Report</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="crownos-theme.css">
+  <link rel="stylesheet" href="sidebar.css">
+  <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="pwa-register.js"></script>
+    <script src="firebase-sync.js"></script>
+<script src="access-control.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+  >
+<script src="crownos-theme.js"></script>
+</head>
+
+<body>
+<div class="container-fluid px-3 px-lg-4 py-4" id="reportArea">
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <div class="page-heading">
+        <div>
+          <h2 class="fw-bold text-primary mb-0">Daily Income Report</h2>
+        </div>
+
+        <a href="home.html" class="btn-dashboard text-decoration-none">
+          ← Back to Dashboard
+        </a>
+      </div>
+
+      <div class="row g-3 mt-1 export-excluded-overview compact-top-overview">
+        <div class="col-xl-5 col-lg-5">
+          <label class="form-label fw-bold compact-overview-label">Date</label>
+
+          <div class="date-picker-field">
+            <button type="button" class="date-picker-trigger" id="dateDropdownTrigger">
+              <span class="date-picker-value" id="dateDropdownValue">Select date</span>
+              <span class="date-picker-caret" aria-hidden="true">▾</span>
+            </button>
+
+            <div class="calendar-popover d-none" id="calendarPopover">
+              <div class="calendar-widget compact-calendar-widget" id="calendarWidget">
+                <div class="calendar-header">
+                  <button type="button" class="calendar-nav" id="prevMonthBtn" aria-label="Previous month">‹</button>
+                  <div class="calendar-title" id="calendarTitle">Month Year</div>
+                  <button type="button" class="calendar-nav" id="nextMonthBtn" aria-label="Next month">›</button>
+                </div>
+
+                <div class="calendar-weekdays">
+                  <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                </div>
+
+                <div class="calendar-grid" id="calendarGrid"></div>
+
+                <div class="calendar-legend">
+                  <span><i class="legend-dot"></i> Saved sales</span>
+                  <span><i class="legend-today"></i> Today</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <input type="date" id="date" class="form-control d-none">
+        </div>
+
+        <div class="col-xl-7 col-lg-7">
+          <label class="form-label fw-bold compact-overview-label">
+            Schedule
+          </label>
+
+          <div class="sales-record-card schedule-only-card schedule-compact-card" id="salesRecordCard">
+            <div class="schedule-compact-line">
+              <span class="schedule-compact-icon" aria-hidden="true">🗓</span>
+              <span class="schedule-compact-count d-none" id="dailyScheduledCount">0</span>
+              <span class="schedule-compact-text" id="dailyScheduledLabel">No bookings for selected date</span>
+              <span class="schedule-compact-divider">·</span>
+              <span class="schedule-compact-text">
+                Next: <strong id="dailyNextSchedule">—</strong>
+              </span>
+              <span class="schedule-compact-meta" id="dailyNextScheduleMeta">Select a branch and date</span>
+            </div>
+
+            <a href="home.html" class="daily-view-schedule-link schedule-compact-link">
+              View full schedule →
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-3" id="ongoingTransactionsCard">
+    <div class="card-body p-0">
+      <h3 class="fw-bold px-3 pt-3 mb-2">Ongoing Transactions</h3>
+
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle mb-0 sales-table">
+          <thead class="table-primary text-center">
+            <tr>
+              <th>Time</th>
+              <th>Client</th>
+              <th>Therapist</th>
+              <th>Services / Products</th>
+              <th>Total Amount</th>
+              <th>Payment</th>
+              <th id="ongoingActionHeader">Action</th>
+            </tr>
+          </thead>
+          <tbody id="ongoingBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle mb-0 sales-table">
+          <thead class="table-primary text-center">
+            <tr>
+              <th>Time</th>
+              <th>Client</th>
+              <th>Therapist</th>
+              <th>Services / Products</th>
+              <th>Total Amount</th>
+              <th>Payment</th>
+              <th id="salesActionHeader">Action</th>
+            </tr>
+          </thead>
+          <tbody id="body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="button-area mb-4">
+    <button type="button" class="btn btn-primary" id="addSaleBtn">Add Sale</button>
+    <button type="button" class="btn btn-purple" id="pdfBtn">Export as PDF</button>
+    <button type="button" class="btn btn-warning" id="clearBtn">Clear This Branch / Date</button>
+  </div>
+
+  <div class="card shadow-sm border-0 daily-kpi-card mb-3">
+    <div class="card-body">
+      <h3 class="daily-kpi-title">Daily KPI</h3>
+
+      <div class="daily-kpi-grid">
+        <section class="daily-kpi-column">
+          <h4>Sales</h4>
+
+          <div class="daily-kpi-list">
+            <div class="daily-kpi-row">
+              <span>Head Spa</span>
+              <strong class="daily-kpi-value" id="kpiHeadSpa">0</strong>
+            </div>
+
+            <div class="daily-kpi-row">
+              <span>Massage</span>
+              <strong class="daily-kpi-value" id="kpiMassage">0</strong>
+            </div>
+
+            <div class="daily-kpi-row">
+              <span>Package</span>
+              <strong class="daily-kpi-value" id="kpiPackage">0</strong>
+            </div>
+
+            <div class="daily-kpi-row">
+              <span>Add-on</span>
+              <strong class="daily-kpi-value" id="kpiAddOn">0</strong>
+            </div>
+
+            <div class="daily-kpi-row">
+              <span>Kiddie</span>
+              <strong class="daily-kpi-value" id="kpiKiddie">0</strong>
+            </div>
+
+            <div class="daily-kpi-row">
+              <span>Products</span>
+              <strong class="daily-kpi-value" id="kpiProducts">0</strong>
+            </div>
+
+            <div class="daily-kpi-row">
+              <span>VIP Card</span>
+              <strong class="daily-kpi-value" id="kpiVipCard">0</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="daily-kpi-column">
+          <h4>Operations</h4>
+
+          <div class="daily-kpi-list">
+            <div class="daily-kpi-row">
+              <span>Total client</span>
+              <strong class="daily-kpi-value" id="kpiTotalClient">0</strong>
+            </div>
+
+            <div class="daily-kpi-row">
+              <span>Facebook</span>
+              <strong class="daily-kpi-value" id="kpiFacebook">0</strong>
+            </div>
+
+            <div class="daily-kpi-row">
+              <span>Walk In</span>
+              <strong class="daily-kpi-value" id="kpiWalkIn">0</strong>
+            </div>
+
+            <div class="daily-kpi-row">
+              <span>Referral</span>
+              <strong class="daily-kpi-value" id="kpiReferral">0</strong>
+            </div>
+
+            <div class="daily-kpi-row">
+              <span>Returning</span>
+              <strong class="daily-kpi-value" id="kpiReturning">0</strong>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 summary-card executive-summary-card">
+    <div class="card-body">
+      <div class="executive-summary-heading">
+        <div>
+          <p class="executive-summary-eyebrow">Daily Income Overview</p>
+          <h3 class="fw-bold mb-1">Sales Summary</h3>
+        </div>
+      </div>
+
+      <div class="executive-summary-grid two-panel-summary-grid">
+        <section class="executive-summary-panel">
+          <h4>Sales Breakdown</h4>
+
+          <div class="breakdown-list">
+            <div class="breakdown-row">
+              <span>Total Services</span>
+              <strong id="totalServicesSales">₱0.00</strong>
+            </div>
+
+            <div class="breakdown-row">
+              <span>Total VIP Card</span>
+              <strong id="totalVipCardSales">₱0.00</strong>
+            </div>
+
+            <div class="breakdown-row">
+              <span>Total Product Sales</span>
+              <strong id="totalProductSales">₱0.00</strong>
+            </div>
+
+            <div class="breakdown-row breakdown-total-row">
+              <span>Total Sales</span>
+              <strong id="salesBreakdownTotal">₱0.00</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="executive-summary-panel">
+          <h4>Payment Breakdown</h4>
+
+          <div class="breakdown-list">
+            <div class="breakdown-row payment-summary-cash">
+              <span>Cash</span>
+              <strong id="cash">₱0.00</strong>
+            </div>
+
+            <div class="breakdown-row payment-summary-gcash">
+              <span>GCash</span>
+              <strong id="gcash">₱0.00</strong>
+            </div>
+
+            <div class="breakdown-row payment-summary-bank">
+              <span>Bank Transfer</span>
+              <strong id="bank">₱0.00</strong>
+            </div>
+
+            <div class="breakdown-row payment-summary-terminal">
+              <span>Terminal</span>
+              <strong id="terminal">₱0.00</strong>
+            </div>
+
+            <div class="breakdown-row breakdown-total-row">
+              <span>Total Payments</span>
+              <strong id="paymentBreakdownTotal">₱0.00</strong>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<div class="sale-modal-backdrop d-none" id="saleModalBackdrop">
+  <div class="sale-modal" role="dialog" aria-modal="true" aria-labelledby="saleModalTitle">
+
+    <div class="sale-modal-header">
+      <div>
+        <p class="sale-modal-eyebrow" id="saleModalEyebrow">New Sale</p>
+        <h3 id="saleModalTitle">Add Sale</h3>
+        <small>Complete all transaction details below.</small>
+      </div>
+
+      <button type="button" class="sale-modal-close" id="closeSaleModalBtn" aria-label="Close">
+        ×
+      </button>
+    </div>
+
+    <div class="sale-modal-body">
+
+      <div class="row g-3">
+
+        <div class="col-md-4">
+          <label class="form-label">Time *</label>
+          <input type="time" id="modalTimeInput" class="form-control" step="60">
+        </div>
+
+        <div class="col-md-8">
+          <label class="form-label">Client *</label>
+          <div class="input-group">
+            <input
+              type="text"
+              id="modalClientInput"
+              class="form-control"
+              list="modalClientOptions"
+              placeholder="Type or select client"
+              autocomplete="off"
+            >
+            <button type="button" class="btn btn-outline-secondary" id="modalClientMoreBtn">
+              More
+            </button>
+          </div>
+          <datalist id="modalClientOptions"></datalist>
+          <span class="modal-vip-badge d-none" id="modalVipBadge">VIP CLIENT</span>
+        </div>
+
+        <div class="col-12 d-none" id="modalClientDetailsPanel">
+          <div class="modal-client-details-card">
+            <div class="modal-section-heading">
+              <div>
+                <h4>Additional Client Details</h4>
+                <p>Optional — fills in the Client Database profile for this client.</p>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Loyalty Card Number</label>
+                <input type="text" id="modalClientLoyaltyCardNumber" class="form-control" placeholder="Enter loyalty card number">
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Last Name</label>
+                <input type="text" id="modalClientLastName" class="form-control" placeholder="Dela Cruz">
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">First Name</label>
+                <input type="text" id="modalClientFirstName" class="form-control" placeholder="Juan">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Middle Initial</label>
+                <input type="text" id="modalClientMiddleInitial" class="form-control" placeholder="D." maxlength="5">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Sex</label>
+                <select id="modalClientSex" class="form-select">
+                  <option value="">Select Sex</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Contact Number</label>
+                <div class="input-group">
+                  <span class="input-group-text">+63</span>
+                  <input type="tel" id="modalClientContactNumber" class="form-control" placeholder="9XXXXXXXXX" maxlength="10">
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Email Address</label>
+                <input type="email" id="modalClientEmail" class="form-control" placeholder="client@email.com">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Birthday</label>
+                <input type="date" id="modalClientBirthday" class="form-control">
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Home Address</label>
+                <input type="text" id="modalClientHomeAddress" class="form-control" placeholder="Street, Barangay, City">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Home Branch</label>
+                <select id="modalClientHomeBranch" class="form-select">
+                  <option value="">Select Branch</option>
+                </select>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">VIP Status</label>
+                <select id="modalClientVipStatus" class="form-select">
+                  <option value="No">Non-VIP</option>
+                  <option value="Yes">VIP</option>
+                </select>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Remarks</label>
+                <textarea id="modalClientRemarks" class="form-control" rows="2" placeholder="Preferences, concerns, reminders, etc."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4 d-none" id="modalSeniorPwdIdWrapper">
+          <label class="form-label">Senior Citizen / PWD ID Number *</label>
+          <input
+            type="text"
+            id="modalSeniorPwdIdInput"
+            class="form-control"
+            placeholder="ID Number"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Source *</label>
+          <select id="modalSourceInput" class="form-select">
+            <option value="Facebook">Facebook</option>
+            <option value="Walk-in">Walk-in</option>
+            <option value="Referral">Referral</option>
+            <option value="Returning">Returning</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label" id="modalTherapistLabel">
+            Therapist
+          </label>
+
+          <select id="modalTherapistInput" class="form-select">
+            <option value="">Select Therapist</option>
+          </select>
+
+          <small
+            class="therapist-helper-text d-none"
+            id="modalTherapistHelper"
+          >
+            Optional for Product Only transactions.
+          </small>
+        </div>
+
+        <div class="col-12">
+          <div class="modal-section-heading">
+            <div>
+              <h4>Services / Products</h4>
+              <p>Add services, regular products, or purchasable service vouchers to this transaction.</p>
+            </div>
+
+            <div class="modal-item-buttons">
+              <button type="button" class="btn btn-sm btn-success" id="modalAddServiceBtn">
+                Add Service
+              </button>
+
+              <button type="button" class="btn btn-sm btn-outline-success" id="modalAddFreebieBtn">
+                Add Freebie
+              </button>
+
+              <button type="button" class="btn btn-sm btn-primary" id="modalAddProductBtn">
+                Add Product
+              </button>
+              <button type="button" class="btn btn-sm add-vip-card-btn" id="modalAddVipCardBtn">
+                Add VIP Card
+              </button>
+              <button type="button" class="btn btn-sm btn-warning" id="modalGenerateVoucherBtn">
+                Generate Voucher
+              </button>
+            </div>
+          </div>
+
+          <div class="modal-items-list" id="modalItemsList"></div>
+        </div>
+
+
+        <div class="col-12 companion-section">
+          <div class="companion-section-header">
+            <div>
+              <h4>Companions</h4>
+            </div>
+          </div>
+
+          <div id="modalCompanionsList" class="companions-list"></div>
+
+          <button
+            type="button"
+            class="btn btn-outline-success companion-add-bottom-btn"
+            id="modalAddCompanionBtn"
+          >
+            Add Companion
+          </button>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">
+            Payment Method
+          </label>
+
+          <div id="modalPaymentList" class="multiple-payment-list"></div>
+
+          <button
+            type="button"
+            id="modalAddPaymentBtn"
+            class="btn btn-sm btn-outline-primary mt-2"
+          >
+            Add Payment Method
+          </button>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">
+            Voucher
+          </label>
+
+          <div id="modalVoucherList" class="multiple-voucher-list"></div>
+
+          <div class="voucher-action-buttons">
+            <button
+              type="button"
+              id="modalAddVoucherBtn"
+              class="btn btn-sm btn-outline-warning mt-2"
+            >
+              Add Voucher
+            </button>
+
+            <button
+              type="button"
+              id="modalExecutiveVoucherBtn"
+              class="btn btn-sm executive-voucher-btn mt-2"
+            >
+              Executive Voucher
+            </button>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="voucher-payment-summary">
+
+            <div>
+              <span>
+                Gross Total
+              </span>
+
+              <strong id="modalGrossAmount">
+                ₱0.00
+              </strong>
+            </div>
+
+            <div>
+              <span>
+                Voucher Deduction
+              </span>
+
+              <strong id="modalVoucherDeduction">
+                − ₱0.00
+              </strong>
+            </div>
+
+            <div class="voucher-net-total">
+              <span>
+                Amount to Pay
+              </span>
+
+              <strong id="modalTotalAmount">
+                ₱0.00
+              </strong>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="invoice-toggle-row">
+            <input type="checkbox" class="form-check-input" id="modalIssueInvoiceInput">
+            <label class="form-check-label" for="modalIssueInvoiceInput">
+              Issue Invoice
+            </label>
+          </div>
+
+          <div class="invoice-fields-row d-none" id="modalInvoiceFieldsRow">
+            <div>
+              <label class="form-label" for="modalInvoiceNumberInput">
+                Invoice Number <span class="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                id="modalInvoiceNumberInput"
+                class="form-control"
+                placeholder="Invoice #"
+                autocomplete="off"
+              >
+            </div>
+
+            <div>
+              <label class="form-label" for="modalInvoiceTinInput">
+                TIN Number
+              </label>
+              <input
+                type="text"
+                id="modalInvoiceTinInput"
+                class="form-control"
+                placeholder="TIN # (optional)"
+                autocomplete="off"
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Remarks</label>
+          <textarea
+            id="modalRemarksInput"
+            class="form-control"
+            rows="2"
+            placeholder="Optional transaction note"
+          ></textarea>
+        </div>
+
+      </div>
+
+      <div class="sale-modal-message d-none" id="saleModalMessage"></div>
+
+    </div>
+
+    <div class="sale-modal-footer">
+      <div class="sticky-sale-summary">
+        <div class="sticky-summary-item">
+          <span>Companions</span>
+          <strong id="stickyCompanionCount">0</strong>
+        </div>
+
+        <div class="sticky-summary-item">
+          <span>Gross</span>
+          <strong id="stickyGrossAmount">₱0.00</strong>
+        </div>
+
+        <div class="sticky-summary-item">
+          <span>Voucher</span>
+          <strong id="stickyVoucherAmount">− ₱0.00</strong>
+        </div>
+
+        <div class="sticky-summary-item sticky-summary-total">
+          <span>Amount to Pay</span>
+          <strong id="stickyNetAmount">₱0.00</strong>
+        </div>
+      </div>
+
+      <div class="sale-modal-footer-actions">
+        <button type="button" class="btn btn-outline-secondary" id="cancelSaleModalBtn">
+          Cancel
+        </button>
+
+        <button type="button" class="btn btn-outline-primary" id="addToScheduleModalBtn">
+          Add to Schedule
+        </button>
+
+        <button type="button" class="btn btn-outline-success" id="addToListModalBtn">
+          Add to List
+        </button>
+
+        <button type="button" class="btn btn-success" id="saveSaleModalBtn">
+          Settle
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="voucher-gen-backdrop d-none" id="voucherGenBackdrop">
+  <div class="voucher-gen-modal">
+    <h4>🎟 Generate Voucher</h4>
+    <p class="voucher-gen-subtitle">
+      Creates an official voucher number, records it in the system,
+      and adds the voucher purchase to this transaction.
+    </p>
+
+    <label class="form-label">Voucher Item</label>
+    <select id="voucherGenSelect" class="form-select"></select>
+
+    <label class="form-label mt-3">Buyer / Client <span class="text-danger">*</span></label>
+    <input
+      type="text"
+      id="voucherGenClient"
+      class="form-control"
+      placeholder="Client name (required)"
+      autocomplete="off"
+    >
+
+    <div class="voucher-gen-result d-none" id="voucherGenResult">
+      <span>Voucher Number</span>
+      <strong id="voucherGenCode">—</strong>
+      <small>
+        Issued to <strong id="voucherGenIssuedTo">—</strong>.
+        This number is required when the voucher is used for payment.
+      </small>
+    </div>
+
+    <div class="voucher-gen-actions">
+      <button type="button" class="btn btn-outline-secondary" id="voucherGenCloseBtn">
+        Close
+      </button>
+
+      <button type="button" class="btn btn-outline-primary d-none" id="voucherGenPrintBtn">
+        🖨 Print / Save PDF
+      </button>
+
+      <button type="button" class="btn btn-warning" id="voucherGenCreateBtn">
+        Generate &amp; Add to Sale
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="sidebar.js"></script>
+<script src="voucher-print.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

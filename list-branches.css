@@ -1,0 +1,122 @@
+/* Page-specific styles for the List of Branches page. */
+
+.branch-count-box{
+    background:var(--brand-blue-tint);
+    border:1px solid var(--brand-blue-border);
+    border-radius:10px;
+    padding:10px 15px;
+    color:#1e3a8a;
+}
+
+.branch-table{
+    table-layout:fixed;
+    min-width:840px;
+}
+
+.branch-table th,
+.branch-table td{
+    text-align:center;
+    vertical-align:middle;
+}
+
+.branch-table th:nth-child(1),
+.branch-table td:nth-child(1){
+    width:5%;
+}
+
+.branch-table th:nth-child(2),
+.branch-table td:nth-child(2){
+    width:24%;
+}
+
+.branch-table th:nth-child(3),
+.branch-table td:nth-child(3){
+    width:10%;
+}
+
+.branch-table th:nth-child(4),
+.branch-table td:nth-child(4),
+.branch-table th:nth-child(5),
+.branch-table td:nth-child(5){
+    width:12%;
+}
+
+.branch-table th:nth-child(6),
+.branch-table td:nth-child(6){
+    width:21%;
+}
+
+.branch-table th:nth-child(7),
+.branch-table td:nth-child(7){
+    width:16%;
+}
+
+.action-buttons{
+    display:flex;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap:5px;
+}
+
+.saved-branch-name{
+    display:block;
+    font-weight:700;
+    color:var(--state-green-text);
+    background:var(--state-green-bg);
+    border:1px solid var(--state-green-border);
+    border-radius:var(--radius-sm);
+    padding:8px 12px;
+    text-align:left;
+}
+
+.saved-bed-count,
+.saved-time{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:56px;
+    font-weight:800;
+    color:var(--brand-blue-dark);
+    background:var(--brand-blue-tint);
+    border:1px solid var(--brand-blue-border);
+    border-radius:var(--radius-sm);
+    padding:7px 8px;
+    white-space:nowrap;
+}
+
+.saved-location{
+    display:inline-block;
+    font-size:12px;
+    font-weight:700;
+    line-height:1.4;
+    color:var(--brand-blue-dark);
+    background:var(--brand-blue-tint);
+    border:1px solid var(--brand-blue-border);
+    border-radius:var(--radius-sm);
+    padding:5px 10px;
+}
+
+.bed-count-input{
+    text-align:center;
+}
+
+.save-note{
+    margin-top:14px;
+    padding:12px 14px;
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    color:var(--muted);
+    font-size:14px;
+}
+
+@media(max-width:768px){
+    .branch-count-box{
+        width:100%;
+        text-align:center;
+    }
+
+    #addBranchBtn{
+        width:100%;
+    }
+}
