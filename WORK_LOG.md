@@ -4,6 +4,37 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-07 — Unified Day/Date picker into a joined-pill style (Attendance, Cashflow, global toolbar)
+
+**Requested by:** User — wanted Cashflow's Date filter to match Attendance's Day filter format
+(`[‹] [date] [›] [×] [Today]` as one seamless joined pill), then flagged that having `×` right
+next to the `›` (next-day) button risked an accidental clear when repeatedly clicking next — so
+the `×`/`Today` order was swapped, and the same reordering was extended to the global header
+toolbar's date stepper.
+
+**Change:**
+- [`cashflow.html`](cashflow.html) — Date filter's `.date-stepper-group` (plain flex, no visual
+  joining) replaced with Bootstrap `.input-group` (same pattern as Attendance), and added the
+  missing `Today`/`×` buttons: `[‹] [date] [›] [Today] [×]`.
+- [`cashflow.js`](cashflow.js) — new `todayCashflowDayBtn`/`clearCashflowDayBtn` click handlers.
+  Today mirrors `stepCashflowDate`'s month-boundary handling (reloads entries if jumping to today
+  crosses into a different month).
+- [`attendance.html`](attendance.html) — reordered the Day filter's existing buttons from
+  `[×] [Today]` to `[Today] [×]` so `×` isn't the button directly after `›`.
+- [`sidebar.js`](sidebar.js) — global toolbar: swapped `Today`/`Refresh` order so `Refresh` (a
+  safe, non-destructive action) sits between the date stepper's `›` and `Today`, not `Today`
+  itself.
+- [`sidebar.css`](sidebar.css) — `.date-stepper-group` restyled from a 4px-gap flex row into a
+  seamless joined pill (collapsed borders, radius only on the outer edges), matching the Day
+  filter's look. Confirmed the two other pages sharing this class (`scheduling.html`,
+  `therapist-sales.html`) have their date stepper hidden (`d-none`), so no visible UI there was
+  affected.
+
+**Status:** Deployed — pushed to GitHub (`origin/main`, commit `d35dd05`) and
+`firebase deploy --only hosting` → live at https://crownos-5f03d.web.app
+
+---
+
 ## 2026-08-07 — Added a "Today" shortcut button to the Day filter (Attendance)
 
 **Requested by:** User — wanted a quick way to jump the Daily Logs' Day filter back to today
