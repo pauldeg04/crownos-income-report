@@ -794,19 +794,19 @@
 
                 <button
                     type="button"
-                    class="global-toolbar-button global-toolbar-today"
-                    id="sidebarDashboardToday"
-                >
-                    Today
-                </button>
-
-                <button
-                    type="button"
                     class="global-toolbar-button global-toolbar-refresh"
                     id="globalToolbarRefresh"
                     title="Refresh current page data"
                 >
                     Refresh
+                </button>
+
+                <button
+                    type="button"
+                    class="global-toolbar-button global-toolbar-today"
+                    id="sidebarDashboardToday"
+                >
+                    Today
                 </button>
             </div>
 

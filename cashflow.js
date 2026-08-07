@@ -52,6 +52,37 @@ document.addEventListener("DOMContentLoaded", function(){
     document.getElementById("addCashflowEntryBtn")
         .addEventListener("click", function(){ openCashflowModal(null); });
 
+    document.getElementById("clearCashflowDayBtn")
+        .addEventListener("click", function(){
+            document.getElementById("cashflowDateFilter").value = "";
+            renderCashflow();
+        });
+
+    document.getElementById("todayCashflowDayBtn")
+        .addEventListener("click", function(){
+            const today = new Date();
+
+            const todayValue = [
+                today.getFullYear(),
+                String(today.getMonth() + 1).padStart(2, "0"),
+                String(today.getDate()).padStart(2, "0")
+            ].join("-");
+
+            const monthInput = document.getElementById("month");
+            const dayInput = document.getElementById("cashflowDateFilter");
+
+            dayInput.value = todayValue;
+
+            const todayMonth = todayValue.slice(0, 7);
+
+            if(monthInput.value !== todayMonth){
+                monthInput.value = todayMonth;
+                loadCashflowEntries();
+            }else{
+                renderCashflow();
+            }
+        });
+
     /* The global toolbar's branch switcher (sidebar.js) lets staff change
        branch without leaving this page. Without this listener, switching
        branches left #branchReadout and the in-memory cashflowEntries

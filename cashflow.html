@@ -63,10 +63,11 @@
 
                 <div class="col-md-4">
                     <label class="form-label fw-bold">Date <small class="text-muted fw-normal">(optional filter)</small></label>
-                    <div class="date-stepper-group">
+                    <div class="input-group">
                         <button
                             type="button"
                             class="date-step-btn"
+                            id="prevCashflowDayBtn"
                             aria-label="Previous day"
                             title="Previous day"
                             onclick="stepCashflowDate(-1)"
@@ -77,10 +78,25 @@
                         <button
                             type="button"
                             class="date-step-btn"
+                            id="nextCashflowDayBtn"
                             aria-label="Next day"
                             title="Next day"
                             onclick="stepCashflowDate(1)"
                         >›</button>
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            id="todayCashflowDayBtn"
+                            title="Jump to today"
+                        >Today</button>
+
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            id="clearCashflowDayBtn"
+                            title="Clear day filter"
+                        >×</button>
                     </div>
                 </div>
             </div>

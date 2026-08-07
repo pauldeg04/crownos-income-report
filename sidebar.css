@@ -621,11 +621,33 @@ body.with-app-sidebar{
 .date-stepper-group{
     display:flex;
     align-items:stretch;
-    gap:4px;
+}
+
+.date-stepper-group > *:not(:first-child){
+    margin-left:-1px;
 }
 
 .date-stepper-group .global-toolbar-input{
     width:120px;
+    border-radius:0;
+    position:relative;
+}
+
+.date-stepper-group .date-step-btn:first-child{
+    border-top-right-radius:0;
+    border-bottom-right-radius:0;
+}
+
+.date-stepper-group .date-step-btn:last-child{
+    border-top-left-radius:0;
+    border-bottom-left-radius:0;
+}
+
+.date-stepper-group .global-toolbar-input:focus,
+.date-stepper-group .date-step-btn:hover,
+.date-stepper-group .date-step-btn:focus{
+    position:relative;
+    z-index:1;
 }
 
 .date-step-btn{
