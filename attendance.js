@@ -50,6 +50,18 @@ function attachEvents(){
             stepAttendanceDay(1);
         });
 
+    document
+        .getElementById("todayAttendanceDayBtn")
+        .addEventListener("click", function(){
+            const todayValue =
+                getTodayDateString();
+
+            document.getElementById("attendanceDay").value = todayValue;
+            document.getElementById("attendanceMonth").value = todayValue.slice(0, 7);
+
+            renderAttendance();
+        });
+
     const staffFilter =
         document.getElementById("staffFilter");
 
@@ -116,6 +128,17 @@ function createId(){
     );
 }
 
+function getTodayDateString(){
+    const today =
+        new Date();
+
+    return [
+        today.getFullYear(),
+        String(today.getMonth() + 1).padStart(2, "0"),
+        String(today.getDate()).padStart(2, "0")
+    ].join("-");
+}
+
 /* Stepping always sets an explicit Day filter (even from a month-only
    view) — the Day field takes full priority over Month once set (see
    renderAttendance's matchesPeriod), so Month is only kept in sync here
@@ -127,18 +150,9 @@ function stepAttendanceDay(days){
     const monthInput =
         document.getElementById("attendanceMonth");
 
-    const today =
-        new Date();
-
-    const todayValue = [
-        today.getFullYear(),
-        String(today.getMonth() + 1).padStart(2, "0"),
-        String(today.getDate()).padStart(2, "0")
-    ].join("-");
-
     const baseValue =
         dayInput.value ||
-        (monthInput.value ? monthInput.value + "-01" : todayValue);
+        (monthInput.value ? monthInput.value + "-01" : getTodayDateString());
 
     const newValue =
         window.CrownDateStepper?.addDays?.(baseValue, days) ||
@@ -427,6 +441,24 @@ function getAccountName(userId){
     return user ? user.account : "Unknown";
 }
 
+/* Daily Logs' Staff column prefers the user's current nickname (Account
+   Settings' "Nickname" field, same one List of Therapists shows) over
+   their login account name — falls back to the account name snapshotted
+   on the entry (entry.account) for staff with no nickname set, or a
+   deleted account, same as getAccountName() already did before this. */
+function getStaffDisplayName(entry){
+    const user =
+        getUserAccounts().find(function(item){
+            return item.id === entry.userId;
+        });
+
+    if(user && user.nickname){
+        return user.nickname;
+    }
+
+    return entry.account || getAccountName(entry.userId);
+}
+
 function renderAttendance(){
     const monthValue =
         document.getElementById("attendanceMonth").value;
@@ -497,7 +529,7 @@ function renderAttendance(){
             <td>${formatDateLabel(entry.date)}</td>
 
             <td class="${showStaffColumn ? "" : "d-none"}">
-                ${escapeHtml(entry.account || getAccountName(entry.userId))}
+                ${escapeHtml(getStaffDisplayName(entry))}
             </td>
 
             <td>${formatClockTime(entry.clockInAt)}${renderGeoBadge(entry.clockInGeo)}</td>

@@ -6,9 +6,13 @@ body.modal-open{
     overflow:hidden;
 }
 
+/* Branch and Date (the first two grid children) are now hidden — both
+   are picked from the header toolbar instead (see sidebar.js) — so this
+   only needs to lay out the 3 remaining stat boxes (Beds/Operating
+   Hours/Scheduled). */
 .schedule-controls-card{
     display:grid;
-    grid-template-columns:minmax(160px,.8fr) minmax(260px,1.3fr) repeat(3,minmax(115px,.55fr));
+    grid-template-columns:repeat(3,minmax(115px,1fr));
     gap:14px;
     align-items:end;
     margin-bottom:24px;
@@ -143,10 +147,10 @@ body.modal-open{
     text-align:center;
 }
 
-.blocked-date-banner{
+.block-date-inline-control{
     display:flex;
+    flex-wrap:wrap;
     align-items:center;
-    justify-content:space-between;
     gap:12px;
     margin:16px 24px 0;
     padding:12px 16px;
@@ -156,8 +160,31 @@ body.modal-open{
     color:#8A1C1C;
 }
 
-.blocked-date-banner strong{
-    margin-right:8px;
+.block-date-toggle{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:600;
+    margin:0;
+    cursor:pointer;
+    white-space:nowrap;
+}
+
+.block-date-toggle input[type="checkbox"]{
+    width:16px;
+    height:16px;
+    cursor:pointer;
+}
+
+.block-date-inline-control input#blockDateReasonInput{
+    flex:1;
+    min-width:200px;
+}
+
+.block-date-inline-control input#blockDateReasonInput:disabled{
+    background:#e9ecef;
+    color:var(--muted);
+    cursor:not-allowed;
 }
 
 .schedule-table-wrapper{

@@ -21,6 +21,22 @@ let selectedScheduleId = null;
 let modalServiceRows = [];
 let modalCompanions = [];
 
+/* The date the appointment currently being edited actually lives under
+   (its crownSchedule_<branch>_<date> bucket) — captured when the modal
+   opens so saveSchedule() can tell whether the staff member picked a
+   different modalDate (rescheduling to another day) and, if so, remove
+   the entry from this original bucket instead of leaving a duplicate
+   behind. Null for brand-new appointments. */
+let selectedScheduleOriginalDate = null;
+
+/* The blocked-date entry (if any) backing the inline block-date checkbox
+   for whichever branch/date is currently on screen — set by
+   renderBlockDateControl(), read by toggleBlockDate()/updateBlockDateReason()
+   so unchecking or editing the reason acts on the exact entry shown,
+   even if it happens to be an old "All Branches" entry rather than one
+   scoped to this specific branch. */
+let blockedDateEntryId = null;
+
 /* Pending (unexpired) web-booking holds for the currently selected
    branch/date — see Income Report/functions/index.js (scheduleHolds
    collection). Refreshed by renderSchedule() whenever branch/date
@@ -114,6 +130,13 @@ function attachEvents(){
         .addEventListener("change", updateModalPreview);
 
     document
+        .getElementById("modalDate")
+        .addEventListener("change", function(){
+            updateSelectedSlotLabel();
+            updateModalPreview();
+        });
+
+    document
         .getElementById("modalBed")
         .addEventListener("change", function(){
             selectedBed = Number(this.value) || null;
@@ -172,51 +195,17 @@ function attachEvents(){
         });
 
     document
-        .getElementById("blockDateBtn")
-        .addEventListener("click", openBlockDateModal);
+        .getElementById("blockDateCheckbox")
+        .addEventListener("change", toggleBlockDate);
 
     document
-        .getElementById("closeBlockDateModalBtn")
-        .addEventListener("click", closeBlockDateModal);
-
-    document
-        .getElementById("cancelBlockDateBtn")
-        .addEventListener("click", closeBlockDateModal);
-
-    document
-        .getElementById("saveBlockDateBtn")
-        .addEventListener("click", saveBlockDate);
-
-    document
-        .getElementById("blockDateModalBackdrop")
-        .addEventListener("click", function(event){
-            if(event.target === this){
-                closeBlockDateModal();
-            }
-        });
-
-    document
-        .getElementById("unblockDateBtn")
-        .addEventListener("click", function(){
-            const branch = getSelectedBranch();
-            const date = document.getElementById("scheduleDate").value;
-
-            if(!branch || !date){
-                return;
-            }
-
-            const entry = findBlockedEntry(branch.name, date);
-
-            if(entry){
-                unblockDate(entry.id);
-            }
-        });
+        .getElementById("blockDateReasonInput")
+        .addEventListener("change", updateBlockDateReason);
 
     document.addEventListener("keydown", function(event){
         if(event.key === "Escape"){
             closeModal();
             closeScheduleHistoryModal();
-            closeBlockDateModal();
         }
     });
 }
@@ -1138,12 +1127,25 @@ function getCompanionDraftSlot(companion){
     };
 }
 
+/* The modal's own Date field, defaulting to the page-level date filter
+   for callers outside the modal (e.g. before it has been opened). Reading
+   this instead of #scheduleDate directly is what lets staff pick a
+   different date inside the "Edit Appointment" modal and have conflict
+   checks / saves target that date rather than whichever day the calendar
+   view happens to be showing. */
+function getModalDate(){
+    return (
+        document.getElementById("modalDate")?.value ||
+        document.getElementById("scheduleDate").value
+    );
+}
+
 function getPersistedConflictPool(){
     const branch =
         getSelectedBranch();
 
     const date =
-        document.getElementById("scheduleDate").value;
+        getModalDate();
 
     if(!branch || !date){
         return [];
@@ -1622,130 +1624,101 @@ function findBlockedEntry(branchName, date){
     }) || null;
 }
 
-function renderBlockedDateBanner(branchName, date){
-    const banner =
-        document.getElementById("blockedDateBanner");
+/* Syncs the inline block-date checkbox + reason input to whichever
+   branch/date is currently on screen. Always blocks the SPECIFIC branch
+   being viewed (unlike the old modal, which could also block "All
+   Branches" at once) — if a date happens to already be blocked via an
+   older "All Branches" entry, findBlockedEntry() still picks it up here
+   so the checkbox shows checked and unchecking removes that entry. */
+function renderBlockDateControl(branchName, date){
+    const checkbox =
+        document.getElementById("blockDateCheckbox");
+
+    const reasonInput =
+        document.getElementById("blockDateReasonInput");
 
     if(!branchName || !date){
-        banner.classList.add("d-none");
+        checkbox.checked = false;
+        checkbox.disabled = true;
+        reasonInput.value = "";
+        reasonInput.disabled = true;
+        blockedDateEntryId = null;
         return;
     }
+
+    checkbox.disabled = false;
 
     const entry =
         findBlockedEntry(branchName, date);
 
-    if(!entry){
-        banner.classList.add("d-none");
+    blockedDateEntryId =
+        entry ? entry.id : null;
+
+    checkbox.checked = !!entry;
+    reasonInput.disabled = !entry;
+    reasonInput.value = entry ? (entry.reason || "") : "";
+}
+
+function toggleBlockDate(){
+    const checkbox =
+        document.getElementById("blockDateCheckbox");
+
+    const branch =
+        getSelectedBranch();
+
+    const date =
+        document.getElementById("scheduleDate").value;
+
+    if(!branch || !date){
+        checkbox.checked = false;
         return;
     }
 
-    document.getElementById("blockedDateReasonText").textContent =
-        entry.reason
-            ? `Reason: ${entry.reason} (${entry.branch})`
-            : `(${entry.branch})`;
+    if(checkbox.checked){
+        const currentUser =
+            typeof CrownAuth !== "undefined" && CrownAuth.getCurrentUser
+                ? CrownAuth.getCurrentUser()
+                : null;
 
-    banner.classList.remove("d-none");
+        const entries =
+            getBlockedDates();
+
+        entries.push({
+            id: createId(),
+            branch: branch.name,
+            date: date,
+            reason: "",
+            blockedBy: currentUser ? currentUser.account : "",
+            blockedAt: new Date().toISOString()
+        });
+
+        saveBlockedDatesList(entries);
+        renderBlockedDatesTable();
+        renderSchedule();
+
+        document.getElementById("blockDateReasonInput").focus();
+    }else if(blockedDateEntryId){
+        unblockDate(blockedDateEntryId);
+    }
 }
 
-function populateBlockDateBranchSelect(){
-    const select =
-        document.getElementById("blockDateBranch");
-
-    select.innerHTML =
-        `<option value="${ALL_BRANCHES_LABEL}">${ALL_BRANCHES_LABEL}</option>`;
-
-    getBranches().forEach(function(branch){
-        const option =
-            document.createElement("option");
-
-        option.value = branch.name;
-        option.textContent = branch.name;
-
-        select.appendChild(option);
-    });
-
-    const currentBranch =
-        getSelectedBranch();
-
-    select.value =
-        currentBranch ? currentBranch.name : ALL_BRANCHES_LABEL;
-}
-
-function openBlockDateModal(){
-    populateBlockDateBranchSelect();
-
-    document.getElementById("blockDateInput").value =
-        document.getElementById("scheduleDate").value ||
-        getTodayDateString();
-
-    document.getElementById("blockDateReasonInput").value = "";
-
-    document.getElementById("blockDateModalMessage")
-        .classList.add("d-none");
-
-    document.getElementById("blockDateModalBackdrop")
-        .classList.remove("d-none");
-}
-
-function closeBlockDateModal(){
-    document.getElementById("blockDateModalBackdrop")
-        .classList.add("d-none");
-}
-
-function showBlockDateModalMessage(text){
-    const message =
-        document.getElementById("blockDateModalMessage");
-
-    message.textContent = text;
-    message.classList.remove("d-none");
-}
-
-function saveBlockDate(){
-    const branch =
-        document.getElementById("blockDateBranch").value;
-
-    const date =
-        document.getElementById("blockDateInput").value;
+function updateBlockDateReason(){
+    if(!blockedDateEntryId){
+        return;
+    }
 
     const reason =
         document.getElementById("blockDateReasonInput").value.trim();
 
-    if(!branch || !date){
-        showBlockDateModalMessage("Branch and date are required.");
-        return;
-    }
-
     const entries =
-        getBlockedDates();
-
-    const alreadyBlocked =
-        entries.some(function(entry){
-            return entry.branch === branch && entry.date === date;
+        getBlockedDates().map(function(entry){
+            return entry.id === blockedDateEntryId
+                ? Object.assign({}, entry, { reason: reason })
+                : entry;
         });
 
-    if(alreadyBlocked){
-        showBlockDateModalMessage("That branch/date is already blocked.");
-        return;
-    }
-
-    const currentUser =
-        typeof CrownAuth !== "undefined" && CrownAuth.getCurrentUser
-            ? CrownAuth.getCurrentUser()
-            : null;
-
-    entries.push({
-        id: createId(),
-        branch: branch,
-        date: date,
-        reason: reason,
-        blockedBy: currentUser ? currentUser.account : "",
-        blockedAt: new Date().toISOString()
-    });
-
     saveBlockedDatesList(entries);
-    closeBlockDateModal();
     renderBlockedDatesTable();
-    renderSchedule();
 }
 
 function unblockDate(id){
@@ -1896,7 +1869,7 @@ function renderSchedule(){
         document.getElementById("scheduleGridSubtitle").textContent =
             "Select a branch and date.";
 
-        renderBlockedDateBanner(null, null);
+        renderBlockDateControl(null, null);
 
         return;
     }
@@ -1905,7 +1878,7 @@ function renderSchedule(){
         getSchedules(branch.name, date);
 
     refreshActiveHolds(branch.name, date);
-    renderBlockedDateBanner(branch.name, date);
+    renderBlockDateControl(branch.name, date);
 
     emptyState.classList.add("d-none");
     wrapper.classList.remove("d-none");
@@ -2475,9 +2448,12 @@ function openNewModal(bed, startTime){
     selectedScheduleId = null;
     selectedBed = bed;
     selectedStartTime = startTime;
+    selectedScheduleOriginalDate = null;
 
     resetModalFields();
     loadTherapistOptions();
+
+    document.getElementById("modalDate").value = date;
 
     document.getElementById("modalModeLabel").textContent =
         "New Schedule";
@@ -2697,6 +2673,9 @@ function openEditModal(scheduleId){
     selectedScheduleId = item.id;
     selectedBed = Number(item.bed);
     selectedStartTime = item.startTime;
+    selectedScheduleOriginalDate = date;
+
+    document.getElementById("modalDate").value = date;
 
     document.getElementById("modalModeLabel").textContent =
         "Edit Schedule";
@@ -2754,7 +2733,7 @@ function updateSelectedSlotLabel(){
         getSelectedBranch();
 
     const date =
-        document.getElementById("scheduleDate").value;
+        getModalDate();
 
     document.getElementById("selectedSlotLabel").textContent =
         `${branch.name} • ${
@@ -2910,7 +2889,12 @@ function saveSchedule(){
         getSelectedBranch();
 
     const date =
-        document.getElementById("scheduleDate").value;
+        getModalDate();
+
+    if(!date){
+        alert("Please pick a date for this appointment.");
+        return;
+    }
 
     const client =
         document.getElementById("modalClient").value.trim();
@@ -3161,6 +3145,27 @@ function saveSchedule(){
         date,
         schedules
     );
+
+    /* Rescheduled to a different day via the modal's Date field — the
+       block above only touched the NEW date's bucket, so the entry (and
+       any companions) still needs to be removed from wherever it used to
+       live or it would show up on both days. */
+    if(selectedScheduleOriginalDate && selectedScheduleOriginalDate !== date){
+        const oldDateSchedules =
+            getSchedules(branch.name, selectedScheduleOriginalDate)
+                .filter(function(item){
+                    return (
+                        item.id !== mainId &&
+                        item.companionOf !== mainId
+                    );
+                });
+
+        saveSchedules(
+            branch.name,
+            selectedScheduleOriginalDate,
+            oldDateSchedules
+        );
+    }
 
     ensureClientExists(
         client,

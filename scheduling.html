@@ -58,7 +58,11 @@
     </div>
 
     <div class="schedule-controls-card">
-        <div>
+        <!-- Branch is now selected from the header toolbar (see sidebar.js
+             syncGlobalToolbarToPage, which already targets #scheduleBranch
+             directly) — hidden, not deleted, since scheduling.js still
+             reads/writes this select's value everywhere. -->
+        <div class="d-none">
             <label class="form-label">Branch</label>
 
             <select id="scheduleBranch" class="form-select">
@@ -66,7 +70,14 @@
             </select>
         </div>
 
-        <div>
+        <!-- Date is now selected from the header toolbar (see sidebar.js
+             syncGlobalToolbarToPage), so the picker below is redundant and
+             hidden — kept in the DOM (not deleted) because scheduling.js
+             still reads/writes #scheduleDate directly and the header
+             pushes its value in here on change. The whole wrapper (not
+             just its contents) is hidden so it doesn't leave an empty
+             cell in the controls-card grid. -->
+        <div class="d-none">
             <label class="form-label">Date</label>
 
             <div class="date-control-row">
@@ -97,14 +108,6 @@
                         ›
                     </button>
                 </div>
-
-                <button
-                    type="button"
-                    class="btn btn-outline-danger btn-sm"
-                    id="blockDateBtn"
-                >
-                    🚫 Block Date
-                </button>
             </div>
         </div>
 
@@ -160,19 +163,20 @@
             </div>
         </div>
 
-        <div class="blocked-date-banner d-none" id="blockedDateBanner">
-            <div>
-                <strong>🚫 This date is blocked for online booking.</strong>
-                <span id="blockedDateReasonText"></span>
-            </div>
+        <div class="block-date-inline-control">
+            <label class="block-date-toggle">
+                <input type="checkbox" id="blockDateCheckbox">
+                🚫 Block this date for online booking
+            </label>
 
-            <button
-                type="button"
-                class="btn btn-sm btn-outline-secondary"
-                id="unblockDateBtn"
+            <input
+                type="text"
+                id="blockDateReasonInput"
+                class="form-control form-control-sm"
+                placeholder="Reason (optional)"
+                maxlength="120"
+                disabled
             >
-                Unblock
-            </button>
         </div>
 
         <div class="schedule-empty-state" id="scheduleEmptyState">
@@ -446,7 +450,19 @@
                     </select>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <label class="form-label">
+                        Date
+                    </label>
+
+                    <input
+                        type="date"
+                        id="modalDate"
+                        class="form-control"
+                    >
+                </div>
+
+                <div class="col-md-3">
                     <label class="form-label">
                         Bed
                     </label>
@@ -457,7 +473,7 @@
                     ></select>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">
                         Start Time
                     </label>
@@ -470,7 +486,7 @@
                     >
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label">
                         End Time
                     </label>
@@ -563,107 +579,6 @@
                     id="saveModalBtn"
                 >
                     Save Schedule
-                </button>
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-<div class="schedule-modal-backdrop d-none" id="blockDateModalBackdrop">
-
-    <div class="schedule-modal" role="dialog" aria-modal="true">
-
-        <div class="schedule-modal-header">
-            <div>
-                <p class="modal-eyebrow">
-                    Availability
-                </p>
-
-                <h3>
-                    Block Date
-                </h3>
-
-                <p>
-                    Hides this date from online booking on the Crown Head Spa website. Staff can still add appointments manually.
-                </p>
-            </div>
-
-            <button
-                type="button"
-                class="modal-close-btn"
-                id="closeBlockDateModalBtn"
-                aria-label="Close"
-            >
-                ×
-            </button>
-        </div>
-
-        <div class="schedule-modal-body">
-
-            <div class="row g-3">
-
-                <div class="col-12">
-                    <label class="form-label">
-                        Branch
-                    </label>
-
-                    <select id="blockDateBranch" class="form-select">
-                        <option value="All Branches">All Branches</option>
-                    </select>
-                </div>
-
-                <div class="col-12">
-                    <label class="form-label">
-                        Date
-                    </label>
-
-                    <input
-                        type="date"
-                        id="blockDateInput"
-                        class="form-control"
-                    >
-                </div>
-
-                <div class="col-12">
-                    <label class="form-label">
-                        Reason (optional)
-                    </label>
-
-                    <input
-                        type="text"
-                        id="blockDateReasonInput"
-                        class="form-control"
-                        placeholder="e.g. Holiday, fully booked, maintenance"
-                        maxlength="120"
-                    >
-                </div>
-
-            </div>
-
-            <div class="modal-message d-none" id="blockDateModalMessage"></div>
-
-        </div>
-
-        <div class="schedule-modal-footer">
-
-            <div class="modal-footer-actions">
-                <button
-                    type="button"
-                    class="btn btn-outline-secondary"
-                    id="cancelBlockDateBtn"
-                >
-                    Cancel
-                </button>
-
-                <button
-                    type="button"
-                    class="btn btn-danger"
-                    id="saveBlockDateBtn"
-                >
-                    Block Date
                 </button>
             </div>
 

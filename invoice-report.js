@@ -30,6 +30,22 @@ document.addEventListener("DOMContentLoaded", function(){
             renderInvoiceReport();
         }
     });
+
+    /* #invoiceBranch is now hidden (branch is picked from the header
+       toolbar instead), and isn't one of the ids sidebar.js's
+       syncGlobalToolbarToPage() pushes values into directly — so this page
+       has to follow the header itself, the same way cashflow.js does. */
+    window.addEventListener("crownGlobalFiltersChanged", function(event){
+        const branch = event.detail?.branch || "";
+        const select = document.getElementById("invoiceBranch");
+
+        if(branch && Array.from(select.options).some(function(option){
+            return option.value === branch;
+        })){
+            select.value = branch;
+            renderInvoiceReport();
+        }
+    });
 });
 
 function escapeHtml(value){

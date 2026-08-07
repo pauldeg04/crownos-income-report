@@ -89,11 +89,17 @@
                     </option>
                 </select>
 
-                <label class="form-label fw-bold">
+                <!-- Date is now selected from the header toolbar (see
+                     sidebar.js syncGlobalToolbarToPage), so this page's own
+                     calendar stepper is redundant and hidden — kept in the
+                     DOM (not deleted) because this page's script still
+                     reads/writes the hidden #selectedDate input directly
+                     and the header pushes its value in here on change. -->
+                <label class="form-label fw-bold d-none">
                     Date
                 </label>
 
-                <div class="date-stepper-group date-picker-stepper-group">
+                <div class="date-stepper-group date-picker-stepper-group d-none">
                     <button
                         type="button"
                         class="date-step-btn"

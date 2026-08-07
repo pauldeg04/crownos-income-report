@@ -52,7 +52,12 @@
       </div>
 
       <div class="row g-3 mt-1 export-excluded-overview compact-top-overview">
-        <div class="col-xl-5 col-lg-5">
+        <!-- Date is now selected from the header toolbar (see sidebar.js
+             syncGlobalToolbarToPage), so this page's own calendar dropdown
+             is redundant and hidden — kept in the DOM (not deleted)
+             because script.js still reads/writes the hidden #date input
+             directly and the header pushes its value in here on change. -->
+        <div class="col-xl-5 col-lg-5 d-none">
           <label class="form-label fw-bold compact-overview-label">Date</label>
 
           <div class="date-picker-field">
@@ -86,7 +91,7 @@
           <input type="date" id="date" class="form-control d-none">
         </div>
 
-        <div class="col-xl-7 col-lg-7">
+        <div class="col-xl-12 col-lg-12">
           <label class="form-label fw-bold compact-overview-label">
             Schedule
           </label>

@@ -54,7 +54,12 @@
                     <input type="month" id="invoiceMonth" class="form-control">
                 </div>
 
-                <div class="col-md-3">
+                <!-- Branch is now selected from the header toolbar. This
+                     select isn't in sidebar.js's auto-synced id list, so
+                     invoice-report.js listens for crownGlobalFiltersChanged
+                     itself (see loadBranchOptions/DOMContentLoaded) to keep
+                     it and the report in step with the header. -->
+                <div class="col-md-3 d-none">
                     <label class="form-label fw-bold">Branch</label>
                     <select id="invoiceBranch" class="form-select"></select>
                 </div>
