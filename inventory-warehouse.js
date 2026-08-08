@@ -323,7 +323,223 @@ function updateSendStockAvailableNote(){
         "Available: " + available;
 }
 
-function confirmSendStock(){
+/* Atomically moves qty of itemId from the warehouse to a branch: reads
+   BOTH the crownWarehouseStock and crownBranchStock appData docs fresh
+   inside one Firestore transaction, re-validates warehouse availability
+   against that live read (not the possibly-stale `available` the caller
+   already checked), and only if it still holds, decrements the
+   warehouse row and increments the branch row together in the same
+   commit. Without this, adjustWarehouseStock()/adjustBranchStock() were
+   two independent localStorage read-modify-writes with a stale
+   pre-check: two concurrent sends of the same item (two tabs/devices)
+   could each pass validation against their own stale "available"
+   snapshot, each floor-clamp the warehouse at 0 on deduct, but the
+   branch still always got credited the FULL qty it "sent" regardless —
+   minting stock at the branch that was never actually available in the
+   warehouse.
+
+   Deliberately only handles the (overwhelmingly common) single-chunk
+   case for both docs, same as scheduling.js's
+   transactionalUpdateSchedules() — the warehouse/branch stock lists are
+   small, nowhere near the ~900KB chunk threshold. Falls back to the old
+   non-atomic adjust calls when offline/chunked/unreachable so staff
+   aren't fully blocked. */
+async function transactionalStockTransfer(itemId, branch, qty, date){
+    if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
+        return { status: "offline" };
+    }
+
+    const warehouseKey = "crownWarehouseStock";
+    const branchKey = "crownBranchStock";
+
+    const warehouseRef =
+        firebase.firestore().collection("appData").doc(encodeURIComponent(warehouseKey));
+
+    const branchRef =
+        firebase.firestore().collection("appData").doc(encodeURIComponent(branchKey));
+
+    function readRows(data){
+        if(data && Number.isInteger(data.chunkCount) && data.chunkCount > 1){
+            return null;
+        }
+
+        if(!data || data.deleted || !data.value){
+            return [];
+        }
+
+        try{
+            const parsed = JSON.parse(data.value);
+            return Array.isArray(parsed) ? parsed : [];
+        }catch(error){
+            return [];
+        }
+    }
+
+    try{
+        const outcome =
+            await firebase.firestore().runTransaction(async function(transaction){
+                const warehouseSnap = await transaction.get(warehouseRef);
+                const branchSnap = await transaction.get(branchRef);
+
+                const warehouseData = warehouseSnap.exists ? warehouseSnap.data() : null;
+                const branchData = branchSnap.exists ? branchSnap.data() : null;
+
+                const warehouseRows = readRows(warehouseData);
+                const branchRows = readRows(branchData);
+
+                if(warehouseRows === null || branchRows === null){
+                    return { status: "unsupported" };
+                }
+
+                const warehouseRow =
+                    warehouseRows.find(function(row){
+                        return row.itemId === itemId;
+                    });
+
+                const liveAvailable =
+                    warehouseRow ? (Number(warehouseRow.qty) || 0) : 0;
+
+                if(qty > liveAvailable){
+                    return { status: "insufficient", available: liveAvailable };
+                }
+
+                if(warehouseRow){
+                    warehouseRow.qty = liveAvailable - qty;
+                    if(date){
+                        warehouseRow.lastDate = date;
+                    }
+                }
+
+                let branchRow =
+                    branchRows.find(function(row){
+                        return row.branch === branch && row.itemId === itemId;
+                    });
+
+                if(!branchRow){
+                    branchRow = { branch: branch, itemId: itemId, qty: 0, lastDate: "" };
+                    branchRows.push(branchRow);
+                }
+
+                branchRow.qty = (Number(branchRow.qty) || 0) + qty;
+                if(date){
+                    branchRow.lastDate = date;
+                }
+
+                const now = firebase.firestore.FieldValue.serverTimestamp();
+
+                transaction.set(warehouseRef, {
+                    key: warehouseKey,
+                    chunkIndex: 0,
+                    chunkCount: 1,
+                    value: JSON.stringify(warehouseRows),
+                    deleted: false,
+                    updatedAt: now
+                });
+
+                transaction.set(branchRef, {
+                    key: branchKey,
+                    chunkIndex: 0,
+                    chunkCount: 1,
+                    value: JSON.stringify(branchRows),
+                    deleted: false,
+                    updatedAt: now
+                });
+
+                return { status: "ok", warehouseRows: warehouseRows, branchRows: branchRows };
+            });
+
+        if(outcome.status === "ok"){
+            localStorage.setItem(warehouseKey, JSON.stringify(outcome.warehouseRows));
+            localStorage.setItem(branchKey, JSON.stringify(outcome.branchRows));
+        }
+
+        return outcome;
+    }catch(error){
+        console.error("transactionalStockTransfer failed:", error);
+        return { status: "error" };
+    }
+}
+
+/* Single-doc counterpart to transactionalStockTransfer() for the
+   fulfill-a-pending-request path, where the branch side isn't credited
+   here at all (see applyRequestFulfillment() — that just marks the
+   request line "Ready for Delivery"; the actual branch credit happens
+   later at receipt confirmation, outside this function's scope). Still
+   worth closing the warehouse-side race on its own: two concurrent
+   fulfillments of the same item could otherwise both pass a stale
+   availability check and both floor-clamp the warehouse at 0. */
+async function transactionalDeductWarehouseStock(itemId, qty, date){
+    if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
+        return { status: "offline" };
+    }
+
+    const warehouseKey = "crownWarehouseStock";
+
+    const warehouseRef =
+        firebase.firestore().collection("appData").doc(encodeURIComponent(warehouseKey));
+
+    try{
+        const outcome =
+            await firebase.firestore().runTransaction(async function(transaction){
+                const snap = await transaction.get(warehouseRef);
+                const data = snap.exists ? snap.data() : null;
+
+                if(data && Number.isInteger(data.chunkCount) && data.chunkCount > 1){
+                    return { status: "unsupported" };
+                }
+
+                let rows = [];
+
+                if(data && !data.deleted && data.value){
+                    try{
+                        const parsed = JSON.parse(data.value);
+                        rows = Array.isArray(parsed) ? parsed : [];
+                    }catch(error){
+                        rows = [];
+                    }
+                }
+
+                const row =
+                    rows.find(function(item){
+                        return item.itemId === itemId;
+                    });
+
+                const liveAvailable =
+                    row ? (Number(row.qty) || 0) : 0;
+
+                if(qty > liveAvailable){
+                    return { status: "insufficient", available: liveAvailable };
+                }
+
+                row.qty = liveAvailable - qty;
+                if(date){
+                    row.lastDate = date;
+                }
+
+                transaction.set(warehouseRef, {
+                    key: warehouseKey,
+                    chunkIndex: 0,
+                    chunkCount: 1,
+                    value: JSON.stringify(rows),
+                    deleted: false,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                return { status: "ok", rows: rows };
+            });
+
+        if(outcome.status === "ok"){
+            localStorage.setItem(warehouseKey, JSON.stringify(outcome.rows));
+        }
+
+        return outcome;
+    }catch(error){
+        console.error("transactionalDeductWarehouseStock failed:", error);
+        return { status: "error" };
+    }
+}
+
+async function confirmSendStock(){
     const itemId =
         document.getElementById("sendStockItemInput").value;
 
@@ -372,7 +588,39 @@ function confirmSendStock(){
         return;
     }
 
-    CrownInventory.adjustWarehouseStock(itemId, -qty, date);
+    /* The `available` check above reads a possibly-stale local snapshot
+       (fine as a fast first pass) — the transactional helpers below
+       re-validate against a LIVE Firestore read and are what actually
+       prevent two concurrent sends of the same item from both
+       succeeding past what the warehouse really has. See
+       transactionalStockTransfer() / transactionalDeductWarehouseStock()
+       for why this couldn't just stay two independent adjust calls. */
+    const sendOutcome =
+        currentSendStockContext
+            ? await transactionalDeductWarehouseStock(itemId, qty, date)
+            : await transactionalStockTransfer(itemId, branch, qty, date);
+
+    if(sendOutcome.status === "insufficient"){
+        errorNote.textContent =
+            `Quantity exceeds available warehouse stock (Available: ${sendOutcome.available}).`;
+
+        errorNote.classList.remove("d-none");
+        return;
+    }
+
+    if(sendOutcome.status === "ok"){
+        warehouseStock = CrownInventory.getWarehouseStock();
+    }else{
+        /* Offline, unreachable, or the rare chunked-doc case — fall back
+           to the old non-atomic adjust calls rather than fully blocking
+           staff who are genuinely offline. This reintroduces the race
+           for just this send, same as before this fix existed. */
+        CrownInventory.adjustWarehouseStock(itemId, -qty, date);
+
+        if(!currentSendStockContext){
+            CrownInventory.adjustBranchStock(branch, itemId, qty, date);
+        }
+    }
 
     if(currentSendStockContext){
         applyRequestFulfillment(
@@ -391,8 +639,6 @@ function confirmSendStock(){
             requestId: currentSendStockContext.requestId
         });
     }else{
-        CrownInventory.adjustBranchStock(branch, itemId, qty, date);
-
         CrownInventory.addWarehouseLog({
             type: "OUT",
             date: date,

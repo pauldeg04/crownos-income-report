@@ -1585,6 +1585,91 @@ function saveSchedules(branchName, date, schedules){
     );
 }
 
+/* Reads the LIVE Firestore-mirrored schedule array for branchName/date —
+   not the possibly-stale localStorage copy, since another device's save
+   may not have synced down to this one yet — inside a transaction, and
+   lets mutateFn(current) inspect it and return either the new array to
+   commit, or null to abort (e.g. a conflict only visible in that fresh
+   data). Firestore serializes transactions against the same document, so
+   of two staff saving for the same branch/date at once, whichever
+   transaction commits first is the only one whose mutateFn sees data
+   without the other's change — the loser's mutateFn re-runs against the
+   winner's now-committed result and can correctly detect the conflict,
+   instead of both silently overwriting each other the way a plain
+   localStorage read-then-write race could.
+
+   On success, mirrors the result into localStorage so getSchedules() /
+   renderSchedule() and the rest of this page see it immediately without
+   waiting on the realtime listener round-trip.
+
+   Deliberately only handles the (overwhelmingly common) single-chunk
+   case — one day's appointments for one branch never approaches the
+   ~900KB chunk threshold firebase-sync.js's chunking exists for (see
+   chunkDocRef() there). If a schedule doc is ever actually chunked, this
+   backs off entirely (status "unsupported") rather than risk writing on
+   top of only chunk 0 and losing the rest. */
+async function transactionalUpdateSchedules(branchName, date, mutateFn){
+    if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
+        return { status: "offline" };
+    }
+
+    const key = getStorageKey(branchName, date);
+
+    const ref =
+        firebase.firestore()
+            .collection("appData")
+            .doc(encodeURIComponent(key));
+
+    try{
+        const outcome =
+            await firebase.firestore().runTransaction(async function(transaction){
+                const snap = await transaction.get(ref);
+                const data = snap.exists ? snap.data() : null;
+
+                if(data && Number.isInteger(data.chunkCount) && data.chunkCount > 1){
+                    return { status: "unsupported" };
+                }
+
+                let current = [];
+
+                if(data && !data.deleted && data.value){
+                    try{
+                        const parsed = JSON.parse(data.value);
+                        current = Array.isArray(parsed) ? parsed : [];
+                    }catch(error){
+                        current = [];
+                    }
+                }
+
+                const next = mutateFn(current);
+
+                if(next === null){
+                    return { status: "conflict" };
+                }
+
+                transaction.set(ref, {
+                    key: key,
+                    chunkIndex: 0,
+                    chunkCount: 1,
+                    value: JSON.stringify(next),
+                    deleted: false,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                return { status: "ok", schedules: next };
+            });
+
+        if(outcome.status === "ok"){
+            saveSchedules(branchName, date, outcome.schedules);
+        }
+
+        return outcome;
+    }catch(error){
+        console.error("transactionalUpdateSchedules failed:", error);
+        return { status: "error" };
+    }
+}
+
 /* Dates marked unavailable for ONLINE booking (Income Report/functions/
    index.js's getAvailableSlots/submitBookingRequest read this same
    crownBlockedDates key via appData). Blocking a date does NOT touch or
@@ -2695,7 +2780,13 @@ async function openNewModalFromBookingRequest(requestId){
     history.replaceState(null, "", location.pathname);
 }
 
-async function markBookingRequestConverted(requestId, scheduleId){
+/* Atomically flips a booking request to "converted", returning "ok",
+   "conflict" (see the resource.data.status == 'pending' guard in
+   firestore.rules — someone else already converted or declined it), or
+   "error" (unrelated failure, e.g. offline). Called from saveSchedule()
+   BEFORE any appointment data is written, so a "conflict" aborts with
+   nothing saved instead of both staff's appointments getting created. */
+async function claimBookingRequest(requestId, scheduleId){
     try{
         await firebase.firestore()
             .collection("bookingRequests")
@@ -2706,8 +2797,15 @@ async function markBookingRequestConverted(requestId, scheduleId){
                 reviewedBy: window.CrownAuth?.getCurrentUser?.()?.account || "",
                 convertedScheduleId: scheduleId
             });
+
+        return "ok";
     }catch(error){
-        console.error("Unable to mark booking request as converted:", error);
+        if(error?.code === "permission-denied"){
+            return "conflict";
+        }
+
+        console.error("Unable to claim booking request:", error);
+        return "error";
     }
 }
 
@@ -2944,7 +3042,7 @@ function updateModalPreview(){
     updateAllCompanionPreviews();
 }
 
-function saveSchedule(){
+async function saveSchedule(){
     const branch =
         getSelectedBranch();
 
@@ -3143,6 +3241,29 @@ function saveSchedule(){
     const mainId =
         selectedScheduleId || createId();
 
+    /* Claim the source booking request BEFORE writing any appointment
+       data — not after, like this used to. Two staff can both open the
+       same pending request and both reach this point; whichever of them
+       commits this update first is the only one firestore.rules lets
+       through (it requires status still be "pending" at write time — see
+       firestore.rules), so this doubles as the lock. Claiming first means
+       the loser aborts here with nothing saved, instead of the old
+       behavior where both staff's appointments got created and only the
+       request's own status/convertedScheduleId ended up racy. */
+    if(pendingRequestId){
+        const claimResult = await claimBookingRequest(pendingRequestId, mainId);
+
+        if(claimResult === "conflict"){
+            alert("This booking request was already handled by someone else. Please refresh and check the Booking Requests list.");
+            return;
+        }
+
+        if(claimResult === "error"){
+            alert("Could not reach the booking request to convert it. Please check your connection and try again.");
+            return;
+        }
+    }
+
     const scheduleData = {
         id: mainId,
         client: client,
@@ -3187,65 +3308,177 @@ function saveSchedule(){
             };
         });
 
-    let schedules =
-        getSchedules(branch.name, date);
+    let previousMainEntry = null;
+    let previousCompanionEntries = [];
 
-    const previousMainEntry =
-        schedules.find(function(item){
-            return item.id === mainId;
-        });
+    /* mutateFn re-runs the SAME bed/therapist conflict checks already
+       done above, but against `current` (the fresh, just-read-inside-
+       the-transaction array) instead of the possibly-stale localStorage
+       copy those earlier checks used — closing the window where two
+       staff both pass the pre-check against stale data and both commit.
+       Capacity/hold checks are deliberately not repeated here:
+       activeHoldsCache is a client-side snapshot with no live
+       transactional read available, and bed/therapist conflicts are
+       what actually prevents a double-booking, which is the failure
+       mode this exists to close. */
+    const saveOutcome =
+        await transactionalUpdateSchedules(branch.name, date, function(current){
+            if(status !== "Cancelled"){
+                const freshPersistedPool =
+                    current.filter(function(item){
+                        return (
+                            item.status !== "Cancelled" &&
+                            item.id !== mainId &&
+                            item.companionOf !== mainId
+                        );
+                    });
 
-    const previousCompanionEntries =
-        schedules.filter(function(item){
-            return item.companionOf === mainId;
-        });
+                const freshMainPool =
+                    freshPersistedPool.concat(getAllDraftSlots("main"));
 
-    schedules =
-        schedules.filter(function(item){
-            return (
-                item.id !== mainId &&
-                item.companionOf !== mainId
-            );
-        });
+                if(poolHasConflict(selectedBed, selectedStartTime, endTime, freshMainPool)){
+                    return null;
+                }
 
-    schedules.push(scheduleData);
+                if(poolHasTherapistConflict(therapist, selectedStartTime, endTime, freshMainPool)){
+                    return null;
+                }
 
-    companionEntries.forEach(function(entry){
-        schedules.push(entry);
-    });
+                for(let i = 0; i < activeCompanions.length; i++){
+                    const companion = activeCompanions[i];
+                    const payload = companionPayloads[i];
 
-    schedules.sort(function(a, b){
-        return (
-            timeToMinutes(a.startTime) -
-            timeToMinutes(b.startTime)
-        );
-    });
+                    const freshCompanionPool =
+                        freshPersistedPool.concat(getAllDraftSlots(companion.id));
 
-    saveSchedules(
-        branch.name,
-        date,
-        schedules
-    );
+                    if(poolHasConflict(payload.bed, payload.startTime, payload.endTime, freshCompanionPool)){
+                        return null;
+                    }
 
-    /* Rescheduled to a different day via the modal's Date field — the
-       block above only touched the NEW date's bucket, so the entry (and
-       any companions) still needs to be removed from wherever it used to
-       live or it would show up on both days. */
-    if(selectedScheduleOriginalDate && selectedScheduleOriginalDate !== date){
-        const oldDateSchedules =
-            getSchedules(branch.name, selectedScheduleOriginalDate)
-                .filter(function(item){
+                    if(poolHasTherapistConflict(payload.therapist, payload.startTime, payload.endTime, freshCompanionPool)){
+                        return null;
+                    }
+                }
+            }
+
+            previousMainEntry =
+                current.find(function(item){
+                    return item.id === mainId;
+                }) || null;
+
+            previousCompanionEntries =
+                current.filter(function(item){
+                    return item.companionOf === mainId;
+                });
+
+            const next =
+                current.filter(function(item){
                     return (
                         item.id !== mainId &&
                         item.companionOf !== mainId
                     );
                 });
 
+            next.push(scheduleData);
+
+            companionEntries.forEach(function(entry){
+                next.push(entry);
+            });
+
+            next.sort(function(a, b){
+                return (
+                    timeToMinutes(a.startTime) -
+                    timeToMinutes(b.startTime)
+                );
+            });
+
+            return next;
+        });
+
+    if(saveOutcome.status === "conflict"){
+        alert("This bed or therapist was just booked by someone else for this time. Please refresh and try again.");
+        return;
+    }
+
+    /* Offline, an unreachable transaction, or the rare chunked-doc case
+       (see transactionalUpdateSchedules) — fall back to the old
+       non-atomic local save rather than fully blocking staff who are
+       genuinely offline. This reintroduces the last-write-wins race for
+       just that save, same as before this fix existed. */
+    if(saveOutcome.status !== "ok"){
+        let schedules =
+            getSchedules(branch.name, date);
+
+        previousMainEntry =
+            schedules.find(function(item){
+                return item.id === mainId;
+            }) || null;
+
+        previousCompanionEntries =
+            schedules.filter(function(item){
+                return item.companionOf === mainId;
+            });
+
+        schedules =
+            schedules.filter(function(item){
+                return (
+                    item.id !== mainId &&
+                    item.companionOf !== mainId
+                );
+            });
+
+        schedules.push(scheduleData);
+
+        companionEntries.forEach(function(entry){
+            schedules.push(entry);
+        });
+
+        schedules.sort(function(a, b){
+            return (
+                timeToMinutes(a.startTime) -
+                timeToMinutes(b.startTime)
+            );
+        });
+
         saveSchedules(
             branch.name,
-            selectedScheduleOriginalDate,
-            oldDateSchedules
+            date,
+            schedules
         );
+    }
+
+    /* Rescheduled to a different day via the modal's Date field — the
+       block above only touched the NEW date's bucket, so the entry (and
+       any companions) still needs to be removed from wherever it used to
+       live or it would show up on both days. Pure removal, so no
+       conflict re-check is needed the way the new-date save above does. */
+    if(selectedScheduleOriginalDate && selectedScheduleOriginalDate !== date){
+        const oldDateOutcome =
+            await transactionalUpdateSchedules(branch.name, selectedScheduleOriginalDate, function(current){
+                return current.filter(function(item){
+                    return (
+                        item.id !== mainId &&
+                        item.companionOf !== mainId
+                    );
+                });
+            });
+
+        if(oldDateOutcome.status !== "ok"){
+            const oldDateSchedules =
+                getSchedules(branch.name, selectedScheduleOriginalDate)
+                    .filter(function(item){
+                        return (
+                            item.id !== mainId &&
+                            item.companionOf !== mainId
+                        );
+                    });
+
+            saveSchedules(
+                branch.name,
+                selectedScheduleOriginalDate,
+                oldDateSchedules
+            );
+        }
     }
 
     ensureClientExists(
@@ -3269,15 +3502,9 @@ function saveSchedule(){
         previousCompanionEntries: previousCompanionEntries
     });
 
-    const convertedFromRequestId = pendingRequestId;
-
     closeModal();
     renderSchedule();
     renderUpcomingAndHistory();
-
-    if(convertedFromRequestId){
-        markBookingRequestConverted(convertedFromRequestId, mainId);
-    }
 }
 
 /* Notifies a therapist only when their assignment actually changed

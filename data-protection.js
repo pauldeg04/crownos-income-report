@@ -53,10 +53,11 @@ function attachEvents(){
 
     document
         .getElementById("restoreConfirmation")
-        .addEventListener("change", function(){
-            document.getElementById("confirmRestoreBtn").disabled =
-                !this.checked;
-        });
+        .addEventListener("change", updateRestoreConfirmState);
+
+    document
+        .getElementById("restoreTypedConfirmation")
+        .addEventListener("input", updateRestoreConfirmState);
 
     document
         .getElementById("confirmRestoreBtn")
@@ -452,6 +453,26 @@ function resetVerification(){
         true;
 }
 
+/* Restoring doesn't just replace this browser's data — performRestore()
+   ends with CrownCloud.flushNow(), which pushes the restored snapshot to
+   the shared Firestore appData collection and silently overwrites
+   whatever every OTHER signed-in device/branch has done since the
+   backup was taken (see performRestore()'s comment). A single checkbox
+   undersold that risk, so confirming now needs BOTH the checkbox and
+   typing "RESTORE" — a deliberately higher-friction gate for an action
+   that can erase live data across the whole org with no built-in undo
+   for anyone but this one device. */
+function updateRestoreConfirmState(){
+    const checked =
+        document.getElementById("restoreConfirmation").checked;
+
+    const typed =
+        document.getElementById("restoreTypedConfirmation").value.trim();
+
+    document.getElementById("confirmRestoreBtn").disabled =
+        !checked || typed !== "RESTORE";
+}
+
 function openRestoreModal(){
     if(!selectedBackup){
         return;
@@ -459,6 +480,9 @@ function openRestoreModal(){
 
     document.getElementById("restoreConfirmation").checked =
         false;
+
+    document.getElementById("restoreTypedConfirmation").value =
+        "";
 
     document.getElementById("confirmRestoreBtn").disabled =
         true;
@@ -477,6 +501,13 @@ function closeRestoreModal(){
 }
 
 async function performRestore(){
+    if(
+        !document.getElementById("restoreConfirmation").checked ||
+        document.getElementById("restoreTypedConfirmation").value.trim() !== "RESTORE"
+    ){
+        return;
+    }
+
     try{
         validateBackup(selectedBackup);
 

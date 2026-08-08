@@ -272,11 +272,18 @@
 
         <div class="protection-modal-body">
             <p>
-                Current CrownOS data in this browser will be replaced by the selected backup.
+                This does not just replace data in this browser. CrownOS syncs to the cloud,
+                so restoring pushes this backup to <strong>every other signed-in device and
+                branch</strong> — anything entered anywhere since this backup was taken
+                (today's schedules, sales, attendance, everything) will be silently
+                overwritten as soon as those devices next sync, even if someone is using
+                CrownOS on them right now.
             </p>
 
             <div class="safety-message">
                 A safety backup of the current data will download automatically before restore.
+                That only protects THIS device's pre-restore state, not what any other
+                device may lose.
             </div>
 
             <label class="confirmation-box">
@@ -287,9 +294,22 @@
                 >
 
                 <span>
-                    I understand that the current browser data will be replaced.
+                    I understand this will overwrite live data on every other device too, and
+                    I've confirmed no one else is actively using CrownOS right now.
                 </span>
             </label>
+
+            <label class="form-label mt-3" for="restoreTypedConfirmation">
+                Type <strong>RESTORE</strong> to enable the button below.
+            </label>
+
+            <input
+                type="text"
+                class="form-control"
+                id="restoreTypedConfirmation"
+                autocomplete="off"
+                placeholder="Type RESTORE"
+            >
         </div>
 
         <div class="protection-modal-footer">

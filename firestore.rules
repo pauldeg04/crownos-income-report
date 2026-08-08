@@ -17,7 +17,19 @@ service cloud.firestore {
 
       allow get, list: if request.auth != null;
 
+      /* resource.data.status == 'pending' is the actual double-conversion
+         guard: Firestore serializes writes to a single document and
+         evaluates rules against its state immediately before each write
+         commits, so of two staff racing to convert/decline the SAME
+         request, whichever write lands first flips status away from
+         'pending' and the second is rejected by this same check — no
+         client-side transaction needed. See scheduling.js
+         markBookingRequestConverted() / booking-requests.js
+         declineRequest(), both of which now handle that rejection as
+         "someone else already handled this request" instead of silently
+         double-booking or double-declining. */
       allow update: if request.auth != null &&
+        resource.data.status == 'pending' &&
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['status', 'reviewedAt', 'reviewedBy', 'convertedScheduleId']) &&
         request.resource.data.status in ['converted', 'declined'];

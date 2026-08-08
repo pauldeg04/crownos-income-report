@@ -772,6 +772,24 @@ function saveService(){
     const availableForOnlineBooking =
         document.getElementById("onlineBookingAvailableInput").checked;
 
+    const regularPrice =
+        Number(document.getElementById("regularPriceInput").value) || 0;
+
+    const firstTimerPrice =
+        Number(document.getElementById("firstTimerPriceInput").value) || 0;
+
+    const vipPrice =
+        Number(document.getElementById("vipPriceInput").value) || 0;
+
+    const seniorPwdPrice =
+        Number(document.getElementById("seniorPwdPriceInput").value) || 0;
+
+    const commission =
+        Number(document.getElementById("commissionInput").value) || 0;
+
+    const overtimeCommission =
+        Number(document.getElementById("overtimeCommissionInput").value) || 0;
+
     if(!name){
         alert("Please enter a Service Name.");
         activateTab("general");
@@ -787,6 +805,29 @@ function saveService(){
     if(!duration || duration <= 0){
         alert("Please enter a valid Duration.");
         activateTab("general");
+        return;
+    }
+
+    if(bedOccupancy < 0){
+        alert("Bed Occupancy cannot be negative.");
+        activateTab("general");
+        return;
+    }
+
+    if(
+        regularPrice < 0 ||
+        firstTimerPrice < 0 ||
+        vipPrice < 0 ||
+        seniorPwdPrice < 0
+    ){
+        alert("Prices cannot be negative.");
+        activateTab("general");
+        return;
+    }
+
+    if(commission < 0 || overtimeCommission < 0){
+        alert("Commission cannot be negative.");
+        activateTab("internal");
         return;
     }
 
@@ -849,30 +890,12 @@ function saveService(){
                 .getElementById("serviceDescriptionInput")
                 .value
                 .trim(),
-        regularPrice:
-            Number(
-                document.getElementById("regularPriceInput").value
-            ) || 0,
-        firstTimerPrice:
-            Number(
-                document.getElementById("firstTimerPriceInput").value
-            ) || 0,
-        vipPrice:
-            Number(
-                document.getElementById("vipPriceInput").value
-            ) || 0,
-        seniorPwdPrice:
-            Number(
-                document.getElementById("seniorPwdPriceInput").value
-            ) || 0,
-        commission:
-            Number(
-                document.getElementById("commissionInput").value
-            ) || 0,
-        overtimeCommission:
-            Number(
-                document.getElementById("overtimeCommissionInput").value
-            ) || 0,
+        regularPrice: regularPrice,
+        firstTimerPrice: firstTimerPrice,
+        vipPrice: vipPrice,
+        seniorPwdPrice: seniorPwdPrice,
+        commission: commission,
+        overtimeCommission: overtimeCommission,
         colorTag:
             document.getElementById("colorTagInput").value,
         status:

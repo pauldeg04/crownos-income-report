@@ -197,8 +197,17 @@
                     reviewedBy: currentUser?.account || ""
                 });
         }catch(error){
-            console.error("Unable to decline booking request:", error);
-            alert("Could not decline this request. Please try again.");
+            /* firestore.rules only allows this update while the request is
+               still "pending" — a permission-denied here almost always
+               means someone else already converted or declined it (the
+               request re-renders out of the pending list on its own via
+               the onSnapshot listener below once that happens). */
+            if(error?.code === "permission-denied"){
+                alert("This request was already handled by someone else.");
+            }else{
+                console.error("Unable to decline booking request:", error);
+                alert("Could not decline this request. Please try again.");
+            }
         }
     }
 
