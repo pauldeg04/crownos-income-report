@@ -1794,6 +1794,66 @@ function hasOverlap(
     );
 }
 
+/* Peak number of items simultaneously active at any single instant within
+   [windowStart, windowEnd) — NOT the count of items that merely touch the
+   window somewhere. Each item only needs an occupied bed while it's
+   actually running, so two back-to-back appointments in the same bed
+   (e.g. one ending at 2:55 and the next starting at 4:00) must count as 1
+   bed of demand at any given moment, not 2. Used for branch-wide capacity
+   checks where a naive "count everything that overlaps the window" sum
+   overcounts whenever beds turn over mid-window. */
+function computeMaxOverlapCount(
+    windowStart,
+    windowEnd,
+    items
+){
+    const windowStartMinutes =
+        timeToMinutes(windowStart);
+
+    const windowEndMinutes =
+        timeToMinutes(windowEnd);
+
+    const events = [];
+
+    items.forEach(function(item){
+        const itemStartMinutes =
+            Math.max(timeToMinutes(item.startTime), windowStartMinutes);
+
+        const itemEndMinutes =
+            Math.min(timeToMinutes(item.endTime), windowEndMinutes);
+
+        if(itemEndMinutes > itemStartMinutes){
+            events.push({ time: itemStartMinutes, delta: 1 });
+            events.push({ time: itemEndMinutes, delta: -1 });
+        }
+    });
+
+    events.sort(function(a, b){
+        if(a.time !== b.time){
+            return a.time - b.time;
+        }
+
+        /* Process an ending before a starting at the same instant so a
+           slot freeing up and a new one beginning right then aren't
+           counted as briefly overlapping (matches hasOverlap's strict
+           < / > comparison). */
+        return a.delta - b.delta;
+    });
+
+    let current = 0;
+    let peak = 0;
+
+    events.forEach(function(event){
+        current += event.delta;
+
+        if(current > peak){
+            peak = current;
+        }
+    });
+
+    return peak;
+}
+
 /* Refreshes activeHoldsCache for the given branch/date. Fire-and-forget
    (not awaited by callers) — renderSchedule() already renders from the
    locally-mirrored schedule synchronously; this only needs to have
@@ -3025,11 +3085,32 @@ function saveSchedule(){
         const overlappingHolds =
             countActiveHoldsOverlapping(selectedStartTime, endTime, pendingRequestId);
 
-        const projectedOccupancy =
+        const overlappingMainPoolItems =
             mainPool.filter(function(item){
                 return hasOverlap(selectedStartTime, endTime, item.startTime, item.endTime);
-            }).length +
-            overlappingHolds +
+            });
+
+        const overlappingHoldItems =
+            activeHoldsCache.filter(function(hold){
+                return (
+                    hold.bookingRequestId !== pendingRequestId &&
+                    hasOverlap(selectedStartTime, endTime, hold.startTime, hold.endTime)
+                );
+            });
+
+        /* Peak beds actually in use at any single instant during the
+           requested window, not the count of appointments that merely
+           touch the window somewhere (beds turn over mid-window, e.g. a
+           bed freed at 2:55 PM and reused at 4:00 PM must count once,
+           not twice) — see computeMaxOverlapCount(). Plus 1 for the
+           appointment being saved, which occupies its bed the whole
+           window. */
+        const projectedOccupancy =
+            computeMaxOverlapCount(
+                selectedStartTime,
+                endTime,
+                overlappingMainPoolItems.concat(overlappingHoldItems)
+            ) +
             1;
 
         if(projectedOccupancy > branch.beds){
