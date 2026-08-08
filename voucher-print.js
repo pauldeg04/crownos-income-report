@@ -31,6 +31,28 @@ function printCrownVoucher(voucher){
               })
             : "—";
 
+    /* list-vouchers.js only hides the Print button for status ===
+       "cancelled" — a redeemed voucher can still be reprinted (e.g. for
+       a customer dispute), and this template used to render exactly the
+       same as a fresh, unused one either way. Stamp it whenever status
+       isn't "active" so a reprint can never be mistaken for a valid
+       voucher. */
+    const statusStamp =
+        voucher.status === "redeemed"
+            ? {
+                  label: "REDEEMED",
+                  detail: voucher.redeemedAt
+                      ? "on " + new Date(voucher.redeemedAt).toLocaleDateString("en-PH", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric"
+                        })
+                      : ""
+              }
+            : voucher.status === "cancelled"
+                ? { label: "CANCELLED", detail: "" }
+                : null;
+
     const printWindow =
         window.open("", "_blank", "width=800,height=600");
 
@@ -56,12 +78,38 @@ function printCrownVoucher(voucher){
     padding:24px;
   }
   .voucher{
+    position:relative;
     width:640px;
     background:#fff;
     border:2px solid #E8B321;
     border-radius:18px;
     overflow:hidden;
     box-shadow:0 10px 40px rgba(11,24,73,.18);
+  }
+  .voucher-status-stamp{
+    position:absolute;
+    top:38%;
+    left:50%;
+    transform:translate(-50%,-50%) rotate(-18deg);
+    z-index:5;
+    padding:10px 26px;
+    border:4px solid #B3261E;
+    border-radius:10px;
+    color:#B3261E;
+    font-family:Arial, Helvetica, sans-serif;
+    font-weight:900;
+    font-size:34px;
+    letter-spacing:.14em;
+    text-align:center;
+    opacity:.82;
+    pointer-events:none;
+  }
+  .voucher-status-stamp small{
+    display:block;
+    margin-top:2px;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.04em;
   }
   .voucher-head{
     background:linear-gradient(120deg,#0B1849,#16245C);
@@ -137,6 +185,11 @@ function printCrownVoucher(voucher){
 </head>
 <body>
   <div class="voucher">
+    ${
+        statusStamp
+            ? `<div class="voucher-status-stamp">${esc(statusStamp.label)}${statusStamp.detail ? `<small>${esc(statusStamp.detail)}</small>` : ""}</div>`
+            : ""
+    }
     <div class="voucher-head">
       <div class="brand">CROWN HEAD SPA</div>
       <div class="tagline">Gift Voucher</div>

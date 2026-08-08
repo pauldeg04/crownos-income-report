@@ -63,6 +63,77 @@ function saveRegistry(registry){
     );
 }
 
+/* Reads the LIVE Firestore-mirrored voucher registry (not the possibly-
+   stale localStorage copy) inside a transaction, lets mutateFn(current)
+   return the new array to commit or null to abort (e.g. the voucher's
+   status already changed from what this action expected), and writes
+   the result back atomically. voidVoucher()/reactivateVoucher() used to
+   be a plain read-modify-write against localStorage with no concurrency
+   guard — two admins acting on the same voucher from different devices
+   at once could lose one update. Mirrors scheduling.js's
+   transactionalUpdateSchedules() / inventory-warehouse.js's
+   transactionalStockTransfer(). Deliberately only handles the
+   (overwhelmingly common) single-chunk case, same as those. */
+async function transactionalUpdateVoucherRegistry(mutateFn){
+    if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
+        return { status: "offline" };
+    }
+
+    const ref =
+        firebase.firestore()
+            .collection("appData")
+            .doc(encodeURIComponent(VOUCHER_REGISTRY_KEY));
+
+    try{
+        const outcome =
+            await firebase.firestore().runTransaction(async function(transaction){
+                const snap = await transaction.get(ref);
+                const data = snap.exists ? snap.data() : null;
+
+                if(data && Number.isInteger(data.chunkCount) && data.chunkCount > 1){
+                    return { status: "unsupported" };
+                }
+
+                let current = [];
+
+                if(data && !data.deleted && data.value){
+                    try{
+                        const parsed = JSON.parse(data.value);
+                        current = Array.isArray(parsed) ? parsed : [];
+                    }catch(error){
+                        current = [];
+                    }
+                }
+
+                const next = mutateFn(current);
+
+                if(next === null){
+                    return { status: "conflict" };
+                }
+
+                transaction.set(ref, {
+                    key: VOUCHER_REGISTRY_KEY,
+                    chunkIndex: 0,
+                    chunkCount: 1,
+                    value: JSON.stringify(next),
+                    deleted: false,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                return { status: "ok", registry: next };
+            });
+
+        if(outcome.status === "ok"){
+            saveRegistry(outcome.registry);
+        }
+
+        return outcome;
+    }catch(error){
+        console.error("transactionalUpdateVoucherRegistry failed:", error);
+        return { status: "error" };
+    }
+}
+
 function isAdmin(){
     return window.CrownAuth?.getCurrentUser?.()?.role === "Admin";
 }
@@ -273,7 +344,7 @@ function renderVoucherList(){
     });
 }
 
-function voidVoucher(code){
+async function voidVoucher(code){
     if(!isAdmin()){
         return;
     }
@@ -286,44 +357,83 @@ function voidVoucher(code){
         return;
     }
 
-    const registry = getRegistry();
+    const outcome =
+        await transactionalUpdateVoucherRegistry(function(current){
+            const entry =
+                current.find(function(item){
+                    return item.code === code;
+                });
 
-    const entry =
-        registry.find(function(item){
-            return item.code === code;
+            if(!entry || entry.status === "redeemed"){
+                return null;
+            }
+
+            entry.status = "cancelled";
+
+            return current;
         });
 
-    if(!entry || entry.status === "redeemed"){
-        alert("This voucher can no longer be voided.");
-        renderVoucherList();
-        return;
+    if(outcome.status === "conflict"){
+        alert("This voucher can no longer be voided — it may have just been redeemed elsewhere.");
+    }else if(outcome.status !== "ok"){
+        /* Offline/unreachable/chunked — fall back to the old non-atomic
+           local save rather than fully blocking an Admin who's
+           genuinely offline. Reintroduces the race for just this
+           action, same as before this fix existed. */
+        const registry = getRegistry();
+
+        const entry =
+            registry.find(function(item){
+                return item.code === code;
+            });
+
+        if(!entry || entry.status === "redeemed"){
+            alert("This voucher can no longer be voided.");
+        }else{
+            entry.status = "cancelled";
+            saveRegistry(registry);
+        }
     }
 
-    entry.status = "cancelled";
-
-    saveRegistry(registry);
     renderVoucherList();
 }
 
-function reactivateVoucher(code){
+async function reactivateVoucher(code){
     if(!isAdmin()){
         return;
     }
 
-    const registry = getRegistry();
+    const outcome =
+        await transactionalUpdateVoucherRegistry(function(current){
+            const entry =
+                current.find(function(item){
+                    return item.code === code;
+                });
 
-    const entry =
-        registry.find(function(item){
-            return item.code === code;
+            if(!entry || entry.status !== "cancelled"){
+                return null;
+            }
+
+            entry.status = "active";
+
+            return current;
         });
 
-    if(!entry || entry.status !== "cancelled"){
-        renderVoucherList();
-        return;
+    if(outcome.status === "conflict"){
+        alert("This voucher's status already changed — please refresh and try again.");
+    }else if(outcome.status !== "ok"){
+        const registry = getRegistry();
+
+        const entry =
+            registry.find(function(item){
+                return item.code === code;
+            });
+
+        if(entry && entry.status === "cancelled"){
+            entry.status = "active";
+            saveRegistry(registry);
+        }
     }
 
-    entry.status = "active";
-
-    saveRegistry(registry);
     renderVoucherList();
 }

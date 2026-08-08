@@ -45,9 +45,22 @@
        Pulling stays on — read-only, so local testing still sees a
        realistic snapshot — but every outgoing path (queuePush, the
        first-run seed, and the exposed flushNow()) is blocked below. */
+    /* Previously only matched localhost/127.0.0.1/file: — testing from a
+       LAN IP (e.g. a phone/tablet hitting a dev machine at 192.168.x.x)
+       or a .local mDNS hostname slipped through entirely, pushing
+       whatever was typed there straight into the live production
+       appData collection. Widened to cover private LAN ranges and
+       .local hostnames, plus a manual localStorage escape hatch
+       (crownCloudDisableSync) for any other non-production host this
+       hardcoded list can't anticipate (a staging domain, for example) —
+       set it from that browser's devtools console once, no code change
+       needed. */
     const isLocalTestEnv = (
         ["localhost", "127.0.0.1"].includes(location.hostname) ||
-        location.protocol === "file:"
+        location.protocol === "file:" ||
+        location.hostname.endsWith(".local") ||
+        /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(location.hostname) ||
+        localStorage.getItem("crownCloudDisableSync") === "true"
     );
 
     if(isLocalTestEnv){
