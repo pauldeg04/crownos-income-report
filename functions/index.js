@@ -538,6 +538,42 @@ exports.resetStaffCloudLogin = onCall(async (request) => {
     return { ok: true };
 });
 
+/* Mints/refreshes a Firebase Auth custom claim (`role`) on the caller's
+   OWN user, read from their current crownUserAccounts entry. Firestore
+   security rules can't parse the JSON blobs the appData mirror stores
+   role/account data in (see appData.js), so there was previously no way
+   for rules to enforce CrownOS's Admin-only pages (access-control.js
+   PAGE_ACCESS) — any authenticated user could read/write any appData
+   doc directly via the SDK, bypassing the client-side page gate
+   entirely. This claim is what firestore.rules checks instead.
+
+   Called by the client right after every login (see firebase-sync.js
+   CrownCloud.syncRole(), invoked from login.js) — the client must
+   force an ID token refresh immediately after this call for the new
+   claim to take effect on that session's Firestore requests. */
+exports.syncMyRole = onCall(async (request) => {
+    if(!request.auth || !request.auth.token || !request.auth.token.email){
+        throw new HttpsError("unauthenticated", "Must be signed in.");
+    }
+
+    const users = await readAppDataKey(db, USER_ACCOUNTS_KEY);
+    const accountList = Array.isArray(users) ? users : [];
+
+    const account = accountList.find(function(u){
+        return toSyncEmail(u.account) === request.auth.token.email;
+    });
+
+    if(!account || account.status !== "Active"){
+        throw new HttpsError("permission-denied", "No active CrownOS account for this login.");
+    }
+
+    await admin.auth().setCustomUserClaims(request.auth.uid, {
+        role: account.role
+    });
+
+    return { role: account.role };
+});
+
 /* ---------- releaseExpiredHolds (scheduled) ---------- */
 
 exports.releaseExpiredHolds = onSchedule("every 15 minutes", async () => {

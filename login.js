@@ -169,6 +169,15 @@ async function login(event){
             await CrownCloud.waitForInitialSync(12000);
         }
 
+        /* Refresh this session's role claim (see firestore.rules /
+           functions.syncMyRole) now that we have a signed-in cloud user
+           either way (existing account or just-provisioned). Best-effort:
+           a failure here shouldn't block login — it only means this
+           session won't pass the role-gated rules until its next login. */
+        if(cloudStatus === "cloud" || cloudStatus === "no-account"){
+            await CrownCloud.syncRole?.();
+        }
+
         /* Therapist with a Receptionist secondary role: ask which
            duty applies today before finishing login — Payroll needs
            to know before it can compute today's rate correctly. */

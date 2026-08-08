@@ -791,6 +791,30 @@
         }
     }
 
+    /* Calls the syncMyRole Cloud Function so this session's Firebase Auth
+       user carries a fresh `role` custom claim (see functions/index.js),
+       then forces an ID token refresh so firestore.rules sees it on this
+       session's very next request — without the forced refresh the SDK
+       would keep using the token it already cached (with no/stale role
+       claim) until it naturally expires. Called once per login (see
+       login.js) rather than on every page load, since the claim only
+       needs to be current as of sign-in. Requires
+       firebase-functions-compat.js to be loaded on the page. */
+    async function syncRole(){
+        if(!window.firebase || !firebase.functions || !firebase.auth().currentUser){
+            return false;
+        }
+
+        try{
+            await firebase.functions().httpsCallable("syncMyRole")();
+            await firebase.auth().currentUser.getIdToken(true);
+            return true;
+        }catch(error){
+            console.error("CrownCloud: syncMyRole failed.", error);
+            return false;
+        }
+    }
+
     function waitForInitialSync(timeoutMs){
         const timeout = new Promise(function(resolve){
             setTimeout(function(){
@@ -806,6 +830,7 @@
         isLocalTestEnv: isLocalTestEnv,
         login: cloudLogin,
         provision: provision,
+        syncRole: syncRole,
         waitForInitialSync: waitForInitialSync,
         updateOwnPassword: updateOwnPassword,
         resetOtherUserCloudLogin: resetOtherUserCloudLogin,
