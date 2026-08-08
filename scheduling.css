@@ -6,21 +6,13 @@ body.modal-open{
     overflow:hidden;
 }
 
-/* Branch and Date (the first two grid children) are now hidden — both
-   are picked from the header toolbar instead (see sidebar.js) — so this
-   only needs to lay out the 3 remaining stat boxes (Beds/Operating
-   Hours/Scheduled). */
+/* Branch and Date are picked from the header toolbar instead (see
+   sidebar.js) — both of this card's children are d-none, kept in the DOM
+   only so scheduling.js still has #scheduleBranch/#scheduleDate to read
+   and write. The stat boxes (Beds/Operating Hours/Scheduled) now live in
+   .schedule-grid-stats, inside the grid card's header row. */
 .schedule-controls-card{
-    display:grid;
-    grid-template-columns:repeat(3,minmax(115px,1fr));
-    gap:14px;
-    align-items:end;
-    margin-bottom:24px;
-    padding:20px;
-    background:#fff;
-    border:1px solid var(--border-light);
-    border-radius:16px;
-    box-shadow:var(--shadow-soft);
+    display:none;
 }
 
 .date-control-row{
@@ -38,7 +30,14 @@ body.modal-open{
     font-size:17px;
 }
 
+.schedule-grid-stats{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+}
+
 .schedule-control-summary{
+    min-width:115px;
     min-height:70px;
     display:flex;
     flex-direction:column;
@@ -49,7 +48,7 @@ body.modal-open{
     border-radius:11px;
 }
 
-.schedule-control-summary:nth-last-child(2){
+.schedule-control-summary:nth-child(2){
     background:var(--green);
 }
 
@@ -88,6 +87,19 @@ body.modal-open{
     border-bottom:1px solid var(--border-light);
 }
 
+.schedule-grid-header-left{
+    flex:1 1 auto;
+    min-width:0;
+}
+
+.schedule-grid-header-right{
+    flex:0 0 auto;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:10px;
+}
+
 .schedule-grid-header h3{
     margin:0;
     color:var(--navy);
@@ -105,6 +117,7 @@ body.modal-open{
     display:flex;
     gap:15px;
     flex-wrap:wrap;
+    justify-content:flex-end;
     color:var(--muted);
     font-size:11px;
 }
@@ -152,7 +165,7 @@ body.modal-open{
     flex-wrap:wrap;
     align-items:center;
     gap:12px;
-    margin:16px 24px 0;
+    margin:14px 0 0;
     padding:12px 16px;
     background:#FBE9E7;
     border:1px solid #DC3545;
@@ -682,26 +695,36 @@ body.modal-open{
 }
 
 @media(max-width:1350px){
-    .schedule-controls-card{
-        grid-template-columns:repeat(2,minmax(0,1fr));
-    }
-
     .schedule-control-summary{
         min-height:62px;
     }
 }
 
 @media(max-width:768px){
-    .schedule-controls-card{
-        grid-template-columns:1fr;
-    }
-
     .date-control-row{
         flex-direction:column;
     }
 
     .schedule-grid-header{
         flex-direction:column;
+    }
+
+    .schedule-grid-header-right{
+        align-items:flex-start;
+        width:100%;
+    }
+
+    .schedule-grid-stats{
+        width:100%;
+    }
+
+    .schedule-control-summary{
+        flex:1;
+        min-width:0;
+    }
+
+    .schedule-grid-legend{
+        justify-content:flex-start;
     }
 
     .schedule-modal-backdrop{

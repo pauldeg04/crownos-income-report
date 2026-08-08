@@ -111,26 +111,12 @@
             </div>
         </div>
 
-        <div class="schedule-control-summary">
-            <span>Beds</span>
-            <strong id="bedCount">0</strong>
-        </div>
-
-        <div class="schedule-control-summary">
-            <span>Operating Hours</span>
-            <strong id="operatingHours">—</strong>
-        </div>
-
-        <div class="schedule-control-summary">
-            <span>Scheduled</span>
-            <strong id="scheduledCount">0</strong>
-        </div>
     </div>
 
     <div class="schedule-grid-card">
 
         <div class="schedule-grid-header">
-            <div>
+            <div class="schedule-grid-header-left">
                 <h3 id="scheduleGridTitle">
                     Branch Schedule
                 </h3>
@@ -138,45 +124,64 @@
                 <p id="scheduleGridSubtitle">
                     Select a branch and date.
                 </p>
+
+                <div class="block-date-inline-control">
+                    <label class="block-date-toggle">
+                        <input type="checkbox" id="blockDateCheckbox">
+                        🚫 Block this date for online booking
+                    </label>
+
+                    <input
+                        type="text"
+                        id="blockDateReasonInput"
+                        class="form-control form-control-sm"
+                        placeholder="Reason (optional)"
+                        maxlength="120"
+                        disabled
+                    >
+                </div>
             </div>
 
-            <div class="schedule-grid-legend">
-                <span>
-                    <i class="legend-available"></i>
-                    Available
-                </span>
+            <div class="schedule-grid-header-right">
+                <div class="schedule-grid-stats">
+                    <div class="schedule-control-summary">
+                        <span>Beds</span>
+                        <strong id="bedCount">0</strong>
+                    </div>
 
-                <span>
-                    <i class="legend-booked"></i>
-                    Scheduled
-                </span>
+                    <div class="schedule-control-summary">
+                        <span>Operating Hours</span>
+                        <strong id="operatingHours">—</strong>
+                    </div>
 
-                <span>
-                    <i class="legend-companion"></i>
-                    Companion
-                </span>
+                    <div class="schedule-control-summary">
+                        <span>Scheduled</span>
+                        <strong id="scheduledCount">0</strong>
+                    </div>
+                </div>
 
-                <span>
-                    <i class="legend-current"></i>
-                    Current Time
-                </span>
+                <div class="schedule-grid-legend">
+                    <span>
+                        <i class="legend-available"></i>
+                        Available
+                    </span>
+
+                    <span>
+                        <i class="legend-booked"></i>
+                        Scheduled
+                    </span>
+
+                    <span>
+                        <i class="legend-companion"></i>
+                        Companion
+                    </span>
+
+                    <span>
+                        <i class="legend-current"></i>
+                        Current Time
+                    </span>
+                </div>
             </div>
-        </div>
-
-        <div class="block-date-inline-control">
-            <label class="block-date-toggle">
-                <input type="checkbox" id="blockDateCheckbox">
-                🚫 Block this date for online booking
-            </label>
-
-            <input
-                type="text"
-                id="blockDateReasonInput"
-                class="form-control form-control-sm"
-                placeholder="Reason (optional)"
-                maxlength="120"
-                disabled
-            >
         </div>
 
         <div class="schedule-empty-state" id="scheduleEmptyState">
