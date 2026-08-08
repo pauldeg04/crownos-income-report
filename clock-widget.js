@@ -46,6 +46,22 @@ document.addEventListener("DOMContentLoaded", function(){
     renderClockWidget();
     checkClockOutReminder();
 
+    function retryThisUsersPendingAttendance(){
+        const user = window.CrownAuth?.getCurrentUser?.();
+
+        if(user){
+            window.CrownAttendanceSync?.retryPending?.(user.id);
+        }
+    }
+
+    retryThisUsersPendingAttendance();
+
+    /* Catches the case where a clock-in/out was made fully offline, the
+       browser regains a connection later WITHOUT a page reload (mobile
+       staff commonly keep a tab open in the background) — no need to
+       wait for the next load. */
+    window.addEventListener("online", retryThisUsersPendingAttendance);
+
     setInterval(
         checkClockOutReminder,
         CLOCK_OUT_REMINDER_CHECK_MS
@@ -113,6 +129,12 @@ function saveAttendanceLog(entries){
         JSON.stringify(entries)
     );
 }
+
+/* Attendance-specific cloud sync (transactional per-entry upsert, with
+   a durable pendingCloudSync retry flag) lives in attendance-sync.js —
+   window.CrownAttendanceSync — shared with attendance.js's Admin
+   add/edit/delete flow, which writes the same crownAttendanceLog key.
+   See that file for the full rationale. */
 
 function isDualRoleTherapist(user){
     return (
@@ -545,10 +567,7 @@ async function performClockIn(user, shiftType){
     const today =
         getTodayDateString();
 
-    const entries =
-        getAttendanceLog();
-
-    entries.push({
+    const entry = {
         id: createAttendanceId(),
         userId: user.id,
         account: user.account,
@@ -565,16 +584,23 @@ async function performClockIn(user, shiftType){
         clockInGeo: geo,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-    });
+    };
+
+    const entries =
+        getAttendanceLog();
+
+    entries.push(entry);
 
     saveAttendanceLog(entries);
 
-    /* Mobile staff commonly background or close the app right after
-       tapping — without an explicit flush here, the 600ms sync debounce
-       can get cut off before the write ever reaches Firestore, so the
-       clock-in silently never registers for anyone else. Same fix
-       pattern as logout()/finishLogin() in login.js and access-control.js. */
-    await window.CrownCloud?.flushNow?.();
+    /* Correct the moment this entry is pushed to `entries` above,
+       regardless of connectivity — this just tries to confirm it
+       reached the cloud, and durably flags it for retry if it can't
+       (see attendance-sync.js's CrownAttendanceSync.syncEntry()).
+       Mobile staff commonly background or close the app right after
+       tapping; unlike the old flushNow() call this replaces, that's no
+       longer a way to lose the clock-in, only to delay when it syncs. */
+    await CrownAttendanceSync.syncEntry(entry.id);
 
     alert(getClockInMessage(geo, branchName));
 
@@ -622,9 +648,8 @@ async function performClockOut(user, openEntry){
 
     saveAttendanceLog(entries);
 
-    /* Same reasoning as performClockIn() above — force the write out
-       before the user can background/close the app. */
-    await window.CrownCloud?.flushNow?.();
+    /* Same reasoning as performClockIn() above. */
+    await CrownAttendanceSync.syncEntry(entry.id);
 
     alert("Clocked out successfully.");
 

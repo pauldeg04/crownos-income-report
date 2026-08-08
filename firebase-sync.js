@@ -249,8 +249,22 @@
         }
     };
 
+    /* crownAttendanceLog opts out of this generic whole-array flush —
+       see clock-widget.js's transactionalSyncAttendanceEntry(). That key
+       is a single shared array across every staff member/branch/date,
+       and clock-ins/outs cluster tightly in time (everyone clocking in
+       around shift start), making the generic "read localStorage, blind-
+       overwrite the whole doc" flush the highest-collision-risk path in
+       the app — two people clocking in around the same moment could
+       silently lose one entry. clock-widget.js instead pushes each
+       attendance action individually via a Firestore transaction that
+       reads the live doc fresh and merges in just that one entry. Still
+       excluded from `shouldSync()`'s EXCLUDED_KEYS on purpose — this
+       device still needs the normal INCOMING pull/listener so it sees
+       other devices' attendance changes; only the generic OUTGOING path
+       is skipped here. */
     function queuePush(key){
-        if(isLocalTestEnv){
+        if(isLocalTestEnv || key === "crownAttendanceLog"){
             return;
         }
 

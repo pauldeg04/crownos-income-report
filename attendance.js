@@ -20,6 +20,16 @@ document.addEventListener("DOMContentLoaded", function(){
     setupAdminView();
     attachEvents();
     renderAttendance();
+
+    /* Retries any attendance entry (any staff member's — Admin can see
+       and edit everyone's here, unlike clock-widget.js which only
+       retries the signed-in user's own) still flagged pendingCloudSync
+       from a save/delete that couldn't reach Firestore at the time. See
+       attendance-sync.js. */
+    window.CrownAttendanceSync?.retryPending?.();
+    window.addEventListener("online", function(){
+        window.CrownAttendanceSync?.retryPending?.();
+    });
 });
 
 function attachEvents(){
@@ -824,6 +834,8 @@ function saveAttendanceEntry(){
     const entries =
         getAttendanceLog();
 
+    let savedEntryId;
+
     if(editingEntryId){
         const entry =
             entries.find(function(item){
@@ -844,9 +856,13 @@ function saveAttendanceEntry(){
         entry.clockOutAt = clockOutAt;
         entry.branch = branch;
         entry.updatedAt = new Date().toISOString();
+
+        savedEntryId = entry.id;
     }else{
+        savedEntryId = createId();
+
         entries.push({
-            id: createId(),
+            id: savedEntryId,
             userId: userId,
             account: user ? user.account : "",
             role: user ? user.role : "",
@@ -862,6 +878,15 @@ function saveAttendanceEntry(){
     }
 
     saveAttendanceLog(entries);
+
+    /* Same reasoning as clock-widget.js's performClockIn()/
+       performClockOut() — this key opts out of the generic sync flush
+       (see firebase-sync.js's queuePush()) in favor of a transactional
+       per-entry upsert, since crownAttendanceLog is shared across every
+       staff member and a blind whole-array overwrite risks silently
+       losing a concurrent clock-in/out from someone else. */
+    window.CrownAttendanceSync?.syncEntry?.(savedEntryId);
+
     closeAttendanceModal();
     renderAttendance();
 }
@@ -877,5 +902,8 @@ function deleteAttendanceEntry(entryId){
         });
 
     saveAttendanceLog(entries);
+
+    window.CrownAttendanceSync?.syncDelete?.(entryId);
+
     renderAttendance();
 }
