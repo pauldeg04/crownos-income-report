@@ -10,6 +10,7 @@ const AUTO_ALL_BRANCH_ROLES = ["Admin", "Executive Assistant"];
 const EXTRA_ACCESS_PAGES = [
     { href: "index.html", label: "Daily Income Report" },
     { href: "statistics.html", label: "Statistics" },
+    { href: "petty-cash.html", label: "Petty Cash" },
     { href: "therapist-sales.html", label: "Therapist Sales" },
     { href: "monthly-report.html", label: "Monthly Summary" },
     { href: "expenses-report.html", label: "Expenses Report" },

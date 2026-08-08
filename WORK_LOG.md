@@ -4,6 +4,90 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-08 — Petty Cash polish: Replenish label, auto-post to Operation Expenses on Liquidate
+
+**Requested by:** User — drop the "+" from the Replenish button, and have Liquidate
+push every transaction into Expenses Report's Operation Expenses table instead of
+staff re-typing them.
+
+**Change:**
+- [`petty-cash.html`](petty-cash.html) — Replenish button and empty-state copy no
+  longer say "+ Replenish", just "Replenish". Liquidate modal's warning text now
+  states up front that confirming also posts the transactions to Operation Expenses.
+- [`petty-cash.js`](petty-cash.js) — `confirmLiquidatePettyCash()` now calls
+  `postPettyCashEntriesToExpenses(fund)` before filing the fund under History. For
+  each transaction it writes one row directly into
+  `crownExpenses_<branch>_<liquidatedMonth>`'s `operation` array (same storage shape
+  `expenses-report.js` reads): Date = the **liquidation** date (not each
+  transaction's own date — reported as one batch, matching how the custodian actually
+  turns it in), Category = `"Branch Expenses"`, Particular = the transaction's
+  Particular, Amount = its Total Cost, Mode of Payment = `"Petty Cash"`, Remarks =
+  its Remarks.
+- [`expenses-report.html`](expenses-report.html) — added `"Branch Expenses"` as a
+  Category option in the Operation Expenses Add/Edit modal, so entries posted from
+  Petty Cash (and any staff wants to file the same way manually) have a real option
+  in the dropdown instead of an orphaned value.
+
+**Incident during testing (self-caught, not reported by user):** verified the full
+Replenish → Add Entry → Liquidate flow against `localhost`, not realizing this
+machine's copy of the app is live-synced to the **real production Firestore**
+(`crownos-5f03d` — confirmed by the "☁ Synced to Cloud" badge and real entries like
+"Rice Incentive" / "Reimbursement" already sitting in Biñan's August Operation
+Expenses). Two test funds (₱5,000 and ₱3,000, both liquidated) and one test Operation
+Expenses row ("Coffee for staff", ₱240) were briefly written to live data.
+**Cleaned up immediately:** removed `crownPettyCash_Biñan` entirely (no real petty
+cash data existed before this feature) and filtered the one test row back out of
+`crownExpenses_Biñan_2026-08` — leaving the other 4 real entries (Mobile Data, Bank
+Transfer Fee, Reimbursement, Rice Incentive) untouched — then forced an immediate
+`CrownCloud.flushNow()` push and reloaded to confirm the cloud copy matches. Verified
+clean on both Expenses Report and Petty Cash after the reload.
+**Lesson:** test future changes against a disconnected/offline copy (or a scratch
+Firebase project) instead of this checked-out copy, since it stays live-synced by
+default.
+
+**Status:** Deployed — `firebase deploy --only hosting` → live at
+https://crownos-5f03d.web.app
+
+---
+
+## 2026-08-08 — New Petty Cash tracking page
+
+**Requested by:** User — wanted a dedicated Petty Cash page, one tracking table per
+release (Replenish → spend → Liquidate), with its own transaction history.
+
+**Change:**
+- [`petty-cash.html`](petty-cash.html), [`petty-cash.css`](petty-cash.css),
+  [`petty-cash.js`](petty-cash.js) — new page, added to the sidebar (Summary Reports
+  section, right after Statistics) and to `access-control.js`'s `PAGE_ACCESS` with the
+  same roles as Statistics: Admin, Executive Assistant, Receptionist. Also added to
+  `account-settings.js`'s `EXTRA_ACCESS_PAGES` so other roles can be individually
+  granted access (not excluded like Cash Flow/Data Protection are).
+- Data model, stored per branch at `crownPettyCash_<branch>` (auto-synced to Firestore
+  like every other `crown`-prefixed key): `{ activeFund, history[] }`. A fund is
+  `{ releaseDate, releasedAmount, entries[], status, liquidatedDate, liquidatedRemaining,
+  liquidatedRemarks }`; each entry is `{ date, particular, remarks, qty, unitCost,
+  totalCost }` (Total Cost auto-computed from QTY × Unit Cost).
+- **Replenish** (header button, only shown when no fund is active) prompts for a
+  release date + amount and opens a new table. **+ Add Entry** logs a transaction
+  against the active fund; Remaining recalculates live (Released − sum of Total Cost).
+  **Liquidate** (bottom of the table) shows a Released/Spent/Remaining summary, takes
+  optional remarks, then closes the fund and files it under **History**. Only one fund
+  can be open per branch at a time — Replenish is hidden until the current one is
+  liquidated. **History** lists every liquidated fund with a View to drill into its
+  full transaction table and liquidation remarks.
+- Switching branches via the global toolbar reloads the page's fund/history for the
+  new branch (`crownGlobalFiltersChanged` listener), same pattern as Cash Flow.
+
+**Verified locally:** ran the page against a local static server, logged in as the
+default admin, and walked through the full cycle — Replenish ₱5,000 → added a ₱450
+transaction (Remaining updated to ₱4,550) → Liquidated with remarks → confirmed it
+appears in History with the correct summary and transaction detail.
+
+**Status:** Deployed — `firebase deploy --only hosting` → live at
+https://crownos-5f03d.web.app
+
+---
+
 ## 2026-08-07 — Unified Day/Date picker into a joined-pill style (Attendance, Cashflow, global toolbar)
 
 **Requested by:** User — wanted Cashflow's Date filter to match Attendance's Day filter format

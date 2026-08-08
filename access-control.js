@@ -123,6 +123,12 @@
             "Receptionist"
         ],
 
+        "petty-cash.html": [
+            "Admin",
+            "Executive Assistant",
+            "Receptionist"
+        ],
+
         "therapist-sales.html": [
             "Admin",
             "Executive Assistant",

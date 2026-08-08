@@ -70,6 +70,7 @@
         "Dashboard": "⌂",
         "Daily Income Report": "₱",
         "Statistics": "▥",
+        "Petty Cash": "¢",
         "Therapist Sales": "♙",
         "Monthly Summary": "Σ",
         "Expenses Report": "−",
@@ -165,6 +166,14 @@
         {
             label: "Statistics",
             href: "statistics.html",
+            roles: ["Admin", "Executive Assistant", "Receptionist"],
+            branchRequired: true,
+            sub: true
+        },
+
+        {
+            label: "Petty Cash",
+            href: "petty-cash.html",
             roles: ["Admin", "Executive Assistant", "Receptionist"],
             branchRequired: true,
             sub: true
@@ -991,6 +1000,7 @@
             "loyalty-card-summary.html": "Loyalty Card Sales Summary",
             "product-sales-summary.html": "Product Sales Summary",
             "statistics.html": "Statistics",
+            "petty-cash.html": "Petty Cash",
             "therapist-sales.html": "Therapist Sales",
             "account-settings.html": "Account Settings",
             "list-services.html": "List of Services",
