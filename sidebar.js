@@ -549,6 +549,20 @@
                 return;
             }
 
+            /* Local dev server / opened straight from disk — firebase-sync.js
+               still pulls (so this screen shows real data) but has disabled
+               every outgoing path, so nothing typed here reaches the live
+               database. Surfaced here so that's visible without DevTools. */
+            if(window.CrownCloud?.isLocalTestEnv){
+                syncStatus.className =
+                    "app-sidebar-sync-status local-test";
+
+                syncStatus.textContent =
+                    "🧪 Local Test — Not Saving to Live";
+
+                return;
+            }
+
             const cloudUser =
                 firebase.auth().currentUser;
 

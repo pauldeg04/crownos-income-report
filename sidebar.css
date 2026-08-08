@@ -180,6 +180,12 @@ body.with-app-sidebar{
     border:1px solid rgba(229,72,77,.35);
 }
 
+.app-sidebar-sync-status.local-test{
+    color:#FFD68A;
+    background:rgba(255,184,28,.16);
+    border:1px solid rgba(255,184,28,.35);
+}
+
 body.sidebar-collapsed .app-sidebar-sync-status{
     display:none;
 }

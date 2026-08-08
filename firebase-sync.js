@@ -40,6 +40,24 @@
     const COLLECTION = "appData";
     const FLUSH_DELAY_MS = 600;
 
+    /* Running this app off a local dev server (or straight from disk)
+       must never write test data into the shared production database.
+       Pulling stays on — read-only, so local testing still sees a
+       realistic snapshot — but every outgoing path (queuePush, the
+       first-run seed, and the exposed flushNow()) is blocked below. */
+    const isLocalTestEnv = (
+        ["localhost", "127.0.0.1"].includes(location.hostname) ||
+        location.protocol === "file:"
+    );
+
+    if(isLocalTestEnv){
+        console.info(
+            "CrownCloud: local test environment detected — cloud pulls " +
+            "stay on, but nothing typed here will be pushed to the live " +
+            "database."
+        );
+    }
+
     /* Firestore rejects a single string field over ~1,048,487 bytes. A
        key like crownClientMasterList can grow well past that as the
        client list grows, so a value is split across multiple documents
@@ -219,6 +237,10 @@
     };
 
     function queuePush(key){
+        if(isLocalTestEnv){
+            return;
+        }
+
         pendingKeys.add(key);
 
         clearTimeout(flushTimer);
@@ -226,6 +248,11 @@
     }
 
     async function flushPending(){
+        if(isLocalTestEnv){
+            pendingKeys.clear();
+            return;
+        }
+
         if(pendingKeys.size === 0 || !firebase.auth().currentUser){
             return;
         }
@@ -486,12 +513,17 @@
             }
 
             /* Seed: push keys that exist only on this device
-               (first run migrates all existing data to the cloud). */
-            for(let index = 0; index < localStorage.length; index++){
-                const key = localStorage.key(index);
+               (first run migrates all existing data to the cloud).
+               Skipped in a local test environment — same reasoning as
+               queuePush() above, this must never upload local-only test
+               data to the live database. */
+            if(!isLocalTestEnv){
+                for(let index = 0; index < localStorage.length; index++){
+                    const key = localStorage.key(index);
 
-                if(shouldSync(key) && !remoteKeys.has(key)){
-                    pendingKeys.add(key);
+                    if(shouldSync(key) && !remoteKeys.has(key)){
+                        pendingKeys.add(key);
+                    }
                 }
             }
 
@@ -771,12 +803,17 @@
 
     window.CrownCloud = {
         isAvailable: function(){ return true; },
+        isLocalTestEnv: isLocalTestEnv,
         login: cloudLogin,
         provision: provision,
         waitForInitialSync: waitForInitialSync,
         updateOwnPassword: updateOwnPassword,
         resetOtherUserCloudLogin: resetOtherUserCloudLogin,
         flushNow: function(){
+            if(isLocalTestEnv){
+                return Promise.resolve();
+            }
+
             clearTimeout(flushTimer);
             return flushPending();
         },

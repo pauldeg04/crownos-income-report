@@ -4,6 +4,40 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-08 — Local dev/testing no longer pushes to the live database
+
+**Requested by:** User — after the Petty Cash testing incident (see the entry below),
+asked whether testing on a local server could be made to never affect live data.
+
+**Change:** [`firebase-sync.js`](firebase-sync.js) — added an `isLocalTestEnv` check
+(`location.hostname` is `localhost`/`127.0.0.1`, or `location.protocol` is `file:`).
+When true, every outgoing path is blocked: `queuePush()` no-ops immediately,
+`flushPending()` clears `pendingKeys` and returns without a batch commit, the
+first-run "seed" step (which migrates local-only keys to the cloud) is skipped, and
+the exposed `CrownCloud.flushNow()` (called by `access-control.js`'s `logout()`)
+also no-ops. **Pulling stays fully on** — the initial sync and the realtime listener
+are untouched — so a local server still shows a real, live snapshot of production
+data for realistic testing; it just can never write back. [`sidebar.js`](sidebar.js)
+surfaces this: the header's cloud-sync badge shows "🧪 Local Test — Not Saving to
+Live" (new `.local-test` style in [`sidebar.css`](sidebar.css)) instead of the usual
+"Synced to Cloud" whenever `CrownCloud.isLocalTestEnv` is true, so it's visible
+without opening DevTools.
+
+**Verified:** ran the local server again, confirmed the badge appeared, replenished a
+₱999 test petty cash fund on the (already real, pre-existing) "Demo Branch" branch,
+then queried Firestore directly from the page — the live document still showed
+`activeFund: null`, proving the local write never left the browser. Reloading pulled
+the real cloud state back down, silently discarding the local-only test data.
+
+**Not changed:** the deployed site (`crownos-5f03d.web.app`) has a real hostname, so
+this has zero effect on production-to-production sync between real devices/branches
+— the guard only ever engages on `localhost`/`127.0.0.1`/`file:`.
+
+**Status:** Deployed — `firebase deploy --only hosting` → live at
+https://crownos-5f03d.web.app
+
+---
+
 ## 2026-08-08 — Petty Cash polish: Replenish label, auto-post to Operation Expenses on Liquidate
 
 **Requested by:** User — drop the "+" from the Replenish button, and have Liquidate
