@@ -3166,6 +3166,19 @@ async function saveSchedule(){
         });
     }
 
+    if(status !== "Cancelled" && !selectedBed){
+        /* poolHasConflict()'s early `if(!bed) return false` means a null
+           bed never registers a conflict against anything, so without
+           this check the appointment below saves with bed:null — it
+           gets counted in scheduledCount but never renders in any bed
+           column (renderBody() filters by Number(item.bed) === bed),
+           effectively vanishing from the visible grid. Reachable from
+           openNewModalFromBookingRequest(), which opens the modal with
+           no bed pre-selected. */
+        alert("Please select a bed before saving.");
+        return;
+    }
+
     if(status !== "Cancelled"){
         const mainPool =
             getConflictPool("main");
@@ -3233,6 +3246,49 @@ async function saveSchedule(){
 
             if(poolHasTherapistConflict(payload.therapist, payload.startTime, payload.endTime, companionPool)){
                 alert(`${payload.therapist} is already assigned to another appointment during this time (companion "${payload.name}").`);
+                return;
+            }
+
+            /* Same capacity/hold check as the main appointment above,
+               but scoped to this companion's own window — a companion
+               can run at a different time than the main appointment, and
+               without this it could push the branch over capacity with
+               no warning, since only the main window was ever checked
+               against pending web-booking holds. companionPool already
+               includes the main slot and every other companion's draft
+               slot (see getConflictPool()), so it doubles as the "other
+               beds in use during this window" source here too. */
+            const companionOverlappingHolds =
+                countActiveHoldsOverlapping(payload.startTime, payload.endTime, pendingRequestId);
+
+            const companionOverlappingPoolItems =
+                companionPool.filter(function(item){
+                    return hasOverlap(payload.startTime, payload.endTime, item.startTime, item.endTime);
+                });
+
+            const companionOverlappingHoldItems =
+                activeHoldsCache.filter(function(hold){
+                    return (
+                        hold.bookingRequestId !== pendingRequestId &&
+                        hasOverlap(payload.startTime, payload.endTime, hold.startTime, hold.endTime)
+                    );
+                });
+
+            const companionProjectedOccupancy =
+                computeMaxOverlapCount(
+                    payload.startTime,
+                    payload.endTime,
+                    companionOverlappingPoolItems.concat(companionOverlappingHoldItems)
+                ) +
+                1;
+
+            if(companionProjectedOccupancy > branch.beds){
+                alert(
+                    `${branch.name} only has ${branch.beds} bed(s) — ${companionOverlappingHolds} pending ` +
+                    `web booking request(s) are temporarily holding a slot during companion "${payload.name}"'s ` +
+                    `time, so this appointment would exceed capacity. Confirm or decline the pending ` +
+                    `request(s) first, or choose a different time.`
+                );
                 return;
             }
         }

@@ -170,6 +170,18 @@ function getClientDisplayName(client){
     return client.name || "";
 }
 
+/* Used everywhere getClientDisplayName() is compared for a duplicate
+   match — collapses internal whitespace in addition to lowercasing, so
+   "Mary  Ann" (double space, e.g. from a phone keyboard) and "Mary Ann"
+   (single space) are recognized as the same person instead of quietly
+   creating a second client record. */
+function normalizeNameForCompare(name){
+    return String(name || "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
 /* Best-effort split of a legacy single-field name into last/first, used
    only to prefill the Edit modal for records saved before this update. */
 function splitLegacyName(name){
@@ -539,7 +551,7 @@ function saveClient(){
     const name = getClientDisplayName({ firstName, middleInitial, lastName });
 
     const duplicate = clients.some(function(client){
-        return getClientDisplayName(client).toLowerCase() === name.toLowerCase();
+        return normalizeNameForCompare(getClientDisplayName(client)) === normalizeNameForCompare(name);
     });
 
     if(duplicate){
@@ -834,7 +846,7 @@ function updateClient(){
     const duplicate = clients.some(function(item){
         return (
             item.id !== editingClientId &&
-            getClientDisplayName(item).toLowerCase() === name.toLowerCase()
+            normalizeNameForCompare(getClientDisplayName(item)) === normalizeNameForCompare(name)
         );
     });
 
@@ -954,7 +966,7 @@ const FILLABLE_IMPORT_FIELDS = [
 function mergeImportedClients(importedRecords, fillBlanks){
     const byName = new Map(
         clients.map(function(client){
-            return [getClientDisplayName(client).toLowerCase(), client];
+            return [normalizeNameForCompare(getClientDisplayName(client)), client];
         })
     );
 
@@ -972,7 +984,7 @@ function mergeImportedClients(importedRecords, fillBlanks){
             return;
         }
 
-        const key = displayName.toLowerCase();
+        const key = normalizeNameForCompare(displayName);
 
         if(byName.has(key)){
             if(fillBlanks){

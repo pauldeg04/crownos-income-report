@@ -320,10 +320,11 @@ function getServiceMaster(){
         });
 }
 
-/* Opening/Closing shift schedule, mirrored from payroll.js (this page
-   loads independently, no shared globals — see script.js's own note
-   on Add-to-Schedule for why this codebase duplicates such small
-   blocks per page instead of sharing a module). */
+/* Opening/Closing shift schedule, mirrored from payroll.js's
+   SHIFT_SCHEDULES. Kept duplicated (payroll.js also uses its copy for
+   hours-worked clamping, unrelated to this page) — but the actual
+   overtime-commission FORMULA that reads it is shared now, see
+   commission-shared.js's CrownCommission.getServiceCommissionRate(). */
 const THERAPIST_SALES_SHIFT_SCHEDULES = {
     Opening: { start: "09:00", end: "18:00" },
     Closing: { start: "13:00", end: "22:00" }
@@ -567,39 +568,22 @@ function extractTherapistServices(
                         return entry.name === item?.name;
                     }) || {};
 
-            let commissionRate =
-                serviceMeta.commission || 0;
-
             const date =
                 sale?.reportDate || "";
 
             const shiftType =
                 shiftTypeFor(date);
 
-            const shiftSchedule =
-                THERAPIST_SALES_SHIFT_SCHEDULES[shiftType];
+            const shiftEndTime =
+                THERAPIST_SALES_SHIFT_SCHEDULES[shiftType]?.end || "";
 
-            if(
-                shiftSchedule &&
-                item?.serviceStartTime &&
-                serviceMeta.duration > 0 &&
-                date
-            ){
-                const serviceEndAt =
-                    new Date(`${date}T${item.serviceStartTime}:00`);
-
-                serviceEndAt.setMinutes(
-                    serviceEndAt.getMinutes() + serviceMeta.duration
+            const commissionRate =
+                CrownCommission.getServiceCommissionRate(
+                    serviceMeta,
+                    date,
+                    item?.serviceStartTime,
+                    shiftEndTime
                 );
-
-                const shiftEndAt =
-                    new Date(`${date}T${shiftSchedule.end}:00`);
-
-                if(serviceEndAt.getTime() > shiftEndAt.getTime()){
-                    commissionRate =
-                        serviceMeta.overtimeCommission || 0;
-                }
-            }
 
             const commission =
                 serviceCost *

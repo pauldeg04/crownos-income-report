@@ -787,13 +787,8 @@ function getDayCommission(therapistName, date, branchFilter, shiftType){
     const serviceMeta =
         getServiceMasterMeta();
 
-    const shiftSchedule =
-        SHIFT_SCHEDULES[shiftType];
-
-    const shiftEndAt =
-        shiftSchedule
-            ? new Date(`${date}T${shiftSchedule.end}:00`)
-            : null;
+    const shiftEndTime =
+        SHIFT_SCHEDULES[shiftType]?.end || "";
 
     let total = 0;
 
@@ -850,25 +845,13 @@ function getDayCommission(therapistName, date, branchFilter, shiftType){
                         ? (Number(item?.freebieValue) || 0)
                         : (Number(item?.amount) || 0);
 
-                let rate =
-                    meta.commission || 0;
-
-                if(
-                    shiftEndAt &&
-                    item?.serviceStartTime &&
-                    meta.duration > 0
-                ){
-                    const serviceEndAt =
-                        new Date(`${date}T${item.serviceStartTime}:00`);
-
-                    serviceEndAt.setMinutes(
-                        serviceEndAt.getMinutes() + meta.duration
+                const rate =
+                    CrownCommission.getServiceCommissionRate(
+                        meta,
+                        date,
+                        item?.serviceStartTime,
+                        shiftEndTime
                     );
-
-                    if(serviceEndAt.getTime() > shiftEndAt.getTime()){
-                        rate = meta.overtimeCommission || 0;
-                    }
-                }
 
                 total += amount * (rate / 100);
             });

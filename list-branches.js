@@ -953,10 +953,16 @@ function migrateBranchReferences(oldName, newName){
 }
 
 function branchHasRelatedRecords(branchName){
+    /* Must stay in sync with migrateBranchReferences()'s prefix list
+       above — that one previously included crownCashflow_ while this
+       gate didn't, so a branch with ONLY cashflow history could be
+       deleted with no warning even though renaming it correctly
+       preserved that same data. */
     const prefixes = [
         "crownDailySales_" + branchName + "_",
         "crownExpenses_" + branchName + "_",
-        "crownSchedule_" + branchName + "_"
+        "crownSchedule_" + branchName + "_",
+        "crownCashflow_" + branchName + "_"
     ];
 
     for(let index = 0; index < localStorage.length; index++){
@@ -966,6 +972,36 @@ function branchHasRelatedRecords(branchName){
             return key.startsWith(prefix);
         })){
             return true;
+        }
+    }
+
+    /* Branch inventory isn't stored under a per-branch prefixed key like
+       the above — crownBranchStock/crownStockRequests are each one flat
+       array with a `branch` field per row (see inventory-data.js) — so
+       it needs its own check rather than a startsWith() match. Without
+       this, a branch with existing stock or a pending stock request
+       could be deleted and that inventory data orphaned (it isn't
+       migrated by migrateBranchReferences() either — a rename doesn't
+       carry it forward, a separate gap from what this function guards
+       against). */
+    const rowArrayKeys = ["crownBranchStock", "crownStockRequests"];
+
+    for(let index = 0; index < rowArrayKeys.length; index++){
+        try{
+            const parsed =
+                JSON.parse(localStorage.getItem(rowArrayKeys[index]) || "[]");
+
+            if(
+                Array.isArray(parsed) &&
+                parsed.some(function(row){
+                    return row?.branch === branchName;
+                })
+            ){
+                return true;
+            }
+        }catch(error){
+            /* Malformed data shouldn't block deletion on its own — the
+               prefix-based checks above are the primary guard. */
         }
     }
 

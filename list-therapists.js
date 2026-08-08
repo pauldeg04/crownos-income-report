@@ -754,6 +754,52 @@ function saveTherapist(){
     closeModal();
 }
 
+/* Schedules/sales are matched by the therapist's NAME (a plain string
+   field on each row), the same way scheduling.js/payroll.js/
+   therapist-sales.js already reference therapists — there's no ID link
+   to follow. Mirrors list-branches.js's branchHasRelatedRecords(): a
+   simple existence check across every crownSchedule_ / crownDailySales_
+   key, not an exhaustive deep scan (e.g. a companion's own therapist
+   nested inside a sale row's companions array isn't checked — same
+   level of rigor as the branch guard this is modeled on). Without this,
+   deleting a therapist with past bookings/sales left scheduling.js and
+   payroll.js holding a name with nothing behind it (renders as
+   "Unknown" or breaks whatever assumed the therapist list still had
+   that entry). */
+function therapistHasRelatedRecords(therapistName){
+    const prefixes = ["crownDailySales_", "crownSchedule_"];
+
+    for(let index = 0; index < localStorage.length; index++){
+        const key = localStorage.key(index) || "";
+
+        if(!prefixes.some(function(prefix){
+            return key.startsWith(prefix);
+        })){
+            continue;
+        }
+
+        try{
+            const parsed =
+                JSON.parse(localStorage.getItem(key) || "null");
+
+            const rows =
+                Array.isArray(parsed)
+                    ? parsed
+                    : (Array.isArray(parsed?.rows) ? parsed.rows : []);
+
+            if(rows.some(function(row){
+                return row?.therapist === therapistName;
+            })){
+                return true;
+            }
+        }catch(error){
+            /* Malformed data shouldn't block deletion on its own. */
+        }
+    }
+
+    return false;
+}
+
 function deleteTherapist(therapistId){
     const therapist =
         therapists.find(function(item){
@@ -761,6 +807,14 @@ function deleteTherapist(therapistId){
         });
 
     if(!therapist){
+        return;
+    }
+
+    if(therapistHasRelatedRecords(therapist.name)){
+        alert(
+            "This therapist still has saved schedules or sales. Deactivate the therapist instead of deleting so historical records keep showing their name correctly."
+        );
+
         return;
     }
 
