@@ -27,6 +27,7 @@ const PAYROLL_RATES_KEY = "crownPayrollRates";
 const PAYROLL_ADJUSTMENTS_KEY = "crownPayrollAdjustments";
 const PAYROLL_STATUS_KEY = "crownPayrollStatus";
 const PAYROLL_REFERENCE_KEY = "crownPayrollReferences";
+const PAYROLL_GROUP_ARCHIVE_KEY = "crownPayrollGroupArchive";
 const PAYROLL_ATTENDANCE_KEY = "crownAttendanceLog";
 const PAYROLL_DUTY_LOG_KEY = "crownDutyLog";
 const PAYROLL_SALES_PREFIX = "crownDailySales_";
@@ -114,6 +115,7 @@ function getEffectiveRoleForDate(user, date){
 
 let currentPayslipContext = null;
 let currentPayrollSummaryContext = null;
+let currentPayrollGroupViewContext = null;
 
 /* Admin/Executive Assistant manage payroll for everyone; Receptionist
    and Therapist only ever see their own generated payslips. */
@@ -150,6 +152,25 @@ document.addEventListener("DOMContentLoaded", function(){
             }
         });
 
+    document.getElementById("generatePayrollGroupBtn")
+        .addEventListener("click", generatePayrollGroup);
+
+    document.getElementById("closePayrollGroupViewBtn")
+        .addEventListener("click", closePayrollGroupView);
+
+    document.getElementById("closePayrollGroupViewFooterBtn")
+        .addEventListener("click", closePayrollGroupView);
+
+    document.getElementById("deletePayrollGroupBtn")
+        .addEventListener("click", deletePayrollGroupArchiveEntry);
+
+    document.getElementById("payrollGroupViewBackdrop")
+        .addEventListener("click", function(event){
+            if(event.target === this){
+                closePayrollGroupView();
+            }
+        });
+
     if(canManagePayroll()){
         initializeAdminView();
     }else{
@@ -161,11 +182,15 @@ function initializeAdminView(){
     document.getElementById("payrollAdminControls").classList.remove("d-none");
     document.getElementById("periodInfo").classList.remove("d-none");
     document.getElementById("payrollSummaryCard").classList.remove("d-none");
+    document.getElementById("payrollGroupArchiveCard").classList.remove("d-none");
+    document.getElementById("payslipArchiveCard").classList.remove("d-none");
 
     initializeDates();
     populateGroupDropdown();
     populateRateSetupDropdown();
     renderPayroll();
+    renderPayrollGroupArchive();
+    renderPayslipArchive();
 
     document.getElementById("payrollStartDate")
         .addEventListener("change", renderPayroll);
@@ -214,6 +239,14 @@ function initializeAdminView(){
             keys.includes(PAYROLL_DUTY_LOG_KEY)
         ){
             renderPayroll();
+        }
+
+        if(keys.includes(PAYROLL_STATUS_KEY)){
+            renderPayslipArchive();
+        }
+
+        if(keys.includes(PAYROLL_GROUP_ARCHIVE_KEY)){
+            renderPayrollGroupArchive();
         }
     });
 }
@@ -1233,13 +1266,22 @@ function renderPayroll(){
         staff: staff
     };
 
-    const tbody =
-        document.getElementById("payrollBody");
+    renderPayrollStaffRows(
+        document.getElementById("payrollBody"),
+        document.getElementById("payrollEmptyState"),
+        staff,
+        groupKey,
+        period
+    );
+}
 
+/* Shared by the live Payroll Summary table and the Payroll Group Archive's
+   "View" popup — both list the same staff/salary/bank/status/view-payslip
+   columns for a given group + period, just at different points in time. */
+function renderPayrollStaffRows(tbody, emptyStateEl, staff, groupKey, period){
     tbody.innerHTML = "";
 
-    document.getElementById("payrollEmptyState")
-        .classList.toggle("d-none", staff.length > 0);
+    emptyStateEl.classList.toggle("d-none", staff.length > 0);
 
     staff.forEach(function(user){
         const result =
@@ -1289,6 +1331,266 @@ function renderPayroll(){
             });
 
         tbody.appendChild(row);
+    });
+}
+
+/* ---------- Payroll Group Archive ---------- */
+
+function getGroupArchive(){
+    try{
+        const raw =
+            localStorage.getItem(PAYROLL_GROUP_ARCHIVE_KEY);
+
+        const parsed =
+            raw ? JSON.parse(raw) : {};
+
+        return (parsed && typeof parsed === "object") ? parsed : {};
+    }catch(error){
+        console.error("Unable to load payroll group archive:", error);
+        return {};
+    }
+}
+
+function saveGroupArchive(archive){
+    localStorage.setItem(
+        PAYROLL_GROUP_ARCHIVE_KEY,
+        JSON.stringify(archive)
+    );
+}
+
+function groupArchiveKey(groupKey, period){
+    return [groupKey, period.start, period.end].join("::");
+}
+
+/* One archive row per Payroll Group + Date range — re-clicking "Generate
+   Payroll Group" on the same selection just keeps the existing row (and
+   its Exported/Not Exported status) instead of adding a duplicate. */
+function generatePayrollGroup(){
+    if(!currentPayrollSummaryContext || currentPayrollSummaryContext.staff.length === 0){
+        alert("No staff found for this payroll group.");
+        return;
+    }
+
+    const key =
+        groupArchiveKey(currentPayrollSummaryContext.groupKey, currentPayrollSummaryContext.period);
+
+    const archive =
+        getGroupArchive();
+
+    if(!archive[key]){
+        archive[key] = { status: "Not Exported", createdAt: Date.now() };
+        saveGroupArchive(archive);
+    }
+
+    renderPayrollGroupArchive();
+}
+
+function renderPayrollGroupArchive(){
+    const archive =
+        getGroupArchive();
+
+    const rows =
+        Object.keys(archive)
+            .map(function(key){
+                const parts = key.split("::");
+
+                return {
+                    groupKey: parts[0],
+                    start: parts[1],
+                    end: parts[2],
+                    status: archive[key].status === "Exported" ? "Exported" : "Not Exported",
+                    createdAt: archive[key].createdAt || 0
+                };
+            })
+            .sort(function(a, b){
+                return b.createdAt - a.createdAt;
+            });
+
+    const tbody =
+        document.getElementById("payrollGroupArchiveBody");
+
+    tbody.innerHTML = "";
+
+    document.getElementById("payrollGroupArchiveEmptyState")
+        .classList.toggle("d-none", rows.length > 0);
+
+    rows.forEach(function(row){
+        const groupLabel =
+            row.groupKey === ADMIN_GROUP_KEY ? "Admin Staff" : row.groupKey;
+
+        const period = {
+            start: row.start,
+            end: row.end,
+            label: formatDateLabel(row.start) + " – " + formatDateLabel(row.end)
+        };
+
+        const statusLabel =
+            row.status === "Exported" ? "Exported to PDF" : "Not yet Exported to PDF";
+
+        const tr =
+            document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${escapeHtml(groupLabel)}</td>
+            <td>${period.label}</td>
+            <td>
+                <span class="payroll-status-badge payroll-status-${row.status === "Exported" ? "paid" : "pending"}">
+                    ${statusLabel}
+                </span>
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-primary view-group-btn">
+                    View
+                </button>
+            </td>
+        `;
+
+        tr.querySelector(".view-group-btn")
+            .addEventListener("click", function(){
+                openPayrollGroupView(row.groupKey, period);
+            });
+
+        tbody.appendChild(tr);
+    });
+}
+
+/* Recomputed live (not a frozen snapshot) so the numbers always reflect
+   the current rates/attendance/adjustments — consistent with how every
+   other payroll view in this file works. */
+function openPayrollGroupView(groupKey, period){
+    const groupLabel =
+        groupKey === ADMIN_GROUP_KEY ? "Admin Staff" : groupKey;
+
+    const staff =
+        getGroupStaff(groupKey)
+            .slice()
+            .sort(function(a, b){
+                return a.account.localeCompare(b.account);
+            });
+
+    currentPayrollGroupViewContext = {
+        groupKey: groupKey,
+        period: period,
+        groupLabel: groupLabel,
+        staff: staff
+    };
+
+    document.getElementById("payrollGroupViewTitle").textContent =
+        groupLabel;
+
+    document.getElementById("payrollGroupViewSubtitle").textContent =
+        period.label;
+
+    renderPayrollStaffRows(
+        document.getElementById("payrollGroupViewBody"),
+        document.getElementById("payrollGroupViewEmptyState"),
+        staff,
+        groupKey,
+        period
+    );
+
+    document.getElementById("payrollGroupViewBackdrop").classList.remove("d-none");
+}
+
+function closePayrollGroupView(){
+    document.getElementById("payrollGroupViewBackdrop").classList.add("d-none");
+    currentPayrollGroupViewContext = null;
+}
+
+function deletePayrollGroupArchiveEntry(){
+    if(!currentPayrollGroupViewContext){
+        return;
+    }
+
+    if(!confirm("Delete this payroll group archive record? This only removes it from the list here — it does not change any staff's Paid/Pending status.")){
+        return;
+    }
+
+    const archive =
+        getGroupArchive();
+
+    delete archive[
+        groupArchiveKey(currentPayrollGroupViewContext.groupKey, currentPayrollGroupViewContext.period)
+    ];
+
+    saveGroupArchive(archive);
+    renderPayrollGroupArchive();
+    closePayrollGroupView();
+}
+
+/* ---------- Payslip Archive (every individually generated payslip) ---------- */
+
+function renderPayslipArchive(){
+    const statuses =
+        getStatuses();
+
+    const users =
+        CrownAuth.getUsers();
+
+    const rows =
+        Object.keys(statuses)
+            .map(function(key){
+                const parts = key.split("::");
+
+                const user =
+                    users.find(function(item){ return item.id === parts[0]; });
+
+                if(!user || !parts[2] || !parts[3]){
+                    return null;
+                }
+
+                return {
+                    user: user,
+                    groupKey: parts[1],
+                    start: parts[2],
+                    end: parts[3],
+                    status: statuses[key] === "Paid" ? "Paid" : "Pending"
+                };
+            })
+            .filter(Boolean)
+            .sort(function(a, b){
+                return b.start.localeCompare(a.start);
+            });
+
+    const tbody =
+        document.getElementById("payslipArchiveBody");
+
+    tbody.innerHTML = "";
+
+    document.getElementById("payslipArchiveEmptyState")
+        .classList.toggle("d-none", rows.length > 0);
+
+    rows.forEach(function(row){
+        const period = {
+            start: row.start,
+            end: row.end,
+            label: formatDateLabel(row.start) + " – " + formatDateLabel(row.end)
+        };
+
+        const tr =
+            document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${escapeHtml(getFullName(row.user))}</td>
+            <td>${period.label}</td>
+            <td>
+                <span class="payroll-status-badge payroll-status-${row.status.toLowerCase()}">
+                    ${row.status}
+                </span>
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-primary view-payslip-btn">
+                    View
+                </button>
+            </td>
+        `;
+
+        tr.querySelector(".view-payslip-btn")
+            .addEventListener("click", function(){
+                openPayslipModal(row.user, row.groupKey, period);
+            });
+
+        tbody.appendChild(tr);
     });
 }
 
@@ -1644,7 +1946,7 @@ function savePayslipAdjustment(){
 }
 
 function exportPayrollSummaryPdf(){
-    if(!currentPayrollSummaryContext){
+    if(!currentPayrollGroupViewContext){
         return;
     }
 
@@ -1653,7 +1955,7 @@ function exportPayrollSummaryPdf(){
         return;
     }
 
-    const context = currentPayrollSummaryContext;
+    const context = currentPayrollGroupViewContext;
 
     const button =
         document.getElementById("exportPayrollSummaryPdfBtn");
@@ -1724,6 +2026,18 @@ function exportPayrollSummaryPdf(){
         doc.save(
             `Crown Head Spa - Payroll Summary - ${context.groupLabel} - ${context.period.label}.pdf`
         );
+
+        const archive =
+            getGroupArchive();
+
+        const key =
+            groupArchiveKey(context.groupKey, context.period);
+
+        if(archive[key]){
+            archive[key].status = "Exported";
+            saveGroupArchive(archive);
+            renderPayrollGroupArchive();
+        }
     }finally{
         button.disabled = false;
         button.textContent = "🖨 Export to PDF";
@@ -2097,6 +2411,20 @@ function togglePayslipStatus(){
     renderPayslipReference();
     renderPayslipStatusButton();
     renderPayroll();
+
+    if(canManagePayroll()){
+        renderPayslipArchive();
+
+        if(currentPayrollGroupViewContext){
+            renderPayrollStaffRows(
+                document.getElementById("payrollGroupViewBody"),
+                document.getElementById("payrollGroupViewEmptyState"),
+                currentPayrollGroupViewContext.staff,
+                currentPayrollGroupViewContext.groupKey,
+                currentPayrollGroupViewContext.period
+            );
+        }
+    }
 }
 
 function renderPayslipReference(){

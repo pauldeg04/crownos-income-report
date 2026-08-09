@@ -91,8 +91,8 @@
                     <small class="text-muted d-block mb-3" id="payrollSubtitle">—</small>
                 </div>
 
-                <button type="button" class="btn btn-outline-primary" id="exportPayrollSummaryPdfBtn">
-                    🖨 Export to PDF
+                <button type="button" class="btn btn-outline-primary" id="generatePayrollGroupBtn">
+                    Generate Payroll Group
                 </button>
             </div>
 
@@ -113,6 +113,64 @@
 
             <div class="empty-state d-none" id="payrollEmptyState">
                 No staff found for this payroll group.
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4 d-none" id="payrollGroupArchiveCard">
+        <div class="card-body">
+
+            <h3 class="fw-bold mb-1">Payroll Group Archive</h3>
+            <small class="text-muted d-block mb-3">
+                Payroll groups generated from above. Tap View to export a PDF or delete the record.
+            </small>
+
+            <div class="table-responsive">
+                <table class="table payroll-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Payroll Group</th>
+                            <th>Payroll Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payrollGroupArchiveBody"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state d-none" id="payrollGroupArchiveEmptyState">
+                No payroll groups generated yet.
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4 d-none" id="payslipArchiveCard">
+        <div class="card-body">
+
+            <h3 class="fw-bold mb-1">Payslip Archive</h3>
+            <small class="text-muted d-block mb-3">
+                Every individually generated payslip, across all staff.
+            </small>
+
+            <div class="table-responsive">
+                <table class="table payroll-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Staff Name</th>
+                            <th>Payroll Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payslipArchiveBody"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state d-none" id="payslipArchiveEmptyState">
+                No payslips generated yet.
             </div>
 
         </div>
@@ -216,6 +274,55 @@
             <button type="button" class="btn btn-success" id="saveRateSetupBtn">
                 Save
             </button>
+        </div>
+    </div>
+</div>
+
+<!-- Payroll Group View modal -->
+<div class="payroll-modal-backdrop d-none" id="payrollGroupViewBackdrop">
+    <div class="payroll-modal payroll-modal-wide">
+        <div class="payroll-modal-header">
+            <h4 id="payrollGroupViewTitle">Payroll Group</h4>
+            <button type="button" class="payroll-modal-close" id="closePayrollGroupViewBtn">&times;</button>
+        </div>
+
+        <div class="payroll-modal-body">
+            <small class="text-muted d-block mb-3" id="payrollGroupViewSubtitle">—</small>
+
+            <div class="table-responsive">
+                <table class="table payroll-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Staff's Name</th>
+                            <th>Salary</th>
+                            <th>Bank Accounts</th>
+                            <th>Status</th>
+                            <th>View Payslip</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payrollGroupViewBody"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state d-none" id="payrollGroupViewEmptyState">
+                No staff found for this payroll group.
+            </div>
+        </div>
+
+        <div class="payroll-modal-footer payroll-modal-footer-split">
+            <button type="button" class="btn btn-outline-danger" id="deletePayrollGroupBtn">
+                Delete
+            </button>
+
+            <div class="payroll-modal-footer-right">
+                <button type="button" class="btn btn-outline-primary" id="exportPayrollSummaryPdfBtn">
+                    🖨 Export to PDF
+                </button>
+
+                <button type="button" class="btn btn-outline-secondary" id="closePayrollGroupViewFooterBtn">
+                    Close
+                </button>
+            </div>
         </div>
     </div>
 </div>
