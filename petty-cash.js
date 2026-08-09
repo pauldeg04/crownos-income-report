@@ -36,6 +36,18 @@ document.addEventListener("DOMContentLoaded", function(){
         document.getElementById("branchReadout").textContent = getSelectedPettyCashBranch();
         loadPettyCashState();
     });
+
+    /* Without this, a fund/entry synced in from another device (e.g. a
+       receptionist's branch) only shows up here after a manual page
+       reload — the cloud pull updates localStorage in the background,
+       but nothing tells this already-open page to re-read it. */
+    window.addEventListener("crownCloudUpdate", function(event){
+        const keys = event.detail?.keys || [];
+
+        if(keys.includes(getPettyCashStorageKey())){
+            loadPettyCashState();
+        }
+    });
 });
 
 function peso(amount){
