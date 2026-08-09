@@ -37,6 +37,7 @@ document.addEventListener("DOMContentLoaded", function(){
   attachEvents();
   loadModalOptions();
   loadDailySales();
+  resyncLocalSalesRowsToCloud();
   updateSalesRecord();
   updateDailyScheduleOverview();
   applyReceptionistRestrictions();
@@ -5456,6 +5457,32 @@ async function transactionalSyncSaleRow(saleId, row){
     console.error("transactionalSyncSaleRow failed:", error);
     return { status: "error" };
   }
+}
+
+/* Runs once on every page load, right after loadDailySales() populates
+   salesRows from THIS device's localStorage — pushes every row it
+   finds there through transactionalSyncSaleRow(), one at a time. This
+   is the recovery path for whatever was entered before this device had
+   the fix above: those rows never got individually pushed (only ever
+   swept up in the old whole-array flush, which could still lose them to
+   another device's concurrent save), so without this they'd just sit
+   local-only until something happened to touch them again.
+
+   Safe to run unconditionally, every load, for every branch/date this
+   device happens to have local data for — each call is a fresh
+   read-and-merge-by-id against the live doc, same as a normal edit, so
+   it can never overwrite what other devices already have there, only
+   add/update this device's own rows into it. Fire-and-forget: sales
+   entry shouldn't wait on this, and any that fail are simply retried on
+   the next load. */
+function resyncLocalSalesRowsToCloud(){
+  if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
+    return;
+  }
+
+  salesRows.forEach(function(row){
+    transactionalSyncSaleRow(row.id, row);
+  });
 }
 
 function loadDailySales(){
