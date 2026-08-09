@@ -54,6 +54,14 @@
     font-variant-numeric:tabular-nums;
 }
 
+.payroll-total-row td{
+    background:var(--surface-soft);
+    color:var(--navy);
+    font-weight:800;
+    font-variant-numeric:tabular-nums;
+    border-top:2px solid var(--border);
+}
+
 .payroll-bank-cell small{
     display:block;
     color:var(--muted);

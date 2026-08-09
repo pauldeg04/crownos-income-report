@@ -1278,14 +1278,18 @@ function renderPayroll(){
 /* Shared by the live Payroll Summary table and the Payroll Group Archive's
    "View" popup — both list the same staff/salary/bank/status/view-payslip
    columns for a given group + period, just at different points in time. */
-function renderPayrollStaffRows(tbody, emptyStateEl, staff, groupKey, period){
+function renderPayrollStaffRows(tbody, emptyStateEl, staff, groupKey, period, totalEl){
     tbody.innerHTML = "";
 
     emptyStateEl.classList.toggle("d-none", staff.length > 0);
 
+    let totalSalary = 0;
+
     staff.forEach(function(user){
         const result =
             computeStaffPayroll(user, groupKey, period);
+
+        totalSalary += result.netTotal;
 
         const status =
             getStatus(user.id, groupKey, period);
@@ -1332,6 +1336,10 @@ function renderPayrollStaffRows(tbody, emptyStateEl, staff, groupKey, period){
 
         tbody.appendChild(row);
     });
+
+    if(totalEl){
+        totalEl.textContent = peso(totalSalary);
+    }
 }
 
 /* ---------- Payroll Group Archive ---------- */
@@ -1486,7 +1494,8 @@ function openPayrollGroupView(groupKey, period){
         document.getElementById("payrollGroupViewEmptyState"),
         staff,
         groupKey,
-        period
+        period,
+        document.getElementById("payrollGroupViewTotalSalary")
     );
 
     document.getElementById("payrollGroupViewBackdrop").classList.remove("d-none");
@@ -2421,7 +2430,8 @@ function togglePayslipStatus(){
                 document.getElementById("payrollGroupViewEmptyState"),
                 currentPayrollGroupViewContext.staff,
                 currentPayrollGroupViewContext.groupKey,
-                currentPayrollGroupViewContext.period
+                currentPayrollGroupViewContext.period,
+                document.getElementById("payrollGroupViewTotalSalary")
             );
         }
     }
