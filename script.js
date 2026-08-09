@@ -4170,6 +4170,7 @@ function persistModalSaleData(saleData, validItems){
   applyModalClientDetailsToDatabase(saleData.client);
 
   saveDailySales();
+  transactionalSyncSaleRow(saleData.id, saleData);
   renderSalesTable();
   updateSummary();
   updateSalesRecord();
@@ -5287,6 +5288,7 @@ function settleSaleRow(saleId){
   sale.updatedAt = new Date().toISOString();
 
   saveDailySales();
+  transactionalSyncSaleRow(sale.id, sale);
   renderSalesTable();
   updateSummary();
   updateSalesRecord();
@@ -5330,6 +5332,7 @@ function deleteSale(saleId){
     });
 
   saveDailySales();
+  transactionalSyncSaleRow(saleId, null);
   renderSalesTable();
   updateSummary();
   updateSalesRecord();
@@ -5357,6 +5360,102 @@ function saveDailySales(){
   syncClientDatabaseFromSales();
   renderCalendar();
   updateSalesRecord();
+}
+
+/* Reads the LIVE crownDailySales_<branch>_<date> doc fresh inside a
+   transaction and merges ONE sale row into it (replace by id, append,
+   or remove when row is null) — instead of saveDailySales()'s
+   whole-array overwrite based on whatever salesRows happens to hold in
+   THIS tab's memory. With multiple staff able to add/edit/settle sales
+   for the same branch/date at once through a shift, that whole-array
+   overwrite silently discarded whichever staff member's save didn't
+   happen to land last — the reported "ongoing sales aren't showing up"
+   symptom, confirmed NOT a display-refresh issue (persisted even after
+   a full logout/reload) the way the earlier attendance report turned
+   out to be.
+
+   This runs ALONGSIDE (not instead of) saveDailySales() — that local
+   write and its existing debounced generic flush stay as-is, both for
+   backward compatibility with data-protection.js's restore flow (which
+   pushes a raw localStorage snapshot, bypassing per-row logic
+   entirely) and as an offline-safe fallback. This transactional call is
+   what actually reaches the cloud correctly for concurrent edits; the
+   generic flush a moment later becomes a redundant, harmless re-push of
+   the same data in the common case. Deliberately only handles the
+   (overwhelmingly common) single-chunk case, same as scheduling.js's
+   transactionalUpdateSchedules(). */
+async function transactionalSyncSaleRow(saleId, row){
+  if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
+    return { status: "offline" };
+  }
+
+  const branch = getSelectedBranch();
+  const date = document.getElementById("date").value;
+
+  if(!branch || !date){
+    return { status: "offline" };
+  }
+
+  const key = getStorageKey();
+
+  const ref =
+    firebase.firestore()
+      .collection("appData")
+      .doc(encodeURIComponent(key));
+
+  try{
+    return await firebase.firestore().runTransaction(async function(transaction){
+      const snap = await transaction.get(ref);
+      const data = snap.exists ? snap.data() : null;
+
+      if(data && Number.isInteger(data.chunkCount) && data.chunkCount > 1){
+        return { status: "unsupported" };
+      }
+
+      let record = { branch: branch, date: date, rows: [] };
+
+      if(data && !data.deleted && data.value){
+        try{
+          const parsed = JSON.parse(data.value);
+
+          if(parsed && Array.isArray(parsed.rows)){
+            record = parsed;
+          }
+        }catch(error){
+          /* keep default */
+        }
+      }
+
+      const index =
+        record.rows.findIndex(function(item){
+          return item.id === saleId;
+        });
+
+      if(row === null){
+        if(index !== -1){
+          record.rows.splice(index, 1);
+        }
+      }else if(index === -1){
+        record.rows.push(row);
+      }else{
+        record.rows[index] = row;
+      }
+
+      transaction.set(ref, {
+        key: key,
+        chunkIndex: 0,
+        chunkCount: 1,
+        value: JSON.stringify(record),
+        deleted: false,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      return { status: "ok" };
+    });
+  }catch(error){
+    console.error("transactionalSyncSaleRow failed:", error);
+    return { status: "error" };
+  }
 }
 
 function loadDailySales(){

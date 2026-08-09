@@ -76,6 +76,24 @@ document.addEventListener("DOMContentLoaded", function(){
     if(requestId){
         openNewModalFromBookingRequest(requestId);
     }
+
+    /* firebase-sync.js's realtime listener writes an incoming remote
+       change straight into localStorage and fires this event — without
+       listening for it, a schedule created/edited on one device was
+       correctly reaching Firestore, but staff already sitting on this
+       page elsewhere would only ever see it after manually reloading
+       (renderSchedule() only re-reads localStorage when called, never
+       on its own). Re-render whenever any crownSchedule_ key changed —
+       cheap enough to not bother checking it's specifically today's
+       selected branch/date. */
+    window.addEventListener("crownCloudUpdate", function(event){
+        const keys = event.detail?.keys || [];
+
+        if(keys.some(function(key){ return key.startsWith(SCHEDULE_PREFIX); })){
+            renderSchedule();
+            renderUpcomingAndHistory();
+        }
+    });
 });
 
 function attachEvents(){
