@@ -62,6 +62,16 @@ document.addEventListener("DOMContentLoaded", function(){
        wait for the next load. */
     window.addEventListener("online", retryThisUsersPendingAttendance);
 
+    /* An Admin editing this entry from attendance.js on another device
+       would otherwise only show up here after this tab is reloaded —
+       see the matching listener in attendance.js for the fuller
+       explanation. */
+    window.addEventListener("crownCloudUpdate", function(event){
+        if(event.detail?.keys?.includes(ATTENDANCE_LOG_KEY)){
+            renderClockWidget();
+        }
+    });
+
     setInterval(
         checkClockOutReminder,
         CLOCK_OUT_REMINDER_CHECK_MS

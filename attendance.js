@@ -30,6 +30,20 @@ document.addEventListener("DOMContentLoaded", function(){
     window.addEventListener("online", function(){
         window.CrownAttendanceSync?.retryPending?.();
     });
+
+    /* firebase-sync.js's realtime listener writes an incoming remote
+       change straight into localStorage and fires this event — without
+       listening for it, a staff member clocking in on their phone was
+       correctly reaching Firestore all along, but an Admin already
+       sitting on this page would only ever see it after manually
+       reloading (renderAttendance() only re-reads localStorage when
+       called, never on its own). Re-render whenever crownAttendanceLog
+       is one of the changed keys. */
+    window.addEventListener("crownCloudUpdate", function(event){
+        if(event.detail?.keys?.includes(ATTENDANCE_LOG_KEY)){
+            renderAttendance();
+        }
+    });
 });
 
 function attachEvents(){
