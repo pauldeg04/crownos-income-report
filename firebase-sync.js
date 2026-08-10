@@ -48,6 +48,28 @@
        where streaming already works. Must be set before any other
        Firestore call. */
     db.settings({ experimentalAutoDetectLongPolling: true });
+
+    /* Caches Firestore reads in IndexedDB across page loads. This app
+       does a full page reload for every navigation (not an SPA), so
+       without this, EVERY page — not just the first-ever login —
+       redownloads the entire shared dataset from network before it can
+       render anything, even on a device that already has it all from
+       five minutes ago. See the cache-first fast path in
+       onAuthStateChanged below, which is what actually benefits from
+       this. synchronizeTabs lets multiple CrownOS tabs open in the same
+       browser share one persisted cache instead of the second tab's
+       persistence attempt failing outright because the first already
+       claimed it. Best-effort: a browser without the needed IndexedDB
+       support just falls back to a network fetch on every page, same
+       as before this existed. Must be called before any other
+       Firestore operation. */
+    db.enablePersistence({ synchronizeTabs: true }).catch(function(error){
+        console.warn(
+            "CrownCloud: Firestore persistence unavailable — falling back to per-page network fetches.",
+            error
+        );
+    });
+
     const COLLECTION = "appData";
     const FLUSH_DELAY_MS = 600;
 
@@ -458,6 +480,88 @@
 
     /* ---------- Incoming: Firestore → localStorage ---------- */
 
+    /* Applies one collection snapshot (cached or from the server) to
+       localStorage. Shared by the cache-first fast path and the
+       authoritative network fetch below — same reconstruction/skip
+       logic either way, just a different source for the snapshot. */
+    function applySnapshotToLocalStorage(snapshot){
+        const remoteKeys = new Set();
+        const changedKeys = [];
+
+        applyingRemote = true;
+
+        snapshot.forEach(function(doc){
+            const data = doc.data();
+
+            if(!data || !shouldSync(data.key)){
+                return;
+            }
+
+            /* A tombstone still counts as "known to the cloud" so
+               the seed step below never mistakes a deleted key for
+               brand-new local-only data. */
+            remoteKeys.add(data.key);
+            ingestChunkDoc(data);
+        });
+
+        remoteKeys.forEach(function(key){
+            /* If the user makes a local change (e.g. an import) while a
+               fetch is in flight, queuePush() already queued it in
+               pendingKeys — but this snapshot still reflects the OLD
+               cloud value from before that change. Applying it now
+               would silently clobber the newer local write before its
+               own queued push ever runs. Skip it here; the queued push
+               (retried until initialSyncDone, see flushPending) will
+               bring the cloud up to date instead. */
+            if(pendingKeys.has(key)){
+                return;
+            }
+
+            const result = reconstructIfComplete(key);
+
+            if(!result){
+                return;
+            }
+
+            if(result.deleted){
+                if(localStorage.getItem(key) !== null){
+                    nativeRemoveItem.call(localStorage, key);
+                    changedKeys.push(key);
+                }
+
+                return;
+            }
+
+            if(localStorage.getItem(key) !== result.value){
+                nativeSetItem.call(
+                    localStorage,
+                    key,
+                    result.value
+                );
+
+                changedKeys.push(key);
+            }
+        });
+
+        applyingRemote = false;
+
+        /* Pages that finished their first render before this resolved
+           are otherwise stuck showing whatever was in localStorage at
+           DOMContentLoaded. The realtime listener only covers changes
+           that arrive AFTER it starts, so without this, any data that
+           already existed in the cloud before the page opened never
+           appears until something else forces a re-read. */
+        if(changedKeys.length > 0){
+            window.dispatchEvent(
+                new CustomEvent("crownCloudUpdate", {
+                    detail: { keys: changedKeys }
+                })
+            );
+        }
+
+        return remoteKeys;
+    }
+
     firebase.auth().onAuthStateChanged(async function(user){
         if(!user){
             return;
@@ -469,86 +573,37 @@
                device) must never reach the cloud. */
             pendingKeys.clear();
 
+            /* Fast path: this app does a full page reload for every
+               navigation (not an SPA), so without this, EVERY page —
+               not just the first-ever login — blocks on a fresh
+               multi-megabyte network fetch of the whole shared dataset
+               before it can render anything, even on a device that
+               already has all of it cached from five minutes ago.
+               enablePersistence() (see below) keeps that cache in
+               IndexedDB across page loads; reading from it here is
+               near-instant when it exists, so a returning device stops
+               waiting on the network at all just to reconfirm what it
+               already knows. Silently does nothing on a device with no
+               cache yet (first-ever visit, or persistence unavailable)
+               — the network fetch further down covers that case
+               exactly as before. */
+            try{
+                const cacheSnapshot =
+                    await db.collection(COLLECTION).get({ source: "cache" });
+
+                if(!cacheSnapshot.empty){
+                    applySnapshotToLocalStorage(cacheSnapshot);
+                    resolveInitialSync(true);
+                }
+            }catch(cacheError){
+                // No local cache yet — the network fetch below is the real path.
+            }
+
             const snapshot =
                 await db.collection(COLLECTION).get();
 
-            const remoteKeys = new Set();
-            const changedKeys = [];
-
-            applyingRemote = true;
-
-            snapshot.forEach(function(doc){
-                const data = doc.data();
-
-                if(!data || !shouldSync(data.key)){
-                    return;
-                }
-
-                /* A tombstone still counts as "known to the cloud" so
-                   the seed step below never mistakes a deleted key for
-                   brand-new local-only data. */
-                remoteKeys.add(data.key);
-                ingestChunkDoc(data);
-            });
-
-            remoteKeys.forEach(function(key){
-                /* This snapshot was fetched by the `await` above, which
-                   takes a real network round trip. If the user makes a
-                   local change (e.g. an import) while that request was
-                   in flight, queuePush() already queued it in
-                   pendingKeys — but this snapshot still reflects the
-                   OLD cloud value from before that change. Applying it
-                   now would silently clobber the newer local write
-                   before its own queued push ever runs. Skip it here;
-                   the queued push (retried until initialSyncDone, see
-                   flushPending) will bring the cloud up to date instead. */
-                if(pendingKeys.has(key)){
-                    return;
-                }
-
-                const result = reconstructIfComplete(key);
-
-                if(!result){
-                    return;
-                }
-
-                if(result.deleted){
-                    if(localStorage.getItem(key) !== null){
-                        nativeRemoveItem.call(localStorage, key);
-                        changedKeys.push(key);
-                    }
-
-                    return;
-                }
-
-                if(localStorage.getItem(key) !== result.value){
-                    nativeSetItem.call(
-                        localStorage,
-                        key,
-                        result.value
-                    );
-
-                    changedKeys.push(key);
-                }
-            });
-
-            applyingRemote = false;
-
-            /* Pages that finished their first render before this pull
-               resolved (the common case — this is a network round trip,
-               not instant) are otherwise stuck showing whatever was in
-               localStorage at DOMContentLoaded. The realtime listener
-               below only covers changes that arrive AFTER this point,
-               so without this, any data that already existed in the
-               cloud before the page opened never appears until something
-               else forces a re-read. */
-            if(changedKeys.length > 0){
-                window.dispatchEvent(
-                    new CustomEvent("crownCloudUpdate", {
-                        detail: { keys: changedKeys }
-                    })
-                );
-            }
+            const remoteKeys =
+                applySnapshotToLocalStorage(snapshot);
 
             /* Seed: push keys that exist only on this device
                (first run migrates all existing data to the cloud).
