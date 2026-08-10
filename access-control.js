@@ -24,7 +24,8 @@
             "Executive Assistant",
             "Receptionist",
             "Therapist",
-            "Marketing Agent"
+            "Marketing Agent",
+            "Branch Device"
         ],
 
         "index.html": [
@@ -81,14 +82,16 @@
             "Admin",
             "Executive Assistant",
             "Receptionist",
-            "Therapist"
+            "Therapist",
+            "Branch Device"
         ],
 
         "scheduling.html": [
             "Admin",
             "Executive Assistant",
             "Receptionist",
-            "Marketing Agent"
+            "Marketing Agent",
+            "Branch Device"
         ],
 
         "booking-requests.html": [

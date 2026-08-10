@@ -97,7 +97,7 @@
         {
             label: "Dashboard",
             href: "home.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent"]
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device"]
         },
 
         { section: "Operations" },
@@ -131,13 +131,13 @@
         {
             label: "Client Database",
             href: "clients.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist"]
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Branch Device"]
         },
 
         {
             label: "Scheduling",
             href: "scheduling.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Marketing Agent"]
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Marketing Agent", "Branch Device"]
         },
 
         {

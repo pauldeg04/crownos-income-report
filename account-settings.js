@@ -998,6 +998,15 @@ async function saveUserAccount(){
 
         CrownAuth.saveUsers(users);
 
+        /* Push this change to Firestore NOW rather than waiting for the
+           debounced background sync — otherwise another device could
+           sign in seconds later (Firebase Auth already updated instantly
+           via resetStaffCloudLogin below) but still pull the OLD
+           passwordHash from appData, since that write was still pending.
+           That race is what let a just-reset account fail to log in
+           anywhere but the admin's own device. */
+        await window.CrownCloud?.flushNow?.();
+
         if(user.id === currentLoggedInUser.id){
             CrownAuth.setCurrentUser(user);
 
