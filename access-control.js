@@ -248,6 +248,28 @@
             return existingUsers;
         }
 
+        /* This device's local crownUserAccounts is empty — normally
+           because the cloud pull hasn't finished yet, NOT because the
+           account list is actually empty. Fabricating a bootstrap admin
+           here and saving it used to go through the same synced
+           localStorage write as any real edit; if that write raced the
+           still-in-flight initial pull, firebase-sync.js's "don't clobber
+           a newer local write" guard would keep this fake admin instead
+           of the real pulled data, and its own queued push then
+           overwrote the entire shared account list in Firestore with
+           this one fake record — a real incident, not a hypothetical.
+           Cloud-connected production devices must never risk that: skip
+           the fabrication and let this login attempt fail instead
+           (retrying once the pull actually completes works normally).
+           Only a genuinely offline/local-test device falls back to the
+           old single-admin bootstrap. */
+        if(
+            window.CrownCloud?.isAvailable?.() &&
+            !window.CrownCloud?.isLocalTestEnv
+        ){
+            return [];
+        }
+
         const oldUsername =
             localStorage.getItem("crownUsername") || "admin";
 
