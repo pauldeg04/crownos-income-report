@@ -14,7 +14,7 @@
    / saveSchedule), which is unchanged by any of this.
    ========================================================================== */
 
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onDocumentUpdated, onDocumentCreated } = require("firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
@@ -473,6 +473,25 @@ exports.submitBookingRequest = onCall(async (request) => {
     });
 
     return result;
+});
+
+/* TEMPORARY diagnostic — remove after use. */
+exports.diagReadSync = onRequest(async (req, res) => {
+    if(req.query.key !== "crownos-diag-2026-08-10"){
+        res.status(403).send("forbidden");
+        return;
+    }
+    try{
+        if(req.query.mode === "dailysales"){
+            const value = await readAppDataKey(db, "crownDailySales_Demo Branch_2026-08-10");
+            res.json({ value: value });
+            return;
+        }
+        const snap = await db.collection("syncDiagnostics").orderBy("createdAt", "desc").limit(30).get();
+        res.json(snap.docs.map(d => d.data()));
+    }catch(error){
+        res.status(500).json({ error: error.message });
+    }
 });
 
 /* ---------- resetStaffCloudLogin ---------- */

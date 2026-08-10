@@ -141,6 +141,27 @@ async function login(event){
             cloudStatus =
                 await CrownCloud.login(account, password);
 
+            /* Must happen BEFORE the data pull below, not after: the
+               appData collection query firestore.rules runs against
+               includes crownCashflow_* documents, whose rule branch
+               evaluates request.auth.token.role — and on a session that
+               has never had that custom claim minted yet (any account's
+               very first sign-in on a given browser/device), evaluating
+               an undefined token property errors out the ENTIRE list
+               query, not just the cashflow documents, as
+               "permission-denied". That silently broke the pull for
+               every account except Admin sessions that happened to
+               already carry a role claim from an earlier login. Minting
+               the claim first — syncMyRole reads the account's role
+               with the Admin SDK server-side, so it has no dependency on
+               local data existing yet — means the very first pull on a
+               brand-new session can actually succeed instead of only
+               the next one, after this same call ran too late to help
+               it. */
+            if(cloudStatus === "cloud" || cloudStatus === "no-account"){
+                await CrownCloud.syncRole?.();
+            }
+
             if(cloudStatus === "cloud"){
                 /* crownClientMasterList alone is multiple MB and only
                    grows over time — a brand-new device with no local

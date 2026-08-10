@@ -628,12 +628,45 @@
 
             startListener();
             resolveInitialSync(true);
+
+            reportSyncDiagnostic(null);
         }catch(error){
             applyingRemote = false;
             console.error("CrownCloud: initial sync failed.", error);
             resolveInitialSync(false);
+
+            reportSyncDiagnostic(error);
         }
     });
+
+    /* TEMPORARY — incident diagnostics only. Writes a breadcrumb after
+       every completed (or failed) initial sync, including the exact
+       value this device now has locally for a specific key under
+       investigation — so a mismatch between what Firestore actually
+       has and what a device ends up applying can be read back directly
+       instead of guessed at. Remove once resolved (see the matching
+       write-only syncDiagnostics rule in firestore.rules). */
+    async function reportSyncDiagnostic(error){
+        try{
+            if(!firebase.auth().currentUser){
+                return;
+            }
+
+            const trackedKey = "crownDailySales_Demo Branch_2026-08-10";
+
+            await db.collection("syncDiagnostics").add({
+                page: location.pathname.split("/").pop() || "",
+                errorMessage: error ? String(error.message || error) : null,
+                errorCode: error?.code || null,
+                trackedKeyLocalLength: (localStorage.getItem(trackedKey) || "").length,
+                userAgent: navigator.userAgent,
+                online: navigator.onLine,
+                createdAt: Date.now()
+            });
+        }catch(reportError){
+            console.error("CrownCloud: syncDiagnostics write failed.", reportError);
+        }
+    }
 
     function startListener(){
         if(listenerStarted){

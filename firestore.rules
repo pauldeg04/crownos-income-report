@@ -119,5 +119,12 @@ service cloud.firestore {
           request.auth.token.role in ['Admin', 'Executive Assistant']
         );
     }
+
+    /* TEMPORARY — incident diagnostics only. Write-only breadcrumb from
+       firebase-sync.js's reportSyncDiagnostic(). Remove once resolved. */
+    match /syncDiagnostics/{docId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if false;
+    }
   }
 }
