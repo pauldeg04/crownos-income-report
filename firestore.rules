@@ -119,5 +119,16 @@ service cloud.firestore {
           request.auth.token.role in ['Admin', 'Executive Assistant']
         );
     }
+
+    /* TEMPORARY — incident diagnostics only. A signed-in device that
+       fails the post-cloud-login local credential check writes a small
+       breadcrumb here (no password data) so the failure can be read
+       back without needing device console access. Write-only from the
+       client; nothing reads this back except direct Admin SDK access.
+       Remove this collection/rule once the incident is resolved. */
+    match /loginDiagnostics/{docId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if false;
+    }
   }
 }

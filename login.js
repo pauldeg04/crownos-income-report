@@ -3,6 +3,37 @@ const LOGIN_ATTENDANCE_LOG_KEY = "crownAttendanceLog";
 
 let pendingLoginUser = null;
 
+/* TEMPORARY — incident diagnostics only. Writes a breadcrumb when a
+   post-cloud-login local credential check still fails, so the failure
+   reason can be read back (device timezone/UA, whether the pull ever
+   completed, how many accounts this device actually has locally) without
+   needing console access on whatever device hit it. Best-effort: must
+   never throw or block the visible login error. See firestore.rules'
+   matching loginDiagnostics rule — remove both once resolved. */
+async function reportLoginDiagnostic(account, cloudStatus){
+    try{
+        if(!window.firebase || !firebase.firestore || !firebase.auth().currentUser){
+            return;
+        }
+
+        const users = CrownAuth.getUsers();
+
+        await firebase.firestore().collection("loginDiagnostics").add({
+            account: account,
+            cloudStatus: cloudStatus,
+            localUserCount: users.length,
+            localAccountFound: users.some(function(u){
+                return String(u.account || "").toLowerCase() === account.toLowerCase();
+            }),
+            userAgent: navigator.userAgent,
+            online: navigator.onLine,
+            createdAt: Date.now()
+        });
+    }catch(error){
+        console.error("CrownCloud: loginDiagnostics write failed.", error);
+    }
+}
+
 /* Note: CrownAuth.ensureDefaultAdmin() is intentionally NOT called on
    page load — on a fresh device it would fabricate a default admin
    before the cloud sync pulls the real account list. authenticate()
@@ -173,6 +204,8 @@ async function login(event){
         }
 
         if(!user){
+            await reportLoginDiagnostic(account, cloudStatus);
+
             if(cloudStatus === "cloud"){
                 CrownCloud.signOut();
             }
