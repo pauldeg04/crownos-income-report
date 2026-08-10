@@ -143,15 +143,34 @@ async function login(event){
 
             if(cloudStatus === "cloud"){
                 button.textContent = "Syncing Data...";
-                await CrownCloud.waitForInitialSync(12000);
+                await CrownCloud.waitForInitialSync(20000);
             }
         }
 
-        const user =
+        let user =
             await CrownAuth.authenticate(
                 account,
                 password
             );
+
+        /* On a slow connection (mobile data, a weak branch WiFi signal)
+           the pull can still be mid-flight when the wait above times
+           out — it keeps running in the background regardless, so a
+           short second wait here often catches it landing moments
+           later, instead of forcing every sign-in to eat the full
+           worst-case wait up front. Without this, a correct password
+           on a slow device fails with the same generic error as a
+           wrong one, and simply retrying moments later "just works" —
+           this makes that retry automatic. */
+        if(!user && cloudStatus === "cloud"){
+            button.textContent = "Still Syncing...";
+            await CrownCloud.waitForInitialSync(15000);
+
+            user = await CrownAuth.authenticate(
+                account,
+                password
+            );
+        }
 
         if(!user){
             if(cloudStatus === "cloud"){
