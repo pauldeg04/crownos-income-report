@@ -834,6 +834,30 @@
             </div>
 
             <div class="global-toolbar-user">
+                <div class="notification-bell-wrap d-none" id="notificationBellWrap">
+                    <button
+                        type="button"
+                        class="notification-bell-btn"
+                        id="notificationBellBtn"
+                        aria-label="Notifications"
+                    >
+                        <span aria-hidden="true">🔔</span>
+                        <span class="notification-badge d-none" id="notificationBadge">0</span>
+                    </button>
+
+                    <div class="notification-panel d-none" id="notificationPanel">
+                        <div class="notification-panel-header">
+                            <strong>Notifications</strong>
+
+                            <button type="button" id="notificationMarkAllBtn">
+                                Mark all read
+                            </button>
+                        </div>
+
+                        <div class="notification-list" id="notificationList"></div>
+                    </div>
+                </div>
+
                 <span class="global-toolbar-avatar">
                     ${escapeHtml(
                         String(user?.account || "U")
@@ -997,7 +1021,245 @@
                 }
             );
 
+        initializeNotificationBell(toolbar);
+
         return toolbar;
+    }
+
+    /* ---- Notification bell (global — every sidebar page, not just
+       Dashboard) ----
+
+       Moved here from dashboard.js: the bell/badge only existed on
+       home.html before, so a Receptionist working from Scheduling or
+       Booking Requests all shift never saw a new-booking-request alert
+       until they happened to open the Dashboard. Uses toolbar's own
+       subtree (querySelector, not document.getElementById) since this
+       runs before the toolbar element is attached to the document. */
+
+    let serverNotificationsCache = [];
+    let notificationToolbarEl = null;
+
+    /* Any logged-in Therapist or Receptionist can receive notifications —
+       Therapists are addressed by their Therapist Master List name (how
+       schedule assignments identify them), Receptionists (and anyone
+       else) by their login account, since that's the only identity they
+       have. */
+    function getNotificationRecipient(){
+        const user =
+            window.CrownAuth
+                ? CrownAuth.getCurrentUser()
+                : null;
+
+        if(!user){
+            return null;
+        }
+
+        const effectiveRole =
+            window.CrownAuth?.getEffectiveRole?.(user) || user.role;
+
+        if(effectiveRole !== "Therapist" && effectiveRole !== "Receptionist"){
+            return null;
+        }
+
+        return {
+            account: String(user.account || "").trim(),
+            therapistName:
+                effectiveRole === "Therapist"
+                    ? String(user.therapistName || "").trim()
+                    : ""
+        };
+    }
+
+    function initializeNotificationBell(toolbar){
+        const recipient =
+            getNotificationRecipient();
+
+        const wrap =
+            toolbar.querySelector("#notificationBellWrap");
+
+        if(!wrap || !recipient || !window.CrownNotifications){
+            return;
+        }
+
+        notificationToolbarEl = toolbar;
+
+        wrap.classList.remove("d-none");
+
+        const bellBtn =
+            toolbar.querySelector("#notificationBellBtn");
+
+        const panel =
+            toolbar.querySelector("#notificationPanel");
+
+        bellBtn.addEventListener("click", function(event){
+            event.stopPropagation();
+            panel.classList.toggle("d-none");
+
+            if(!panel.classList.contains("d-none")){
+                renderNotificationPanel(recipient);
+            }
+        });
+
+        panel.addEventListener("click", function(event){
+            event.stopPropagation();
+        });
+
+        document.addEventListener("click", function(){
+            panel.classList.add("d-none");
+        });
+
+        document.addEventListener("keydown", function(event){
+            if(event.key === "Escape"){
+                panel.classList.add("d-none");
+            }
+        });
+
+        toolbar
+            .querySelector("#notificationMarkAllBtn")
+            .addEventListener("click", function(){
+                CrownNotifications.markAllRead(recipient);
+                window.CrownServerNotifications?.markAllRead?.(serverNotificationsCache);
+                renderNotificationPanel(recipient);
+                updateNotificationBadge(recipient);
+            });
+
+        window.addEventListener("crownCloudUpdate", function(event){
+            if(event.detail?.keys?.includes("crownNotifications")){
+                updateNotificationBadge(recipient);
+
+                if(!panel.classList.contains("d-none")){
+                    renderNotificationPanel(recipient);
+                }
+            }
+        });
+
+        window.CrownServerNotifications?.listenForUser?.(recipient, function(list){
+            serverNotificationsCache = list;
+            updateNotificationBadge(recipient);
+
+            if(!panel.classList.contains("d-none")){
+                renderNotificationPanel(recipient);
+            }
+        });
+
+        updateNotificationBadge(recipient);
+    }
+
+    /* Combines the client-owned local list (CrownNotifications, mirrored
+       from localStorage) with the live server-created list
+       (staffNotifications, e.g. new booking requests for a Receptionist
+       — see notifications.js / notifyReceptionistsOnNewBookingRequest),
+       newest first. Server entries are tagged source:"server" so
+       mark-read routes to the right backend. */
+    function getMergedNotifications(recipient){
+        const local =
+            CrownNotifications.getForUser(recipient)
+                .map(function(item){
+                    return Object.assign({ source: "local" }, item);
+                });
+
+        const server =
+            serverNotificationsCache.map(function(item){
+                return Object.assign({}, item, {
+                    source: "server",
+                    createdAt: item.createdAt?.toDate?.().toISOString() || null
+                });
+            });
+
+        return local.concat(server).sort(function(a, b){
+            return (
+                new Date(b.createdAt || 0) -
+                new Date(a.createdAt || 0)
+            );
+        });
+    }
+
+    function updateNotificationBadge(recipient){
+        const badge =
+            notificationToolbarEl?.querySelector("#notificationBadge");
+
+        if(!badge || !recipient){
+            return;
+        }
+
+        const unreadCount =
+            getMergedNotifications(recipient)
+                .filter(function(item){
+                    return !item.read;
+                })
+                .length;
+
+        badge.textContent =
+            unreadCount > 99 ? "99+" : String(unreadCount);
+
+        badge.classList.toggle("d-none", unreadCount === 0);
+    }
+
+    function renderNotificationPanel(recipient){
+        const list =
+            notificationToolbarEl?.querySelector("#notificationList");
+
+        if(!list){
+            return;
+        }
+
+        const notifications =
+            getMergedNotifications(recipient);
+
+        if(notifications.length === 0){
+            list.innerHTML =
+                '<div class="notification-empty">No notifications yet.</div>';
+
+            return;
+        }
+
+        list.innerHTML =
+            notifications
+                .map(function(item){
+                    return `
+                        <div
+                            class="notification-item ${item.read ? "" : "unread"}"
+                            data-id="${escapeHtml(item.id)}"
+                            data-source="${escapeHtml(item.source)}"
+                        >
+                            <strong>${escapeHtml(item.message)}</strong>
+                            <small>${escapeHtml(formatNotificationDate(item))}</small>
+                        </div>
+                    `;
+                })
+                .join("");
+
+        list
+            .querySelectorAll(".notification-item")
+            .forEach(function(row){
+                row.addEventListener("click", function(){
+                    if(row.dataset.source === "server"){
+                        CrownServerNotifications.markRead(row.dataset.id);
+                    }else{
+                        CrownNotifications.markRead(row.dataset.id);
+                    }
+
+                    row.classList.remove("unread");
+                    updateNotificationBadge(recipient);
+                });
+            });
+    }
+
+    function formatNotificationDate(item){
+        const created =
+            item.createdAt ? new Date(item.createdAt) : null;
+
+        const stamp =
+            created && !isNaN(created)
+                ? created.toLocaleString("en-PH", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit"
+                  })
+                : "";
+
+        return [item.branch, stamp].filter(Boolean).join(" · ");
     }
 
     function getPageTitle(currentPage){

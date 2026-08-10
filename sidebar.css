@@ -720,6 +720,131 @@ body.with-app-sidebar{
     border-left:1px solid var(--border-light);
 }
 
+/* ---- Notification bell (global toolbar — every page, not just
+   Dashboard, so a Receptionist working from Scheduling/Booking
+   Requests still sees a new-booking-request alert) ---- */
+
+.notification-bell-wrap{
+    position:relative;
+}
+
+.notification-bell-btn{
+    position:relative;
+    width:36px;
+    height:36px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#fff;
+    color:var(--navy);
+    border:1px solid var(--border-light);
+    border-radius:50%;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.notification-bell-btn:hover{
+    border-color:var(--gold);
+}
+
+.notification-badge{
+    position:absolute;
+    top:-4px;
+    right:-4px;
+    min-width:18px;
+    height:18px;
+    padding:0 4px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--state-red);
+    color:#fff;
+    font-size:10px;
+    font-weight:900;
+    border-radius:999px;
+    line-height:1;
+}
+
+.notification-panel{
+    position:absolute;
+    top:calc(100% + 10px);
+    right:0;
+    z-index:1040;
+    width:320px;
+    max-width:calc(100vw - 32px);
+    max-height:400px;
+    overflow-y:auto;
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-radius:16px;
+    box-shadow:0 18px 40px rgba(15,23,42,.20);
+}
+
+.notification-panel-header{
+    position:sticky;
+    top:0;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 14px;
+    background:#fff;
+    border-bottom:1px solid var(--border-light);
+    color:var(--navy);
+    font-size:13px;
+}
+
+.notification-panel-header button{
+    background:none;
+    border:none;
+    color:var(--green);
+    font-size:11px;
+    font-weight:800;
+    cursor:pointer;
+}
+
+.notification-item{
+    padding:12px 14px;
+    border-bottom:1px solid var(--border-light);
+    font-size:12.5px;
+    color:var(--ink);
+    cursor:pointer;
+}
+
+.notification-item:last-child{
+    border-bottom:none;
+}
+
+.notification-item.unread{
+    background:var(--gold-soft);
+}
+
+.notification-item strong{
+    display:block;
+    margin-bottom:2px;
+    color:var(--navy);
+    font-size:12.5px;
+}
+
+.notification-item small{
+    display:block;
+    margin-top:4px;
+    color:var(--muted);
+    font-size:10.5px;
+}
+
+.notification-empty{
+    padding:24px 14px;
+    text-align:center;
+    color:var(--muted);
+    font-size:12px;
+}
+
+@media(max-width:768px){
+    .notification-panel{
+        width:290px;
+    }
+}
+
 .global-toolbar-avatar{
     display:flex;
     flex:0 0 36px;
