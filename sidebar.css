@@ -839,9 +839,20 @@ body.with-app-sidebar{
     font-size:12px;
 }
 
-@media(max-width:768px){
+@media(max-width:900px){
+    /* Anchoring to the bell button's own position (like on desktop)
+       runs the panel off the left edge of a narrow screen, since the
+       bell sits wherever the toolbar's mobile layout happens to place
+       it rather than near the true right edge. Pinning it under the
+       whole toolbar instead keeps it fully on-screen regardless. */
     .notification-panel{
-        width:290px;
+        position:fixed;
+        top:96px;
+        left:12px;
+        right:12px;
+        width:auto;
+        max-width:none;
+        max-height:calc(100vh - 116px);
     }
 }
 
