@@ -37,6 +37,17 @@
     }
 
     const db = firebase.firestore();
+
+    /* Firestore's default transport is a bidirectional streaming
+       connection (WebChannel) — some mobile carriers and restrictive
+       networks silently break that specific kind of connection while
+       plain HTTPS (what Firebase Auth uses) works fine, so sign-in
+       succeeds but every Firestore read/write on that device hangs or
+       fails with no visible error. Auto-detecting falls back to
+       long-polling only when needed, so it costs nothing on networks
+       where streaming already works. Must be set before any other
+       Firestore call. */
+    db.settings({ experimentalAutoDetectLongPolling: true });
     const COLLECTION = "appData";
     const FLUSH_DELAY_MS = 600;
 
