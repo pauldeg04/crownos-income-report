@@ -70,61 +70,58 @@ service cloud.firestore {
     /* Existing staff data-sync collection (firebase-sync.js mirrors every
        crown*-prefixed localStorage key here, one doc per key, split into
        __c0/__c1/... chunks past ~900KB — see appData.js/firebase-sync.js
-       chunkDocRef()). INFERRED rule — no rules file existed for this
-       collection before now. Confirm against the live Firebase Console
-       rules before deploying; this must not silently replace different
-       console-managed rules.
+       chunkDocRef()). Readable/writable by any authenticated user
+       regardless of CrownOS role — access-control.js's PAGE_ACCESS gate
+       is enforced only in the browser UI, so this was never full parity
+       with per-page/per-role restrictions (appData values are opaque
+       JSON strings, not structured fields rules can inspect) — but see
+       /appDataCashflow below for the one key that previously carried an
+       actual role-gated exception here.
 
-       Every key was previously readable/writable by ANY authenticated
-       user regardless of CrownOS role, because access-control.js's
-       PAGE_ACCESS gate is enforced only in the browser UI — nothing
-       stopped a signed-in Therapist/Receptionist/Marketing Agent from
-       calling the Firestore SDK directly (e.g. via devtools) to read or
-       write data their role can never see a page for. Full parity with
-       PAGE_ACCESS (including per-user extraAccess grants — see
-       access-control.js) isn't achievable here: appData values are
-       opaque JSON strings, not structured fields rules can inspect, so
-       there's no way to check role for arbitrary keys without a
-       purpose-built claim per key/collection.
-
-       This currently locks down only crownCashflow_* (docId prefix,
-       matches both the base doc and any __c chunk suffix) — cashflow.html
-       is Admin-only in PAGE_ACCESS AND listed in
-       EXTRA_ACCESS_EXCLUDED_PAGES (no per-user override ever grants it),
-       so unlike most other Admin-only pages, there's no legitimate path
-       for a non-Admin/EA session to need read access here. EA is
-       included (not just Admin) because list-branches.js
-       migrateBranchReferences() legitimately rewrites crownCashflow_*
-       keys during a branch rename, and list-branches.html is open to EA.
-       request.auth.token.role comes from the syncMyRole Cloud Function,
-       called after login (see firebase-sync.js) — a session that hasn't
-       refreshed its ID token since that landed simply has no role claim
-       yet and is denied here, same as an unrecognized role would be.
+       That exception used to live inline in this same rule
+       (docId.matches('^crownCashflow_.*') ? Admin/EA only : anyone).
+       Moved out because Firestore rejects an ENTIRE list query if it
+       COULD return even one document the caller isn't allowed to read
+       — the generic appData sync pull is exactly such an unfiltered
+       collection query, run by every role on every login, so mixing an
+       Admin/EA-only document into the same collection meant every
+       non-Admin/EA account failed the very first pull of every fresh
+       session, regardless of how correctly their role claim was set.
+       Splitting cashflow into its own collection with its own rule
+       lets this one stay simple and safe for a blanket query again.
 
        Other high-sensitivity keys (crownUserAccounts — holds password
        hashes for ALL staff, and the data-protection.html backup/restore
        surface, which is really "read access to everything") are
-       DELIBERATELY NOT restricted yet: account-settings.js's
+       DELIBERATELY NOT restricted: account-settings.js's
        CrownAuth.getUsers() needs the full crownUserAccounts array for
        EVERY role (each user's own password-change flow compares against
        it), so a blanket Admin-only rule on that key would break
-       everyone's Account Settings page today. Closing that gap needs an
-       actual data-model change (e.g. stripping passwordHash out of what
-       non-Admin sessions can read) before a rule can safely enforce it -
-       tracked as a follow-up, not done here. */
+       everyone's Account Settings page today, and would reintroduce
+       the exact same unfiltered-list-query problem cashflow just got
+       moved out of. Closing that gap needs an actual data-model change
+       (e.g. stripping passwordHash out of what non-Admin sessions can
+       read, in its own collection) before a rule can safely enforce it
+       — tracked as a follow-up, not done here. */
     match /appData/{docId} {
-      allow read, write: if request.auth != null &&
-        (
-          !docId.matches('^crownCashflow_.*') ||
-          request.auth.token.role in ['Admin', 'Executive Assistant']
-        );
+      allow read, write: if request.auth != null;
     }
 
-    /* TEMPORARY — incident diagnostics only. Write-only breadcrumb from
-       firebase-sync.js's reportSyncDiagnostic(). Remove once resolved. */
-    match /syncDiagnostics/{docId} {
-      allow create: if request.auth != null;
-      allow read, update, delete: if false;
+    /* crownCashflow_* data, split out of appData into its own
+       collection (see the diagMigrateCashflow migration). The generic
+       appData sync pull is an unfiltered collection query run by every
+       role — Firestore rejects an ENTIRE list query if it could return
+       even one document the caller isn't allowed to read, so mixing an
+       Admin/EA-only exception into that same collection meant every
+       other role failed the very first pull of every fresh session,
+       no matter how correctly their role claim was set. Keeping
+       cashflow in its own collection with its own straightforward rule
+       lets appData go back to being safely readable by anyone
+       authenticated, with no per-document exception for the query
+       engine to worry about. */
+    match /appDataCashflow/{docId} {
+      allow read, write: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
     }
   }
 }

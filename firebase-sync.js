@@ -71,6 +71,7 @@
     });
 
     const COLLECTION = "appData";
+    const CASHFLOW_COLLECTION = "appDataCashflow";
     const FLUSH_DELAY_MS = 600;
 
     /* Running this app off a local dev server (or straight from disk)
@@ -172,6 +173,20 @@
         );
     }
 
+    /* crownCashflow_* lives in its own Firestore collection (see the
+       diagMigrateCashflow migration and firestore.rules) so the
+       generic appData pull below — an unfiltered collection query run
+       by every role on every login — never has an Admin/EA-only
+       document in its potential result set. Firestore rejects an
+       entire list query outright if it could return even one document
+       the caller isn't allowed to read, so mixing that one restricted
+       key into the same collection as everything else broke every
+       non-Admin/EA account's very first pull, regardless of role claim
+       timing. */
+    function collectionForKey(key){
+        return key.startsWith("crownCashflow_") ? CASHFLOW_COLLECTION : COLLECTION;
+    }
+
     /* Chunk 0 keeps the plain encodeURIComponent(key) doc id used before
        chunking existed, so a key that never needs splitting (almost
        every key except crownClientMasterList) stays byte-for-byte
@@ -180,7 +195,7 @@
     function chunkDocRef(key, index){
         const base = encodeURIComponent(key);
         return db
-            .collection(COLLECTION)
+            .collection(collectionForKey(key))
             .doc(index === 0 ? base : base + "__c" + index);
     }
 
@@ -344,7 +359,7 @@
                 const value = localStorage.getItem(key);
 
                 const existingSnapshot =
-                    await db.collection(COLLECTION)
+                    await db.collection(collectionForKey(key))
                         .where("key", "==", key)
                         .get();
 
@@ -573,6 +588,26 @@
                device) must never reach the cloud. */
             pendingKeys.clear();
 
+            /* Must happen before ANY Firestore read below, not just
+               before login.js's own wait — this onAuthStateChanged
+               listener fires independently the instant sign-in
+               completes, racing login.js's own post-login code rather
+               than waiting for it. firestore.rules' appData rule
+               evaluates request.auth.token.role for crownCashflow_*
+               documents, and the collection query below returns
+               documents of every key, cashflow included — Firestore
+               rejects the ENTIRE list query as permission-denied if
+               that evaluation throws on even one matched document,
+               which it does whenever this session's ID token doesn't
+               carry a role claim yet. Every account's very first pull
+               of a fresh session was hitting exactly that wall,
+               regardless of what order login.js awaited things in,
+               because nothing here was actually waiting for it.
+               syncRole() reads the role server-side via the Admin SDK
+               (functions/index.js syncMyRole), so it has no dependency
+               on any of the data this handler is about to fetch. */
+            await syncRole();
+
             /* Fast path: this app does a full page reload for every
                navigation (not an SPA), so without this, EVERY page —
                not just the first-ever login — blocks on a fresh
@@ -605,6 +640,25 @@
             const remoteKeys =
                 applySnapshotToLocalStorage(snapshot);
 
+            /* Separate collection, separate query — see collectionForKey().
+               Best-effort: a non-Admin/EA session gets permission-denied
+               here every time by design (firestore.rules), same as it
+               already can't open cashflow.html itself. That's expected,
+               not a failure — this is the ONE query in the whole sync
+               engine allowed to fail like that, since it's the only one
+               a rule can legitimately reject per-role. */
+            try{
+                const cashflowSnapshot =
+                    await db.collection(CASHFLOW_COLLECTION).get();
+
+                applySnapshotToLocalStorage(cashflowSnapshot)
+                    .forEach(function(key){
+                        remoteKeys.add(key);
+                    });
+            }catch(cashflowError){
+                // Not Admin/EA — expected, nothing to seed/reconcile here.
+            }
+
             /* Seed: push keys that exist only on this device
                (first run migrates all existing data to the cloud).
                Skipped in a local test environment — same reasoning as
@@ -628,43 +682,90 @@
 
             startListener();
             resolveInitialSync(true);
-
-            reportSyncDiagnostic(null);
         }catch(error){
             applyingRemote = false;
             console.error("CrownCloud: initial sync failed.", error);
             resolveInitialSync(false);
-
-            reportSyncDiagnostic(error);
         }
     });
 
-    /* TEMPORARY — incident diagnostics only. Writes a breadcrumb after
-       every completed (or failed) initial sync, including the exact
-       value this device now has locally for a specific key under
-       investigation — so a mismatch between what Firestore actually
-       has and what a device ends up applying can be read back directly
-       instead of guessed at. Remove once resolved (see the matching
-       write-only syncDiagnostics rule in firestore.rules). */
-    async function reportSyncDiagnostic(error){
-        try{
-            if(!firebase.auth().currentUser){
+    /* Shared by both collection listeners below — the actual
+       reconstruction/apply logic doesn't care which collection a change
+       came from, only the `key` field on each doc. */
+    function handleListenerSnapshot(snapshot){
+        const changedKeys = [];
+        const touchedKeys = new Set();
+
+        applyingRemote = true;
+
+        snapshot.docChanges().forEach(function(change){
+            if(change.doc.metadata.hasPendingWrites){
                 return;
             }
 
-            const trackedKey = "crownDailySales_Demo Branch_2026-08-10";
+            const data = change.doc.data();
+            const key = data ? data.key : null;
 
-            await db.collection("syncDiagnostics").add({
-                page: location.pathname.split("/").pop() || "",
-                errorMessage: error ? String(error.message || error) : null,
-                errorCode: error?.code || null,
-                trackedKeyLocalLength: (localStorage.getItem(trackedKey) || "").length,
-                userAgent: navigator.userAgent,
-                online: navigator.onLine,
-                createdAt: Date.now()
-            });
-        }catch(reportError){
-            console.error("CrownCloud: syncDiagnostics write failed.", reportError);
+            if(!shouldSync(key)){
+                return;
+            }
+
+            touchedKeys.add(key);
+
+            /* "removed" only fires for a hard Firestore delete
+               (kept for any leftover docs from before tombstones);
+               deletes going forward are soft tombstones instead. */
+            if(change.type === "removed"){
+                const index =
+                    Number.isInteger(data?.chunkIndex)
+                        ? data.chunkIndex
+                        : 0;
+
+                forgetChunkDoc(key, index);
+
+                return;
+            }
+
+            ingestChunkDoc(data);
+        });
+
+        touchedKeys.forEach(function(key){
+            /* Same reasoning as the initial-sync pull: don't clobber
+               a local write this tab already queued but hasn't
+               pushed yet. */
+            if(pendingKeys.has(key)){
+                return;
+            }
+
+            const result = reconstructIfComplete(key);
+
+            if(!result){
+                return;
+            }
+
+            if(result.deleted){
+                if(localStorage.getItem(key) !== null){
+                    nativeRemoveItem.call(localStorage, key);
+                    changedKeys.push(key);
+                }
+
+                return;
+            }
+
+            if(localStorage.getItem(key) !== result.value){
+                nativeSetItem.call(localStorage, key, result.value);
+                changedKeys.push(key);
+            }
+        });
+
+        applyingRemote = false;
+
+        if(changedKeys.length > 0){
+            window.dispatchEvent(
+                new CustomEvent("crownCloudUpdate", {
+                    detail: { keys: changedKeys }
+                })
+            );
         }
     }
 
@@ -675,82 +776,17 @@
 
         listenerStarted = true;
 
-        db.collection(COLLECTION).onSnapshot(function(snapshot){
-            const changedKeys = [];
-            const touchedKeys = new Set();
+        db.collection(COLLECTION).onSnapshot(handleListenerSnapshot);
 
-            applyingRemote = true;
-
-            snapshot.docChanges().forEach(function(change){
-                if(change.doc.metadata.hasPendingWrites){
-                    return;
-                }
-
-                const data = change.doc.data();
-                const key = data ? data.key : null;
-
-                if(!shouldSync(key)){
-                    return;
-                }
-
-                touchedKeys.add(key);
-
-                /* "removed" only fires for a hard Firestore delete
-                   (kept for any leftover docs from before tombstones);
-                   deletes going forward are soft tombstones instead. */
-                if(change.type === "removed"){
-                    const index =
-                        Number.isInteger(data?.chunkIndex)
-                            ? data.chunkIndex
-                            : 0;
-
-                    forgetChunkDoc(key, index);
-
-                    return;
-                }
-
-                ingestChunkDoc(data);
-            });
-
-            touchedKeys.forEach(function(key){
-                /* Same reasoning as the initial-sync pull: don't clobber
-                   a local write this tab already queued but hasn't
-                   pushed yet. */
-                if(pendingKeys.has(key)){
-                    return;
-                }
-
-                const result = reconstructIfComplete(key);
-
-                if(!result){
-                    return;
-                }
-
-                if(result.deleted){
-                    if(localStorage.getItem(key) !== null){
-                        nativeRemoveItem.call(localStorage, key);
-                        changedKeys.push(key);
-                    }
-
-                    return;
-                }
-
-                if(localStorage.getItem(key) !== result.value){
-                    nativeSetItem.call(localStorage, key, result.value);
-                    changedKeys.push(key);
-                }
-            });
-
-            applyingRemote = false;
-
-            if(changedKeys.length > 0){
-                window.dispatchEvent(
-                    new CustomEvent("crownCloudUpdate", {
-                        detail: { keys: changedKeys }
-                    })
-                );
-            }
-        });
+        /* Best-effort — a non-Admin/EA session gets permission-denied
+           here every time by design (firestore.rules), same as the
+           equivalent one-time get() above. A listener reports that
+           through the error callback instead of a rejected promise, so
+           it needs its own no-op handler rather than a try/catch. */
+        db.collection(CASHFLOW_COLLECTION).onSnapshot(
+            handleListenerSnapshot,
+            function(){ /* not Admin/EA — expected */ }
+        );
     }
 
     /* ---------- Authentication helpers ---------- */
