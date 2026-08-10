@@ -173,8 +173,16 @@ async function login(event){
                 await CrownCloud.login(account, password);
 
             if(cloudStatus === "cloud"){
+                /* crownClientMasterList alone is multiple MB and only
+                   grows over time — a brand-new device with no local
+                   cache yet has to download and parse all of it (plus
+                   everything else) before this resolves, and that can
+                   genuinely take longer than the previous 20s budget on
+                   an ordinary connection. A device that already has a
+                   local cache from a prior login barely touches this
+                   wait at all, since its pull is mostly incremental. */
                 button.textContent = "Syncing Data...";
-                await CrownCloud.waitForInitialSync(20000);
+                await CrownCloud.waitForInitialSync(45000);
             }
         }
 
@@ -195,7 +203,7 @@ async function login(event){
            this makes that retry automatic. */
         if(!user && cloudStatus === "cloud"){
             button.textContent = "Still Syncing...";
-            await CrownCloud.waitForInitialSync(15000);
+            await CrownCloud.waitForInitialSync(30000);
 
             user = await CrownAuth.authenticate(
                 account,
