@@ -361,16 +361,27 @@ function getDateRange(start, end){
 
 /* ---------- Period controls ---------- */
 
+/* Defaults to last week's Sunday–Saturday (the most recently completed
+   week), not just "13 days ago" — that's the range actually checked
+   for payroll each time, regardless of which weekday this page happens
+   to be opened on. */
 function initializeDates(){
     const today = new Date();
-    const twoWeeksAgo = new Date(today);
-    twoWeeksAgo.setDate(today.getDate() - 13);
+
+    const thisWeekSunday = new Date(today);
+    thisWeekSunday.setDate(today.getDate() - today.getDay());
+
+    const lastWeekSaturday = new Date(thisWeekSunday);
+    lastWeekSaturday.setDate(thisWeekSunday.getDate() - 1);
+
+    const lastWeekSunday = new Date(lastWeekSaturday);
+    lastWeekSunday.setDate(lastWeekSaturday.getDate() - 6);
 
     document.getElementById("payrollStartDate").value =
-        toDateString(twoWeeksAgo);
+        toDateString(lastWeekSunday);
 
     document.getElementById("payrollEndDate").value =
-        toDateString(today);
+        toDateString(lastWeekSaturday);
 }
 
 function getSelectedPeriod(){
