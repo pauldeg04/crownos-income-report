@@ -426,8 +426,12 @@
             }
 
             await batch.commit();
+
+            reportPushDiagnostic(keys, null);
         }catch(error){
             console.error("CrownCloud: push failed, will retry.", error);
+
+            reportPushDiagnostic(keys, error);
 
             keys.forEach(function(key){
                 pendingKeys.add(key);
@@ -435,6 +439,30 @@
 
             clearTimeout(flushTimer);
             flushTimer = setTimeout(flushPending, 5000);
+        }
+    }
+
+    /* TEMPORARY — incident diagnostics only. Remove once resolved. */
+    async function reportPushDiagnostic(keys, error){
+        try{
+            const authUser = firebase.auth().currentUser;
+
+            if(!authUser){
+                return;
+            }
+
+            await db.collection("syncDiagnostics").add({
+                email: authUser.email || "",
+                page: location.pathname.split("/").pop() || "",
+                pushKeys: keys,
+                errorMessage: error ? String(error.message || error) : null,
+                errorCode: error?.code || null,
+                userAgent: navigator.userAgent,
+                online: navigator.onLine,
+                createdAt: Date.now()
+            });
+        }catch(reportError){
+            console.error("CrownCloud: push syncDiagnostics write failed.", reportError);
         }
     }
 
@@ -663,12 +691,35 @@
                (first run migrates all existing data to the cloud).
                Skipped in a local test environment — same reasoning as
                queuePush() above, this must never upload local-only test
-               data to the live database. */
+               data to the live database.
+
+               crownCashflow_* is deliberately excluded here regardless
+               of role: a non-Admin/EA session's cashflow query above
+               always fails permission-denied (by design) and so never
+               adds cashflow keys to remoteKeys, even for cashflow data
+               that already exists in Firestore just fine — every
+               device that still has a crownCashflow_* key in
+               localStorage from before that collection was split out
+               of appData (i.e. everyone who used the app before this
+               fix) would otherwise have it "discovered" as local-only
+               data here on every single pull, forever, and try to push
+               it. That push always fails the same permission check,
+               and because Firestore batch writes are all-or-nothing,
+               it took down every OTHER pending key bundled in the same
+               batch with it — which is why non-Admin/EA staff have had
+               real, legitimate saves (Petty Cash, Daily Income, etc.)
+               silently never reach the cloud: they were stuck in the
+               same failing batch as a cashflow key that can never
+               succeed for their role, retried every 5s, forever. */
             if(!isLocalTestEnv){
                 for(let index = 0; index < localStorage.length; index++){
                     const key = localStorage.key(index);
 
-                    if(shouldSync(key) && !remoteKeys.has(key)){
+                    if(
+                        shouldSync(key) &&
+                        !remoteKeys.has(key) &&
+                        !key.startsWith("crownCashflow_")
+                    ){
                         pendingKeys.add(key);
                     }
                 }
@@ -682,12 +733,44 @@
 
             startListener();
             resolveInitialSync(true);
+
+            reportSyncDiagnostic(null);
         }catch(error){
             applyingRemote = false;
             console.error("CrownCloud: initial sync failed.", error);
             resolveInitialSync(false);
+
+            reportSyncDiagnostic(error);
         }
     });
+
+    /* TEMPORARY — incident diagnostics only. Writes a breadcrumb after
+       every completed (or failed) initial sync, so a failure can be
+       read back (which account, what Firestore error) without needing
+       console access on whatever device hit it. Remove once resolved
+       (see the matching write-only syncDiagnostics rule in
+       firestore.rules). */
+    async function reportSyncDiagnostic(error){
+        try{
+            const authUser = firebase.auth().currentUser;
+
+            if(!authUser){
+                return;
+            }
+
+            await db.collection("syncDiagnostics").add({
+                email: authUser.email || "",
+                page: location.pathname.split("/").pop() || "",
+                errorMessage: error ? String(error.message || error) : null,
+                errorCode: error?.code || null,
+                userAgent: navigator.userAgent,
+                online: navigator.onLine,
+                createdAt: Date.now()
+            });
+        }catch(reportError){
+            console.error("CrownCloud: syncDiagnostics write failed.", reportError);
+        }
+    }
 
     /* Shared by both collection listeners below — the actual
        reconstruction/apply logic doesn't care which collection a change
