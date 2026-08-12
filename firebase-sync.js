@@ -426,12 +426,8 @@
             }
 
             await batch.commit();
-
-            reportPushDiagnostic(keys, null);
         }catch(error){
             console.error("CrownCloud: push failed, will retry.", error);
-
-            reportPushDiagnostic(keys, error);
 
             keys.forEach(function(key){
                 pendingKeys.add(key);
@@ -439,30 +435,6 @@
 
             clearTimeout(flushTimer);
             flushTimer = setTimeout(flushPending, 5000);
-        }
-    }
-
-    /* TEMPORARY — incident diagnostics only. Remove once resolved. */
-    async function reportPushDiagnostic(keys, error){
-        try{
-            const authUser = firebase.auth().currentUser;
-
-            if(!authUser){
-                return;
-            }
-
-            await db.collection("syncDiagnostics").add({
-                email: authUser.email || "",
-                page: location.pathname.split("/").pop() || "",
-                pushKeys: keys,
-                errorMessage: error ? String(error.message || error) : null,
-                errorCode: error?.code || null,
-                userAgent: navigator.userAgent,
-                online: navigator.onLine,
-                createdAt: Date.now()
-            });
-        }catch(reportError){
-            console.error("CrownCloud: push syncDiagnostics write failed.", reportError);
         }
     }
 
@@ -733,44 +705,12 @@
 
             startListener();
             resolveInitialSync(true);
-
-            reportSyncDiagnostic(null);
         }catch(error){
             applyingRemote = false;
             console.error("CrownCloud: initial sync failed.", error);
             resolveInitialSync(false);
-
-            reportSyncDiagnostic(error);
         }
     });
-
-    /* TEMPORARY — incident diagnostics only. Writes a breadcrumb after
-       every completed (or failed) initial sync, so a failure can be
-       read back (which account, what Firestore error) without needing
-       console access on whatever device hit it. Remove once resolved
-       (see the matching write-only syncDiagnostics rule in
-       firestore.rules). */
-    async function reportSyncDiagnostic(error){
-        try{
-            const authUser = firebase.auth().currentUser;
-
-            if(!authUser){
-                return;
-            }
-
-            await db.collection("syncDiagnostics").add({
-                email: authUser.email || "",
-                page: location.pathname.split("/").pop() || "",
-                errorMessage: error ? String(error.message || error) : null,
-                errorCode: error?.code || null,
-                userAgent: navigator.userAgent,
-                online: navigator.onLine,
-                createdAt: Date.now()
-            });
-        }catch(reportError){
-            console.error("CrownCloud: syncDiagnostics write failed.", reportError);
-        }
-    }
 
     /* Shared by both collection listeners below — the actual
        reconstruction/apply logic doesn't care which collection a change
