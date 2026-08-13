@@ -19,6 +19,8 @@
             "**/.*",
             "**/node_modules/**",
             "*.txt",
+            "*.md",
+            "functions/**",
             "CrownOS_Full_Backup*.json"
         ],
         "cleanUrls": false,
