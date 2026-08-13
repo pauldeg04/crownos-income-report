@@ -65,7 +65,7 @@
                 </div>
             </div>
 
-            <div class="table-responsive">
+            <div class="table-responsive" id="bookingRequestTableWrap">
                 <table class="table booking-request-table align-middle">
                     <thead>
                         <tr>
@@ -91,6 +91,93 @@
             <div class="empty-state d-none" id="bookingRequestUnavailableState">
                 Cloud sync is unavailable right now, so booking requests can't be loaded. Check your connection and reload the page.
             </div>
+
+            <div class="booking-history-bar">
+                <button type="button" class="btn btn-outline-primary btn-sm" id="bookingHistoryToggle">
+                    Show History
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mt-4 d-none" id="bookingHistorySection">
+        <div class="card-body">
+
+            <div class="booking-history-heading">
+                <div>
+                    <h5 class="fw-bold text-primary mb-0">Previous Requests</h5>
+                    <p class="text-muted mb-0">
+                        Requests already handled — converted into an appointment or declined.
+                        Kept for reference only; nothing here can be acted on again.
+                    </p>
+                </div>
+
+                <div class="booking-history-filter">
+                    <label for="bookingHistoryDate">Preferred date</label>
+                    <div class="booking-history-filter-controls">
+                        <div class="date-stepper-group">
+                            <button
+                                type="button"
+                                class="date-step-btn"
+                                id="bookingHistoryPrevDay"
+                                aria-label="Previous day"
+                                title="Previous day"
+                            >
+                                ‹
+                            </button>
+
+                            <input type="date" id="bookingHistoryDate" class="form-control form-control-sm">
+
+                            <button
+                                type="button"
+                                class="date-step-btn"
+                                id="bookingHistoryNextDay"
+                                aria-label="Next day"
+                                title="Next day"
+                            >
+                                ›
+                            </button>
+                        </div>
+
+                        <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="bookingHistoryDateClear">
+                            Show all
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive d-none" id="bookingHistoryTableWrap">
+                <table class="table booking-request-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th>Service</th>
+                            <th>Preferred Date / Time</th>
+                            <th>Client</th>
+                            <th>Contact</th>
+                            <th>Notes</th>
+                            <th>Submitted</th>
+                            <th>Outcome</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookingHistoryListBody"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" id="bookingHistoryLoadingState">
+                Loading previous requests…
+            </div>
+
+            <div class="empty-state d-none" id="bookingHistoryEmptyState">
+                No previous requests yet. Once you convert or decline a request, it will show up here.
+            </div>
+
+            <div class="empty-state d-none" id="bookingHistoryErrorState">
+                Could not load previous requests. Check your connection and try again.
+            </div>
+
+            <p class="booking-history-note text-muted mb-0 d-none" id="bookingHistoryNote"></p>
 
         </div>
     </div>

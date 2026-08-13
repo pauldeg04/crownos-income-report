@@ -113,10 +113,55 @@
         return 1 + companions.length;
     }
 
+    function buildClientCell(request){
+        const companions = Array.isArray(request.companions) ? request.companions : [];
+
+        if(companions.length === 0){
+            return escapeHtml(request.clientName);
+        }
+
+        const companionLabels = companions.map(function(companion){
+            return escapeHtml(companion.name) + " (" + escapeHtml(companion.serviceName) + ")";
+        });
+
+        return escapeHtml(request.clientName) +
+            " <span class=\"badge bg-secondary\">Party of " + (companions.length + 1) + "</span>" +
+            "<br><small class=\"text-muted\">+ " + companionLabels.join(", ") + "</small>";
+    }
+
+    function buildContactCell(request){
+        const lines = [escapeHtml(request.mobile || "")];
+
+        if(request.email){
+            lines.push("<small>" + escapeHtml(request.email) + "</small>");
+        }
+
+        return lines.join("<br>");
+    }
+
+    /* The shared leading cells — everything up to and including "Submitted" —
+       so the pending table and the history table stay column-for-column
+       aligned without either one having to know about the other's trailing
+       columns (Hold Status + Action vs. Outcome). */
+    function buildSharedCells(request){
+        return (
+            "<td>" + escapeHtml(request.branch) + "</td>" +
+            "<td>" + escapeHtml(request.serviceName) + "</td>" +
+            "<td class=\"booking-datetime-cell\">" +
+                escapeHtml(formatDate(request.date)) + "<br>" +
+                escapeHtml(request.time) +
+            "</td>" +
+            "<td class=\"booking-client-cell\">" + buildClientCell(request) + "</td>" +
+            "<td class=\"booking-contact-cell\">" + buildContactCell(request) + "</td>" +
+            "<td class=\"booking-notes-cell\">" + (escapeHtml(request.notes) || "—") + "</td>" +
+            "<td class=\"booking-submitted-cell\">" + formatSubmittedAt(request.submittedAt) + "</td>"
+        );
+    }
+
     function renderRequests(requests, holdsByRequestId){
         const tbody = document.getElementById("bookingRequestListBody");
         const emptyState = document.getElementById("bookingRequestEmptyState");
-        const table = document.querySelector(".table-responsive");
+        const table = document.getElementById("bookingRequestTableWrap");
         const pendingCount = document.getElementById("bookingPendingCount");
         const pendingGuestCount = document.getElementById("bookingPendingGuestCount");
 
@@ -138,36 +183,9 @@
         table.classList.remove("d-none");
 
         tbody.innerHTML = requests.map(function(request){
-            const contactLines = [
-                escapeHtml(request.mobile || "")
-            ];
-
-            if(request.email){
-                contactLines.push("<small>" + escapeHtml(request.email) + "</small>");
-            }
-
-            const companions = Array.isArray(request.companions) ? request.companions : [];
-            const companionLabels = companions.map(function(companion){
-                return escapeHtml(companion.name) + " (" + escapeHtml(companion.serviceName) + ")";
-            });
-            const clientCell = companions.length > 0
-                ? escapeHtml(request.clientName) +
-                  " <span class=\"badge bg-secondary\">Party of " + (companions.length + 1) + "</span>" +
-                  "<br><small class=\"text-muted\">+ " + companionLabels.join(", ") + "</small>"
-                : escapeHtml(request.clientName);
-
             return (
                 "<tr data-request-id=\"" + escapeHtml(request.id) + "\">" +
-                    "<td>" + escapeHtml(request.branch) + "</td>" +
-                    "<td>" + escapeHtml(request.serviceName) + "</td>" +
-                    "<td class=\"booking-datetime-cell\">" +
-                        escapeHtml(formatDate(request.date)) + "<br>" +
-                        escapeHtml(request.time) +
-                    "</td>" +
-                    "<td class=\"booking-client-cell\">" + clientCell + "</td>" +
-                    "<td class=\"booking-contact-cell\">" + contactLines.join("<br>") + "</td>" +
-                    "<td class=\"booking-notes-cell\">" + (escapeHtml(request.notes) || "—") + "</td>" +
-                    "<td class=\"booking-submitted-cell\">" + formatSubmittedAt(request.submittedAt) + "</td>" +
+                    buildSharedCells(request) +
                     "<td class=\"booking-hold-cell\">" + formatHoldStatus(holdsByRequestId[request.id]) + "</td>" +
                     "<td class=\"booking-action-cell\">" +
                         "<a class=\"btn btn-sm btn-primary\" href=\"scheduling.html?fromRequest=" +
@@ -208,6 +226,236 @@
                 console.error("Unable to decline booking request:", error);
                 alert("Could not decline this request. Please try again.");
             }
+        }
+    }
+
+    /* ----------------------------------------------------------------------
+       History — requests that have already been handled.
+
+       Read on demand rather than kept on a live listener: it is reference
+       material a receptionist opens occasionally, so paying for a permanent
+       second onSnapshot on the whole collection would be wasteful.
+
+       The query orders by submittedAt and filters to non-pending rows in the
+       browser, instead of asking Firestore for status != "pending". A status
+       filter combined with orderBy on a different field needs a composite
+       index, which the pending list already goes out of its way to avoid
+       (see the sort comment in startListening). Ordering on one field uses
+       the automatic single-field index, so this needs no index deploy.
+       ---------------------------------------------------------------------- */
+
+    const HISTORY_FETCH_LIMIT = 200;
+
+    let historyVisible = false;
+    let historyLoading = false;
+
+    /* The fetched rows are kept here so the day picker filters what is already
+       loaded — changing the date is a local narrowing, not another read. */
+    let historyRequests = [];
+    let historyReachedLimit = false;
+
+    function historyEl(id){
+        return document.getElementById(id);
+    }
+
+    function showOnlyHistoryState(visibleId){
+        ["bookingHistoryTableWrap",
+         "bookingHistoryLoadingState",
+         "bookingHistoryEmptyState",
+         "bookingHistoryErrorState"].forEach(function(id){
+            historyEl(id).classList.toggle("d-none", id !== visibleId);
+        });
+    }
+
+    function formatReviewedAt(timestamp){
+        if(!timestamp || typeof timestamp.toDate !== "function"){
+            return "";
+        }
+
+        return timestamp.toDate().toLocaleString("en-PH", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit"
+        });
+    }
+
+    function formatOutcome(request){
+        const label = request.status === "converted"
+            ? "<span class=\"badge bg-success\">Appointment created</span>"
+            : "<span class=\"badge bg-secondary\">Declined</span>";
+
+        const details = [];
+        const reviewedAt = formatReviewedAt(request.reviewedAt);
+
+        if(reviewedAt){
+            details.push(escapeHtml(reviewedAt));
+        }
+
+        if(request.reviewedBy){
+            details.push("by " + escapeHtml(request.reviewedBy));
+        }
+
+        return details.length > 0
+            ? label + "<br><small class=\"text-muted\">" + details.join(" · ") + "</small>"
+            : label;
+    }
+
+    /* Empty means "every day", which is the default the page opens on. */
+    function selectedHistoryDate(){
+        return historyEl("bookingHistoryDate").value || "";
+    }
+
+    function historyNoteText(shownCount, filterDate){
+        const noun = shownCount === 1 ? " handled request" : " handled requests";
+
+        if(filterDate){
+            return "Showing " + shownCount + noun + " for " + formatDate(filterDate) +
+                ", out of " + historyRequests.length + " loaded.";
+        }
+
+        return historyReachedLimit
+            ? "Showing handled requests from the latest " + HISTORY_FETCH_LIMIT +
+              " submissions. Older ones are not listed."
+            : "Showing all " + shownCount + noun + ".";
+    }
+
+    function renderHistory(){
+        const tbody = historyEl("bookingHistoryListBody");
+        const note = historyEl("bookingHistoryNote");
+        const emptyState = historyEl("bookingHistoryEmptyState");
+        const filterDate = selectedHistoryDate();
+
+        historyEl("bookingHistoryDateClear").classList.toggle("d-none", !filterDate);
+
+        const requests = filterDate
+            ? historyRequests.filter(function(request){
+                return request.date === filterDate;
+            })
+            : historyRequests;
+
+        if(requests.length === 0){
+            tbody.innerHTML = "";
+            note.classList.add("d-none");
+
+            /* Nothing on the chosen day reads very differently from nothing at
+               all — the second would have the receptionist wondering whether
+               the history is broken. */
+            emptyState.textContent = filterDate
+                ? "No handled requests with a preferred date of " + formatDate(filterDate) + "."
+                : "No previous requests yet. Once you convert or decline a request, it will show up here.";
+
+            showOnlyHistoryState("bookingHistoryEmptyState");
+            return;
+        }
+
+        tbody.innerHTML = requests.map(function(request){
+            return (
+                "<tr>" +
+                    buildSharedCells(request) +
+                    "<td class=\"booking-outcome-cell\">" + formatOutcome(request) + "</td>" +
+                "</tr>"
+            );
+        }).join("");
+
+        note.textContent = historyNoteText(requests.length, filterDate);
+        note.classList.remove("d-none");
+
+        showOnlyHistoryState("bookingHistoryTableWrap");
+    }
+
+    async function loadHistory(){
+        if(historyLoading){
+            return;
+        }
+
+        historyLoading = true;
+        historyEl("bookingHistoryNote").classList.add("d-none");
+        showOnlyHistoryState("bookingHistoryLoadingState");
+
+        try{
+            const snapshot = await firebase.firestore()
+                .collection(COLLECTION)
+                .orderBy("submittedAt", "desc")
+                .limit(HISTORY_FETCH_LIMIT)
+                .get();
+
+            /* Same branch restriction as the pending list — a receptionist
+               should not read back guests from a branch they cannot see. */
+            const allowedBranches =
+                window.CrownAuth?.getAllowedBranches?.() || [];
+
+            historyRequests = snapshot.docs
+                .map(function(doc){
+                    return Object.assign({ id: doc.id }, doc.data());
+                })
+                .filter(function(request){
+                    return request.status !== "pending" &&
+                        allowedBranches.includes(request.branch);
+                });
+
+            historyReachedLimit = snapshot.size === HISTORY_FETCH_LIMIT;
+
+            renderHistory();
+        }catch(error){
+            console.error("Unable to load booking-request history:", error);
+            historyEl("bookingHistoryNote").classList.add("d-none");
+            showOnlyHistoryState("bookingHistoryErrorState");
+        }finally{
+            historyLoading = false;
+        }
+    }
+
+    /* Re-filters the rows already in memory rather than reading again. While a
+       load is still in flight there is nothing to filter yet, and rendering
+       would replace the loading state with a misleading "none found" —
+       loadHistory renders on its own once it lands. */
+    function refreshHistoryView(){
+        if(historyLoading){
+            return;
+        }
+
+        renderHistory();
+    }
+
+    function todayDateValue(){
+        const now = new Date();
+
+        return now.getFullYear() + "-" +
+            String(now.getMonth() + 1).padStart(2, "0") + "-" +
+            String(now.getDate()).padStart(2, "0");
+    }
+
+    /* Same day-math helper the Scheduling page's ‹ › stepper uses (exposed by
+       sidebar.js), so a step across a month or DST boundary behaves the same
+       in both places. Stepping from the empty "all days" state starts at
+       today, which is where the Scheduling stepper starts from too. */
+    function stepHistoryDate(days){
+        const input = historyEl("bookingHistoryDate");
+
+        input.value =
+            window.CrownDateStepper?.addDays?.(
+                input.value || todayDateValue(),
+                days
+            ) || input.value;
+
+        refreshHistoryView();
+    }
+
+    function toggleHistory(){
+        const section = historyEl("bookingHistorySection");
+        const toggle = historyEl("bookingHistoryToggle");
+
+        historyVisible = !historyVisible;
+        section.classList.toggle("d-none", !historyVisible);
+        toggle.textContent = historyVisible ? "Hide History" : "Show History";
+
+        if(historyVisible){
+            /* Re-read on every open so a request handled since the last look
+               is already in the list. */
+            loadHistory();
+            section.scrollIntoView({ behavior: "smooth", block: "start" });
         }
     }
 
@@ -258,7 +506,7 @@
                 console.error("Unable to load booking requests:", error);
                 document.getElementById("bookingRequestUnavailableState")
                     .classList.remove("d-none");
-                document.querySelector(".table-responsive")
+                document.getElementById("bookingRequestTableWrap")
                     .classList.add("d-none");
             });
     }
@@ -273,6 +521,28 @@
                 }
             });
 
+        document.getElementById("bookingHistoryToggle")
+            .addEventListener("click", toggleHistory);
+
+        document.getElementById("bookingHistoryDate")
+            .addEventListener("change", refreshHistoryView);
+
+        document.getElementById("bookingHistoryPrevDay")
+            .addEventListener("click", function(){
+                stepHistoryDate(-1);
+            });
+
+        document.getElementById("bookingHistoryNextDay")
+            .addEventListener("click", function(){
+                stepHistoryDate(1);
+            });
+
+        document.getElementById("bookingHistoryDateClear")
+            .addEventListener("click", function(){
+                document.getElementById("bookingHistoryDate").value = "";
+                refreshHistoryView();
+            });
+
         const cloudAvailable =
             window.CrownCloud?.isAvailable?.() &&
             await window.CrownCloud.waitForInitialSync(12000);
@@ -280,7 +550,12 @@
         if(!cloudAvailable || !window.firebase || firebase.apps.length === 0){
             document.getElementById("bookingRequestUnavailableState")
                 .classList.remove("d-none");
-            document.querySelector(".table-responsive")
+            document.getElementById("bookingRequestTableWrap")
+                .classList.add("d-none");
+
+            /* History reads the same collection, so it cannot work either —
+               hide the button rather than let it open onto an error. */
+            document.querySelector(".booking-history-bar")
                 .classList.add("d-none");
             return;
         }
