@@ -137,6 +137,8 @@
                         <tr>
                             <th>Item</th>
                             <th>Category</th>
+                            <th>Transaction</th>
+                            <th>Used For Services</th>
                             <th>Description</th>
                             <th>Unit</th>
                             <th>Action</th>
@@ -226,6 +228,70 @@
                         id="itemUnitInput"
                         class="form-select"
                     ></select>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">
+                        Transaction
+                    </label>
+
+                    <select
+                        id="itemTransactionInput"
+                        class="form-select"
+                    ></select>
+
+                    <small class="text-muted">
+                        Optional. What this item is used for.
+                    </small>
+                </div>
+
+                <div class="col-12 d-none" id="itemProductLinkField">
+                    <label class="form-label">
+                        Linked Retail Product
+                    </label>
+
+                    <select
+                        id="itemProductInput"
+                        class="form-select"
+                    ></select>
+
+                    <small class="text-muted">
+                        The product in the List of Products this retail stock is sold as.
+                    </small>
+                </div>
+
+                <div class="col-12 d-none" id="itemServicesField">
+                    <label class="form-label">
+                        Used For Services
+                    </label>
+
+                    <div class="inv-multiselect" id="itemServicesSelect">
+                        <button
+                            type="button"
+                            class="inv-multiselect-toggle"
+                            id="itemServicesToggle"
+                            aria-expanded="false"
+                        >
+                            <span id="itemServicesSummary">
+                                No linked service
+                            </span>
+
+                            <span class="inv-multiselect-caret" aria-hidden="true">
+                                ▾
+                            </span>
+                        </button>
+
+                        <div
+                            class="inv-multiselect-panel d-none"
+                            id="itemServicesPanel"
+                        ></div>
+                    </div>
+
+                    <small class="text-muted">
+                        Optional. Choose every service that consumes this item. When one of
+                        them is sold in the Daily Income Report, this item is logged in the
+                        branch Stock Audit and deducted from available stock.
+                    </small>
                 </div>
 
                 <div class="col-12">

@@ -186,10 +186,14 @@ function closeAddStockModal(){
     currentAddStockItemId = null;
 }
 
-function confirmAddStock(){
+async function confirmAddStock(){
     if(!currentAddStockItemId){
         return;
     }
+
+    /* Captured before the await below — closing the modal (Escape, a
+       backdrop click) clears currentAddStockItemId mid-flight. */
+    const itemId = currentAddStockItemId;
 
     const date =
         document.getElementById("addStockDateInput").value;
@@ -207,17 +211,31 @@ function confirmAddStock(){
         return;
     }
 
-    CrownInventory.adjustWarehouseStock(currentAddStockItemId, qty, date);
+    const addOutcome =
+        await transactionalAddWarehouseStock(itemId, qty, date);
+
+    /* Offline, local-test, unreachable, or the rare chunked-doc case —
+       fall back to the plain local write rather than blocking staff. */
+    if(addOutcome.status !== "ok"){
+        CrownInventory.adjustWarehouseStock(itemId, qty, date);
+    }
 
     CrownInventory.addWarehouseLog({
         type: "IN",
         date: date,
-        itemId: currentAddStockItemId,
+        itemId: itemId,
         qty: qty
     });
 
     loadData();
     renderWarehouseTable();
+
+    /* The requests table colours each requested Qty against available
+       warehouse stock, so a replenishment has to repaint it too —
+       otherwise a request stays flagged red right after the stock that
+       covers it was added. */
+    renderRequestsTable();
+
     closeAddStockModal();
 
     alert("Stock added successfully.");
@@ -323,6 +341,110 @@ function updateSendStockAvailableNote(){
         "Available: " + available;
 }
 
+/* The transactional helpers below talk to Firestore DIRECTLY instead of
+   going through firebase-sync.js, so they have to repeat its local-test
+   guard themselves — they are outside everything that enforces it.
+
+   Without this, a dev / LAN / file:// session is broken in a way that
+   looks like a stock bug: firebase-sync.js deliberately blocks every
+   outgoing push there, so "Add Stock" lands in localStorage only and the
+   live appData doc keeps whatever it had (typically 0) — while "Send
+   Stock" re-validates against a LIVE read of that untouched doc. The add
+   saves, the table shows the new quantity, and the send still reports
+   "exceeds available warehouse stock" no matter how much is added.
+
+   Returning "offline" here routes those sessions down the local
+   adjust-call fallback in the callers, which reads the same localStorage
+   the rest of the page does — and, just as importantly, stops a test
+   session from writing into live production stock. */
+function canUseCloudStockTransactions(){
+    return Boolean(
+        window.firebase &&
+        firebase.apps &&
+        firebase.apps.length > 0 &&
+        !window.CrownCloud?.isLocalTestEnv
+    );
+}
+
+/* Warehouse replenishment, applied to the live doc in one transaction
+   for the same reason the send paths are: the local write alone reaches
+   the cloud only through firebase-sync.js's debounced push, and both
+   send helpers re-validate against a live read. A replenishment still
+   sitting in that queue is invisible to them, so an Add Stock followed
+   quickly by a Send Stock could be rejected against the pre-add
+   quantity. Transacting the add closes that window without weakening
+   the concurrency check (no blanket flush of this device's snapshot
+   over whatever another device already committed). */
+async function transactionalAddWarehouseStock(itemId, qty, date){
+    if(!canUseCloudStockTransactions()){
+        return { status: "offline" };
+    }
+
+    const warehouseKey = "crownWarehouseStock";
+
+    const warehouseRef =
+        firebase.firestore().collection("appData").doc(encodeURIComponent(warehouseKey));
+
+    try{
+        const outcome =
+            await firebase.firestore().runTransaction(async function(transaction){
+                const snap = await transaction.get(warehouseRef);
+                const data = snap.exists ? snap.data() : null;
+
+                if(data && Number.isInteger(data.chunkCount) && data.chunkCount > 1){
+                    return { status: "unsupported" };
+                }
+
+                let rows = [];
+
+                if(data && !data.deleted && data.value){
+                    try{
+                        const parsed = JSON.parse(data.value);
+                        rows = Array.isArray(parsed) ? parsed : [];
+                    }catch(error){
+                        rows = [];
+                    }
+                }
+
+                let row =
+                    rows.find(function(item){
+                        return item.itemId === itemId;
+                    });
+
+                if(!row){
+                    row = { itemId: itemId, qty: 0, lastDate: "" };
+                    rows.push(row);
+                }
+
+                row.qty = (Number(row.qty) || 0) + qty;
+
+                if(date){
+                    row.lastDate = date;
+                }
+
+                transaction.set(warehouseRef, {
+                    key: warehouseKey,
+                    chunkIndex: 0,
+                    chunkCount: 1,
+                    value: JSON.stringify(rows),
+                    deleted: false,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                return { status: "ok", rows: rows };
+            });
+
+        if(outcome.status === "ok"){
+            localStorage.setItem(warehouseKey, JSON.stringify(outcome.rows));
+        }
+
+        return outcome;
+    }catch(error){
+        console.error("transactionalAddWarehouseStock failed:", error);
+        return { status: "error" };
+    }
+}
+
 /* Atomically moves qty of itemId from the warehouse to a branch: reads
    BOTH the crownWarehouseStock and crownBranchStock appData docs fresh
    inside one Firestore transaction, re-validates warehouse availability
@@ -345,7 +467,7 @@ function updateSendStockAvailableNote(){
    non-atomic adjust calls when offline/chunked/unreachable so staff
    aren't fully blocked. */
 async function transactionalStockTransfer(itemId, branch, qty, date){
-    if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
+    if(!canUseCloudStockTransactions()){
         return { status: "offline" };
     }
 
@@ -469,7 +591,7 @@ async function transactionalStockTransfer(itemId, branch, qty, date){
    fulfillments of the same item could otherwise both pass a stale
    availability check and both floor-clamp the warehouse at 0. */
 async function transactionalDeductWarehouseStock(itemId, qty, date){
-    if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
+    if(!canUseCloudStockTransactions()){
         return { status: "offline" };
     }
 
@@ -712,13 +834,25 @@ function renderRequestsTable(){
             const row =
                 document.createElement("tr");
 
+            /* Flags at a glance the requests the warehouse cannot cover
+               yet, so staff can see which ones need replenishing before
+               opening Send Stock only to be rejected there. */
+            const requestedQty =
+                Number(entry.line.qty) || 0;
+
+            const available =
+                getWarehouseQty(entry.line.itemId);
+
+            const shortOfStock =
+                requestedQty > available;
+
             row.innerHTML = `
                 <td>${CrownInventory.formatDate(entry.request.date)}</td>
                 <td>${CrownInventory.escapeHtml(entry.request.branch)}</td>
                 <td><strong>${CrownInventory.escapeHtml(item?.name || "Unknown Item")}</strong></td>
                 <td>${CrownInventory.escapeHtml(item?.category) || "—"}</td>
                 <td>${CrownInventory.escapeHtml(item?.description) || "—"}</td>
-                <td>${entry.line.qty}</td>
+                <td class="${shortOfStock ? "low-stock-cell" : ""}" ${shortOfStock ? `title="Only ${available} available in the warehouse"` : ""}>${entry.line.qty}</td>
                 <td>${CrownInventory.escapeHtml(item?.unit) || "—"}</td>
                 <td>
                     <div class="action-buttons">

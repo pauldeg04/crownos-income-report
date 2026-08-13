@@ -1,5 +1,6 @@
 let items = [];
 let editingItemId = null;
+let selectedServices = [];
 
 document.addEventListener("DOMContentLoaded", function(){
     items = CrownInventory.getItems();
@@ -44,6 +45,17 @@ function attachEvents(){
         .addEventListener("input", hideDuplicateWarning);
 
     document
+        .getElementById("itemTransactionInput")
+        .addEventListener("change", applyTransactionVisibility);
+
+    document
+        .getElementById("itemServicesToggle")
+        .addEventListener("click", function(event){
+            event.stopPropagation();
+            toggleServicesPanel();
+        });
+
+    document
         .getElementById("itemModalBackdrop")
         .addEventListener("click", function(event){
             if(event.target === this){
@@ -51,8 +63,22 @@ function attachEvents(){
             }
         });
 
+    /* Clicking anywhere outside the checkbox panel closes it, the way a
+       native select would — but not when the click lands inside the panel
+       itself, which would swallow the checkbox toggle. */
+    document.addEventListener("click", function(event){
+        if(!document.getElementById("itemServicesSelect").contains(event.target)){
+            closeServicesPanel();
+        }
+    });
+
     document.addEventListener("keydown", function(event){
         if(event.key === "Escape"){
+            if(!document.getElementById("itemServicesPanel").classList.contains("d-none")){
+                closeServicesPanel();
+                return;
+            }
+
             closeModal();
         }
     });
@@ -93,6 +119,188 @@ function populateSelectOptions(){
                 return `<option value="${CrownInventory.escapeHtml(unit)}">${CrownInventory.escapeHtml(unit)}</option>`;
             })
             .join("");
+
+    const transactionSelect =
+        document.getElementById("itemTransactionInput");
+
+    transactionSelect.innerHTML =
+        '<option value="">Not set</option>' +
+        CrownInventory.TRANSACTION_TYPES
+            .map(function(type){
+                return `<option value="${CrownInventory.escapeHtml(type)}">${CrownInventory.escapeHtml(type)}</option>`;
+            })
+            .join("");
+}
+
+/* Retail links to one product; Services links to any number of services;
+   Branch Consumption links to neither. Whatever is hidden is also cleared
+   on save, so an item can never carry a stale link from a transaction
+   type it no longer has. */
+function applyTransactionVisibility(){
+    const transaction =
+        document.getElementById("itemTransactionInput").value;
+
+    document
+        .getElementById("itemProductLinkField")
+        .classList.toggle("d-none", transaction !== "Retail");
+
+    /* Items saved before Transaction existed have no value yet but may
+       already carry service links, so a blank type keeps showing them. */
+    document
+        .getElementById("itemServicesField")
+        .classList.toggle(
+            "d-none",
+            transaction !== "Services" && transaction !== ""
+        );
+
+    if(transaction !== "Services" && transaction !== ""){
+        closeServicesPanel();
+    }
+}
+
+/* The lists come from the master lists, but an item may already point at
+   a service or product that was since renamed or archived — those saved
+   values are added back as options so opening the item for edit does not
+   silently blank out (and then wipe) the existing link. */
+function populateProductOptions(currentProduct){
+    const productSelect =
+        document.getElementById("itemProductInput");
+
+    const names =
+        CrownInventory.getProductNames();
+
+    const saved =
+        String(currentProduct || "").trim();
+
+    if(
+        saved &&
+        !names.some(function(name){
+            return name.toLowerCase() === saved.toLowerCase();
+        })
+    ){
+        names.push(saved);
+    }
+
+    productSelect.innerHTML =
+        '<option value="">No linked product</option>' +
+        names
+            .map(function(name){
+                return `<option value="${CrownInventory.escapeHtml(name)}">${CrownInventory.escapeHtml(name)}</option>`;
+            })
+            .join("");
+
+    productSelect.value = saved;
+}
+
+function populateServiceOptions(currentServices){
+    selectedServices =
+        (Array.isArray(currentServices) ? currentServices : [])
+            .map(function(name){
+                return String(name || "").trim();
+            })
+            .filter(Boolean);
+
+    const names =
+        CrownInventory.getServiceNames();
+
+    selectedServices.forEach(function(saved){
+        if(
+            !names.some(function(name){
+                return name.toLowerCase() === saved.toLowerCase();
+            })
+        ){
+            names.push(saved);
+        }
+    });
+
+    const panel =
+        document.getElementById("itemServicesPanel");
+
+    if(names.length === 0){
+        panel.innerHTML =
+            '<div class="inv-multiselect-empty">No active services yet.</div>';
+    }else{
+        panel.innerHTML =
+            names
+                .map(function(name){
+                    const checked =
+                        selectedServices.some(function(selected){
+                            return selected.toLowerCase() === name.toLowerCase();
+                        });
+
+                    return `
+                        <label class="inv-multiselect-option">
+                            <input type="checkbox" value="${CrownInventory.escapeHtml(name)}" ${checked ? "checked" : ""}>
+                            <span>${CrownInventory.escapeHtml(name)}</span>
+                        </label>
+                    `;
+                })
+                .join("");
+
+        panel
+            .querySelectorAll("input[type=checkbox]")
+            .forEach(function(checkbox){
+                checkbox.addEventListener("change", function(){
+                    if(checkbox.checked){
+                        selectedServices.push(checkbox.value);
+                    }else{
+                        selectedServices =
+                            selectedServices.filter(function(name){
+                                return name !== checkbox.value;
+                            });
+                    }
+
+                    updateServicesSummary();
+                });
+            });
+    }
+
+    updateServicesSummary();
+}
+
+function updateServicesSummary(){
+    const summary =
+        document.getElementById("itemServicesSummary");
+
+    if(selectedServices.length === 0){
+        summary.textContent = "No linked service";
+        return;
+    }
+
+    if(selectedServices.length <= 2){
+        summary.textContent = selectedServices.join(", ");
+        return;
+    }
+
+    summary.textContent =
+        `${selectedServices.length} services selected`;
+}
+
+function toggleServicesPanel(){
+    document
+        .getElementById("itemServicesPanel")
+        .classList.toggle("d-none");
+
+    document
+        .getElementById("itemServicesToggle")
+        .setAttribute(
+            "aria-expanded",
+            String(
+                !document
+                    .getElementById("itemServicesPanel")
+                    .classList.contains("d-none")
+            )
+        );
+}
+
+function closeServicesPanel(){
+    document
+        .getElementById("itemServicesPanel")
+        .classList.add("d-none");
+
+    document
+        .getElementById("itemServicesToggle")
+        .setAttribute("aria-expanded", "false");
 }
 
 function openAddModal(){
@@ -108,6 +316,11 @@ function openAddModal(){
     document.getElementById("itemCategoryInput").value = "";
     document.getElementById("itemUnitInput").value = "";
     document.getElementById("itemDescriptionInput").value = "";
+    document.getElementById("itemTransactionInput").value = "";
+
+    populateProductOptions("");
+    populateServiceOptions([]);
+    applyTransactionVisibility();
 
     document.getElementById("saveItemBtn").textContent =
         "Save Item";
@@ -149,6 +362,13 @@ function openEditModal(itemId){
 
     document.getElementById("itemDescriptionInput").value =
         item.description || "";
+
+    document.getElementById("itemTransactionInput").value =
+        item.transaction || "";
+
+    populateProductOptions(item.linkedProduct || "");
+    populateServiceOptions(CrownInventory.getItemServices(item));
+    applyTransactionVisibility();
 
     document.getElementById("saveItemBtn").textContent =
         "Update Item";
@@ -245,6 +465,19 @@ function saveItem(){
     const unit =
         document.getElementById("itemUnitInput").value;
 
+    const transaction =
+        document.getElementById("itemTransactionInput").value;
+
+    const linkedProduct =
+        transaction === "Retail"
+            ? document.getElementById("itemProductInput").value
+            : "";
+
+    const services =
+        transaction === "Retail" || transaction === "Branch Consumption"
+            ? []
+            : selectedServices.slice();
+
     const description =
         document.getElementById("itemDescriptionInput").value.trim();
 
@@ -291,7 +524,14 @@ function saveItem(){
         item.name = name;
         item.category = category;
         item.unit = unit;
+        item.transaction = transaction;
+        item.linkedProduct = linkedProduct;
+        item.services = services;
         item.description = description;
+
+        /* Superseded by `services` — dropped so the two can never
+           disagree about what this item is linked to. */
+        delete item.service;
         item.updatedAt = new Date().toISOString();
 
         alert("Item updated successfully.");
@@ -301,6 +541,9 @@ function saveItem(){
             name: name,
             category: category,
             unit: unit,
+            transaction: transaction,
+            linkedProduct: linkedProduct,
+            services: services,
             description: description,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
@@ -355,6 +598,17 @@ function renderItems(){
             </td>
 
             <td>${CrownInventory.escapeHtml(item.category)}</td>
+
+            <td>
+                ${CrownInventory.escapeHtml(item.transaction) || "—"}
+                ${
+                    item.transaction === "Retail" && item.linkedProduct
+                        ? `<br><small class="text-muted">${CrownInventory.escapeHtml(item.linkedProduct)}</small>`
+                        : ""
+                }
+            </td>
+
+            <td>${CrownInventory.escapeHtml(CrownInventory.getItemServices(item).join(", ")) || "—"}</td>
 
             <td>${CrownInventory.escapeHtml(item.description) || "—"}</td>
 

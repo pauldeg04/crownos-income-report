@@ -5,6 +5,7 @@ let items = [];
 let branchStock = [];
 let requests = [];
 let requestLines = [];
+let auditEditingId = null;
 
 document.addEventListener("DOMContentLoaded", function(){
     loadData();
@@ -64,9 +65,73 @@ function attachEvents(){
         .getElementById("closeHistoryBtn")
         .addEventListener("click", closeHistoryModal);
 
+    document
+        .getElementById("auditSearch")
+        .addEventListener("input", renderAuditTable);
+
+    document
+        .getElementById("auditDateFilter")
+        .addEventListener("change", renderAuditTable);
+
+    document
+        .getElementById("auditPrevDayBtn")
+        .addEventListener("click", function(){
+            stepAuditDate(-1);
+        });
+
+    document
+        .getElementById("auditNextDayBtn")
+        .addEventListener("click", function(){
+            stepAuditDate(1);
+        });
+
+    document
+        .getElementById("auditTodayBtn")
+        .addEventListener("click", function(){
+            document.getElementById("auditDateFilter").value =
+                CrownInventory.getTodayValue();
+
+            renderAuditTable();
+        });
+
+    document
+        .getElementById("viewAuditListBtn")
+        .addEventListener("click", openAuditListModal);
+
+    document
+        .getElementById("closeAuditListModalBtn")
+        .addEventListener("click", closeAuditListModal);
+
+    document
+        .getElementById("closeAuditListBtn")
+        .addEventListener("click", closeAuditListModal);
+
+    [
+        "auditRangeStart",
+        "auditRangeEnd"
+    ].forEach(function(id){
+        document
+            .getElementById(id)
+            .addEventListener("change", renderAuditRangeTable);
+    });
+
+    document
+        .getElementById("closeAuditModalBtn")
+        .addEventListener("click", closeAuditModal);
+
+    document
+        .getElementById("cancelAuditBtn")
+        .addEventListener("click", closeAuditModal);
+
+    document
+        .getElementById("saveAuditBtn")
+        .addEventListener("click", saveAuditRow);
+
     [
         "requestModalBackdrop",
-        "historyModalBackdrop"
+        "historyModalBackdrop",
+        "auditModalBackdrop",
+        "auditListModalBackdrop"
     ].forEach(function(id){
         document
             .getElementById(id)
@@ -74,6 +139,8 @@ function attachEvents(){
                 if(event.target === this){
                     closeRequestModal();
                     closeHistoryModal();
+                    closeAuditModal();
+                    closeAuditListModal();
                 }
             });
     });
@@ -82,6 +149,8 @@ function attachEvents(){
         if(event.key === "Escape"){
             closeRequestModal();
             closeHistoryModal();
+            closeAuditModal();
+            closeAuditListModal();
         }
     });
 }
@@ -104,6 +173,10 @@ function render(){
         .getElementById("pendingSection")
         .classList.toggle("d-none", !hasBranch);
 
+    document
+        .getElementById("auditSection")
+        .classList.toggle("d-none", !hasBranch);
+
     if(!hasBranch){
         return;
     }
@@ -113,6 +186,7 @@ function render(){
 
     renderStockTable();
     renderPendingTable();
+    renderAuditTable();
 }
 
 function renderStockTable(){
@@ -246,6 +320,394 @@ function renderPendingTable(){
     document
         .getElementById("pendingEmptyState")
         .classList.toggle("d-none", pendingLines.length > 0);
+}
+
+/* Stock Audit — rows are created by the Daily Income Report whenever a
+   service is sold that has consumables linked to it in Inventory
+   Settings; this page only reads, searches and hand-corrects them. */
+
+function matchesAuditSearch(row, search){
+    if(!search){
+        return true;
+    }
+
+    return [
+        row.product,
+        row.service,
+        row.therapist,
+        row.client,
+        row.serialNo,
+        row.transaction
+    ].some(function(value){
+        return String(value || "").toLowerCase().includes(search);
+    });
+}
+
+function stepAuditDate(days){
+    const input =
+        document.getElementById("auditDateFilter");
+
+    input.value =
+        CrownInventory.shiftDateValue(
+            input.value || CrownInventory.getTodayValue(),
+            days
+        );
+
+    renderAuditTable();
+}
+
+function renderAuditTable(){
+    const branch = getCurrentBranch();
+
+    const tbody =
+        document.getElementById("auditBody");
+
+    const search =
+        document.getElementById("auditSearch").value.trim().toLowerCase();
+
+    const dateInput =
+        document.getElementById("auditDateFilter");
+
+    if(!dateInput.value){
+        dateInput.value = CrownInventory.getTodayValue();
+    }
+
+    const date = dateInput.value;
+
+    tbody.innerHTML = "";
+
+    const rows =
+        CrownInventory
+            .getStockAuditFor(branch, date, date)
+            .filter(function(row){
+                return matchesAuditSearch(row, search);
+            });
+
+    rows.forEach(function(row){
+        const tr =
+            document.createElement("tr");
+
+        const qty =
+            Number(row.qty) || 1;
+
+        tr.innerHTML = `
+            <td>${CrownInventory.formatDate(row.date)}</td>
+            <td>
+                <strong>${CrownInventory.escapeHtml(row.product)}</strong>
+                ${qty > 1 ? ` &times;${qty}` : ""}
+            </td>
+            <td>${CrownInventory.escapeHtml(row.service) || "—"}</td>
+            <td>${CrownInventory.escapeHtml(row.therapist) || "—"}</td>
+            <td>${CrownInventory.escapeHtml(row.client) || "—"}</td>
+            <td>${CrownInventory.escapeHtml(row.serialNo) || "—"}</td>
+            <td>${CrownInventory.escapeHtml(row.transaction) || "—"}</td>
+            <td>
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-sm btn-outline-primary view-btn">
+                        View
+                    </button>
+
+                    <button type="button" class="btn btn-sm btn-warning edit-btn">
+                        Edit
+                    </button>
+                </div>
+            </td>
+        `;
+
+        tr.querySelector(".view-btn")
+            .addEventListener("click", function(){
+                openAuditModal(row.id, false);
+            });
+
+        tr.querySelector(".edit-btn")
+            .addEventListener("click", function(){
+                openAuditModal(row.id, true);
+            });
+
+        tbody.appendChild(tr);
+    });
+
+    document
+        .getElementById("auditEmptyState")
+        .classList.toggle("d-none", rows.length > 0);
+}
+
+/* View List — the same records over a date bracket instead of the single
+   day the table above shows. Read-only: editing stays on the day view so
+   there is one place a correction can be made. */
+
+function openAuditListModal(){
+    const today =
+        document.getElementById("auditDateFilter").value ||
+        CrownInventory.getTodayValue();
+
+    const start =
+        document.getElementById("auditRangeStart");
+
+    const end =
+        document.getElementById("auditRangeEnd");
+
+    if(!start.value){
+        start.value = CrownInventory.shiftDateValue(today, -6);
+    }
+
+    if(!end.value){
+        end.value = today;
+    }
+
+    renderAuditRangeTable();
+
+    document
+        .getElementById("auditListModalBackdrop")
+        .classList.remove("d-none");
+
+    document.body.classList.add("modal-open");
+}
+
+function closeAuditListModal(){
+    document
+        .getElementById("auditListModalBackdrop")
+        .classList.add("d-none");
+
+    document.body.classList.remove("modal-open");
+}
+
+function renderAuditRangeTable(){
+    const branch = getCurrentBranch();
+
+    const tbody =
+        document.getElementById("auditRangeBody");
+
+    let start =
+        document.getElementById("auditRangeStart").value;
+
+    let end =
+        document.getElementById("auditRangeEnd").value;
+
+    /* A bracket entered backwards is a slip, not an empty result. */
+    if(start && end && start > end){
+        const swap = start;
+        start = end;
+        end = swap;
+
+        document.getElementById("auditRangeStart").value = start;
+        document.getElementById("auditRangeEnd").value = end;
+    }
+
+    const search =
+        document.getElementById("auditSearch").value.trim().toLowerCase();
+
+    const rows =
+        CrownInventory
+            .getStockAuditFor(branch, start, end)
+            .filter(function(row){
+                return matchesAuditSearch(row, search);
+            });
+
+    tbody.innerHTML = "";
+
+    rows.forEach(function(row){
+        const tr =
+            document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${CrownInventory.formatDate(row.date)}</td>
+            <td><strong>${CrownInventory.escapeHtml(row.product)}</strong></td>
+            <td>${Number(row.qty) || 1}</td>
+            <td>${CrownInventory.escapeHtml(row.service) || "—"}</td>
+            <td>${CrownInventory.escapeHtml(row.therapist) || "—"}</td>
+            <td>${CrownInventory.escapeHtml(row.client) || "—"}</td>
+            <td>${CrownInventory.escapeHtml(row.serialNo) || "—"}</td>
+            <td>${CrownInventory.escapeHtml(row.transaction) || "—"}</td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById("auditRangeCount").textContent =
+        rows.length;
+
+    document.getElementById("auditRangeQty").textContent =
+        rows.reduce(function(sum, row){
+            return sum + (Number(row.qty) || 1);
+        }, 0);
+
+    document
+        .getElementById("auditRangeEmptyState")
+        .classList.toggle("d-none", rows.length > 0);
+}
+
+function fillAuditSelect(selectId, values, currentValue, placeholder){
+    const select =
+        document.getElementById(selectId);
+
+    const list = values.slice();
+
+    const current =
+        String(currentValue || "").trim();
+
+    /* A service or therapist that was archived after the sale must still
+       show up here, otherwise viewing an old row would silently rewrite
+       it to something else on save. */
+    if(
+        current &&
+        !list.some(function(entry){
+            return entry.value === current;
+        })
+    ){
+        list.push({ value: current, label: current });
+    }
+
+    select.innerHTML =
+        `<option value="">${CrownInventory.escapeHtml(placeholder)}</option>` +
+        list
+            .map(function(entry){
+                return `<option value="${CrownInventory.escapeHtml(entry.value)}">${CrownInventory.escapeHtml(entry.label)}</option>`;
+            })
+            .join("");
+
+    select.value = current;
+}
+
+function openAuditModal(auditId, editable){
+    const row =
+        CrownInventory.getStockAuditRow(auditId);
+
+    if(!row){
+        return;
+    }
+
+    auditEditingId = editable ? auditId : null;
+
+    document.getElementById("auditModalEyebrow").textContent =
+        editable ? "Edit Record" : "Stock Audit";
+
+    document.getElementById("auditModalTitle").textContent =
+        editable ? "Edit Consumed Item" : "View Consumed Item";
+
+    document.getElementById("auditDateInput").value =
+        row.date || "";
+
+    fillAuditSelect(
+        "auditProductInput",
+        items
+            .slice()
+            .sort(function(a, b){
+                return String(a.name || "").localeCompare(String(b.name || ""));
+            })
+            .map(function(item){
+                return { value: item.id, label: item.name };
+            }),
+        row.itemId,
+        "Select Product"
+    );
+
+    fillAuditSelect(
+        "auditServiceInput",
+        CrownInventory.getServiceNames().map(function(name){
+            return { value: name, label: name };
+        }),
+        row.service,
+        "No service"
+    );
+
+    fillAuditSelect(
+        "auditTherapistInput",
+        CrownInventory.getTherapistNames(row.branch).map(function(name){
+            return { value: name, label: name };
+        }),
+        row.therapist,
+        "No therapist"
+    );
+
+    document.getElementById("auditClientInput").value =
+        row.client || "";
+
+    document.getElementById("auditQtyInput").value =
+        Number(row.qty) || 1;
+
+    document.getElementById("auditSerialInput").value =
+        row.serialNo || "";
+
+    setAuditFieldsDisabled(!editable);
+
+    document
+        .getElementById("saveAuditBtn")
+        .classList.toggle("d-none", !editable);
+
+    document
+        .getElementById("auditModalNote")
+        .classList.toggle("d-none", !editable);
+
+    document.getElementById("cancelAuditBtn").textContent =
+        editable ? "Cancel" : "Close";
+
+    document
+        .getElementById("auditModalBackdrop")
+        .classList.remove("d-none");
+
+    document.body.classList.add("modal-open");
+}
+
+function setAuditFieldsDisabled(disabled){
+    [
+        "auditDateInput",
+        "auditProductInput",
+        "auditServiceInput",
+        "auditTherapistInput",
+        "auditClientInput",
+        "auditQtyInput",
+        "auditSerialInput"
+    ].forEach(function(id){
+        document.getElementById(id).disabled = disabled;
+    });
+}
+
+function closeAuditModal(){
+    document
+        .getElementById("auditModalBackdrop")
+        .classList.add("d-none");
+
+    document.body.classList.remove("modal-open");
+
+    auditEditingId = null;
+}
+
+function saveAuditRow(){
+    if(!auditEditingId){
+        return;
+    }
+
+    const qty =
+        Number(document.getElementById("auditQtyInput").value);
+
+    if(!qty || qty < 1){
+        alert("Please enter a valid quantity.");
+        return;
+    }
+
+    const itemId =
+        document.getElementById("auditProductInput").value;
+
+    if(!itemId){
+        alert("Please select a product.");
+        return;
+    }
+
+    CrownInventory.updateStockAuditRow(auditEditingId, {
+        date: document.getElementById("auditDateInput").value,
+        itemId: itemId,
+        service: document.getElementById("auditServiceInput").value,
+        therapist: document.getElementById("auditTherapistInput").value,
+        client: document.getElementById("auditClientInput").value.trim(),
+        qty: qty,
+        serialNo: document.getElementById("auditSerialInput").value
+    });
+
+    closeAuditModal();
+
+    loadData();
+    render();
 }
 
 function statusClass(status){

@@ -4135,6 +4135,70 @@ function buildAndValidateSaleData(settledFlag){
   return { saleData: saleData, validItems: validItems };
 }
 
+/* ---------- Inventory Stock Audit ----------
+   An inventory item can be tagged in Inventory Settings with the service
+   it gets consumed by. Every service on this sale that has such items
+   linked to it becomes a row in the branch's Stock Audit table, carrying
+   this sale's date / therapist / client, and is deducted from that
+   branch's available stock. Re-runs on every save of the same sale —
+   the inventory layer reconciles by sale id instead of duplicating, so
+   editing a sale (adding, removing or reassigning a service) corrects
+   both the audit rows and the stock they consumed. */
+function syncSaleToStockAudit(saleData){
+  if(
+    !window.CrownInventory ||
+    typeof CrownInventory.syncSaleStockAudit !== "function"
+  ){
+    return;
+  }
+
+  const branch = getSelectedBranch();
+  const date = document.getElementById("date").value;
+
+  if(!branch || !date){
+    return;
+  }
+
+  /* saleData.services already holds the principal's AND every
+     companion's items, each stamped with its own participantName /
+     therapist by getAllModalItems(), so companion consumption is
+     covered without walking saleData.companions a second time. */
+  const lines =
+    (saleData.services || [])
+      .filter(function(item){
+        return (
+          item.itemType === "Service" &&
+          Boolean(String(item.name || "").trim())
+        );
+      })
+      .map(function(item){
+        return {
+          saleItemId: item.id,
+          service: String(item.name).trim(),
+          therapist: item.therapist || saleData.therapist || "",
+          client: item.participantName || saleData.client || ""
+        };
+      });
+
+  CrownInventory.syncSaleStockAudit({
+    id: saleData.id,
+    branch: branch,
+    date: date,
+    lines: lines
+  });
+}
+
+function removeSaleFromStockAudit(saleId){
+  if(
+    !window.CrownInventory ||
+    typeof CrownInventory.removeSaleStockAudit !== "function"
+  ){
+    return;
+  }
+
+  CrownInventory.removeSaleStockAudit(saleId);
+}
+
 /* Shared persistence tail for Settle and Add to List — the only
    difference between the two is saleData.settled, already baked in by
    buildAndValidateSaleData(). Voucher redemption + VIP-card marking are
@@ -4169,6 +4233,8 @@ function persistModalSaleData(saleData, validItems){
   }
 
   applyModalClientDetailsToDatabase(saleData.client);
+
+  syncSaleToStockAudit(saleData);
 
   saveDailySales();
   transactionalSyncSaleRow(saleData.id, saleData);
@@ -5332,6 +5398,8 @@ function deleteSale(saleId){
       return item.id !== saleId;
     });
 
+  removeSaleFromStockAudit(saleId);
+
   saveDailySales();
   transactionalSyncSaleRow(saleId, null);
   renderSalesTable();
@@ -6081,6 +6149,10 @@ function clearDailySales(){
     return;
   }
 
+  salesRows.forEach(function(sale){
+    removeSaleFromStockAudit(sale.id);
+  });
+
   localStorage.removeItem(getStorageKey());
   salesRows = [];
 
@@ -6754,9 +6826,118 @@ function drawPdfSummary(doc, startY, summary){
       ["Total Sales", formatPdfMoney(summary.totalSales)]
     ]
   );
+
+  return startY + boxHeight;
 }
 
-function addPdfPageFooter(doc){
+/* Sinong account ang nag-generate ng report — ito ang lalabas
+   bilang pirma sa PDF at sa footer ng bawat pahina. */
+function getPdfPreparedBy(){
+  let session = null;
+
+  try{
+    session =
+      window.CrownAuth &&
+      typeof window.CrownAuth.getCurrentUser === "function"
+        ? window.CrownAuth.getCurrentUser()
+        : null;
+  }catch(error){
+    session = null;
+  }
+
+  const account =
+    String(session?.account || "").trim();
+
+  const role =
+    String(session?.role || "").trim();
+
+  const secondaryRole =
+    String(session?.secondaryRole || "").trim();
+
+  return {
+    account: account,
+    role: [role, secondaryRole]
+      .filter(Boolean)
+      .join(" / ")
+  };
+}
+
+function formatPdfGeneratedAt(value){
+  return new Date(value)
+    .toLocaleString("en-PH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true
+    });
+}
+
+const PDF_SIGNATURE_HEIGHT = 24;
+
+function drawPdfSignature(doc, startY, generatedAt){
+  const pageWidth =
+    doc.internal.pageSize.getWidth();
+
+  const margin = 12;
+  const lineWidth = 78;
+  const lineX = pageWidth - margin - lineWidth;
+  const lineY = startY + 13;
+
+  const preparedBy =
+    getPdfPreparedBy();
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(110, 120, 136);
+  doc.text(
+    "Prepared by",
+    lineX,
+    startY + 4
+  );
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(23, 52, 93);
+  doc.text(
+    preparedBy.account || "—",
+    lineX,
+    lineY - 2.5
+  );
+
+  doc.setDrawColor(150, 160, 176);
+  doc.setLineWidth(0.3);
+  doc.line(
+    lineX,
+    lineY,
+    lineX + lineWidth,
+    lineY
+  );
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(92, 104, 123);
+  doc.text(
+    preparedBy.role
+      ? `${preparedBy.role} — Signature over printed name`
+      : "Signature over printed name",
+    lineX,
+    lineY + 4.5
+  );
+
+  doc.setFontSize(7);
+  doc.setTextColor(110, 120, 136);
+  doc.text(
+    `Generated on ${formatPdfGeneratedAt(generatedAt)}`,
+    lineX,
+    lineY + 9
+  );
+
+  doc.setLineWidth(0.2);
+}
+
+function addPdfPageFooter(doc, generatedAt){
   const pageCount =
     doc.internal.getNumberOfPages();
 
@@ -6786,6 +6967,20 @@ function addPdfPageFooter(doc){
       12,
       height - 5
     );
+
+    const preparedBy =
+      getPdfPreparedBy();
+
+    if(preparedBy.account){
+      doc.text(
+        `Generated by ${preparedBy.account}` +
+        (preparedBy.role ? ` (${preparedBy.role})` : "") +
+        ` — ${formatPdfGeneratedAt(generatedAt)}`,
+        width / 2,
+        height - 5,
+        { align: "center" }
+      );
+    }
 
     doc.text(
       `Page ${page} of ${pageCount}`,
@@ -6844,6 +7039,9 @@ function exportPDF(){
     const summary =
       getPdfSummaryValues();
 
+    const generatedAt =
+      new Date();
+
     const pageWidth =
       doc.internal.pageSize.getWidth();
 
@@ -6900,10 +7098,17 @@ function exportPDF(){
         39
       );
 
-      drawPdfSummary(
+      const summaryBottom =
+        drawPdfSummary(
+          doc,
+          50,
+          summary
+        );
+
+      drawPdfSignature(
         doc,
-        50,
-        summary
+        summaryBottom + 10,
+        generatedAt
       );
     }else{
       doc.autoTable({
@@ -6991,19 +7196,29 @@ function exportPDF(){
       const pageHeight =
         doc.internal.pageSize.getHeight();
 
-      if(summaryY + 58 > pageHeight - 12){
+      if(
+        summaryY + 62 + PDF_SIGNATURE_HEIGHT >
+        pageHeight - 12
+      ){
         doc.addPage();
         summaryY = 22;
       }
 
-      drawPdfSummary(
+      const summaryBottom =
+        drawPdfSummary(
+          doc,
+          summaryY,
+          summary
+        );
+
+      drawPdfSignature(
         doc,
-        summaryY,
-        summary
+        summaryBottom + 10,
+        generatedAt
       );
     }
 
-    addPdfPageFooter(doc);
+    addPdfPageFooter(doc, generatedAt);
 
     const filename =
       sanitizePdfFilename(

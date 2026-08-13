@@ -136,7 +136,13 @@ body.modal-open{
     background:#7B8086;
 }
 
-.low-stock-cell{
+/* Bootstrap 5.3 colours every table cell through
+   `.table > :not(caption) > * > *` (specificity 0,1,1), which outranks a
+   lone `.low-stock-cell` (0,1,0) — so the class applied but the number
+   stayed the normal dark colour in every inv-table. The td-qualified
+   selector below outranks Bootstrap's and is what actually turns it red. */
+.low-stock-cell,
+.inv-table td.low-stock-cell{
     color:#8D3B44;
     font-weight:900;
 }
@@ -235,6 +241,101 @@ body.modal-open{
     border-radius:10px;
     font-size:12px;
     font-weight:700;
+}
+
+/* Checkbox dropdown — a native <select multiple> is unusable on the
+   phones this runs on, so the picker is a toggle + checkbox panel that
+   still reads as one form control. */
+
+.inv-multiselect{
+    position:relative;
+}
+
+.inv-multiselect-toggle{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    min-height:38px;
+    padding:7px 13px;
+    color:var(--text-strong, #1F2937);
+    text-align:left;
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-radius:9px;
+    font-size:14px;
+}
+
+.inv-multiselect-toggle:focus{
+    outline:none;
+    border-color:var(--brand-navy, #0B1849);
+    box-shadow:0 0 0 3px rgba(11, 24, 73, .12);
+}
+
+.inv-multiselect-toggle[disabled]{
+    background:var(--surface-soft);
+}
+
+.inv-multiselect-caret{
+    flex:none;
+    font-size:11px;
+    opacity:.65;
+}
+
+.inv-multiselect-panel{
+    position:absolute;
+    z-index:5;
+    top:calc(100% + 4px);
+    right:0;
+    left:0;
+    max-height:230px;
+    padding:6px;
+    overflow-y:auto;
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-radius:10px;
+    box-shadow:0 14px 30px rgba(15, 23, 42, .16);
+}
+
+.inv-multiselect-option{
+    display:flex;
+    gap:9px;
+    align-items:flex-start;
+    padding:8px 9px;
+    border-radius:8px;
+    font-size:14px;
+    cursor:pointer;
+}
+
+.inv-multiselect-option:hover{
+    background:var(--surface-soft);
+}
+
+.inv-multiselect-option input{
+    margin-top:2px;
+    flex:none;
+}
+
+.inv-multiselect-empty{
+    padding:10px;
+    color:var(--text-muted, #6B7280);
+    font-size:13px;
+}
+
+/* Stock Audit date bar */
+
+.inv-date-bar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+}
+
+.inv-date-bar .form-control,
+.inv-date-bar .form-select{
+    width:auto;
+    min-width:150px;
 }
 
 /* Request cart rows */
