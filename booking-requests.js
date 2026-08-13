@@ -307,11 +307,27 @@
         return historyEl("bookingHistoryDate").value || "";
     }
 
+    /* The day filter matches when the request came in, not the date the guest
+       asked for, so submittedAt (a Firestore Timestamp) has to be reduced to
+       the same yyyy-mm-dd shape the date input produces. Read in local time so
+       the row matches the "Submitted" column beside it, which is also local. */
+    function submittedDateValue(timestamp){
+        if(!timestamp || typeof timestamp.toDate !== "function"){
+            return "";
+        }
+
+        const submitted = timestamp.toDate();
+
+        return submitted.getFullYear() + "-" +
+            String(submitted.getMonth() + 1).padStart(2, "0") + "-" +
+            String(submitted.getDate()).padStart(2, "0");
+    }
+
     function historyNoteText(shownCount, filterDate){
         const noun = shownCount === 1 ? " handled request" : " handled requests";
 
         if(filterDate){
-            return "Showing " + shownCount + noun + " for " + formatDate(filterDate) +
+            return "Showing " + shownCount + noun + " submitted on " + formatDate(filterDate) +
                 ", out of " + historyRequests.length + " loaded.";
         }
 
@@ -331,7 +347,7 @@
 
         const requests = filterDate
             ? historyRequests.filter(function(request){
-                return request.date === filterDate;
+                return submittedDateValue(request.submittedAt) === filterDate;
             })
             : historyRequests;
 
@@ -343,7 +359,7 @@
                all — the second would have the receptionist wondering whether
                the history is broken. */
             emptyState.textContent = filterDate
-                ? "No handled requests with a preferred date of " + formatDate(filterDate) + "."
+                ? "No handled requests were submitted on " + formatDate(filterDate) + "."
                 : "No previous requests yet. Once you convert or decline a request, it will show up here.";
 
             showOnlyHistoryState("bookingHistoryEmptyState");
