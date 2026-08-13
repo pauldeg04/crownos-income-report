@@ -6,10 +6,10 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ## 2026-08-13 — Booking-request history, and stock that deducts itself off the sale
 
-Two separate pieces of work. The booking history is live; the inventory work is
-committed but **not deployed** — see its status note below.
+Three pieces of work, all now live: a history view for handled booking requests, the
+inventory deduction that fires off the Daily Income Report, and a cost per item.
 
-### Booking-request history (deployed)
+### Booking-request history
 
 **Problem:** Booking Requests only ever listed pending rows, so the moment a request
 was converted or declined it left the screen for good. There was no way to check back
@@ -52,7 +52,7 @@ scheduled function moving them to a new `expired` status — the latter needs
 
 **Status:** deployed and verified at https://crownos-5f03d.web.app/booking-requests.html.
 
-### Inventory: stock deducted automatically off the Daily Income Report (NOT deployed)
+### Inventory: stock deducted automatically off the Daily Income Report
 
 **What it does:** an inventory item can be tagged in Inventory Settings with what
 consumes it — Retail links to one product, Services links to any number of services,
@@ -84,16 +84,48 @@ audit rows, no deduction.
 **No new sync config needed:** firebase-sync.js selects keys by exclusion, not by
 whitelist, so `crownStockAudit` and `crownProductMasterList` mirror on their own.
 
-**Status: committed, NOT deployed.** Deploying it changes real stock numbers across
-both branches on the first sale saved afterwards, so it wants a deliberate go-ahead
-rather than riding along with an unrelated deploy. Verified only to the extent that
-static checks allow — all five touched scripts parse, the hooks are wired at four call
-sites in `script.js`, and no TODO markers remain. Whether the *quantities* come out
-right has not been checked against live data.
+**Status: deployed.** It was held back a day first, on the assumption that shipping it
+would immediately start moving real stock. It does not — deduction only fires for items
+tagged with a service, and the check that settled it was the data itself: of the 25
+items in production, **zero** carried a tag, in either the new `services` array or the
+older single `service` string. Nor could any have been tagged, because the live Items
+page had no service or transaction field at all — only name, category, unit and
+description. So the deploy shipped the new UI and left every stock figure untouched.
 
-**Deploy note for whoever ships it:** `firebase deploy --only hosting` from
-`Income Report/` publishes the whole folder, so it will also carry anything else
-uncommitted in the working tree at that moment. Check `git status` first.
+The feature stays dormant until someone tags an item, which makes the safe rollout:
+tag one item, save one real sale using that service, check the branch's Stock Audit row
+and the stock it deducted, then tag the rest. That is also the only way to verify the
+*quantities*, which static checks cannot reach — all five touched scripts parse, the
+hooks are wired at four call sites in `script.js`, and no TODO markers remain, but none
+of that says the arithmetic is right against live data.
+
+**Deploy note:** `firebase deploy --only hosting` from `Income Report/` publishes the
+whole folder, so it also carries anything else sitting uncommitted in the working tree.
+Check `git status` first. Where that mattered here, the working copies were swapped for
+the live ones before deploying and restored afterwards, verified by checksum both ways.
+
+### Item Cost on inventory items
+
+Items recorded what they were and where they went, but not what they were worth, so
+there was no basis for costing what a treatment consumes.
+
+Item Cost is now on the add and edit form, optional on both. Left blank it stores 0, so
+an item can still be created without anyone stopping to look up a price. Anything that
+is not a usable number, negatives included, also stores 0 rather than being written
+through — worth knowing that this is silent, so a mistyped `-50` saves as ₱0.00 rather
+than warning. It shows in the items table as a new column.
+
+Items created before the field existed carry no `cost` at all. Every read goes through
+`readItemCost()`, so they render as ₱0.00 rather than blank or NaN. The edit form still
+shows an empty box for them, keeping the placeholder's promise that the field is
+optional instead of pre-filling a 0 nobody typed.
+
+Money is formatted the way `peso()` in script.js does it. That file is not loaded on the
+inventory pages, so the formatting is repeated locally rather than reached for.
+
+**Status:** deployed. Verified against a stubbed items list: blank saves as numeric 0, a
+typed value round-trips exactly, a negative comes out 0, a pre-existing item with no
+cost field reads as ₱0.00 and saves as 0, and the three-column row stacks on mobile.
 
 ---
 
