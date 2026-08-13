@@ -1,0 +1,816 @@
+/* ==========================================================================
+   Crown Head Spa — User Manual page
+
+   Every rule here is scoped under .manual-doc (or .manual-contents) on
+   purpose. This page loads shared.css, sidebar.css and Bootstrap like any
+   other CrownOS page, and the manual's own typography would otherwise
+   fight them — the manual sets its own heading scale, table style and
+   link colour, none of which should leak out into the rest of the app.
+   Class names were checked against shared/sidebar/style/crownos-theme
+   for collisions before being used.
+   ========================================================================== */
+
+.manual-doc,
+.manual-contents{
+    --m-ink:#191A11;
+    --m-ink-2:#4A4C3F;
+    --m-muted:#6F746F;
+    --m-line:#DEDDD2;
+    --m-line-soft:#EAE9DF;
+    --m-surface:#FFFFFF;
+    --m-surface-2:#FAF9F3;
+    --m-green:#124D1C;
+    --m-green-soft:#E8F1E9;
+    --m-gold:#9A7405;
+    --m-gold-2:#E8B321;
+    --m-gold-soft:#FBF3D9;
+    --m-danger:#A32530;
+    --m-danger-soft:#FBEDEE;
+    --m-cash:#2E6E47;
+    --m-gcash:#0063CC;
+    --m-bank:#003DA5;
+    --m-terminal:#5B37A6;
+
+    --m-display: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --m-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+/* ---------- Page heading ---------- */
+
+/* Matches the eyebrow used by Data Protection and the Inventory pages —
+   it lives in each page's own stylesheet rather than shared.css, so it is
+   repeated here rather than inherited. */
+.page-eyebrow{
+    margin:0 0 6px;
+    color:var(--green);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+}
+
+.manual-heading-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.manual-print-btn{
+    white-space:nowrap;
+}
+
+/* ---------- Contents card ---------- */
+
+.manual-contents-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
+    gap:20px 28px;
+}
+
+.manual-contents-part{
+    min-width:0;
+}
+
+.manual-contents-part > h3{
+    font-family:var(--m-mono);
+    font-size:10.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--m-gold);
+    margin:0 0 8px;
+    font-weight:600;
+}
+
+.manual-contents-part ol{
+    list-style:none;
+    margin:0;
+    padding:0;
+}
+
+.manual-contents-part li{
+    margin-bottom:3px;
+}
+
+.manual-contents-part a{
+    display:flex;
+    gap:9px;
+    align-items:baseline;
+    padding:3px 7px;
+    margin-left:-7px;
+    border-radius:6px;
+    color:var(--m-ink-2);
+    text-decoration:none;
+    font-size:14.5px;
+    line-height:1.35;
+}
+
+.manual-contents-part a:hover{
+    background:var(--m-green-soft);
+    color:var(--m-green);
+}
+
+.manual-contents-part a .manual-ch{
+    font-family:var(--m-mono);
+    font-size:11px;
+    color:var(--m-muted);
+    min-width:19px;
+    flex:none;
+}
+
+.manual-contents-part a:hover .manual-ch{
+    color:var(--m-green);
+}
+
+/* ---------- Manual body ---------- */
+
+.manual-doc{
+    color:var(--m-ink);
+    font-size:16px;
+    line-height:1.65;
+    max-width:none;
+}
+
+.manual-doc .part-opener{
+    margin-top:56px;
+    padding-top:24px;
+    border-top:2px solid var(--m-ink);
+    scroll-margin-top:86px;
+}
+
+.manual-doc .part-opener:first-child{
+    margin-top:8px;
+}
+
+.manual-doc .part-label{
+    font-family:var(--m-mono);
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--m-gold);
+    margin:0 0 6px;
+}
+
+.manual-doc .part-opener h2{
+    font-family:var(--m-display);
+    font-size:26px;
+    line-height:1.2;
+    letter-spacing:-.018em;
+    font-weight:600;
+    color:var(--m-ink);
+    margin:0 0 6px;
+}
+
+.manual-doc .part-opener p{
+    color:var(--m-muted);
+    font-size:15.5px;
+    margin:0;
+}
+
+.manual-doc section{
+    padding-top:44px;
+    scroll-margin-top:86px;
+}
+
+.manual-doc h2{
+    font-family:var(--m-display);
+    font-size:30px;
+    line-height:1.18;
+    letter-spacing:-.018em;
+    font-weight:600;
+    color:var(--m-ink);
+    margin:0 0 6px;
+    text-wrap:balance;
+}
+
+.manual-doc h2 .h2-num{
+    font-family:var(--m-mono);
+    font-size:12px;
+    letter-spacing:.1em;
+    color:var(--m-gold);
+    display:block;
+    margin-bottom:8px;
+    font-weight:400;
+}
+
+.manual-doc h3{
+    font-family:var(--m-display);
+    font-size:22px;
+    line-height:1.25;
+    letter-spacing:-.012em;
+    font-weight:600;
+    color:var(--m-ink);
+    margin:36px 0 8px;
+    text-wrap:balance;
+}
+
+.manual-doc h4{
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.01em;
+    color:var(--m-ink);
+    margin:24px 0 6px;
+}
+
+.manual-doc p,
+.manual-doc li{
+    max-width:70ch;
+}
+
+.manual-doc p{
+    margin:0 0 14px;
+}
+
+.manual-doc ul,
+.manual-doc ol{
+    margin:0 0 16px;
+    padding-left:22px;
+}
+
+.manual-doc li{
+    margin-bottom:7px;
+}
+
+.manual-doc strong{
+    font-weight:650;
+}
+
+.manual-doc a{
+    color:var(--m-green);
+    text-decoration:underline;
+    text-decoration-thickness:1px;
+    text-underline-offset:2px;
+}
+
+.manual-doc a:hover{
+    color:var(--m-green);
+}
+
+.manual-doc code,
+.manual-doc .ui{
+    font-family:var(--m-mono);
+    font-size:.86em;
+    background:var(--m-surface-2);
+    border:1px solid var(--m-line-soft);
+    border-radius:4px;
+    padding:1px 5px;
+    white-space:nowrap;
+}
+
+.manual-doc .ui{
+    color:var(--m-green);
+    border-color:var(--m-line);
+}
+
+/* ---------- Numbered steps ---------- */
+
+.manual-doc ol.steps{
+    counter-reset:step;
+    list-style:none;
+    padding-left:0;
+}
+
+.manual-doc ol.steps > li{
+    counter-increment:step;
+    position:relative;
+    padding-left:38px;
+    margin-bottom:12px;
+}
+
+.manual-doc ol.steps > li::before{
+    content:counter(step);
+    position:absolute;
+    left:0;
+    top:1px;
+    width:24px;
+    height:24px;
+    border-radius:50%;
+    background:var(--m-green);
+    color:#fff;
+    font-family:var(--m-mono);
+    font-size:11.5px;
+    font-weight:600;
+    display:grid;
+    place-items:center;
+}
+
+/* ---------- Callouts ---------- */
+
+.manual-doc .note,
+.manual-doc .warn,
+.manual-doc .stop{
+    border-radius:0 8px 8px 0;
+    padding:14px 18px;
+    margin:18px 0;
+}
+
+.manual-doc .note{
+    border-left:3px solid var(--m-green);
+    background:var(--m-green-soft);
+}
+
+.manual-doc .warn{
+    border-left:3px solid var(--m-gold-2);
+    background:var(--m-gold-soft);
+}
+
+.manual-doc .stop{
+    border-left:3px solid var(--m-danger);
+    background:var(--m-danger-soft);
+}
+
+.manual-doc .note > :last-child,
+.manual-doc .warn > :last-child,
+.manual-doc .stop > :last-child{
+    margin-bottom:0;
+}
+
+.manual-doc .callout-label{
+    font-family:var(--m-mono);
+    font-size:10.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    display:block;
+    margin-bottom:5px;
+}
+
+.manual-doc .note .callout-label{ color:var(--m-green); }
+.manual-doc .warn .callout-label{ color:var(--m-gold); }
+.manual-doc .stop .callout-label{ color:var(--m-danger); }
+
+/* ---------- Tables ---------- */
+
+.manual-doc .table-wrap{
+    overflow-x:auto;
+    margin:18px 0;
+    border:1px solid var(--m-line);
+    border-radius:10px;
+    background:var(--m-surface);
+}
+
+.manual-doc table{
+    border-collapse:collapse;
+    width:100%;
+    font-size:14.5px;
+    min-width:520px;
+    margin:0;
+}
+
+.manual-doc th,
+.manual-doc td{
+    text-align:left;
+    padding:9px 14px;
+    border-bottom:1px solid var(--m-line-soft);
+    vertical-align:top;
+    color:var(--m-ink);
+}
+
+.manual-doc thead th{
+    background:var(--m-surface-2);
+    font-family:var(--m-mono);
+    font-size:10.5px;
+    letter-spacing:.11em;
+    text-transform:uppercase;
+    color:var(--m-muted);
+    font-weight:600;
+    white-space:nowrap;
+}
+
+.manual-doc tbody tr:last-child td{
+    border-bottom:none;
+}
+
+.manual-doc td.ctr{
+    text-align:center;
+}
+
+.manual-doc .yes{
+    color:var(--m-green);
+    font-weight:700;
+}
+
+.manual-doc .no{
+    color:var(--m-muted);
+}
+
+.manual-doc .matrix table{
+    min-width:760px;
+}
+
+.manual-doc .matrix th:first-child,
+.manual-doc .matrix td:first-child{
+    position:sticky;
+    left:0;
+    background:var(--m-surface);
+    border-right:1px solid var(--m-line-soft);
+    min-width:200px;
+}
+
+.manual-doc .matrix thead th:first-child{
+    background:var(--m-surface-2);
+}
+
+/* ---------- Pills ---------- */
+
+.manual-doc .pill{
+    display:inline-block;
+    font-family:var(--m-mono);
+    font-size:10.5px;
+    letter-spacing:.07em;
+    text-transform:uppercase;
+    padding:2.5px 8px;
+    border-radius:20px;
+    border:1px solid currentColor;
+    white-space:nowrap;
+    line-height:1.5;
+}
+
+.manual-doc .pill-role{
+    background:var(--m-green);
+    color:#fff;
+    border-color:var(--m-green);
+}
+
+.manual-doc .pill-cash{ color:var(--m-cash); }
+.manual-doc .pill-gcash{ color:var(--m-gcash); }
+.manual-doc .pill-bank{ color:var(--m-bank); }
+.manual-doc .pill-terminal{ color:var(--m-terminal); }
+
+.manual-doc .roleline{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin:0 0 16px;
+    padding:0;
+    list-style:none;
+}
+
+.manual-doc .roleline li{
+    margin:0;
+    max-width:none;
+}
+
+/* ---------- Definition grid ---------- */
+
+.manual-doc .deflist{
+    display:grid;
+    grid-template-columns:minmax(140px,220px) minmax(0,1fr);
+    gap:0;
+    border-top:1px solid var(--m-line-soft);
+    margin:16px 0;
+}
+
+.manual-doc .deflist dt{
+    font-family:var(--m-mono);
+    font-size:12.5px;
+    color:var(--m-green);
+    padding:10px 16px 10px 0;
+    border-bottom:1px solid var(--m-line-soft);
+}
+
+.manual-doc .deflist dd{
+    margin:0;
+    padding:10px 0;
+    border-bottom:1px solid var(--m-line-soft);
+    font-size:15px;
+    color:var(--m-ink-2);
+}
+
+/* ---------- Formula block ---------- */
+
+.manual-doc .formula{
+    font-family:var(--m-mono);
+    font-size:13.5px;
+    line-height:1.7;
+    background:var(--m-surface-2);
+    border:1px solid var(--m-line);
+    border-left:3px solid var(--m-gold-2);
+    border-radius:0 8px 8px 0;
+    padding:14px 18px;
+    margin:14px 0;
+    overflow-x:auto;
+    white-space:pre;
+    color:var(--m-ink);
+}
+
+/* ---------- Checklist ---------- */
+
+.manual-doc .checklist{
+    list-style:none;
+    padding-left:0;
+}
+
+.manual-doc .checklist li{
+    position:relative;
+    padding-left:28px;
+    margin-bottom:8px;
+}
+
+.manual-doc .checklist li::before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:5px;
+    width:14px;
+    height:14px;
+    border:1.5px solid var(--m-green);
+    border-radius:3px;
+}
+
+/* ---------- Troubleshooting ---------- */
+
+.manual-doc details{
+    border-bottom:1px solid var(--m-line-soft);
+    padding:12px 0;
+}
+
+.manual-doc details summary{
+    cursor:pointer;
+    font-weight:650;
+    font-size:16px;
+    list-style:none;
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+}
+
+.manual-doc details summary::-webkit-details-marker{
+    display:none;
+}
+
+.manual-doc details summary::before{
+    content:"+";
+    font-family:var(--m-mono);
+    color:var(--m-gold);
+    font-size:17px;
+    line-height:1.4;
+}
+
+.manual-doc details[open] summary::before{
+    content:"\2212";
+}
+
+.manual-doc details > :not(summary){
+    margin-top:10px;
+    padding-left:24px;
+}
+
+/* ---------- Manual footer ---------- */
+
+.manual-doc footer{
+    margin-top:64px;
+    padding-top:22px;
+    border-top:2px solid var(--m-ink);
+    font-size:13.5px;
+    color:var(--m-muted);
+}
+
+/* ---------- Back to top ---------- */
+
+.manual-top-btn{
+    position:fixed;
+    right:22px;
+    bottom:22px;
+    z-index:1030;
+    border:1px solid var(--m-line);
+    background:rgba(255,255,255,.97);
+    color:var(--m-green);
+    font-family:var(--m-mono);
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    padding:9px 14px;
+    border-radius:22px;
+    box-shadow:0 8px 24px rgba(11,24,73,.14);
+    cursor:pointer;
+    opacity:0;
+    visibility:hidden;
+    transition:opacity .18s ease, visibility .18s ease;
+}
+
+.manual-top-btn.is-visible{
+    opacity:1;
+    visibility:visible;
+}
+
+.manual-top-btn:hover{
+    background:var(--m-green);
+    color:#fff;
+    border-color:var(--m-green);
+}
+
+@media (prefers-reduced-motion: reduce){
+    .manual-top-btn{ transition:none; }
+}
+
+/* ---------- Small screens ---------- */
+
+@media(max-width:900px){
+    .manual-doc{ font-size:15.5px; }
+    .manual-doc h2{ font-size:25px; }
+    .manual-doc h3{ font-size:19.5px; }
+    .manual-doc .part-opener h2{ font-size:22px; }
+
+    .manual-doc .deflist{ grid-template-columns:minmax(0,1fr); }
+    .manual-doc .deflist dt{ padding-bottom:0; border-bottom:none; }
+    .manual-doc .deflist dd{ padding-top:2px; }
+
+    .manual-doc section,
+    .manual-doc .part-opener{ scroll-margin-top:16px; }
+}
+
+/* ==========================================================================
+   PRINT — the app chrome comes off and the manual prints as a document
+   ========================================================================== */
+
+@page{
+    margin:18mm 16mm 16mm;
+}
+
+@media print{
+    body.with-app-sidebar{
+        padding:0 !important;
+        background:#fff !important;
+    }
+
+    /* Everything sidebar.js injects is screen chrome — the mobile hamburger
+       is position:fixed, so without this it prints on top of the title. */
+    .app-sidebar,
+    .sidebar-mobile-toggle,
+    .crown-global-toolbar,
+    .notification-panel,
+    .btn-dashboard,
+    .manual-print-btn,
+    .manual-top-btn,
+    .backup-reminder-backdrop{
+        display:none !important;
+    }
+
+    .container-fluid{
+        padding:0 !important;
+        max-width:none !important;
+    }
+
+    /* shared.css carries `.card.shadow-sm{box-shadow:... !important}` — a
+       two-class selector, so a bare `.card` here loses to it even with
+       !important. Match its specificity to strip the card chrome on paper. */
+    .card,
+    .card.shadow-sm,
+    .card-body{
+        border:none !important;
+        box-shadow:none !important;
+        padding:0 !important;
+        background:transparent !important;
+    }
+
+    .manual-masthead{
+        border-bottom:1.5pt solid #000;
+        padding-bottom:14pt;
+        margin-bottom:0;
+        break-after:page;
+    }
+
+    .manual-contents{
+        break-after:page;
+    }
+
+    .manual-contents-grid{
+        grid-template-columns:1fr 1fr;
+    }
+
+    .manual-doc,
+    .manual-contents{
+        --m-ink:#000000;
+        --m-ink-2:#1C1C16;
+        --m-muted:#57574E;
+        --m-line:#B9B8AC;
+        --m-line-soft:#D6D5C9;
+        --m-surface:#FFFFFF;
+        --m-surface-2:#F6F5EF;
+        --m-green:#0E3D16;
+        --m-green-soft:#EDF3ED;
+        --m-gold:#6E5304;
+        --m-gold-2:#B08A0E;
+        --m-gold-soft:#F8F2DE;
+        --m-danger:#7E1C25;
+        --m-danger-soft:#F8ECED;
+    }
+
+    .manual-doc{
+        font-size:10.5pt;
+        line-height:1.45;
+        -webkit-print-color-adjust:exact;
+        print-color-adjust:exact;
+    }
+
+    .manual-doc p,
+    .manual-doc li{
+        max-width:none;
+    }
+
+    /* Each part starts a fresh page */
+    .manual-doc .part-opener{
+        break-before:page;
+        break-after:avoid;
+        margin-top:0;
+        padding-top:0;
+        border-top:none;
+    }
+
+    .manual-doc .part-opener:first-child{
+        break-before:avoid;
+    }
+
+    .manual-doc .part-opener h2{ font-size:22pt; }
+    .manual-doc .part-label{ font-size:9pt; }
+
+    .manual-doc section{ padding-top:20pt; }
+
+    .manual-doc h2{ font-size:16pt; break-after:avoid; }
+    .manual-doc h2 .h2-num{ font-size:8.5pt; margin-bottom:4pt; }
+    .manual-doc h3{ font-size:12.5pt; margin:16pt 0 5pt; break-after:avoid; }
+    .manual-doc h4{ font-size:10.5pt; margin:12pt 0 4pt; break-after:avoid; }
+
+    /* Nothing tears across a page break */
+    .manual-doc .note,
+    .manual-doc .warn,
+    .manual-doc .stop,
+    .manual-doc .formula,
+    .manual-doc .deflist,
+    .manual-doc .table-wrap,
+    .manual-doc details,
+    .manual-doc ol.steps > li,
+    .manual-doc .roleline,
+    .manual-doc li{
+        break-inside:avoid;
+    }
+
+    .manual-doc ul,
+    .manual-doc ol,
+    .manual-doc dl{
+        break-inside:auto;
+    }
+
+    /* Tables print in full, headers repeat on every page */
+    .manual-doc .table-wrap{
+        overflow:visible;
+        break-inside:auto;
+    }
+
+    .manual-doc table{
+        min-width:0 !important;
+        width:100%;
+        font-size:9pt;
+        break-inside:auto;
+    }
+
+    .manual-doc thead{ display:table-header-group; }
+    .manual-doc tr{ break-inside:avoid; }
+    .manual-doc th,
+    .manual-doc td{ padding:5pt 7pt; }
+    .manual-doc thead th{ font-size:8pt; }
+
+    .manual-doc .matrix table{ font-size:8.5pt; }
+
+    .manual-doc .matrix th:first-child,
+    .manual-doc .matrix td:first-child{
+        position:static;
+        min-width:0;
+    }
+
+    .manual-doc .formula{
+        font-size:9pt;
+        white-space:pre-wrap;
+    }
+
+    .manual-doc .deflist dt{ font-size:9.5pt; }
+    .manual-doc .deflist dd{ font-size:10pt; }
+
+    /* Answers are opened by script before printing */
+    .manual-doc details{ padding:7pt 0; }
+    .manual-doc details summary{ font-size:11pt; }
+    .manual-doc details summary::before{ content:""; }
+    .manual-doc details > :not(summary){ padding-left:0; margin-top:5pt; }
+
+    .manual-doc .checklist li::before{ border-color:#000; }
+
+    .manual-doc a{
+        color:#000;
+        text-decoration:none;
+    }
+
+    .manual-doc code,
+    .manual-doc .ui{
+        background:transparent;
+        border:1px solid var(--m-line);
+        color:#000;
+    }
+
+    .manual-doc footer{
+        margin-top:24pt;
+        padding-top:10pt;
+        border-top:1.5pt solid #000;
+        font-size:9pt;
+        break-inside:avoid;
+    }
+}

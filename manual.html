@@ -1,0 +1,2113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Crown Head Spa - User Manual
+    </title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="manual.css">
+
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="pwa-register.js"></script>
+    <script src="firebase-sync.js"></script>
+    <script src="access-control.js"></script>
+    <script src="notifications.js"></script>
+</head>
+
+<body>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body manual-masthead">
+
+            <div class="page-heading">
+                <div>
+                    <p class="page-eyebrow">
+                        Reference &middot; Version 1.1 Stable
+                    </p>
+
+                    <h2 class="fw-bold text-primary mb-0">
+                        User Manual
+                    </h2>
+
+                    <small class="text-muted">
+                        How to run CrownOS &mdash; sign in, record sales, schedule
+                        clients, manage stock, and close the month.
+                    </small>
+                </div>
+
+                <div class="manual-heading-actions">
+                    <button
+                        type="button"
+                        class="btn btn-outline-primary manual-print-btn"
+                        id="manualPrintBtn"
+                    >
+                        Print / Save PDF
+                    </button>
+
+                    <a
+                        href="home.html"
+                        class="btn-dashboard text-decoration-none"
+                    >
+                        &larr; Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4 manual-contents">
+        <div class="card-body">
+
+            <h3 class="fw-bold mb-3">
+                Contents
+            </h3>
+
+            <div class="manual-contents-grid">
+                        <div class="manual-contents-part">
+                            <h3>Part One &middot; Getting Started</h3>
+                            <ol>
+                                <li>
+                                    <a href="#ch-overview">
+                                        <span class="manual-ch">1</span>
+                                        <span>What CrownOS Is</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-login">
+                                        <span class="manual-ch">2</span>
+                                        <span>Signing In</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-navigation">
+                                        <span class="manual-ch">3</span>
+                                        <span>Finding Your Way Around</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-roles">
+                                        <span class="manual-ch">4</span>
+                                        <span>Roles and Access</span>
+                                    </a>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <div class="manual-contents-part">
+                            <h3>Part Two &middot; Daily Operations</h3>
+                            <ol>
+                                <li>
+                                    <a href="#ch-dashboard">
+                                        <span class="manual-ch">5</span>
+                                        <span>Dashboard and Clock In</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-daily-income">
+                                        <span class="manual-ch">6</span>
+                                        <span>Daily Income Report</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-add-sale">
+                                        <span class="manual-ch">7</span>
+                                        <span>Recording a Sale</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-vouchers">
+                                        <span class="manual-ch">8</span>
+                                        <span>Vouchers and VIP Cards</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-therapist-sales">
+                                        <span class="manual-ch">9</span>
+                                        <span>Therapist Sales</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-payroll">
+                                        <span class="manual-ch">10</span>
+                                        <span>Payroll</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-invoice">
+                                        <span class="manual-ch">11</span>
+                                        <span>Sales Invoice Summary</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-clients">
+                                        <span class="manual-ch">12</span>
+                                        <span>Client Database</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-scheduling">
+                                        <span class="manual-ch">13</span>
+                                        <span>Scheduling</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-booking">
+                                        <span class="manual-ch">14</span>
+                                        <span>Booking Requests</span>
+                                    </a>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <div class="manual-contents-part">
+                            <h3>Part Three &middot; Inventory</h3>
+                            <ol>
+                                <li>
+                                    <a href="#ch-inventory">
+                                        <span class="manual-ch">15</span>
+                                        <span>Warehouse and Branches</span>
+                                    </a>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <div class="manual-contents-part">
+                            <h3>Part Four &middot; Reports</h3>
+                            <ol>
+                                <li>
+                                    <a href="#ch-statistics">
+                                        <span class="manual-ch">16</span>
+                                        <span>Statistics</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-petty-cash">
+                                        <span class="manual-ch">17</span>
+                                        <span>Petty Cash</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-reports">
+                                        <span class="manual-ch">18</span>
+                                        <span>Monthly Summary, Expenses, and Cash Flow</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-shareholder">
+                                        <span class="manual-ch">19</span>
+                                        <span>Shareholder and Product Reports</span>
+                                    </a>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <div class="manual-contents-part">
+                            <h3>Part Five &middot; Administration</h3>
+                            <ol>
+                                <li>
+                                    <a href="#ch-accounts">
+                                        <span class="manual-ch">20</span>
+                                        <span>Account Settings</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-attendance">
+                                        <span class="manual-ch">21</span>
+                                        <span>Attendance</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-masterlists">
+                                        <span class="manual-ch">22</span>
+                                        <span>Master Lists</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-data">
+                                        <span class="manual-ch">23</span>
+                                        <span>System Health and Database</span>
+                                    </a>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <div class="manual-contents-part">
+                            <h3>Part Six &middot; Reference</h3>
+                            <ol>
+                                <li>
+                                    <a href="#ch-checklists">
+                                        <span class="manual-ch">24</span>
+                                        <span>Checklists</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#ch-faq">
+                                        <span class="manual-ch">25</span>
+                                        <span>Troubleshooting</span>
+                                    </a>
+                                </li>
+                            </ol>
+                        </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+
+            <article class="manual-doc" id="manualDoc">
+<!-- ================= PART ONE ================= -->
+<div class="part-opener">
+  <p class="part-label">Part One</p>
+  <h2>Getting Started</h2>
+  <p>What the system is, how to get into it, and what your account can do.</p>
+</div>
+
+<section id="ch-overview">
+  <h2><span class="h2-num">Chapter 1</span>What CrownOS Is</h2>
+
+  <p>
+    CrownOS is the official management system of Crown Head Spa. It holds
+    <strong>everything</strong> that happens day to day: sales, client
+    schedules, staff attendance, stock levels, expenses, and payroll. All
+    branches share one database — a sale recorded in Biñan is visible in
+    Calamba and to management immediately.
+  </p>
+
+  <h3>Opening the system</h3>
+
+  <p>
+    CrownOS is a website, so there is nothing to install. Open
+    <code>crownos-5f03d.web.app</code> in your browser (Chrome or Safari) and
+    you will land on the login page.
+  </p>
+
+  <div class="note">
+    <span class="callout-label">Tip for branch tablets</span>
+    <p>
+      You can install CrownOS so it behaves like a real app. In Safari on an
+      iPad, tap <span class="ui">Share</span> → <span class="ui">Add to Home
+      Screen</span>. In Chrome, look for <span class="ui">Install</span> in the
+      address bar. You get a CrownOS icon on the home screen, and the app opens
+      without a browser bar — faster and cleaner for reception.
+    </p>
+  </div>
+
+  <h3>Four things to know before you start</h3>
+
+  <ul>
+    <li><strong>One account per person.</strong> Never share your login. Your attendance, commission, and pay are all tied to your account.</li>
+    <li><strong>Branch and Date govern everything.</strong> Almost every page follows the Branch and Date set in the toolbar at the top. Get those wrong and you are looking at the wrong data.</li>
+    <li><strong>Saving is automatic.</strong> There is no separate "Save All" button. Once you press Save or Settle on a form, it is done and already synced to the cloud.</li>
+    <li><strong>Someone backs up every day.</strong> At the end of the day, one person (normally the Admin) exports a backup file. See <a href="#ch-data">Chapter 23</a>.</li>
+  </ul>
+</section>
+
+<section id="ch-login">
+  <h2><span class="h2-num">Chapter 2</span>Signing In</h2>
+
+  <ol class="steps">
+    <li>Open CrownOS. The <strong>Welcome Back</strong> login screen appears first.</li>
+    <li>Enter your <strong>Account</strong> — the username or email your Admin issued you.</li>
+    <li>Enter your <strong>Password</strong> and press <span class="ui">Login</span>.</li>
+    <li>Once inside, choose your <strong>Branch</strong> from the toolbar at the top.</li>
+  </ol>
+
+  <p>
+    If you see <em>"Invalid account, password, or inactive user,"</em> either
+    one of the two is wrong, <em>or</em> your account has been set to
+    <strong>Inactive</strong>. Only an Admin can reactivate it, from
+    <a href="#ch-accounts">Account Settings</a>.
+  </p>
+
+  <h3>"What's Your Duty Today?" — for dual-role staff</h3>
+
+  <p>
+    Some Therapists occasionally fill in as Receptionist. If
+    <strong>Secondary Role: Receptionist</strong> is enabled on your account,
+    you are asked which duty you are working right after you log in:
+  </p>
+
+  <ul>
+    <li><strong>Therapist</strong> — your regular therapist duty.</li>
+    <li><strong>Receptionist</strong> — relieving for today only.</li>
+  </ul>
+
+  <div class="warn">
+    <span class="callout-label">This matters</span>
+    <p>
+      The duty you pick sets <strong>your rate and pay for the whole
+      day</strong>, and which pages you can open. The two roles are never
+      combined — if you pick Receptionist, only Receptionist pages are open to
+      you for that day. Choose correctly at the first login of the day.
+    </p>
+  </div>
+
+  <p>
+    If you see <strong>"Clock Out First,"</strong> you still have an open
+    clock-in from an earlier session today. Clock out on the Dashboard before
+    switching duty.
+  </p>
+
+  <h3>Changing your password</h3>
+
+  <p>
+    Go to <span class="ui">Account Settings</span> → <strong>My Account</strong>
+    → <strong>Change Password</strong>. Only you can change your own password.
+    If you have forgotten it, an Admin resets it for you.
+  </p>
+
+  <h3>Signing out</h3>
+
+  <p>
+    <span class="ui">Logout</span> sits at the bottom of the sidebar. Use it
+    rather than just closing the tab. Logging out makes sure everything you did
+    last is pushed to the cloud before you leave.
+  </p>
+
+  <div class="stop">
+    <span class="callout-label">Shared branch tablets</span>
+    <p>
+      If a tablet uses a <strong>Branch Device</strong> account, leave it signed
+      in. That account is deliberately limited to the Dashboard, Client
+      Database, and Scheduling — no sales, no payroll, no reports.
+    </p>
+  </div>
+</section>
+
+<section id="ch-navigation">
+  <h2><span class="h2-num">Chapter 3</span>Finding Your Way Around</h2>
+
+  <p>
+    Every CrownOS page is laid out the same way: a <strong>toolbar across the
+    top</strong>, a <strong>sidebar down the left</strong>, and the page itself
+    in the middle.
+  </p>
+
+  <h3>The top toolbar (CrownOS Control Center)</h3>
+
+  <dl class="deflist">
+    <dt>Branch</dt>
+    <dd>Which branch you are currently looking at. Only branches assigned to your account appear here. Changing it changes the data on nearly every page.</dd>
+
+    <dt>Date</dt>
+    <dd>The active date, with <span class="ui">‹</span> and <span class="ui">›</span> to step back or forward one day.</dd>
+
+    <dt>Refresh</dt>
+    <dd>Reloads the current page's data. Use it when someone else is editing at the same time and you want to see their changes now.</dd>
+
+    <dt>Today</dt>
+    <dd>Jumps straight back to today's date.</dd>
+
+    <dt>🔔 Notifications</dt>
+    <dd>Alerts addressed to you — a new schedule assigned to you, or a reminder to clock out. Click to read, or <span class="ui">Mark all read</span> to clear them.</dd>
+  </dl>
+
+  <div class="warn">
+    <span class="callout-label">Why is my page empty?</span>
+    <p>
+      Most pages <strong>require a branch to be selected</strong>. With no
+      branch chosen they are dimmed in the sidebar and show no data. Pick a
+      Branch in the toolbar first.
+    </p>
+  </div>
+
+  <h3>The left sidebar</h3>
+
+  <p>
+    The menu is grouped by kind of work, and <strong>you only see pages your
+    role is allowed to open</strong>. The full layout:
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Group</th><th>Pages</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Dashboard</strong></td>
+          <td>Branch Schedule, and Clock In / Clock Out</td>
+        </tr>
+        <tr>
+          <td><strong>Operations</strong></td>
+          <td>Daily Income Report · Therapist Sales · Payroll · Sales Invoice Summary · Client Database · Scheduling · Booking Requests</td>
+        </tr>
+        <tr>
+          <td><strong>Inventory</strong></td>
+          <td>Warehouse · Branches</td>
+        </tr>
+        <tr>
+          <td><strong>Summary Reports</strong></td>
+          <td>Statistics · Petty Cash · Monthly Summary · Expenses Report · Cash Flow · Share Holder Summary Report · Loyalty Card Sales Summary · Product Sales Summary</td>
+        </tr>
+        <tr>
+          <td><strong>Settings</strong></td>
+          <td>Account Settings · Attendance · List of Services · Voucher Masterlist · List of Products · List of Therapist · List of Branches · Inventory Settings · System Health / Database</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Sidebar indicators</h3>
+
+  <dl class="deflist">
+    <dt>☁ Synced to Cloud</dt>
+    <dd>Normal. You are connected, and everything you do is saved to the shared database.</dd>
+
+    <dt>🧪 Local Test</dt>
+    <dd>Only ever used by the developer on a test machine. If you see this at a branch, report it immediately — nothing is being saved.</dd>
+
+    <dt>Dot on System Health</dt>
+    <dd>No backup has been exported today. This is a reminder for the Admin.</dd>
+
+    <dt>Number on Warehouse / Branches</dt>
+    <dd>How many stock requests are waiting for a response.</dd>
+  </dl>
+</section>
+
+<section id="ch-roles">
+  <h2><span class="h2-num">Chapter 4</span>Roles and Access</h2>
+
+  <p>
+    CrownOS has six types of user. Your role decides what you can see and do.
+  </p>
+
+  <dl class="deflist">
+    <dt>Admin</dt>
+    <dd>Full access to everything, including money and the database itself. Only an Admin can back up, restore, and open Cash Flow.</dd>
+
+    <dt>Executive Assistant</dt>
+    <dd>Nearly identical to Admin for daily operations, but with <strong>no</strong> access to System Health / Database, Cash Flow, or user account management. Automatically sees every branch.</dd>
+
+    <dt>Receptionist</dt>
+    <dd>The main day-to-day user: Daily Income Report, Scheduling, Client Database, Booking Requests, Attendance, Statistics, and Petty Cash.</dd>
+
+    <dt>Therapist</dt>
+    <dd>Sees their own schedule, their own Therapist Sales, their own payslip, and the Client Database.</dd>
+
+    <dt>Marketing Agent</dt>
+    <dd>Dashboard, Scheduling, and their own payslip.</dd>
+
+    <dt>Branch Device</dt>
+    <dd>A shared login for a branch tablet. Dashboard, Client Database, and Scheduling only.</dd>
+  </dl>
+
+  <h3>Access matrix</h3>
+
+  <p>
+    <span class="yes">●</span> = open to this role ·
+    <span class="no">—</span> = not open.
+    An Admin can grant extra pages to an individual account using
+    <strong>Additional Access</strong>.
+  </p>
+
+  <div class="table-wrap matrix">
+    <table>
+      <thead>
+        <tr>
+          <th>Page</th>
+          <th class="ctr">Admin</th>
+          <th class="ctr">Exec. Asst.</th>
+          <th class="ctr">Reception</th>
+          <th class="ctr">Therapist</th>
+          <th class="ctr">Marketing</th>
+          <th class="ctr">Branch Device</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Dashboard</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td></tr>
+        <tr><td>Daily Income Report</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Therapist Sales</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Payroll</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
+        <tr><td>Sales Invoice Summary</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Client Database</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr yes">●</td></tr>
+        <tr><td>Scheduling</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr yes">●</td></tr>
+        <tr><td>Booking Requests</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Inventory (all pages)</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Statistics</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Petty Cash</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Monthly Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Expenses Report</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Cash Flow</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Share Holder Report</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Loyalty Card Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Product Sales Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Voucher Masterlist</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Attendance</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Master Lists (Services, Products, Therapist, Branches)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Account Settings</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
+        <tr><td>System Health / Database</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="stop">
+    <span class="callout-label">Never grantable</span>
+    <p>
+      <strong>System Health / Database</strong> and <strong>Cash Flow</strong>
+      cannot be handed out through Additional Access. Only a genuine Admin
+      account holds them.
+    </p>
+  </div>
+</section>
+
+<!-- ================= PART TWO ================= -->
+<div class="part-opener">
+  <p class="part-label">Part Two</p>
+  <h2>Daily Operations</h2>
+  <p>The work of the branch: attendance, sales, clients, schedules, and pay.</p>
+</div>
+
+<section id="ch-dashboard">
+  <h2><span class="h2-num">Chapter 5</span>Dashboard and Clock In</h2>
+
+  <p>
+    This is the first page after you log in. It does two jobs: it shows
+    <strong>today's branch schedule</strong>, and it lets you
+    <strong>clock in and out</strong>.
+  </p>
+
+  <h3>Branch Schedule</h3>
+
+  <p>
+    A timeline laid out by time and bed. The count of <strong>Scheduled</strong>
+    appointments and the <strong>Next Schedule</strong> appear at the top. Click
+    any appointment to see its full detail: services to be availed, therapist,
+    bed, date, time, status, notes, and the client's
+    <a href="#ch-clients">forms</a>.
+  </p>
+
+  <p>Timeline colours:</p>
+
+  <ul>
+    <li><strong>Available</strong> — the slot is free.</li>
+    <li><strong>Scheduled</strong> — booked.</li>
+    <li><strong>Other Therapist</strong> — another therapist's booking (as seen by a Therapist account).</li>
+    <li><strong>Companion</strong> — a guest sharing the same transaction.</li>
+    <li><strong>Completed</strong> — the service is finished.</li>
+    <li><strong>Current Time</strong> — the present-time marker.</li>
+  </ul>
+
+  <h3>Clocking in and out</h3>
+
+  <ol class="steps">
+    <li>Check the <strong>Branch</strong> in the toolbar first — that is where your hours will be recorded.</li>
+    <li>Press <span class="ui">Clock In</span> on the Attendance card.</li>
+    <li>On your <strong>first</strong> clock-in of the day you are asked to choose <strong>Opening</strong> (9:00 AM – 6:00 PM) or <strong>Closing</strong> (1:00 PM – 10:00 PM). Pick the shift you are actually working.</li>
+    <li>At the end of your shift, return to the Dashboard and press <span class="ui">Clock Out</span>.</li>
+  </ol>
+
+  <div class="warn">
+    <span class="callout-label">About arriving early</span>
+    <p>
+      If you arrive before your shift officially starts, <strong>that early
+      time is not counted</strong> toward your pay. Counting begins at the
+      official start of the shift you chose. This is exactly why the Opening or
+      Closing choice has to be right — the whole day's computation rests on it.
+    </p>
+  </div>
+
+  <h3>Location check (GPS)</h3>
+
+  <p>
+    When you clock in, CrownOS checks whether you are actually at the branch.
+    You need to be within <strong>150 metres</strong> of the branch pin for the
+    entry to be marked as location-verified.
+  </p>
+
+  <ul>
+    <li>If you are further away, a warning appears showing the estimated distance.</li>
+    <li>If location is switched off or there is no signal, the entry is marked <strong>"No GPS."</strong></li>
+    <li>If the branch has no GPS pin set yet, you are told so — an Admin sets it in <a href="#ch-masterlists">List of Branches</a>.</li>
+  </ul>
+
+  <div class="note">
+    <span class="callout-label">Going-home reminder</span>
+    <p>
+      Once you have been clocked in for more than 9 hours without clocking out,
+      the system sends a reminder to your notification bell. If you genuinely
+      forget, an Admin corrects it in <a href="#ch-attendance">Attendance</a>.
+    </p>
+  </div>
+</section>
+
+<section id="ch-daily-income">
+  <h2><span class="h2-num">Chapter 6</span>Daily Income Report</h2>
+
+  <ul class="roleline">
+    <li><span class="pill pill-role">Admin</span></li>
+    <li><span class="pill pill-role">Executive Assistant</span></li>
+    <li><span class="pill pill-role">Receptionist</span></li>
+  </ul>
+
+  <p>
+    This is where <strong>every transaction</strong> of the branch is recorded
+    for the day. It is the most-used page in the system, and almost every other
+    report draws from it — Statistics, Therapist Sales, Payroll commission,
+    Monthly Summary, and Cash Flow.
+  </p>
+
+  <div class="stop">
+    <span class="callout-label">Before you begin</span>
+    <p>
+      Check the <strong>Branch</strong> and <strong>Date</strong> in the toolbar
+      at the top. That is where everything you type will be saved. Getting this
+      right is the single most common cause of a wrong report.
+    </p>
+  </div>
+
+  <h3>Parts of the page</h3>
+
+  <dl class="deflist">
+    <dt>Schedule</dt>
+    <dd>A short view of today's bookings and what is coming next. Press <span class="ui">View full schedule</span> for the whole timeline.</dd>
+
+    <dt>Ongoing Transactions</dt>
+    <dd>Clients currently in the spa — recorded but <strong>not yet paid</strong>. This is where a sale saved with <span class="ui">Add to List</span> goes.</dd>
+
+    <dt>Sales table</dt>
+    <dd>Transactions that are <strong>settled</strong> (paid). These make up the day's income.</dd>
+
+    <dt>Daily KPI</dt>
+    <dd>Counts by category — Head Spa, Massage, Package, Add-on, Kiddie, Products, VIP Card — plus client counts by source: Facebook, Walk In, Referral, Returning.</dd>
+
+    <dt>Sales Summary</dt>
+    <dd><strong>Sales Breakdown</strong> (Total Services, Total VIP Card, Total Product Sales, Total Sales) and <strong>Payment Breakdown</strong> by method.</dd>
+  </dl>
+
+  <h3>Payment methods</h3>
+
+  <ul class="roleline">
+    <li><span class="pill pill-cash">Cash</span></li>
+    <li><span class="pill pill-gcash">GCash</span></li>
+    <li><span class="pill pill-bank">Bank Transfer</span></li>
+    <li><span class="pill pill-terminal">Terminal</span></li>
+  </ul>
+
+  <p>
+    These colours are consistent throughout CrownOS — on the badges in the
+    table, in the Statistics chart, and in the Monthly Summary — so you can read
+    them at a glance without reading the label.
+  </p>
+
+  <h3>The three buttons below the table</h3>
+
+  <dl class="deflist">
+    <dt>Add Sale</dt>
+    <dd>Opens the transaction form. Explained in full in <a href="#ch-add-sale">Chapter 7</a>.</dd>
+
+    <dt>Export as PDF</dt>
+    <dd>Produces a formatted PDF of the whole day — table, breakdown, and summary. This is what goes to management.</dd>
+
+    <dt>Clear This Branch / Date</dt>
+    <dd>Deletes <strong>every</strong> sale for this branch and this date.</dd>
+  </dl>
+
+  <div class="stop">
+    <span class="callout-label">Do not press this casually</span>
+    <p>
+      <span class="ui">Clear This Branch / Date</span> cannot be undone. It
+      removes the entire day, not one row. To remove a single mistake, use
+      <strong>Delete</strong> on that row instead. Once a day is cleared, the
+      only way back is restoring a backup — which returns the whole day to
+      however it stood at the last backup.
+    </p>
+  </div>
+</section>
+
+<section id="ch-add-sale">
+  <h2><span class="h2-num">Chapter 7</span>Recording a Sale</h2>
+
+  <p>
+    One form covers every kind of transaction: services only, products only,
+    with companions, with vouchers, with a VIP card, with an invoice. Work
+    through it in this order.
+  </p>
+
+  <h3>1 · Time and client</h3>
+
+  <dl class="deflist">
+    <dt>Time *</dt>
+    <dd>Time of the transaction. Set to the current time automatically.</dd>
+
+    <dt>Client *</dt>
+    <dd>Start typing and the system suggests matches from the Client Database. For a new client, just type their full name.</dd>
+
+    <dt>Additional Client Details</dt>
+    <dd>A panel for the client's full information: Loyalty Card Number, name, Sex, Contact Number, Email, Birthday, Home Address, Home Branch, VIP Status, and Remarks. What you enter here <strong>goes straight into the Client Database</strong>, so there is no need to repeat it there.</dd>
+
+    <dt>Senior Citizen / PWD ID *</dt>
+    <dd>Required when Senior/PWD pricing is used. Enter the ID number.</dd>
+
+    <dt>Source *</dt>
+    <dd>Where the client came from: <strong>Facebook</strong>, <strong>Walk-in</strong>, <strong>Referral</strong>, or <strong>Returning</strong>. This becomes Client Acquisition Sources in Statistics — answer it honestly.</dd>
+
+    <dt>Therapist</dt>
+    <dd>Who performed the service. This drives commission and Therapist Sales. <em>Optional only when the transaction is products alone.</em></dd>
+  </dl>
+
+  <h3>2 · Services and products</h3>
+
+  <p>Five buttons add lines to the transaction:</p>
+
+  <dl class="deflist">
+    <dt>Add Service</dt>
+    <dd>A service from the List of Services. Price and duration are filled in automatically.</dd>
+
+    <dt>Add Freebie</dt>
+    <dd>A complimentary service. Its value is still recorded for reporting, but <strong>₱0.00</strong> is charged.</dd>
+
+    <dt>Add Product</dt>
+    <dd>A retail product. Enter the quantity — the price multiplies automatically.</dd>
+
+    <dt>Add VIP Card</dt>
+    <dd>Sells a VIP membership card and immediately switches every service in the transaction to VIP pricing.</dd>
+
+    <dt>Generate Voucher</dt>
+    <dd>Creates a new voucher the client is buying now. See <a href="#ch-vouchers">Chapter 8</a>.</dd>
+  </dl>
+
+  <h3>3 · Automatic pricing</h3>
+
+  <p>
+    Each service carries four prices in the master list. CrownOS picks which one
+    to use:
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Price type</th><th>When it is used</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Regular</strong></td><td>The standard price. This is the default.</td></tr>
+        <tr><td><strong>First Timer</strong></td><td>The client's first visit.</td></tr>
+        <tr><td><strong>VIP</strong></td><td>Applied automatically when (a) a VIP Card is in the transaction, (b) the client is already VIP in the database, or (c) VIP is the selected price type.</td></tr>
+        <tr><td><strong>Senior / PWD</strong></td><td>Discounted price. Requires an ID number to be entered.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <span class="callout-label">When you need to change a price</span>
+    <p>
+      You can override an item's amount by hand. Once you do, the system stops
+      recalculating that line even if the price type changes — so check it again
+      before you settle.
+    </p>
+  </div>
+
+  <h3>4 · Companions</h3>
+
+  <p>
+    When a client brings someone who also takes a service, do not create a
+    separate sale. Press <span class="ui">Add Companion</span>. Each companion
+    gets their own list of services and their own therapist, but the group
+    <strong>pays once</strong>. This keeps the client count correct in the KPI
+    and gives each therapist the right commission.
+  </p>
+
+  <h3>5 · Payment and vouchers</h3>
+
+  <p>
+    Payment can be split. Press <span class="ui">Add Payment Method</span> to
+    add a second one — for example ₱1,000 Cash and ₱500 GCash. The payments must
+    add up to the <strong>Amount to Pay</strong>.
+  </p>
+
+  <p>
+    Beside it is the <strong>Voucher</strong> section, where a voucher being
+    used as payment is entered. <span class="ui">Executive Voucher</span> is for
+    complimentary or management-issued vouchers.
+  </p>
+
+  <p>Three lines are always visible:</p>
+
+  <div class="formula">Gross Total        the full amount before vouchers
+Voucher Deduction  − the amount the voucher covers
+Amount to Pay      what the client actually pays</div>
+
+  <h3>6 · Invoice</h3>
+
+  <p>
+    Tick <span class="ui">Issue Invoice</span> when the client asks for a
+    receipt. This reveals <strong>Invoice Number</strong> (required) and
+    <strong>TIN Number</strong> (optional). Every invoiced transaction appears
+    in the <a href="#ch-invoice">Sales Invoice Summary</a>.
+  </p>
+
+  <h3>7 · Finishing — the four buttons</h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Button</th><th>What it does</th><th>When to use it</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Cancel</strong></td>
+          <td>Closes the form without saving.</td>
+          <td>You opened it by mistake.</td>
+        </tr>
+        <tr>
+          <td><strong>Add to Schedule</strong></td>
+          <td>Turns it into an appointment in Scheduling, finding a free bed and time automatically.</td>
+          <td>An advance booking or a return visit.</td>
+        </tr>
+        <tr>
+          <td><strong>Add to List</strong></td>
+          <td>Places it in <strong>Ongoing Transactions</strong> — recorded but not yet paid.</td>
+          <td>The client is still in the spa and has not paid.</td>
+        </tr>
+        <tr>
+          <td><strong>Settle</strong></td>
+          <td>Completes the transaction. It now counts toward the day's income.</td>
+          <td>The client has paid.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    When a client in Ongoing Transactions pays, find their row and press
+    <strong>Settle</strong> there. It moves into the sales table.
+  </p>
+
+  <div class="warn">
+    <span class="callout-label">Who can edit</span>
+    <p>
+      Whether you can edit a <strong>settled</strong> sale depends on your role.
+      If Edit is missing from a row, that table is closed to your role — pass
+      the correction to an Admin or Executive Assistant.
+    </p>
+  </div>
+
+  <div class="note">
+    <span class="callout-label">Saving a sale can move stock</span>
+    <p>
+      If a service on the sale has inventory items linked to it, saving also
+      deducts those items from the branch's stock and logs them in the branch
+      Stock Audit. Correcting the sale corrects that too, so fix mistakes by
+      editing the sale rather than adjusting stock by hand. See
+      <a href="#ch-inventory">Warehouse and Branches</a>.
+    </p>
+  </div>
+</section>
+
+<section id="ch-vouchers">
+  <h2><span class="h2-num">Chapter 8</span>Vouchers and VIP Cards</h2>
+
+  <h3>The voucher life cycle</h3>
+
+  <ol class="steps">
+    <li><strong>Purchase.</strong> In Add Sale, press <span class="ui">Generate Voucher</span>. Choose the Voucher Item and enter the buyer's name (required).</li>
+    <li><strong>Number issued.</strong> The system creates a unique code in the form <code>CHS-XXXX-XXXX</code> and records it in the Voucher Masterlist.</li>
+    <li><strong>Print it.</strong> Press <span class="ui">🖨 Print / Save PDF</span> for the client's copy.</li>
+    <li><strong>Redemption.</strong> When the holder returns, enter the code in the <strong>Voucher</strong> section of a new sale. It is deducted from the Amount to Pay.</li>
+    <li><strong>Closed.</strong> After settling, the code is marked <strong>redeemed</strong> and cannot be used again.</li>
+  </ol>
+
+  <h3>Voucher messages</h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Message</th><th>What it means</th><th>What to do</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Please enter the voucher number</td>
+          <td>A voucher was selected but no code was entered.</td>
+          <td>Type the code from the client's copy.</td>
+        </tr>
+        <tr>
+          <td>Voucher … was not found</td>
+          <td>No such code exists in the system.</td>
+          <td>Check the spelling. Search the Voucher Masterlist by the client's name.</td>
+        </tr>
+        <tr>
+          <td>Voucher … has been voided</td>
+          <td>This voucher was cancelled.</td>
+          <td>It can no longer be used. Refer to management.</td>
+        </tr>
+        <tr>
+          <td>Voucher … has already been used</td>
+          <td>It was redeemed in an earlier transaction.</td>
+          <td>Check Redemption in the Voucher Masterlist to see when it was used.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Voucher Masterlist</h3>
+
+  <p>
+    Under <strong>Settings</strong> you will find the full record of every
+    voucher issued: Voucher #, Item, Value, Client, Issued, Status, and
+    Redemption. It has Search and a Status filter. This is where you look when
+    someone asks about a voucher.
+  </p>
+
+  <h3>VIP Cards</h3>
+
+  <p>
+    A VIP Card is a product sold through <span class="ui">Add VIP Card</span> in
+    Add Sale. Once added:
+  </p>
+
+  <ul>
+    <li>Every service in the transaction switches to <strong>VIP pricing</strong> — companions included.</li>
+    <li>The client is marked VIP in the Client Database, so VIP pricing applies on every future visit.</li>
+    <li>It has its own line in the Daily KPI and in the Sales Breakdown, separate from services and products.</li>
+  </ul>
+
+  <div class="note">
+    <span class="callout-label">Loyalty Cards are different</span>
+    <p>
+      A Loyalty Card is not a VIP Card. The Loyalty Card Number sits on the
+      client's record, and has its own monthly report — the <strong>Loyalty Card
+      Sales Summary</strong>.
+    </p>
+  </div>
+</section>
+
+<section id="ch-therapist-sales">
+  <h2><span class="h2-num">Chapter 9</span>Therapist Sales</h2>
+
+  <ul class="roleline">
+    <li><span class="pill pill-role">Admin</span></li>
+    <li><span class="pill pill-role">Executive Assistant</span></li>
+    <li><span class="pill pill-role">Receptionist</span></li>
+    <li><span class="pill pill-role">Therapist</span></li>
+  </ul>
+
+  <p>
+    This shows the services a therapist performed and the commission earned.
+    There are two views:
+  </p>
+
+  <dl class="deflist">
+    <dt>Daily Service Sales</dt>
+    <dd>Each client that day: name, service, service cost, and commission.</dd>
+
+    <dt>Monthly Service Sales</dt>
+    <dd>Each day of the month: services rendered, Total Sales, and Total Commission.</dd>
+  </dl>
+
+  <div class="note">
+    <span class="callout-label">For therapists</span>
+    <p>
+      If your account is linked to a name in the List of Therapist,
+      <strong>you see only yourself</strong> here, not other therapists. This is
+      the quickest way to check your commission before the payslip is issued.
+    </p>
+  </div>
+
+  <p>
+    Commission comes from the percentage set on each service in the
+    <a href="#ch-masterlists">List of Services</a>. Each service carries two rates:
+    a normal <strong>Commission</strong>, and a higher <strong>Overtime
+    Commission</strong> used when the service finishes <em>after</em> the
+    therapist's shift officially ends.
+  </p>
+</section>
+
+<section id="ch-payroll">
+  <h2><span class="h2-num">Chapter 10</span>Payroll</h2>
+
+  <p>
+    Payroll takes attendance and commission and turns them into a payslip. Every
+    staff member has an <strong>Individual Rate Setup</strong> as the basis.
+  </p>
+
+  <h3>Individual Rate Setup</h3>
+
+  <dl class="deflist">
+    <dt>Daily Rate (₱)</dt>
+    <dd>Pay for one full day of work.</dd>
+
+    <dt>Meal Allowance (₱)</dt>
+    <dd>Allowance once hours reach a full shift.</dd>
+
+    <dt>Overtime Meal Allowance (₱)</dt>
+    <dd>Additional allowance once hours pass the overtime threshold.</dd>
+
+    <dt>Secondary Role Daily Rate (₱)</dt>
+    <dd>For a Therapist who relieves as Receptionist. Used on days they chose Receptionist duty.</dd>
+
+    <dt>Bank Accounts</dt>
+    <dd>Bank Type, Specify Bank, Account Name, and Account Number — for releasing pay.</dd>
+  </dl>
+
+  <h3>Payroll Group</h3>
+
+  <p>The group decides both who appears and the scope used to compute their pay:</p>
+
+  <ul>
+    <li><strong>Branch group</strong> (e.g. Crown Head Spa Biñan) — staff on a <strong>Weekly</strong> compensation schedule assigned to that branch. Only attendance and commission recorded <em>at that branch</em> are counted.</li>
+    <li><strong>Admin Staff</strong> — staff on a <strong>Bi-Monthly</strong> schedule. Attendance and commission are counted across <strong>all</strong> branches.</li>
+  </ul>
+
+  <div class="note">
+    <span class="callout-label">Working two branches in one day</span>
+    <p>
+      If someone clocks in at two branches on the same date, that day is split
+      by the share of hours spent at each. The two rows never add up to more
+      than one day's pay. Commission, by contrast, stays whole and attributed to
+      the branch where the sale happened.
+    </p>
+  </div>
+
+  <h3>How pay is computed</h3>
+
+  <h4>Therapist</h4>
+  <div class="formula">Daily Rate         paid in full for any day worked
+Meal Allowance     at 9 hours or more (8 work + 1 break)
+OT Meal Allowance  past 9 hours 15 minutes
+Commission         from the services performed</div>
+
+  <h4>Receptionist and Marketing Agent</h4>
+  <div class="formula">Under 9 hours      (Daily Rate ÷ 8) × (hours − 1 hour break)
+9 hours or more    full Daily Rate
+Overtime           (Daily Rate ÷ 8) × 1.25 × (hours − 9)
+Meal Allowance     none for these roles</div>
+
+  <p>
+    Early arrival is excluded. Hours are counted from the official start of the
+    shift — 9:00 AM for Opening, 1:00 PM for Closing.
+  </p>
+
+  <h3>The payslip</h3>
+
+  <p>
+    The payslip shows each day in the period: Date, Time In, Time Out, Daily
+    Rate, Meal Allowance, Overtime, and Commission. Below that sit
+    <strong>Additional Pay</strong> and <strong>Deduction</strong> where they
+    apply. Status is either <strong>Pending</strong> or <strong>Paid</strong>.
+  </p>
+
+  <p>
+    There are three archives: <strong>Payroll Group Archive</strong> (closed
+    payroll runs), <strong>Payslip Archive</strong> (per person), and <strong>My
+    Payroll</strong>, where each staff member views their own payslip.
+  </p>
+
+  <div class="warn">
+    <span class="callout-label">Before releasing payroll</span>
+    <p>
+      Review <a href="#ch-attendance">Attendance</a> for the whole period first.
+      A missing or wrong clock-in becomes wrong pay directly. Once attendance is
+      corrected the payslip updates by itself — there is nothing to recompute
+      by hand.
+    </p>
+  </div>
+</section>
+
+<section id="ch-invoice">
+  <h2><span class="h2-num">Chapter 11</span>Sales Invoice Summary</h2>
+
+  <p>
+    A record of every transaction where <span class="ui">Issue Invoice</span>
+    was ticked: Date, Particulars, Invoice Number, TIN Number, and Amount. This
+    is what you consult when someone asks for a copy of a receipt, or during BIR
+    reconciliation. It fills itself from the Daily Income Report — there is
+    nothing to enter here separately.
+  </p>
+</section>
+
+<section id="ch-clients">
+  <h2><span class="h2-num">Chapter 12</span>Client Database</h2>
+
+  <ul class="roleline">
+    <li><span class="pill pill-role">Admin</span></li>
+    <li><span class="pill pill-role">Executive Assistant</span></li>
+    <li><span class="pill pill-role">Receptionist</span></li>
+    <li><span class="pill pill-role">Therapist</span></li>
+    <li><span class="pill pill-role">Branch Device</span></li>
+  </ul>
+
+  <p>
+    The central record of every Crown Head Spa client. It shows each client's
+    number of <strong>Visits</strong> and <strong>Last Visit</strong>, and has a
+    separate panel for <strong>Birthday Celebrants This Month</strong> — a good
+    opening for a greeting or a promo.
+  </p>
+
+  <h3>Client information</h3>
+
+  <p>
+    Loyalty Card Number, Last Name, First Name, Middle Initial, Sex, Contact
+    Number, Email, Birthday, Home Address, Home Branch, VIP Status, and Remarks.
+    Use Remarks for preferences, concerns, and reminders about the client.
+  </p>
+
+  <div class="note">
+    <span class="callout-label">Added automatically</span>
+    <p>
+      You do not need to type clients in here by hand. Entering a new name in
+      Add Sale creates the client record for you, and anything you fill into
+      <strong>Additional Client Details</strong> comes straight through.
+    </p>
+  </div>
+
+  <h3>Client history</h3>
+
+  <p>
+    Click a client to see every visit: Date, Branch, Services / Products,
+    Therapist, Payment, and Amount — along with the <strong>Forms</strong> they
+    have signed.
+  </p>
+
+  <h3>Forms</h3>
+
+  <p>Four forms can be filled in from the Dashboard or from here:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Form</th><th>When to use it</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Consent Form</strong></td><td>Allergies, medical conditions, pregnancy, and consent. Required before a first service.</td></tr>
+        <tr><td><strong>Head Spa Form</strong></td><td>Scalp and hair condition, eyemask choice, massage pressure, water temperature.</td></tr>
+        <tr><td><strong>Body Massage Form</strong></td><td>Preferences and concerns for a body massage.</td></tr>
+        <tr><td><strong>Combo Form</strong></td><td>Head Spa and Body Massage in a single visit.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Forms belong to the client rather than to one visit, so a therapist can
+    review them on the client's next return.
+  </p>
+
+  <h3>Import Clients</h3>
+
+  <p>
+    For bringing in many records at once from a list. Use it when migrating a
+    branch masterlist — not for day-to-day work.
+  </p>
+</section>
+
+<section id="ch-scheduling">
+  <h2><span class="h2-num">Chapter 13</span>Scheduling</h2>
+
+  <p>This is where branch appointments are managed. It has four parts:</p>
+
+  <dl class="deflist">
+    <dt>Branch Schedule</dt>
+    <dd>The selected day's timeline by bed and time.</dd>
+
+    <dt>Upcoming Schedules</dt>
+    <dd>Bookings still to come — Date, Client, Service, Branch, Schedule, Contact, Note, Status.</dd>
+
+    <dt>Blocked Dates</dt>
+    <dd>Days the branch is closed or not accepting bookings, with a Reason and Blocked By.</dd>
+
+    <dt>Schedule History</dt>
+    <dd>Past appointments, for looking back.</dd>
+  </dl>
+
+  <h3>Creating an appointment</h3>
+
+  <ol class="steps">
+    <li>Press <span class="ui">Add Appointment</span>.</li>
+    <li>Enter the client, service, therapist, date, and time.</li>
+    <li>The system checks for a free bed and for therapist conflicts.</li>
+    <li>Save. It now appears on the Dashboard, and the therapist receives a notification.</li>
+  </ol>
+
+  <p>
+    Statuses are <strong>Scheduled</strong>, <strong>Confirmed</strong>,
+    <strong>Completed</strong>, and <strong>Cancelled</strong>.
+  </p>
+
+  <div class="note">
+    <span class="callout-label">A faster route</span>
+    <p>
+      When the client is in front of you and books their next visit, use
+      <span class="ui">Add to Schedule</span> inside the Add Sale form. It finds
+      a free bed and time automatically, so you never have to open Scheduling.
+    </p>
+  </div>
+</section>
+
+<section id="ch-booking">
+  <h2><span class="h2-num">Chapter 14</span>Booking Requests</h2>
+
+  <p>
+    This is where bookings from the <strong>public Crown Head Spa website</strong>
+    arrive. They are not appointments yet — they are requests waiting to be
+    reviewed.
+  </p>
+
+  <p>
+    Each row shows Branch, Service, Preferred Date / Time, Client, Contact,
+    Notes, Submitted, and Hold Status. <strong>Hold Status</strong> tells you
+    whether a slot is being temporarily held for that request.
+  </p>
+
+  <ol class="steps">
+    <li>Read the request and check it against the branch's schedule.</li>
+    <li>Call or message the client using the contact details they supplied.</li>
+    <li>If they confirm, create the real appointment in <a href="#ch-scheduling">Scheduling</a>.</li>
+    <li>If it cannot be accommodated, press <strong>Decline</strong>.</li>
+  </ol>
+
+  <div class="warn">
+    <span class="callout-label">No automatic reply is sent</span>
+    <p>
+      Declining <strong>does not</strong> notify the visitor. You still have to
+      contact them yourself. Check this page daily — never let a request sit
+      unanswered.
+    </p>
+  </div>
+
+  <h3>Looking back at handled requests</h3>
+
+  <p>
+    The main table only lists requests still waiting. Once you create an
+    appointment from one, or decline it, it leaves that list. To find it again,
+    press <span class="ui">Show History</span> at the bottom of the page.
+  </p>
+
+  <p>
+    <strong>Previous Requests</strong> opens underneath with the same columns
+    plus <strong>Outcome</strong>, which tells you whether an appointment was
+    created or the request was declined, when that happened, and which staff
+    account did it. Nothing here can be acted on again — it is for reference.
+  </p>
+
+  <h3>Finding a particular day</h3>
+
+  <p>
+    History opens showing everything. To narrow it, use the
+    <span class="ui">Date submitted</span> picker at the top right of that
+    section, or step a day at a time with the
+    <span class="ui">&lsaquo;</span> and <span class="ui">&rsaquo;</span>
+    buttons beside it. <span class="ui">Show all</span> clears the filter and
+    brings the whole list back.
+  </p>
+
+  <div class="note">
+    <span class="callout-label">The date is when it arrived</span>
+    <p>
+      The picker matches the day the request <em>came in</em>, not the day the
+      guest asked to visit. Looking for "the one that came in on Tuesday" is
+      what this is for; the guest's requested date is still there to read in the
+      Preferred Date column. A request that arrives late at night counts under
+      the day you received it.
+    </p>
+  </div>
+
+  <div class="warn">
+    <span class="callout-label">Pending requests do not expire on their own</span>
+    <p>
+      What expires is the temporary slot hold, which is why a request can sit in
+      the pending list showing <strong>Expired</strong> under Hold Status. The
+      request itself stays pending forever until someone acts on it, so the
+      Pending count keeps growing. Decline the ones that are no longer live so
+      the list stays a true picture of what still needs your attention — and
+      they will still be findable under Show History afterwards.
+    </p>
+  </div>
+</section>
+
+<!-- ================= PART THREE ================= -->
+<div class="part-opener">
+  <p class="part-label">Part Three</p>
+  <h2>Inventory</h2>
+  <p>Tracking stock from the central warehouse out to each branch.</p>
+</div>
+
+<section id="ch-inventory">
+  <h2><span class="h2-num">Chapter 15</span>Warehouse and Branches</h2>
+
+  <ul class="roleline">
+    <li><span class="pill pill-role">Admin only</span></li>
+  </ul>
+
+  <p>Three pages make up inventory, and they are used in sequence.</p>
+
+  <h3>Inventory Settings — the master list</h3>
+
+  <p>
+    Everything that is tracked is listed here: <strong>Item</strong>,
+    <strong>Category</strong>, <strong>Description</strong>, and
+    <strong>Unit</strong> (bottle, piece, box). An item must exist here before
+    it can be stocked in the warehouse or requested by a branch.
+  </p>
+
+  <h3>Item Cost</h3>
+
+  <p>
+    Each item can carry what it costs you. It is optional — leave it blank and
+    it is recorded as <strong>&#8369;0.00</strong>, so you can add an item now
+    and fill in the price later. Items created before this field existed also
+    show &#8369;0.00 until you edit them.
+  </p>
+
+  <h3>Telling an item what consumes it</h3>
+
+  <p>
+    The <strong>Transaction</strong> field on each item is what makes stock
+    move on its own. It has three settings, and what you can link changes with
+    each:
+  </p>
+
+  <dl class="deflist">
+    <dt>Retail</dt>
+    <dd>Sold to the guest as a product. Links to one retail product.</dd>
+
+    <dt>Services</dt>
+    <dd>
+      Used up while performing treatments. Links to as many services as you
+      like — a shampoo sachet can belong to several head spa treatments.
+    </dd>
+
+    <dt>Branch Consumption</dt>
+    <dd>Used around the branch rather than on a guest. Links to nothing.</dd>
+  </dl>
+
+  <p>
+    Leaving Transaction unset is fine. The item is still tracked and can still
+    be stocked and requested — it simply will not deduct itself.
+  </p>
+
+  <h3>Warehouse — the central store</h3>
+
+  <dl class="deflist">
+    <dt>Warehouse Stock</dt>
+    <dd>What the warehouse currently holds.</dd>
+
+    <dt>Add Stock (Stock In)</dt>
+    <dd>New stock arriving from a supplier.</dd>
+
+    <dt>Send Stock (Stock Out)</dt>
+    <dd>Stock going out to a branch.</dd>
+
+    <dt>Stock Requests</dt>
+    <dd>Branch requests waiting for a response.</dd>
+
+    <dt>Warehouse History</dt>
+    <dd>A full record of every movement — Date, Type, Item, Branch, QTY.</dd>
+  </dl>
+
+  <h3>Branches — stock at the branch</h3>
+
+  <dl class="deflist">
+    <dt>Available Stock</dt>
+    <dd>What the selected branch currently holds.</dd>
+
+    <dt>Request Stock</dt>
+    <dd>Sends a request to the warehouse.</dd>
+
+    <dt>Pending Requests</dt>
+    <dd>Requests not yet answered — status <strong>Awaiting Response</strong>.</dd>
+
+    <dt>Branch Request History</dt>
+    <dd>Past requests and how they were resolved.</dd>
+
+    <dt>Stock Audit</dt>
+    <dd>
+      What the branch has used up on treatments, filled in automatically off
+      the Daily Income Report. See below.
+    </dd>
+  </dl>
+
+  <h3>The request flow</h3>
+
+  <div class="formula">Branch requests    →  status: Awaiting Response
+                   →  a badge appears on the Warehouse sidebar item
+Warehouse answers  →  Send Stock out to the branch
+Branch receives    →  it is added to the branch's Available Stock</div>
+
+  <h3>Stock that deducts itself</h3>
+
+  <p>
+    Once an item is linked to a service in Inventory Settings, you no longer
+    have to subtract it by hand. Saving a sale in the
+    <a href="#ch-daily-income">Daily Income Report</a> does it for you:
+  </p>
+
+  <div class="formula">Sale saved with a service
+  →  every item linked to that service becomes a Stock Audit row
+  →  carrying the sale's date, therapist and client
+  →  and the same quantity comes off the branch's Available Stock</div>
+
+  <p>
+    Editing that sale afterwards corrects both. Add a service and its items are
+    deducted; remove one and the stock goes back; leave a service alone and its
+    row stays put, keeping its Serial No. and anything you typed into it by
+    hand. Deleting or voiding the sale returns everything it took.
+  </p>
+
+  <p>
+    You can still edit a Stock Audit row yourself — the Serial No. especially,
+    which the system cannot know. What you type is kept even when the sale is
+    saved again.
+  </p>
+
+  <div class="note">
+    <span class="callout-label">Nothing happens until you link an item</span>
+    <p>
+      Deduction only runs for items that have a service linked to them. Until
+      then the Stock Audit table stays empty and stock figures behave exactly
+      as they always have. Start with one item, save one real sale that uses
+      that service, and check the audit row and the stock it took before you
+      link the rest.
+    </p>
+  </div>
+
+  <div class="warn">
+    <span class="callout-label">A branch cannot go below zero</span>
+    <p>
+      If a branch has already run out, the sale still saves and the audit row
+      still appears, but only what was actually there comes off. The row records
+      what was really taken, so voiding that sale later gives back the true
+      amount and never hands the branch stock it never had. A branch showing
+      zero while treatments are still being sold means it needs restocking —
+      request it from the warehouse.
+    </p>
+  </div>
+</section>
+
+<!-- ================= PART FOUR ================= -->
+<div class="part-opener">
+  <p class="part-label">Part Four</p>
+  <h2>Reports</h2>
+  <p>Reading the numbers: performance, petty cash, expenses, and the monthly close.</p>
+</div>
+
+<section id="ch-statistics">
+  <h2><span class="h2-num">Chapter 16</span>Statistics</h2>
+
+  <ul class="roleline">
+    <li><span class="pill pill-role">Admin</span></li>
+    <li><span class="pill pill-role">Executive Assistant</span></li>
+    <li><span class="pill pill-role">Receptionist</span></li>
+  </ul>
+
+  <p>
+    The Business Analytics Dashboard. It covers a full month, for whichever
+    Branch is selected in the toolbar.
+  </p>
+
+  <h4>Charts</h4>
+  <ul>
+    <li><strong>Monthly Sales Trend</strong> — how revenue moves through the month.</li>
+    <li><strong>Most Availed Services</strong> — which services sell.</li>
+    <li><strong>Therapist Performance</strong> — sales compared across therapists.</li>
+    <li><strong>Payment Method Distribution</strong> — the split across Cash, GCash, Bank, and Terminal.</li>
+    <li><strong>Client Acquisition Sources</strong> — Facebook, Walk-in, Referral, Returning.</li>
+  </ul>
+
+  <h4>Tables</h4>
+  <ul>
+    <li><strong>Services</strong> — Service, Category, Quantity Availed, Total Amount.</li>
+    <li><strong>Products</strong> — Product, Category, Quantity Sold, Total Amount.</li>
+    <li><strong>VIP Card</strong> — memberships sold.</li>
+    <li><strong>Voucher Sales</strong> — Service Voucher, Voucher Value, Quantity Sold, Total Amount.</li>
+    <li><strong>Voucher Redeem</strong> — Times Redeemed and Total Redeemed Value.</li>
+  </ul>
+
+  <div class="note">
+    <span class="callout-label">Voucher Sales vs Voucher Redeem</span>
+    <p>
+      <strong>Sales</strong> is money that came in when the voucher was bought.
+      <strong>Redeem</strong> is service delivered when it was used — often in a
+      different month entirely. They are two different things; never add them
+      together.
+    </p>
+  </div>
+</section>
+
+<section id="ch-petty-cash">
+  <h2><span class="h2-num">Chapter 17</span>Petty Cash</h2>
+
+  <p>
+    This tracks the fund a branch holds for small expenses. <strong>Only one
+    fund can be open per branch</strong> at a time.
+  </p>
+
+  <ol class="steps">
+    <li><strong>Replenish</strong> — enter the release date and amount. This opens a new tracking table. (The button is hidden while a fund is still open.)</li>
+    <li><strong>Add Entry</strong> — one line per expense: Date, Particular, Remarks, QTY, and Unit Cost. Total Cost is computed for you, and <strong>Remaining</strong> updates immediately.</li>
+    <li><strong>Liquidate</strong> — when the fund is spent or it is time to turn it in. You see a Released, Spent, and Remaining summary, with a space for remarks.</li>
+    <li><strong>History</strong> — every closed fund is filed here with its full transaction detail.</li>
+  </ol>
+
+  <div class="warn">
+    <span class="callout-label">What Liquidate does</span>
+    <p>
+      Confirming Liquidate <strong>automatically posts every transaction into
+      the Expenses Report</strong> as Operation Expenses — Category
+      <strong>Branch Expenses</strong>, Mode of Payment <strong>Petty
+      Cash</strong>. There is no need to retype them. The entries use the
+      <strong>liquidation date</strong> rather than each expense's own date,
+      because they are submitted as one batch.
+    </p>
+  </div>
+</section>
+
+<section id="ch-reports">
+  <h2><span class="h2-num">Chapter 18</span>Monthly Summary, Expenses, and Cash Flow</h2>
+
+  <h3>Monthly Summary</h3>
+  <ul class="roleline"><li><span class="pill pill-role">Admin only</span></li></ul>
+
+  <p>
+    One row per day of the month: Date, Cash, GCash, Bank Transfer, Terminal,
+    and Total — followed by a Summary by category. It is the fastest way to see
+    a branch's whole month at once.
+  </p>
+
+  <h3>Expenses Report</h3>
+  <ul class="roleline"><li><span class="pill pill-role">Admin only</span></li></ul>
+
+  <p>The Summary Table has three parts:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Section</th><th>What it holds</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Operation Expenses</strong></td><td>Day-to-day operating costs. Liquidated Petty Cash lands here.</td></tr>
+        <tr><td><strong>Salary</strong></td><td>Wage costs for the month.</td></tr>
+        <tr><td><strong>Utilities / Monthly Dues</strong></td><td>Electricity, water, internet, rent, and other recurring bills.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Expense categories are <strong>Operation Supplies</strong>,
+    <strong>Maintenance</strong>, <strong>Management</strong>, <strong>Branch
+    Expenses</strong>, and <strong>Others</strong>. Modes of payment are
+    <strong>Cash</strong>, <strong>Gcash</strong>, <strong>BDO</strong>,
+    <strong>RCBC</strong>, and <strong>Petty Cash</strong>.
+  </p>
+
+  <h3>Cash Flow</h3>
+  <ul class="roleline"><li><span class="pill pill-role">Admin only — never grantable</span></li></ul>
+
+  <p>
+    This tracks the actual movement of money across each holding:
+    <strong>Cash</strong>, <strong>Gcash</strong>, <strong>BDO</strong>, and
+    <strong>RCBC</strong>. Each entry carries a Date, Activity, an amount per
+    holding, and Remarks. An entry can be <strong>in</strong>,
+    <strong>out</strong>, or a <strong>transfer</strong> between two holdings.
+  </p>
+
+  <p>
+    A <strong>Money Counter</strong> is included for counting physical cash at
+    the end of the day — enter the count per denomination and the total is
+    calculated. <span class="ui">Reset</span> clears it for the next count.
+  </p>
+</section>
+
+<section id="ch-shareholder">
+  <h2><span class="h2-num">Chapter 19</span>Shareholder and Product Reports</h2>
+
+  <h3>Share Holder Summary Report</h3>
+  <ul class="roleline"><li><span class="pill pill-role">Admin only</span></li></ul>
+
+  <p>
+    This lists each <strong>Shareholder</strong> and their
+    <strong>Percentage</strong>. From that it builds the <strong>Monthly
+    Summary</strong>, the <strong>Monthly Net Computation</strong>, and the
+    <strong>Dividend Report</strong> — each shareholder's share of the month's
+    net. A Notes section holds any explanation that should travel with the
+    report.
+  </p>
+
+  <h3>Loyalty Card Sales Summary</h3>
+  <ul class="roleline"><li><span class="pill pill-role">Admin only</span></li></ul>
+
+  <p>
+    A monthly report covering Loyalty Card sales alone: Date, Clients, Loyalty
+    Card Sale, and Total. It has its own <strong>Loyalty Card Expenses</strong>
+    (Date, Particular, Amount, Remarks) and a <strong>Previous Month
+    Fund</strong> so you can see what carried over.
+  </p>
+
+  <h3>Product Sales Summary</h3>
+  <ul class="roleline"><li><span class="pill pill-role">Admin only</span></li></ul>
+
+  <p>
+    The same layout, but for retail products: Date, Clients, Product, Qty, Unit
+    Cost, and Total — with <strong>Product Sales Expenses</strong>,
+    <strong>Previous Month Fund</strong>, and a Summary. This is where you check
+    whether the retail side is profitable on its own, separately from services.
+  </p>
+</section>
+
+<!-- ================= PART FIVE ================= -->
+<div class="part-opener">
+  <p class="part-label">Part Five</p>
+  <h2>Administration</h2>
+  <p>Accounts, attendance records, the master lists everything else depends on, and the database.</p>
+</div>
+
+<section id="ch-accounts">
+  <h2><span class="h2-num">Chapter 20</span>Account Settings</h2>
+
+  <p>This page has two halves.</p>
+
+  <h3>My Account — for everyone</h3>
+
+  <p>
+    Your own details and <strong>Change Password</strong>. Every staff member
+    has access to this.
+  </p>
+
+  <h3>User Accounts — for Admins</h3>
+
+  <p>
+    A list of every account: Account, User Type, Assigned Branches, Status, and
+    Last Login. Accounts are created and maintained here.
+  </p>
+
+  <h4>Creating an account</h4>
+
+  <dl class="deflist">
+    <dt>User Account *</dt>
+    <dd>The email or username they will sign in with.</dd>
+
+    <dt>Nominate Password</dt>
+    <dd>Their starting password. Required for a new account.</dd>
+
+    <dt>Personal Information</dt>
+    <dd>First Name, Last Name, Middle Name, and Nickname. The Nickname is what appears in the List of Therapist.</dd>
+
+    <dt>Type of User *</dt>
+    <dd>Admin, Executive Assistant, Receptionist, Therapist, Marketing Agent, or Branch Device.</dd>
+
+    <dt>Status</dt>
+    <dd>Active or Inactive. An Inactive account cannot sign in.</dd>
+
+    <dt>Compensation Schedule</dt>
+    <dd><strong>Weekly</strong> — they appear under their branch's payroll group. <strong>Bi-Monthly</strong> — they go into the Admin Staff group automatically.</dd>
+
+    <dt>Hide from Admin Staff group</dt>
+    <dd>Leaves the account out of the Admin Staff list in Payroll. The account still works normally.</dd>
+
+    <dt>Linked Therapist</dt>
+    <dd>Ties the account to a name in the List of Therapist so they see only their own Therapist Sales.</dd>
+
+    <dt>Secondary Role: Receptionist</dt>
+    <dd>For a Therapist who relieves. They are asked their duty at each login, and Payroll uses the matching rate for that day.</dd>
+
+    <dt>Assigned Branches</dt>
+    <dd>Which branches they can see. Admin and Executive Assistant get all of them automatically.</dd>
+
+    <dt>Additional Access</dt>
+    <dd>Extra pages beyond what their role normally sees.</dd>
+  </dl>
+
+  <div class="stop">
+    <span class="callout-label">Never grantable</span>
+    <p>
+      Even through Additional Access, System Health / Database and Cash Flow
+      <strong>cannot</strong> be given out. Only a genuine Admin account holds
+      them.
+    </p>
+  </div>
+</section>
+
+<section id="ch-attendance">
+  <h2><span class="h2-num">Chapter 21</span>Attendance</h2>
+
+  <ul class="roleline">
+    <li><span class="pill pill-role">Admin</span></li>
+    <li><span class="pill pill-role">Executive Assistant</span></li>
+    <li><span class="pill pill-role">Receptionist</span></li>
+  </ul>
+
+  <p>
+    The <strong>Daily Log</strong> collects every clock-in and clock-out: Date,
+    Staff, Clock In, Clock Out, Branch, and Hours. A Day filter provides
+    <span class="ui">‹</span> <span class="ui">›</span>
+    <span class="ui">Today</span> and <span class="ui">×</span>.
+  </p>
+
+  <h3>Manual correction</h3>
+
+  <p>
+    When someone forgets to clock in or out, use <span class="ui">Add Attendance
+    Entry</span> to correct it. This is the only proper way — never leave a
+    worked day with no record, because it computes as zero pay.
+  </p>
+
+  <div class="warn">
+    <span class="callout-label">Review before payroll</span>
+    <p>
+      Before locking a payroll period, read through the whole Daily Log looking
+      for missing clock-outs and unusual hour counts. Fixing it now is far
+      easier than after pay has gone out.
+    </p>
+  </div>
+</section>
+
+<section id="ch-masterlists">
+  <h2><span class="h2-num">Chapter 22</span>Master Lists</h2>
+
+  <p>
+    These are the source of everything else. What you write here appears in
+    every dropdown, price, and commission across CrownOS.
+  </p>
+
+  <h3>List of Services</h3>
+  <ul class="roleline">
+    <li><span class="pill pill-role">Admin</span></li>
+    <li><span class="pill pill-role">Executive Assistant</span></li>
+  </ul>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Field</th><th>What it means</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Service</strong></td><td>The name as it appears in dropdowns.</td></tr>
+        <tr><td><strong>Category</strong></td><td>Head Spa, Massage, Package, Add-on, Kiddie, or Other. This drives the Daily KPI.</td></tr>
+        <tr><td><strong>Duration</strong></td><td>Length in minutes. Used to build schedules and to determine overtime.</td></tr>
+        <tr><td><strong>Regular / First Timer / VIP / Senior-PWD</strong></td><td>The four prices. <a href="#ch-add-sale">Chapter 7</a> explains when each one is used.</td></tr>
+        <tr><td><strong>Commission</strong></td><td>The percentage the therapist earns.</td></tr>
+        <tr><td><strong>Voucher</strong></td><td>Whether it can be sold as a voucher.</td></tr>
+        <tr><td><strong>Freebie</strong></td><td>Whether it can be given free.</td></tr>
+        <tr><td><strong>Online Booking</strong></td><td>Whether it appears on the public website.</td></tr>
+        <tr><td><strong>Status</strong></td><td>Active or Archived.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <span class="callout-label">Archive rather than delete</span>
+    <p>
+      When a service is no longer offered, set its Status to
+      <strong>Archived</strong> instead of deleting it. Old reports that
+      reference it stay correct.
+    </p>
+  </div>
+
+  <h3>List of Products</h3>
+  <p>
+    Product, Category (Hair Care, Skin Care, Home Care, Retail, Membership,
+    Other), Selling Price, Voucher (with a Voucher Value), and Status. VIP Cards
+    and services sold as vouchers live here.
+  </p>
+
+  <h3>List of Therapist</h3>
+  <p>
+    Therapist Name, Assigned Branches, and Status. The name here is what a user
+    account is tied to through <strong>Linked Therapist</strong>, and it is what
+    appears in Add Sale and Scheduling.
+  </p>
+
+  <h3>List of Branches</h3>
+
+  <dl class="deflist">
+    <dt>Branch Name</dt>
+    <dd>The name as it appears in the toolbar.</dd>
+
+    <dt>Number of Beds</dt>
+    <dd>How many beds. This sets the width of the schedule timeline.</dd>
+
+    <dt>Opening / Closing Time</dt>
+    <dd>Operating hours. These bound the Dashboard timeline.</dd>
+
+    <dt>GPS Location</dt>
+    <dd>Written as <code>latitude, longitude</code>. The 150-metre clock-in radius is measured from this point. With no GPS set, there is no location verification.</dd>
+  </dl>
+
+  <div class="warn">
+    <span class="callout-label">Renaming a branch</span>
+    <p>
+      Renaming a branch carries every related record with it automatically —
+      sales, expenses, schedules, therapists, users, and clients. And a branch
+      with history behind it cannot be deleted by accident.
+    </p>
+  </div>
+</section>
+
+<section id="ch-data">
+  <h2><span class="h2-num">Chapter 23</span>System Health and Database</h2>
+
+  <ul class="roleline"><li><span class="pill pill-role">Admin only</span></li></ul>
+
+  <p>
+    The Data Protection Center is the most important page in the system. It
+    reports the state of the <strong>Database</strong>, the <strong>Last
+    Backup</strong>, <strong>Storage Used</strong>, and the
+    <strong>Version</strong>.
+  </p>
+
+  <h3>Backup — every day</h3>
+
+  <ol class="steps">
+    <li>Press <span class="ui">Export Full Backup</span>.</li>
+    <li>A JSON file downloads containing all of CrownOS — users, branches, services, products, therapists, clients, schedules, income, expenses, and settings.</li>
+    <li>Keep <strong>two copies</strong>: one on the computer, one on Google Drive, iCloud, or a USB drive.</li>
+  </ol>
+
+  <div class="warn">
+    <span class="callout-label">When to do it</span>
+    <p>
+      After the day's Daily Income Report is complete. If no backup has been
+      taken today, a dot appears next to <strong>System Health /
+      Database</strong> in the sidebar as a reminder.
+    </p>
+  </div>
+
+  <h3>Restore</h3>
+
+  <ol class="steps">
+    <li>Press <span class="ui">Choose Backup File</span> and select the JSON file.</li>
+    <li>CrownOS verifies it and shows the backup date, who created it, how many records it holds, and what it covers.</li>
+    <li>Read the verification panel. Confirm this is the right backup.</li>
+    <li>Press <span class="ui">Restore Selected Backup</span> and confirm.</li>
+  </ol>
+
+  <div class="stop">
+    <span class="callout-label">Restoring replaces current data</span>
+    <p>
+      A restore returns the whole system to how it stood when the backup was
+      made. <strong>Everything done since that date is lost.</strong> Before
+      restoring, export a fresh backup of the current state — so there is
+      something to return to if you pick the wrong file.
+    </p>
+  </div>
+
+  <h3>Emergency Export</h3>
+
+  <p>
+    Produces CSV files you can open in Excel — for <strong>Clients</strong>,
+    income records, and schedules. Use it when something has to be handed
+    outside the system, or when there is an access problem.
+  </p>
+
+  <h3>How data syncs</h3>
+
+  <p>
+    Every change saves to the browser first and is pushed straight to Crown Head
+    Spa's central database. All branches and devices see the same data.
+  </p>
+
+  <ul>
+    <li><strong>If the internet drops</strong> — CrownOS keeps working. Changes queue up and are sent automatically when the connection returns.</li>
+    <li><strong>If two people edit the same thing</strong> — the last one to save wins. So it is best not to have two people fixing the same day at once.</li>
+    <li><strong>Always log out</strong> — logging out makes sure your last changes reach the cloud before you leave.</li>
+  </ul>
+</section>
+
+<!-- ================= PART SIX ================= -->
+<div class="part-opener">
+  <p class="part-label">Part Six</p>
+  <h2>Reference</h2>
+  <p>Routines to follow, and what to do when something goes wrong.</p>
+</div>
+
+<section id="ch-checklists">
+  <h2><span class="h2-num">Chapter 24</span>Checklists</h2>
+
+  <h3>Opening the branch</h3>
+  <ul class="checklist">
+    <li>Log in and select the correct Branch in the toolbar.</li>
+    <li>Clock in, choosing the correct shift (Opening or Closing).</li>
+    <li>Review the Dashboard for the day's schedule.</li>
+    <li>Check Booking Requests for new enquiries from the website.</li>
+    <li>Check whether any Ongoing Transactions were left over from yesterday.</li>
+  </ul>
+
+  <h3>Every transaction</h3>
+  <ul class="checklist">
+    <li>The Date in the toolbar is correct.</li>
+    <li>The client's name is complete and the Source is accurate.</li>
+    <li>A therapist is selected (unless it is products only).</li>
+    <li>The price type is right — VIP, First Timer, or Senior/PWD where applicable.</li>
+    <li>All companions are on the same transaction.</li>
+    <li>Payments add up to the Amount to Pay.</li>
+    <li>An Invoice Number is entered if a receipt was requested.</li>
+    <li><strong>Settle</strong> was pressed — not just Add to List.</li>
+  </ul>
+
+  <h3>Closing the day</h3>
+  <ul class="checklist">
+    <li>No Ongoing Transactions are left open.</li>
+    <li>The Payment Breakdown matches what is actually in the drawer.</li>
+    <li>The Daily Income Report PDF has been exported.</li>
+    <li>Expenses are recorded in Petty Cash or the Expenses Report.</li>
+    <li>All staff have clocked out.</li>
+    <li>A backup has been exported <span class="pill pill-role">Admin</span></li>
+  </ul>
+
+  <h3>Every month</h3>
+  <ul class="checklist">
+    <li>Review the full Attendance log for the payroll period.</li>
+    <li>Finalise and release payroll.</li>
+    <li>Complete the Expenses Report for the month.</li>
+    <li>Reconcile Cash Flow against actual bank balances.</li>
+    <li>Review Statistics — which services are gaining and which are slipping.</li>
+    <li>Produce the Share Holder Summary Report.</li>
+    <li>Store a month-end backup somewhere off the computer.</li>
+  </ul>
+</section>
+
+<section id="ch-faq">
+  <h2><span class="h2-num">Chapter 25</span>Troubleshooting</h2>
+
+  <details>
+    <summary>The page shows no data.</summary>
+    <p>
+      Most likely no <strong>Branch</strong> is selected, or the
+      <strong>Date</strong> is wrong. Check the toolbar at the top first. If
+      both look right, press <span class="ui">Refresh</span>.
+    </p>
+  </details>
+
+  <details>
+    <summary>"Your account does not have permission to access this page."</summary>
+    <p>
+      That page is not part of your role. Check the
+      <a href="#ch-roles">access matrix</a>. If you genuinely need it for your
+      work, an Admin can grant it through <strong>Additional Access</strong> in
+      Account Settings.
+    </p>
+  </details>
+
+  <details>
+    <summary>I forgot to clock in or out.</summary>
+    <p>
+      Tell an Admin, Executive Assistant, or Receptionist. They will add the
+      correct times in <a href="#ch-attendance">Attendance</a> using
+      <span class="ui">Add Attendance Entry</span>. The payslip updates by
+      itself afterwards.
+    </p>
+  </details>
+
+  <details>
+    <summary>It says I am too far from the branch when clocking in.</summary>
+    <p>
+      You need to be within 150 metres of the branch's GPS pin. Turn on location
+      on your phone and try again from inside the branch. With a weak signal the
+      entry is marked <strong>"No GPS"</strong> — it still goes through, but an
+      Admin should review it in Attendance.
+    </p>
+  </details>
+
+  <details>
+    <summary>A service came up at the wrong price.</summary>
+    <p>
+      Check the price type set on that line — Regular, First Timer, VIP, or
+      Senior/PWD. If VIP appears unexpectedly, the client is probably already
+      VIP in the database, or a VIP Card is in the transaction. If the price
+      itself is genuinely wrong, an Admin or Executive Assistant corrects it in
+      the <a href="#ch-masterlists">List of Services</a>.
+    </p>
+  </details>
+
+  <details>
+    <summary>The system will not accept a voucher code.</summary>
+    <p>
+      Read the exact message — <a href="#ch-vouchers">Chapter 8</a> lists each one
+      and what it means. Search the <strong>Voucher Masterlist</strong> by the
+      client's name to see the code's real status.
+    </p>
+  </details>
+
+  <details>
+    <summary>I settled the wrong transaction.</summary>
+    <p>
+      If that row has an <strong>Edit</strong> option, fix it there. If not, an
+      Admin or Executive Assistant can correct it. Do not use
+      <span class="ui">Clear This Branch / Date</span> — that deletes the
+      <em>entire</em> day, not the one mistake.
+    </p>
+  </details>
+
+  <details>
+    <summary>There is a "🧪 Local Test" badge at the top.</summary>
+    <p>
+      You are on a test copy, not the real CrownOS — <strong>nothing you type is
+      being saved</strong>. Report it immediately and stop entering data until it
+      reads <strong>☁ Synced to Cloud</strong> again.
+    </p>
+  </details>
+
+  <details>
+    <summary>The internet dropped mid-shift.</summary>
+    <p>
+      Carry on working. Your changes queue up and send automatically when the
+      connection returns. Before closing, make sure the internet is back and you
+      can see <strong>☁ Synced to Cloud</strong> before logging out.
+    </p>
+  </details>
+
+  <details>
+    <summary>I cannot sign in even though the password is right.</summary>
+    <p>
+      The account list may still be downloading from the cloud. Wait a few
+      seconds and try again. If it persists, check whether your account is
+      <strong>Inactive</strong> — only an Admin can reactivate it in Account
+      Settings.
+    </p>
+  </details>
+</section>
+
+<footer>
+  <p>
+    <strong>CrownOS · Crown Head Spa</strong> — Version 1.0 Stable.
+    Manual for all staff and management.
+    For anything not answered here, speak to your system Admin.
+  </p>
+</footer>
+            </article>
+
+        </div>
+    </div>
+
+</div>
+
+<button type="button" class="manual-top-btn" id="manualTopBtn">
+    &uarr; Contents
+</button>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="manual.js"></script>
+
+<script src="sidebar.js"></script>
+</body>
+</html>
