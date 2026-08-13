@@ -141,6 +141,7 @@
                             <th>Used For Services</th>
                             <th>Description</th>
                             <th>Unit</th>
+                            <th>Item Cost</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -208,7 +209,7 @@
                     >
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label">
                         Category *
                     </label>
@@ -219,7 +220,7 @@
                     ></select>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label">
                         Unit *
                     </label>
@@ -228,6 +229,25 @@
                         id="itemUnitInput"
                         class="form-select"
                     ></select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">
+                        Item Cost
+                    </label>
+
+                    <input
+                        type="number"
+                        id="itemCostInput"
+                        class="form-control"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                    >
+
+                    <small class="text-muted">
+                        Optional. Left blank counts as 0.
+                    </small>
                 </div>
 
                 <div class="col-12">

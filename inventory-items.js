@@ -2,6 +2,24 @@ let items = [];
 let editingItemId = null;
 let selectedServices = [];
 
+/* script.js owns the peso() every other page formats money with, but it is
+   not loaded on the inventory pages — this matches its output. */
+function formatCost(value){
+    return "₱" + Number(value || 0).toLocaleString("en-PH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+/* Cost is optional: blank, or anything that is not a usable number, is worth
+   zero. Items created before the field existed have no `cost` at all, and
+   read back as 0 through the same path. */
+function readItemCost(value){
+    const cost = Number(String(value ?? "").trim());
+
+    return Number.isFinite(cost) && cost > 0 ? cost : 0;
+}
+
 document.addEventListener("DOMContentLoaded", function(){
     items = CrownInventory.getItems();
 
@@ -317,6 +335,7 @@ function openAddModal(){
     document.getElementById("itemUnitInput").value = "";
     document.getElementById("itemDescriptionInput").value = "";
     document.getElementById("itemTransactionInput").value = "";
+    document.getElementById("itemCostInput").value = "";
 
     populateProductOptions("");
     populateServiceOptions([]);
@@ -365,6 +384,11 @@ function openEditModal(itemId){
 
     document.getElementById("itemTransactionInput").value =
         item.transaction || "";
+
+    /* Shown blank rather than as "0" when there is no cost, so the placeholder
+       keeps saying the field is optional. */
+    document.getElementById("itemCostInput").value =
+        readItemCost(item.cost) > 0 ? readItemCost(item.cost) : "";
 
     populateProductOptions(item.linkedProduct || "");
     populateServiceOptions(CrownInventory.getItemServices(item));
@@ -481,6 +505,9 @@ function saveItem(){
     const description =
         document.getElementById("itemDescriptionInput").value.trim();
 
+    const cost =
+        readItemCost(document.getElementById("itemCostInput").value);
+
     if(!name){
         alert("Please enter an item name.");
         return;
@@ -528,6 +555,7 @@ function saveItem(){
         item.linkedProduct = linkedProduct;
         item.services = services;
         item.description = description;
+        item.cost = cost;
 
         /* Superseded by `services` — dropped so the two can never
            disagree about what this item is linked to. */
@@ -545,6 +573,7 @@ function saveItem(){
             linkedProduct: linkedProduct,
             services: services,
             description: description,
+            cost: cost,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         });
@@ -613,6 +642,8 @@ function renderItems(){
             <td>${CrownInventory.escapeHtml(item.description) || "—"}</td>
 
             <td>${CrownInventory.escapeHtml(item.unit)}</td>
+
+            <td>${CrownInventory.escapeHtml(formatCost(item.cost))}</td>
 
             <td>
                 <div class="action-buttons">
