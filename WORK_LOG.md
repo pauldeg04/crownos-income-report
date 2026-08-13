@@ -4,6 +4,242 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-13 — Booking-request history, and stock that deducts itself off the sale
+
+Two separate pieces of work. The booking history is live; the inventory work is
+committed but **not deployed** — see its status note below.
+
+### Booking-request history (deployed)
+
+**Problem:** Booking Requests only ever listed pending rows, so the moment a request
+was converted or declined it left the screen for good. There was no way to check back
+on what a guest had asked for, or who handled it.
+
+**Built:** a Show History toggle under the pending table, opening a read-only
+Previous Requests table — the same columns plus an Outcome column carrying
+"Appointment created" / "Declined", the reviewer's account and the time they acted.
+
+- Read on demand, not on a second `onSnapshot`. It is reference material opened
+  occasionally, not a working queue, so a permanent listener on the whole collection
+  would be waste.
+- The query orders by `submittedAt` and drops pending rows in the browser rather than
+  filtering on status in Firestore — an equality filter plus `orderBy` on a different
+  field needs a composite index, which the pending list already goes out of its way to
+  avoid. Nothing to deploy to `firestore.indexes.json`.
+- Fetches the latest 200 submissions; the note under the table says so when that cap
+  is what is bounding the list.
+- Same branch restriction as the pending list — a receptionist cannot read back guests
+  from a branch they cannot see.
+
+**Day picker:** filters rows already in memory, so stepping through days costs no
+further reads. Its `‹ ›` buttons reuse the Scheduling page's `.date-stepper-group`
+markup and the shared `CrownDateStepper` helper, so month and year rollovers behave
+identically in both places.
+
+Filters on **date submitted**, not the guest's preferred date — the point of looking
+back is to find a request you remember receiving, not one whose appointment happened
+to fall on a given day. `submittedAt` is a Timestamp, so it is reduced to `yyyy-mm-dd`
+in local time to match the Submitted column beside it: a request arriving 11:45 PM
+belongs to the day the receptionist saw it come in.
+
+**Worth knowing:** there is no such thing as an expired booking request. The three
+statuses are `pending`, `converted` and `declined` — what expires is the *slot hold*
+(`releaseExpiredHolds` flips `scheduleHolds` to `released`), while the request itself
+stays `pending` forever. So the pending list grows without bound, and its count is not
+a picture of what still needs acting on. Either decline stale ones by hand, or add a
+scheduled function moving them to a new `expired` status — the latter needs
+`firestore.rules` widened, which today allows only `converted` and `declined`.
+
+**Status:** deployed and verified at https://crownos-5f03d.web.app/booking-requests.html.
+
+### Inventory: stock deducted automatically off the Daily Income Report (NOT deployed)
+
+**What it does:** an inventory item can be tagged in Inventory Settings with what
+consumes it — Retail links to one product, Services links to any number of services,
+Branch Consumption links to neither. Saving a sale in the Daily Income Report then
+turns every service carrying linked items into a row in that branch's Stock Audit
+table, dated and attributed to the sale's therapist and client, and deducts it from
+that branch's stock.
+
+Editing the same sale re-runs the sync, which reconciles by sale id instead of
+duplicating: a new line deducts, a line that disappeared gives the stock back, and a
+surviving line keeps its Serial No. and any field edited by hand. Deleting or voiding
+a sale un-consumes everything it logged.
+
+**Two details that are easy to get wrong and were not:**
+- `adjustBranchStock()` floors at zero, so consuming an item the branch has already
+  run out of takes less than asked for. `consumeBranchStock()` records what was
+  *actually* taken, so voiding that sale cannot hand the branch stock it never had.
+- Add Stock now runs through `transactionalAddWarehouseStock()`. A local write only
+  reaches the cloud via firebase-sync's debounced push, and the send helpers
+  re-validate against a live read — so an Add Stock followed quickly by a Send Stock
+  could be rejected against the pre-add quantity. Transacting the add closes that
+  window without flushing this device's snapshot over another device's commit.
+
+**The one line that makes it work:** `index.html` gains
+`<script src="inventory-data.js"></script>`. Without it the Daily Income Report cannot
+reach the inventory layer and the whole feature silently does nothing — no error, no
+audit rows, no deduction.
+
+**No new sync config needed:** firebase-sync.js selects keys by exclusion, not by
+whitelist, so `crownStockAudit` and `crownProductMasterList` mirror on their own.
+
+**Status: committed, NOT deployed.** Deploying it changes real stock numbers across
+both branches on the first sale saved afterwards, so it wants a deliberate go-ahead
+rather than riding along with an unrelated deploy. Verified only to the extent that
+static checks allow — all five touched scripts parse, the hooks are wired at four call
+sites in `script.js`, and no TODO markers remain. Whether the *quantities* come out
+right has not been checked against live data.
+
+**Deploy note for whoever ships it:** `firebase deploy --only hosting` from
+`Income Report/` publishes the whole folder, so it will also carry anything else
+uncommitted in the working tree at that moment. Check `git status` first.
+
+---
+
+## 2026-08-12 — Google reviews for both branches on the public testimonials page
+
+**Requested by:** User — the testimonials section showed Google reviews for Biñan only,
+via an Elfsight widget whose free tier allows a single source. Wanted Calamba shown too.
+
+**Why not just add a second widget:** Elfsight's free tier is one widget per account, and
+working around that with a second Google account would breach their terms and put the
+working Biñan widget at risk. Replaced the widget entirely instead.
+
+**Built:**
+1. [`functions/googleReviews.js`](functions/googleReviews.js) — new `getGoogleReviews`
+   callable. Reads both branches from the Google Places API (New) server-side.
+   - Place IDs are resolved once from branch name + coordinates, then cached in Firestore
+     (`publicCache/googlePlaceIds`) forever — place IDs never change and are exempt from
+     Google's caching limit, so this costs one Text Search call ever.
+   - Review payloads cached 6 hours in `publicCache/googleReviews`, far inside the 30-day
+     cap Google's terms put on caching place content. Works out to ~240 API calls/month.
+   - Falls back to stale cache if Google fails, rather than showing an empty section.
+   - API key lives in the `GOOGLE_PLACES_API_KEY` secret, never in client code.
+2. `Website/testimonials.html` — Elfsight script and widget divs removed; branch tabs
+   (Biñan / Calamba) with one panel each.
+3. `Website/js/main.js` — `initBranchTabs()` and `initGoogleReviews()`. All review text is
+   set with `textContent`, never `innerHTML` — it is public-authored content.
+4. `Website/css/style.css` — `.branch-tab` pills and `.review-card` grid.
+
+**Hard limit worth remembering:** the Places API returns a maximum of **5 reviews per
+place**, sorted by relevance, with no way to ask for more or to sort by date. The rating
+and total review count are for the whole listing, which is why the summary line above the
+cards carries them (Biñan 5.0/389, Calamba 5.0/304 at time of writing).
+
+**Status:** Deployed and verified live at https://crownheadspa.com/testimonials.html —
+both branch tabs render real Google data (Biñan 5.0/389, Calamba 5.0/304), no console errors.
+
+**Deploy note:** the public website is a *separate* hosting site (`crownheadspa`) configured
+in `Website/firebase.json`, not the `crownos-5f03d` site that `Income Report/firebase.json`
+serves. Deploy it with `firebase deploy --only hosting:crownheadspa` **from the `Website/`
+directory** — running `--only hosting` from `Income Report/` deploys the internal CrownOS
+app instead and silently leaves the public site unchanged.
+
+**Setup friction hit along the way (for future reference):**
+- `firebase-tools` was no longer installed (Node upgraded to v24 wiped global npm packages);
+  the cached login in `~/.config/configstore/firebase-tools.json` survived. Ran everything
+  via `npx -y firebase-tools@latest` instead of reinstalling — no sudo needed.
+- The first two `functions:secrets:set` attempts stored an invalid key. Cause: the terminal
+  prompt masks input, so Cmd+V landed twice and stored the 39-char key duplicated to 78
+  chars. Google reports this as `INVALID_ARGUMENT API key not valid`, which is misleading.
+
+**Follow-up done same day:** the dead `href="#"` "Leave a Review" button was replaced with two
+per-branch buttons opening Google's review composer. `getGoogleReviews` now also returns a
+`writeReviewUrl` built from each branch's place ID; the markup ships with the plain Maps
+listing links as a fallback so the buttons are never dead if the call fails. Added
+`CACHE_VERSION` to the cache doc so a deploy that changes the payload shape doesn't serve the
+old shape for up to six hours.
+
+**Key secured:** the Places API key is now restricted to **Places API (New)** only, with
+Application restrictions left at `None` (Cloud Run has no fixed egress IP, so an IP or
+referrer restriction would block our own function). Verified afterwards by bumping
+`CACHE_VERSION` to force a real API round trip rather than a cache read — `cached: false`
+with both branches returning, so the restricted key works.
+
+**Still open:**
+- Elfsight account can be cancelled now that nothing uses it.
+
+---
+
+## 2026-08-11 — New in-app User Manual page
+
+**Requested by:** User — wanted the CrownOS staff manual to live inside the
+system itself, in the Settings section of the sidebar, rather than as a
+separate link staff have to be sent.
+
+**Change:**
+- [`manual.html`](manual.html), [`manual.css`](manual.css),
+  [`manual.js`](manual.js) — new read-only reference page. 25 chapters across
+  six parts (Getting Started, Daily Operations, Inventory, Reports,
+  Administration, Reference), covering login and the duty picker, the
+  Dashboard clock-in/GPS rules, the full Add Sale walkthrough, vouchers and
+  VIP cards, the payroll formulas per role, inventory, every report page, the
+  master lists, backup/restore, plus checklists and troubleshooting. Opens
+  with a Contents card linking to each chapter.
+- [`sidebar.js`](sidebar.js) — added "User Manual" to `MENU_ITEMS` as the last
+  Settings entry, plus a `?` entry in `MENU_ICONS`. Deliberately **not**
+  `branchRequired`: the page reads no branch data, so it stays reachable
+  before a branch is picked — which is exactly when a new staff member needs
+  it.
+- [`access-control.js`](access-control.js) — added `manual.html` to
+  `PAGE_ACCESS` for all six roles including Branch Device. A Therapist or a
+  branch tablet needs the manual as much as an Admin does. Not added to
+  `account-settings.js`'s `EXTRA_ACCESS_PAGES` — with every role already
+  allowed there is nothing left to grant.
+
+**Notes on the CSS:** every rule in `manual.css` is scoped under `.manual-doc`
+(or `.manual-contents`). The page loads `shared.css`, `sidebar.css` and
+Bootstrap like any other page, and the manual sets its own heading scale,
+table style and link colour — none of which should leak into the rest of the
+app. Class names were checked against shared/sidebar/style/crownos-theme for
+collisions before use. Two specificity traps found and handled: `.page-eyebrow`
+lives in each page's own stylesheet rather than `shared.css` (so it is
+repeated here), and `shared.css`'s `.card.shadow-sm{box-shadow:… !important}`
+is a two-class selector that a bare `.card` cannot override even with
+`!important` — the print block matches its specificity to strip card chrome
+on paper.
+
+**Printing:** `@media print` drops all app chrome (sidebar, global toolbar,
+the `position:fixed` mobile hamburger, both page buttons), starts each part on
+a fresh page, repeats table headers via `display:table-header-group`, and
+unfreezes the access matrix's sticky first column while clearing its
+`min-width` — without that, four of the six role columns print clipped.
+`manual.js` opens the Troubleshooting `<details>` before printing and restores
+them after, since a collapsed `<details>` otherwise prints as a bare question
+with no answer.
+
+**Verified:** against an isolated offline copy of the app (Firebase SDK and
+`firebase-init.js` stripped, so `firebase-sync.js` takes its offline branch and
+nothing could reach production), logged in with the local bootstrap admin.
+Confirmed: the item appears last under Settings and stays enabled with no
+branch selected; the page passes the access guard; all 25 chapters, 6 parts and
+25 contents links render with no broken anchors; `canAccessPage` returns true
+for all six roles while Cash Flow / Data Protection / Daily Income gating is
+unchanged; no layout overflow at 1280px or 375px; contents links land 61px
+clear of the fixed toolbar (`scroll-margin-top`); and in print all eight tables
+fit a 760px paper column with no chrome and no card shadows. Dashboard still
+renders with no console errors after the `sidebar.js` edit.
+
+**Status:** Deployed — `firebase deploy --only hosting` → live at
+https://crownos-5f03d.web.app/manual.html
+
+**Noticed during this deploy, NOT fixed (user chose to handle separately):**
+`firebase.json`'s hosting block is `"public": "."` with an ignore list that
+covers `*.txt`, `**/.*`, `node_modules` and `CrownOS_Full_Backup*.json` — but
+nothing else. Every other non-web file in this folder is therefore served
+publicly with no authentication. Confirmed live (HTTP 200, no login) before
+this deploy, so it predates it:
+`crown-clients-import.json` (1,274 client records — name, birthday,
+contactNumber, email, sex, notes, totalSpent), `crown-clients-import-pos-2026-07-26.json`,
+`Calamba Branch Clients List.xlsx`, `Binan Branch Clients List.xlsx`,
+`Cash Flow Data.xlsx`, and `WORK_LOG.md` (this file). The fix is to add them
+to the hosting `ignore` array and redeploy — CrownOS itself reads none of
+them at runtime (it reads localStorage/Firestore), so removing them from
+hosting has no effect on the app.
+
+---
+
 ## 2026-08-08 — Local dev/testing no longer pushes to the live database
 
 **Requested by:** User — after the Petty Cash testing incident (see the entry below),
