@@ -4,6 +4,56 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-16 — Promo popup on the public booking page
+
+**Requested by:** User — wanted the "Opening Rates Extended" poster shown as a popup when
+the booking page opens, closable with an X button.
+
+**Built:**
+1. `Website/book.html` — `#promoModal` markup at the top of `<body>`: the poster image, an
+   X button, a "Book Now & Save More" button and a "Maybe later" link. The poster carries a
+   descriptive `alt`, plus an `.sr-only` `<h2>` for the dialog's accessible name, because all
+   the promo wording lives inside the image where a screen reader cannot reach it.
+2. `Website/js/main.js` — `initPromoModal()`, called from the shared `DOMContentLoaded`
+   block. Opens 600ms after load so the page paints first. Closes on the X, "Maybe later",
+   the backdrop, Escape, or the CTA (which then scrolls to the form). Locks `body` scroll
+   while open, focuses the X on open, returns focus on close, and keeps Tab inside the card.
+3. `Website/css/style.css` — `.promo-modal*` rules in the site's black-and-gold palette,
+   plus a general-purpose `.sr-only` utility the stylesheet did not have yet.
+4. `Website/images/promo-opening-rates-extended.jpg` — the poster, from
+   `WEbsite Materials/Extended Opening Rates.png`.
+
+**Shown once per browser session,** not on every load, via `sessionStorage.crownPromoSeen` —
+guests bounce in and out of the booking form while picking a service, and re-showing it each
+time would read as broken. Both the read and the write are wrapped in `try/catch`: private-mode
+Safari throws on `sessionStorage`, and the popup showing again is a far better failure than the
+page's whole init block dying. Clear the key in the console to see it again while testing.
+
+**Poster was re-encoded, not copied as-is:** the source PNG is 1.8 MB, which is a long wait on
+mobile data for something that covers the screen on arrival. `sips` to JPEG at 900px wide,
+quality 82, brings it to 293 KB with no visible loss. The original stays untouched in
+`WEbsite Materials/`.
+
+**Sizing:** the card is `width: auto` inside a flex overlay and the poster is capped at
+`max-height: calc(100vh - 190px)`, so the card takes its width from however tall the image is
+allowed to be. The poster is 2:3 portrait — at a fixed width it ran past the bottom of a
+laptop window and needed scrolling inside the popup to reach the buttons.
+
+**Only book.html carries the markup,** so `initPromoModal()` returns immediately on every
+other page even though `main.js` is shared site-wide.
+
+**Status:** deployed and verified live at https://crownheadspa.com/book.html — popup opens,
+X closes it, page scroll returns, does not reappear on reload, no console errors. Checked at
+desktop and 375px mobile.
+
+**Expiry:** the promo ends **August 31, 2026**. Nothing removes the popup on its own — the
+markup in `book.html` has to be deleted (or the image swapped for the next promo) by hand.
+
+**Deploy:** `npx -y firebase-tools@latest deploy --only hosting:crownheadspa` from the
+`Website/` directory. See the 2026-08-12 entry for why the directory matters.
+
+---
+
 ## 2026-08-13 — Booking-request history, and stock that deducts itself off the sale
 
 Three pieces of work, all now live: a history view for handled booking requests, the
