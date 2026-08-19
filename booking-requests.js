@@ -108,6 +108,44 @@
         return "<span class=\"text-muted\">Active</span>";
     }
 
+    function formatRemarkAt(value){
+        const date = value?.toDate?.() ? value.toDate() : new Date(value);
+
+        if(Number.isNaN(date.getTime())){
+            return "";
+        }
+
+        return date.toLocaleString("en-PH", {
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit"
+        });
+    }
+
+    /* Shared by the pending-request Update modal and the History View
+       Remarks modal — both just display whatever is in request.remarks,
+       one editable and one read-only. */
+    function renderRemarksList(container, remarks){
+        if(!Array.isArray(remarks) || remarks.length === 0){
+            container.innerHTML = "<p class=\"booking-remarks-empty\">No remarks added yet.</p>";
+            return;
+        }
+
+        container.innerHTML = remarks.map(function(remark){
+            const meta = [formatRemarkAt(remark.at), remark.by ? "by " + escapeHtml(remark.by) : ""]
+                .filter(Boolean)
+                .join(" · ");
+
+            return (
+                "<div class=\"booking-remark-item\">" +
+                    escapeHtml(remark.text) +
+                    (meta ? "<small>" + meta + "</small>" : "") +
+                "</div>"
+            );
+        }).join("");
+    }
+
     function partySize(request){
         const companions = Array.isArray(request.companions) ? request.companions : [];
         return 1 + companions.length;
@@ -158,7 +196,13 @@
         );
     }
 
+    /* Kept so the Update modal (opened by request id from a table click) can
+       look up the full request object without a second Firestore read. */
+    let currentPendingRequests = [];
+
     function renderRequests(requests, holdsByRequestId){
+        currentPendingRequests = requests;
+
         const tbody = document.getElementById("bookingRequestListBody");
         const emptyState = document.getElementById("bookingRequestEmptyState");
         const table = document.getElementById("bookingRequestTableWrap");
@@ -188,19 +232,19 @@
                     buildSharedCells(request) +
                     "<td class=\"booking-hold-cell\">" + formatHoldStatus(holdsByRequestId[request.id]) + "</td>" +
                     "<td class=\"booking-action-cell\">" +
-                        "<a class=\"btn btn-sm btn-primary\" href=\"scheduling.html?fromRequest=" +
-                            encodeURIComponent(request.id) + "\">Create Appointment</a>" +
-                        "<button type=\"button\" class=\"btn btn-sm btn-outline-secondary\" data-decline=\"" +
-                            escapeHtml(request.id) + "\">Decline</button>" +
+                        "<button type=\"button\" class=\"btn btn-sm btn-primary\" data-update=\"" +
+                            escapeHtml(request.id) + "\">Update</button>" +
                     "</td>" +
                 "</tr>"
             );
         }).join("");
     }
 
+    /* Returns whether the decline actually went through, so callers (the
+       Update modal) know whether it is safe to close. */
     async function declineRequest(requestId){
         if(!confirm("Decline this booking request? The visitor will not be notified automatically.")){
-            return;
+            return false;
         }
 
         const currentUser = window.CrownAuth?.getCurrentUser?.();
@@ -214,6 +258,8 @@
                     reviewedAt: firebase.firestore.FieldValue.serverTimestamp(),
                     reviewedBy: currentUser?.account || ""
                 });
+
+            return true;
         }catch(error){
             /* firestore.rules only allows this update while the request is
                still "pending" — a permission-denied here almost always
@@ -226,7 +272,146 @@
                 console.error("Unable to decline booking request:", error);
                 alert("Could not decline this request. Please try again.");
             }
+
+            return false;
         }
+    }
+
+    /* ----------------------------------------------------------------------
+       Update modal — Add Remark, then Create Appointment / Decline.
+
+       Remarks are appended with arrayUnion while the request is still
+       pending (see the firestore.rules 'remarks'-only branch), so a
+       receptionist can log whether the guest was reached before acting on
+       the request. The modal keeps its own in-memory copy of the remarks
+       so newly-added ones show up immediately without waiting on the
+       pending-list onSnapshot to re-render the table underneath it.
+       ---------------------------------------------------------------------- */
+
+    let currentUpdateRequestId = null;
+    let currentUpdateRemarks = [];
+
+    function updateEl(id){
+        return document.getElementById(id);
+    }
+
+    function findPendingRequest(requestId){
+        return currentPendingRequests.find(function(request){
+            return request.id === requestId;
+        });
+    }
+
+    function renderUpdateSummary(request){
+        updateEl("bookingUpdateSummary").innerHTML =
+            "<strong>" + escapeHtml(request.clientName) + "</strong> — " +
+            escapeHtml(request.serviceName) + "<br>" +
+            escapeHtml(formatDate(request.date)) + ", " + escapeHtml(request.time);
+    }
+
+    function openUpdateModal(requestId){
+        const request = findPendingRequest(requestId);
+
+        if(!request){
+            return; // handled by someone else / re-rendered out from under this click
+        }
+
+        currentUpdateRequestId = requestId;
+        currentUpdateRemarks = Array.isArray(request.remarks) ? request.remarks.slice() : [];
+
+        renderUpdateSummary(request);
+        renderRemarksList(updateEl("bookingUpdateRemarksList"), currentUpdateRemarks);
+        updateEl("bookingUpdateRemarkText").value = "";
+
+        updateEl("bookingUpdateCreateBtn").href =
+            "scheduling.html?fromRequest=" + encodeURIComponent(requestId);
+
+        updateEl("bookingUpdateBackdrop").classList.remove("d-none");
+    }
+
+    function closeUpdateModal(){
+        updateEl("bookingUpdateBackdrop").classList.add("d-none");
+        currentUpdateRequestId = null;
+        currentUpdateRemarks = [];
+    }
+
+    async function addRemark(){
+        const requestId = currentUpdateRequestId;
+        const textEl = updateEl("bookingUpdateRemarkText");
+        const text = textEl.value.trim();
+
+        if(!requestId || !text){
+            return;
+        }
+
+        const currentUser = window.CrownAuth?.getCurrentUser?.();
+        const remark = {
+            text: text,
+            by: currentUser?.account || "",
+            at: new Date()
+        };
+
+        const addBtn = updateEl("bookingUpdateAddRemarkBtn");
+        addBtn.disabled = true;
+
+        try{
+            await firebase.firestore()
+                .collection(COLLECTION)
+                .doc(requestId)
+                .update({
+                    remarks: firebase.firestore.FieldValue.arrayUnion(remark)
+                });
+
+            currentUpdateRemarks.push(remark);
+            renderRemarksList(updateEl("bookingUpdateRemarksList"), currentUpdateRemarks);
+            textEl.value = "";
+        }catch(error){
+            if(error?.code === "permission-denied"){
+                alert("This request was already handled by someone else — remarks can no longer be added.");
+            }else{
+                console.error("Unable to add remark:", error);
+                alert("Could not add this remark. Please try again.");
+            }
+        }finally{
+            addBtn.disabled = false;
+        }
+    }
+
+    async function declineFromUpdateModal(){
+        if(!currentUpdateRequestId){
+            return;
+        }
+
+        const declined = await declineRequest(currentUpdateRequestId);
+
+        if(declined){
+            closeUpdateModal();
+        }
+    }
+
+    /* ----------------------------------------------------------------------
+       View Remarks modal — read-only, opened from a handled History row.
+       ---------------------------------------------------------------------- */
+
+    function openRemarksModal(requestId){
+        const request = historyRequests.find(function(item){
+            return item.id === requestId;
+        });
+
+        if(!request){
+            return;
+        }
+
+        updateEl("bookingRemarksSummary").innerHTML =
+            "<strong>" + escapeHtml(request.clientName) + "</strong> — " +
+            escapeHtml(request.serviceName) + "<br>" +
+            escapeHtml(formatDate(request.date)) + ", " + escapeHtml(request.time);
+
+        renderRemarksList(updateEl("bookingRemarksList"), request.remarks);
+        updateEl("bookingRemarksBackdrop").classList.remove("d-none");
+    }
+
+    function closeRemarksModal(){
+        updateEl("bookingRemarksBackdrop").classList.add("d-none");
     }
 
     /* ----------------------------------------------------------------------
@@ -370,7 +555,11 @@
             return (
                 "<tr>" +
                     buildSharedCells(request) +
-                    "<td class=\"booking-outcome-cell\">" + formatOutcome(request) + "</td>" +
+                    "<td class=\"booking-outcome-cell\">" +
+                        formatOutcome(request) +
+                        "<button type=\"button\" class=\"booking-view-remarks-btn\" data-view-remarks=\"" +
+                            escapeHtml(request.id) + "\">View Remarks</button>" +
+                    "</td>" +
                 "</tr>"
             );
         }).join("");
@@ -530,12 +719,50 @@
     document.addEventListener("DOMContentLoaded", async function(){
         document.getElementById("bookingRequestListBody")
             .addEventListener("click", function(event){
-                const declineId = event.target.dataset.decline;
+                const updateId = event.target.dataset.update;
 
-                if(declineId){
-                    declineRequest(declineId);
+                if(updateId){
+                    openUpdateModal(updateId);
                 }
             });
+
+        document.getElementById("bookingHistoryListBody")
+            .addEventListener("click", function(event){
+                const viewRemarksId = event.target.dataset.viewRemarks;
+
+                if(viewRemarksId){
+                    openRemarksModal(viewRemarksId);
+                }
+            });
+
+        document.getElementById("bookingUpdateCloseBtn")
+            .addEventListener("click", closeUpdateModal);
+
+        document.getElementById("bookingUpdateAddRemarkBtn")
+            .addEventListener("click", addRemark);
+
+        document.getElementById("bookingUpdateSaveBtn")
+            .addEventListener("click", closeUpdateModal);
+
+        document.getElementById("bookingUpdateDeclineBtn")
+            .addEventListener("click", declineFromUpdateModal);
+
+        document.getElementById("bookingUpdateCreateBtn")
+            .addEventListener("click", closeUpdateModal);
+
+        document.getElementById("bookingRemarksCloseBtn")
+            .addEventListener("click", closeRemarksModal);
+
+        document.getElementById("bookingRemarksCloseFooterBtn")
+            .addEventListener("click", closeRemarksModal);
+
+        ["bookingUpdateBackdrop", "bookingRemarksBackdrop"].forEach(function(id){
+            document.getElementById(id).addEventListener("click", function(event){
+                if(event.target === this){
+                    this.classList.add("d-none");
+                }
+            });
+        });
 
         document.getElementById("bookingHistoryToggle")
             .addEventListener("click", toggleHistory);

@@ -77,7 +77,7 @@
                             <th>Notes</th>
                             <th>Submitted</th>
                             <th>Hold Status</th>
-                            <th>Action</th>
+                            <th>Update</th>
                         </tr>
                     </thead>
                     <tbody id="bookingRequestListBody"></tbody>
@@ -179,6 +179,61 @@
 
             <p class="booking-history-note text-muted mb-0 d-none" id="bookingHistoryNote"></p>
 
+        </div>
+    </div>
+
+    <!-- Update Booking Request modal (Add Remark, then Create Appointment / Decline) -->
+    <div class="booking-modal-backdrop d-none" id="bookingUpdateBackdrop">
+        <div class="booking-modal">
+            <div class="booking-modal-header">
+                <h4>Update Booking Request</h4>
+                <button type="button" class="booking-modal-close" id="bookingUpdateCloseBtn">&times;</button>
+            </div>
+
+            <div class="booking-modal-body">
+                <div class="booking-modal-summary" id="bookingUpdateSummary"></div>
+
+                <div class="booking-remarks-list" id="bookingUpdateRemarksList"></div>
+
+                <div class="booking-add-remark">
+                    <label for="bookingUpdateRemarkText" class="form-label fw-semibold">Add Remark</label>
+                    <textarea
+                        class="form-control"
+                        id="bookingUpdateRemarkText"
+                        rows="2"
+                        placeholder="e.g. Contacted via SMS, waiting for client to confirm"
+                    ></textarea>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="bookingUpdateAddRemarkBtn">
+                        Add Remark
+                    </button>
+                </div>
+            </div>
+
+            <div class="booking-modal-footer">
+                <button type="button" class="btn btn-outline-primary" id="bookingUpdateSaveBtn">Update</button>
+                <a href="#" class="btn btn-primary" id="bookingUpdateCreateBtn">Create Appointment</a>
+                <button type="button" class="btn btn-outline-secondary" id="bookingUpdateDeclineBtn">Decline</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Remarks modal (History — read only) -->
+    <div class="booking-modal-backdrop d-none" id="bookingRemarksBackdrop">
+        <div class="booking-modal">
+            <div class="booking-modal-header">
+                <h4>Remarks</h4>
+                <button type="button" class="booking-modal-close" id="bookingRemarksCloseBtn">&times;</button>
+            </div>
+
+            <div class="booking-modal-body">
+                <div class="booking-modal-summary" id="bookingRemarksSummary"></div>
+
+                <div class="booking-remarks-list" id="bookingRemarksList"></div>
+            </div>
+
+            <div class="booking-modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="bookingRemarksCloseFooterBtn">Close</button>
+            </div>
         </div>
     </div>
 

@@ -30,9 +30,17 @@ service cloud.firestore {
          double-booking or double-declining. */
       allow update: if request.auth != null &&
         resource.data.status == 'pending' &&
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['status', 'reviewedAt', 'reviewedBy', 'convertedScheduleId']) &&
-        request.resource.data.status in ['converted', 'declined'];
+        (
+          (request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'reviewedAt', 'reviewedBy', 'convertedScheduleId']) &&
+          request.resource.data.status in ['converted', 'declined'])
+          ||
+          /* Receptionists log contact-attempt notes on a request while it is
+             still pending, ahead of converting or declining it — see
+             addRemark() in booking-requests.js. */
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['remarks'])
+        );
 
       allow delete: if false;
     }

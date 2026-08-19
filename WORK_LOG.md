@@ -4,6 +4,64 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-20 — Booking Requests: one Update button, with remarks
+
+**Requested by:** User — wanted the pending table's Create Appointment / Decline pair
+replaced with a single Update button, opening a place to log whether the client was
+contacted before acting on the request. History's Outcome column needed a way to read
+those remarks back.
+
+**Built:**
+1. `booking-requests.html` — the pending table's Action column is now a single
+   **Update** button per row. Added two modals: `#bookingUpdateBackdrop` (remarks list,
+   Add Remark box, then Update / Create Appointment / Decline in the footer, Update on
+   the left) and `#bookingRemarksBackdrop` (read-only remarks view opened from History).
+2. `booking-requests.js` — `openUpdateModal()` looks up the request from the pending
+   list already held in memory (no extra read), renders its remarks, and wires
+   Create Appointment's href and the Decline button to the existing `declineRequest()`
+   flow (now returns a boolean so the modal only closes on an actual decline).
+   `addRemark()` appends `{ text, by: account, at: Date }` with `arrayUnion` while the
+   request is still pending, then pushes the same object onto the modal's local copy so
+   it appears immediately without waiting on the next snapshot. The `Update` footer
+   button just closes the modal — remarks are already saved the moment
+   `Add Remark` is pressed. History's Outcome cell grew a `View Remarks` link that opens
+   the same list read-only via `openRemarksModal()`.
+3. `booking-requests.css` — `.booking-modal-*` / `.booking-remarks-*` rules, following
+   the same backdrop-and-card pattern `clients.css` already uses for its modals (custom
+   CSS, not Bootstrap's JS modal component — this codebase doesn't load
+   `bootstrap.bundle.js` on this page).
+4. `firestore.rules` — `bookingRequests` update rule gained a second allowed shape:
+   an update whose only changed key is `remarks`, while `status` is still `'pending'`.
+   The existing convert/decline branch (`status`, `reviewedAt`, `reviewedBy`,
+   `convertedScheduleId`) is untouched. **Deployed** with
+   `npx firebase deploy --only firestore:rules --project crownos-5f03d`.
+5. `manual.html` — Chapter 14 (Booking Requests): documented the Update button and
+   Add Remark flow, and that remarks cannot be edited or deleted once saved; noted
+   History's new View Remarks link.
+
+**Remarks are append-only by design** — there is no edit or delete affordance anywhere
+in the UI, so the contact-attempt record a receptionist builds up on a request cannot be
+altered after the fact. Each remark carries the account that wrote it (`by`) and a
+client-side timestamp (`at`); `arrayUnion` can't take `serverTimestamp()` inside an
+array element, so this is a plain `Date`, unlike `reviewedAt` elsewhere on the same
+collection.
+
+**First deploy attempt would have silently failed:** the rules file was edited locally in
+an earlier session but never pushed, so `addRemark()`'s `arrayUnion` write was rejected
+by the still-live old rules — the modal showed the new remark right away (the local
+optimistic push happens after the `await` resolves, so this was actually a permission
+failure the user caught by reopening the modal and finding the remark gone). Rules are
+now deployed; anyone iterating on `firestore.rules` again needs to remember it is a
+separate deploy from hosting.
+
+**Status:** Firestore rules deployed and live. `booking-requests.html/js/css` and
+`manual.html` are static files served via Firebase Hosting — not yet redeployed as of
+this entry; see the 2026-08-16 entry above for the hosting deploy command (this page is
+under `Income Report/`, hosting's `public` root per `firebase.json`, so no subdirectory
+target is needed).
+
+---
+
 ## 2026-08-16 — Promo popup on the public booking page
 
 **Requested by:** User — wanted the "Opening Rates Extended" poster shown as a popup when
