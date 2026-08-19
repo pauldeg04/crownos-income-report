@@ -377,7 +377,7 @@
             const currentUser = window.CrownAuth?.getCurrentUser?.();
             const remark = {
                 text: text,
-                by: currentUser?.account || "",
+                by: currentUser?.nickname || currentUser?.account || "",
                 at: new Date()
             };
 

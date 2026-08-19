@@ -307,6 +307,7 @@
         const session = {
             id: user.id,
             account: user.account,
+            nickname: user.nickname || "",
             role: user.role,
             secondaryRole: user.secondaryRole || "",
             branches: Array.isArray(user.branches)

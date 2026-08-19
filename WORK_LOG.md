@@ -4,6 +4,28 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-20 — Booking Requests: remarks show the account's nickname
+
+**Requested by:** User — remarks were showing "by <account>" (the login username);
+wanted the account's nickname shown there instead.
+
+**Built:**
+1. `access-control.js` — `setCurrentUser()`'s session object gained `nickname:
+   user.nickname || ""`. The full user record already had a `nickname` field (set on
+   Account Settings, see `account-settings.js`), but the trimmed session object written
+   to `localStorage` — what `CrownAuth.getCurrentUser()` actually returns everywhere
+   else in the app — never carried it, so nothing outside Account Settings itself could
+   read it.
+2. `booking-requests.js` — `addRemark()` now stores `by: currentUser?.nickname ||
+   currentUser?.account || ""`, falling back to the account name for any account with
+   no nickname set (including every remark saved before this change).
+3. `manual.html` — updated the "remarks cannot be edited" note to say nickname instead
+   of account.
+
+**Remarks already saved keep whatever they recorded at the time** — this only changes
+what gets written going forward, not existing history.
+
+**Status:** deployed and live (hosting).
 ## 2026-08-20 — Booking Requests: fixed remarks getting silently discarded
 
 **Reported by:** User — added a remark, pressed the modal's Update button, it correctly
