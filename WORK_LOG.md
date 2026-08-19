@@ -4,6 +4,39 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-20 — Booking Requests: fixed remarks getting silently discarded
+
+**Reported by:** User — added a remark, pressed the modal's Update button, it correctly
+returned to the Pending table, but reopening Update on the same request showed no
+remarks at all.
+
+**Root cause, confirmed by reading the live document directly from Firestore (not
+guessed):** the request's `updateTime` was still identical to its `createTime` —
+the remark write had never reached the server. `Add Remark` (which writes to Firestore)
+and `Update` (which only closes the modal) are two separate buttons; typing a remark and
+pressing `Update` without pressing `Add Remark` first silently discarded the typed text —
+nothing was ever sent. Firestore rules and the deployed JS were both verified correct and
+live, ruling those out.
+
+**Fix, in `booking-requests.js`:** added `flushPendingRemarkText()` — if the remark box
+still has unsaved text, it calls `addRemark()` before letting the action proceed, and
+blocks the action (leaving the modal open, with `addRemark()`'s own alert already shown)
+if that save fails. Wired into all three ways to leave the modal: the footer `Update`
+button (`saveAndCloseUpdateModal()`), `Create Appointment`
+(`createAppointmentFromUpdateModal()`, now `preventDefault()` + navigates by hand after
+flushing), and `Decline` (`declineFromUpdateModal()`). Also widened `addRemark()`'s error
+alert to include the actual Firestore error message instead of a generic string, and
+moved the whole function body inside its `try` block so a bug elsewhere in it can no
+longer fail as a silent unhandled promise rejection.
+
+**Status:** deployed and live (`npx firebase deploy --only hosting --project
+crownos-5f03d`) — confirmed the new functions are present in the served
+`booking-requests.js`. Not yet re-verified against a real staff login in the browser
+(no test credentials available in this session) — worth a quick manual pass: type a
+remark, press Update directly (skip Add Remark), reopen the request, confirm it's there.
+
+---
+
 ## 2026-08-20 — Booking Requests: one Update button, with remarks
 
 **Requested by:** User — wanted the pending table's Create Appointment / Decline pair

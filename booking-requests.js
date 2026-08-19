@@ -334,26 +334,55 @@
         currentUpdateRemarks = [];
     }
 
-    async function addRemark(){
-        const requestId = currentUpdateRequestId;
+    /* Update / Create Appointment / Decline are all meant to just act on the
+       request — remarks are already saved the moment Add Remark is pressed
+       — but if someone types a remark and presses one of those three
+       without pressing Add Remark first, that text would otherwise be
+       silently discarded (this is exactly what was happening before this
+       safety net existed). Called before each of the three; returns
+       whether it is safe to proceed — false means the save failed (already
+       alerted why) and whatever triggered this should stay put instead of
+       losing what was typed. */
+    async function flushPendingRemarkText(){
         const textEl = updateEl("bookingUpdateRemarkText");
-        const text = textEl.value.trim();
 
-        if(!requestId || !text){
-            return;
+        if(!textEl.value.trim()){
+            return true;
         }
 
-        const currentUser = window.CrownAuth?.getCurrentUser?.();
-        const remark = {
-            text: text,
-            by: currentUser?.account || "",
-            at: new Date()
-        };
+        await addRemark();
 
+        // addRemark() only clears the textarea once its write actually succeeds.
+        return !textEl.value.trim();
+    }
+
+    async function saveAndCloseUpdateModal(){
+        if(await flushPendingRemarkText()){
+            closeUpdateModal();
+        }
+    }
+
+    async function addRemark(){
         const addBtn = updateEl("bookingUpdateAddRemarkBtn");
-        addBtn.disabled = true;
 
         try{
+            const requestId = currentUpdateRequestId;
+            const textEl = updateEl("bookingUpdateRemarkText");
+            const text = textEl.value.trim();
+
+            if(!requestId || !text){
+                return;
+            }
+
+            const currentUser = window.CrownAuth?.getCurrentUser?.();
+            const remark = {
+                text: text,
+                by: currentUser?.account || "",
+                at: new Date()
+            };
+
+            addBtn.disabled = true;
+
             await firebase.firestore()
                 .collection(COLLECTION)
                 .doc(requestId)
@@ -365,11 +394,12 @@
             renderRemarksList(updateEl("bookingUpdateRemarksList"), currentUpdateRemarks);
             textEl.value = "";
         }catch(error){
+            console.error("Unable to add remark:", error);
+
             if(error?.code === "permission-denied"){
                 alert("This request was already handled by someone else — remarks can no longer be added.");
             }else{
-                console.error("Unable to add remark:", error);
-                alert("Could not add this remark. Please try again.");
+                alert("Could not add this remark: " + (error?.message || error));
             }
         }finally{
             addBtn.disabled = false;
@@ -377,7 +407,7 @@
     }
 
     async function declineFromUpdateModal(){
-        if(!currentUpdateRequestId){
+        if(!currentUpdateRequestId || !(await flushPendingRemarkText())){
             return;
         }
 
@@ -386,6 +416,18 @@
         if(declined){
             closeUpdateModal();
         }
+    }
+
+    async function createAppointmentFromUpdateModal(event){
+        event.preventDefault();
+
+        if(!currentUpdateRequestId || !(await flushPendingRemarkText())){
+            return;
+        }
+
+        const requestId = currentUpdateRequestId;
+        closeUpdateModal();
+        location.href = "scheduling.html?fromRequest=" + encodeURIComponent(requestId);
     }
 
     /* ----------------------------------------------------------------------
@@ -742,13 +784,13 @@
             .addEventListener("click", addRemark);
 
         document.getElementById("bookingUpdateSaveBtn")
-            .addEventListener("click", closeUpdateModal);
+            .addEventListener("click", saveAndCloseUpdateModal);
 
         document.getElementById("bookingUpdateDeclineBtn")
             .addEventListener("click", declineFromUpdateModal);
 
         document.getElementById("bookingUpdateCreateBtn")
-            .addEventListener("click", closeUpdateModal);
+            .addEventListener("click", createAppointmentFromUpdateModal);
 
         document.getElementById("bookingRemarksCloseBtn")
             .addEventListener("click", closeRemarksModal);
