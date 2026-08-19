@@ -54,11 +54,11 @@ failure the user caught by reopening the modal and finding the remark gone). Rul
 now deployed; anyone iterating on `firestore.rules` again needs to remember it is a
 separate deploy from hosting.
 
-**Status:** Firestore rules deployed and live. `booking-requests.html/js/css` and
-`manual.html` are static files served via Firebase Hosting — not yet redeployed as of
-this entry; see the 2026-08-16 entry above for the hosting deploy command (this page is
-under `Income Report/`, hosting's `public` root per `firebase.json`, so no subdirectory
-target is needed).
+**Status:** deployed and live — Firestore rules via
+`npx firebase deploy --only firestore:rules --project crownos-5f03d`, then hosting via
+`npx firebase deploy --only hosting --project crownos-5f03d` (this page is under
+`Income Report/`, hosting's default site and `public` root per `firebase.json`, so no
+`site`/target flag is needed, unlike the `Website/` deploy in the 2026-08-16 entry).
 
 ---
 
