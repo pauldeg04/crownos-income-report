@@ -114,6 +114,10 @@ function attachEvents(){
     addModalItem("Product");
   });
 
+  document.getElementById("modalAddConsumableBtn").addEventListener("click", function(){
+    addModalConsumableItem();
+  });
+
   document.getElementById("modalAddVipCardBtn").addEventListener("click", function(){
     addVipCardToModal();
   });
@@ -1881,10 +1885,44 @@ function addModalItem(itemType){
     sourceServiceName: "",
     isFreebie: false,
     freebieValue: 0,
+    isConsumable: false,
     serviceStartTime:
       itemType === "Service"
         ? getDefaultServiceStartTime()
         : "",
+    manualStartTime: false
+  });
+
+  renderModalItems();
+}
+
+/* A Consumable is a normal Product item (itemType stays "Product" so it
+   still reaches getItemsForProduct() via syncSaleToStockAudit and is
+   deducted from the branch's stock / logged to the Stock Audit exactly
+   like a sold product) flagged with isConsumable so it's excluded from
+   the client-payable gross/net total — its unit price always stays 0.
+   Only products marked "Available for Consumables" in the Product
+   Master (list-products.html) show up in its picker. */
+function addModalConsumableItem(){
+  modalItems.push({
+    id: createId(),
+    itemType: "Product",
+    name: "",
+    priceType:
+      isModalVip()
+        ? "VIP"
+        : "Regular",
+    quantity: 1,
+    unitPrice: 0,
+    amount: 0,
+    manualAmount: false,
+    manualUnitPrice: false,
+    productKind: "",
+    sourceServiceName: "",
+    isFreebie: false,
+    freebieValue: 0,
+    isConsumable: true,
+    serviceStartTime: "",
     manualStartTime: false
   });
 
@@ -1996,6 +2034,10 @@ function renderModalItems(){
       row.className += " modal-freebie-row";
     }
 
+    if(item.isConsumable){
+      row.className += " modal-consumable-row";
+    }
+
     if(item.itemType === "Service"){
       const durationLabel =
         getModalItemDurationLabel(item);
@@ -2052,6 +2094,53 @@ function renderModalItems(){
           }"
           placeholder="Amount"
           ${item.isFreebie ? "readonly title=\"Not charged to client — used only to compute therapist commission\"" : ""}
+        >
+
+        <button type="button" class="modal-remove-item">×</button>
+      `;
+    }else if(item.isConsumable){
+      row.innerHTML = `
+        <select class="form-select form-select-sm item-name">
+          <option value="">Select Consumable</option>
+          ${(CrownInventory?.getConsumableProductNames?.() || [])
+            .concat(
+              item.name && !(CrownInventory?.getConsumableProductNames?.() || []).includes(item.name)
+                ? [item.name]
+                : []
+            )
+            .map(function(name){
+            return `
+              <option value="${escapeHtml(name)}"
+                ${name === item.name ? "selected" : ""}>
+                ${escapeHtml(name)}
+              </option>
+            `;
+          }).join("")}
+        </select>
+
+        <input
+          type="number"
+          class="form-control form-control-sm item-quantity"
+          min="1"
+          step="1"
+          value="${Number(item.quantity) || 1}"
+          title="Quantity"
+        >
+
+        <input
+          type="text"
+          class="form-control form-control-sm"
+          value="—"
+          readonly
+          disabled
+        >
+
+        <input
+          type="text"
+          class="form-control form-control-sm item-amount"
+          value="Not charged"
+          readonly
+          title="Consumables are not charged to the client, but are still deducted from branch stock and logged to the Stock Audit."
         >
 
         <button type="button" class="modal-remove-item">×</button>
@@ -2160,6 +2249,11 @@ function attachModalItemEvents(row, item){
       recalculateProductItem(item);
     }
 
+    if(item.isConsumable){
+      item.unitPrice = 0;
+      item.amount = 0;
+    }
+
     refreshModalVipState();
     renderModalItems();
   });
@@ -2191,18 +2285,28 @@ function attachModalItemEvents(row, item){
     row.querySelector(".item-quantity").addEventListener("input", function(){
       item.quantity = Math.max(1, Number(this.value) || 1);
       recalculateProductItem(item);
+
+      if(item.isConsumable){
+        item.unitPrice = 0;
+        item.amount = 0;
+      }
+
       renderModalItems();
     });
 
-    row.querySelector(".item-unit-price").addEventListener("input", function(){
-      item.unitPrice = Number(this.value) || 0;
-      item.manualUnitPrice = true;
-      item.amount = item.quantity * item.unitPrice;
-      updateModalTotal();
+    /* Consumables have no unit-price input — they're never charged to
+       the client, so there's nothing to wire here. */
+    if(!item.isConsumable){
+      row.querySelector(".item-unit-price").addEventListener("input", function(){
+        item.unitPrice = Number(this.value) || 0;
+        item.manualUnitPrice = true;
+        item.amount = item.quantity * item.unitPrice;
+        updateModalTotal();
 
-      const amountInput = row.querySelector(".item-amount");
-      amountInput.value = Number(item.amount || 0).toFixed(2);
-    });
+        const amountInput = row.querySelector(".item-amount");
+        amountInput.value = Number(item.amount || 0).toFixed(2);
+      });
+    }
   }
 
   row.querySelector(".modal-remove-item").addEventListener("click", function(){
@@ -3207,6 +3311,13 @@ function recalculateServiceItem(item, force = false){
 }
 
 function recalculateProductItem(item){
+  if(item.isConsumable){
+    item.unitPrice = 0;
+    item.quantity = Math.max(1, Number(item.quantity) || 1);
+    item.amount = 0;
+    return;
+  }
+
   if(!item.manualUnitPrice){
     item.unitPrice =
       Number(findProduct(item.name)?.sellingPrice) || 0;
@@ -4091,6 +4202,10 @@ function buildAndValidateSaleData(settledFlag){
 
   if(
     validItems.some(function(item){
+      if(item.isConsumable){
+        return false;
+      }
+
       return item.isFreebie
         ? Number(item.freebieValue || 0) <= 0
         : Number(item.amount || 0) <= 0;
@@ -4162,16 +4277,30 @@ function syncSaleToStockAudit(saleData){
   /* saleData.services already holds the principal's AND every
      companion's items, each stamped with its own participantName /
      therapist by getAllModalItems(), so companion consumption is
-     covered without walking saleData.companions a second time. */
+     covered without walking saleData.companions a second time. Products
+     sold directly consume their linked inventory item the same way a
+     service consumes the items linked to it — see getItemsForProduct()
+     in inventory-data.js. */
   const lines =
     (saleData.services || [])
       .filter(function(item){
         return (
-          item.itemType === "Service" &&
+          (item.itemType === "Service" || item.itemType === "Product") &&
           Boolean(String(item.name || "").trim())
         );
       })
       .map(function(item){
+        if(item.itemType === "Product"){
+          return {
+            saleItemId: item.id,
+            kind: "product",
+            product: String(item.name).trim(),
+            therapist: item.therapist || saleData.therapist || "",
+            client: item.participantName || saleData.client || "",
+            qty: Number(item.quantity) || 1
+          };
+        }
+
         return {
           saleItemId: item.id,
           service: String(item.name).trim(),

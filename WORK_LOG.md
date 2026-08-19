@@ -4,6 +4,63 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-20 — Add Consumable, live Online Booking filter, Google Reviews, Messenger widget
+
+Four pieces of previously-uncommitted work, found sitting in the working tree from an
+earlier session and shipped together after reviewing each one individually.
+
+**1. Add Consumable (Daily Income Report).** A sixth button beside Add Product: logs a
+product used on a client without charging them — always ₱0.00 — while still deducting
+branch stock and logging to the Stock Audit, the same as a real product sale.
+- `list-products.html/js` — new `availableForConsumable` checkbox on the product form
+  ("Available for Consumables"), migrated onto existing products defaulting to off.
+- `script.js` — `addModalConsumableItem()`, a Product-type item flagged `isConsumable`
+  (price locked at 0, excluded from the settle-amount validation), its own picker row
+  restricted to `CrownInventory.getConsumableProductNames()`.
+- `inventory-data.js` — `getItemsForProduct()` / `getConsumableProductNames()`;
+  `syncSaleToStockAudit()` now also walks Product-type sale lines (previously
+  Service-only) so a sold or consumed product deducts its linked inventory item.
+- `product-sales-summary.js` — excludes `isConsumable` items, so they don't inflate
+  product sales figures they were never charged for.
+- `index.html`, `style.css` — the button and a light-blue row style to tell a
+  consumable line apart from a paid one at a glance.
+- `manual.html` — documented in Chapter 7 (Recording a Sale) and Chapter 22 (Master
+  Lists → List of Products).
+
+**2. `getBookableServices` now enforces "Available for Online Booking."** Previously
+returned every Active service; now also requires `availableForOnlineBooking === true`
+(`functions/index.js`). The toggle itself and its migration already existed and were
+already live — checked the actual data in Firestore before deploying this: 15 of 26
+active services already have it explicitly set, so this was staff-configured in advance,
+not an empty gate that would have hidden every service from public booking.
+`Website/book.html`'s service dropdown was trimmed to match.
+
+**3. Google Reviews replaces the Elfsight testimonials widget.** New
+`functions/googleReviews.js` — `getGoogleReviews` Cloud Function, reading both branches
+from the Google Places API (Text Search once per branch, cached forever by Place ID;
+review content cached 6 hours in Firestore `publicCache`, within the Google Maps
+Platform terms). Needs the `GOOGLE_PLACES_API_KEY` secret — confirmed already configured
+in the project before deploying. `Website/js/main.js`'s `initGoogleReviews()` already
+called this function in a prior commit, meaning **the live testimonials section was
+calling a Cloud Function that did not exist yet** until this deploy — this ships a fix
+for an already-broken production feature, not a new risk.
+
+**4. Floating Facebook Messenger chat widget**, added to every page across
+`Website/` (`about.html`, `book.html`, `branches.html`, `careers.html`, `contact.html`,
+`gallery.html`, `index.html`, `privacy.html`, `promos.html`, `services.html`,
+`testimonials.html`) plus `js/main.js` (`initFbChatWidget()`) and `css/style.css`. One
+`m.me` link per branch. `branches.html` and `contact.html`'s existing Facebook Page links
+were swapped for the same direct Messenger links.
+
+**Also:** `sidebar.js` + `access-control.js` opened the User Manual link to every role
+(previously missing for Therapist, Marketing Agent, Branch Device — a read-only
+reference page has no reason to be role-gated).
+
+**Status:** deployed and live — `Income Report` hosting + functions
+(`npx firebase deploy --project crownos-5f03d`) and `Website` hosting
+(`npx -y firebase-tools@latest deploy --only hosting:crownheadspa` from `Website/`, per
+the 2026-08-16 entry).
+
 ## 2026-08-20 — Booking Requests: remarks show the account's nickname
 
 **Requested by:** User — remarks were showing "by <account>" (the login username);

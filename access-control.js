@@ -151,6 +151,16 @@
             "Marketing Agent"
         ],
 
+        /* Read-only reference page — every role, including Branch Device. */
+        "manual.html": [
+            "Admin",
+            "Executive Assistant",
+            "Receptionist",
+            "Therapist",
+            "Marketing Agent",
+            "Branch Device"
+        ],
+
         "attendance.html": [
             "Admin",
             "Executive Assistant",

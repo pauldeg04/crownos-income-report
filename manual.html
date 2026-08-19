@@ -780,7 +780,7 @@
 
   <h3>2 · Services and products</h3>
 
-  <p>Five buttons add lines to the transaction:</p>
+  <p>Six buttons add lines to the transaction:</p>
 
   <dl class="deflist">
     <dt>Add Service</dt>
@@ -791,6 +791,15 @@
 
     <dt>Add Product</dt>
     <dd>A retail product. Enter the quantity — the price multiplies automatically.</dd>
+
+    <dt>Add Consumable</dt>
+    <dd>
+      A product used on the client but not sold to them — picked from
+      products marked <strong>Available for Consumables</strong> in the
+      List of Products. It is never charged (always ₱0.00), but it still
+      deducts from the branch's stock and logs in the Stock Audit exactly
+      like a sold product.
+    </dd>
 
     <dt>Add VIP Card</dt>
     <dd>Sells a VIP membership card and immediately switches every service in the transaction to VIP pricing.</dd>
@@ -1867,6 +1876,12 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     Product, Category (Hair Care, Skin Care, Home Care, Retail, Membership,
     Other), Selling Price, Voucher (with a Voucher Value), and Status. VIP Cards
     and services sold as vouchers live here.
+  </p>
+
+  <p>
+    <strong>Available for Consumables</strong> puts the product in the
+    <span class="ui">Add Consumable</span> picker on the Daily Income Report
+    — see <a href="#ch-add-sale">Chapter 7</a>.
   </p>
 
   <h3>List of Therapist</h3>

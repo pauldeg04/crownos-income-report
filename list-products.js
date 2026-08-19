@@ -151,6 +151,7 @@ function seedDefaultProducts(){
                 description: "",
                 availableForVoucher: false,
                 voucherValue: 0,
+                availableForConsumable: false,
                 status: "Active",
                 internalNotes: "",
                 createdAt: new Date().toISOString(),
@@ -187,6 +188,7 @@ function migrateExistingProducts(){
                     description: "",
                     availableForVoucher: false,
                     voucherValue: 0,
+                    availableForConsumable: false,
                     status: "Active",
                     internalNotes: "",
                     createdAt: new Date().toISOString(),
@@ -222,6 +224,8 @@ function migrateExistingProducts(){
                     product.voucherAvailable === true,
                 voucherValue:
                     Number(product.voucherValue ?? product.voucherCost ?? 0) || 0,
+                availableForConsumable:
+                    product.availableForConsumable === true,
                 status:
                     product.status ||
                     (
@@ -263,6 +267,7 @@ function migrateExistingProducts(){
             description: "",
             availableForVoucher: false,
             voucherValue: 0,
+            availableForConsumable: false,
             status: "Active",
             internalNotes: "",
             createdAt: new Date().toISOString(),
@@ -577,6 +582,9 @@ function openEditModal(productId){
     document.getElementById("voucherValueInput").value =
         product.voucherValue || "";
 
+    document.getElementById("consumableAvailableInput").checked =
+        product.availableForConsumable === true;
+
     document.getElementById("internalNotesInput").value =
         product.internalNotes || "";
 
@@ -595,6 +603,7 @@ function clearForm(){
     document.getElementById("productStatusInput").value = "Active";
     document.getElementById("voucherAvailableInput").checked = false;
     document.getElementById("voucherValueInput").value = "";
+    document.getElementById("consumableAvailableInput").checked = false;
     document.getElementById("internalNotesInput").value = "";
 
     toggleVoucherValueField();
@@ -649,6 +658,9 @@ function saveProduct(){
 
     const voucherValue =
         Number(document.getElementById("voucherValueInput").value) || 0;
+
+    const availableForConsumable =
+        document.getElementById("consumableAvailableInput").checked;
 
     if(!name){
         alert("Please enter a Product Name.");
@@ -734,6 +746,7 @@ function saveProduct(){
                 .trim(),
         availableForVoucher: availableForVoucher,
         voucherValue: availableForVoucher ? voucherValue : 0,
+        availableForConsumable: availableForConsumable,
         status:
             document.getElementById("productStatusInput").value,
         internalNotes:

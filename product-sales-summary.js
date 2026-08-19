@@ -149,6 +149,7 @@ function getProductLineItems(row){
     return items.filter(function(item){
         return (
             item?.itemType === "Product" &&
+            item?.isConsumable !== true &&
             !isVipCardName(item?.name) &&
             !isVoucherProduct(item)
         );

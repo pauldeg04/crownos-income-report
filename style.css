@@ -1355,6 +1355,11 @@ body.modal-open{
   border-color:var(--gold, #C9A44C);
 }
 
+.modal-consumable-row{
+  background:#EAF4FF;
+  border-color:#7FB2E8;
+}
+
 .item-name-wrap{
   display:flex;
   flex-direction:column;

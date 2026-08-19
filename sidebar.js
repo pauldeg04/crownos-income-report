@@ -86,6 +86,7 @@
         "List of Therapist": "T",
         "List of Branches": "B",
         "System Health / Database": "◆",
+        "User Manual": "?",
         "Account Settings": "⚙",
         "Attendance": "◷",
         "Warehouse": "▣",
@@ -289,6 +290,17 @@
             label: "System Health / Database",
             href: "data-protection.html",
             roles: ["Admin"],
+            sub: true
+        },
+
+        /* Reference page, open to every role — a Therapist or Branch Device
+           needs the manual as much as an Admin does. No branchRequired: it
+           reads no branch data, so it must stay reachable before a branch is
+           picked (which is exactly when a new staff member needs it). */
+        {
+            label: "User Manual",
+            href: "manual.html",
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device"],
             sub: true
         }
     ];

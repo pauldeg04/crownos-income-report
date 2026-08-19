@@ -30,6 +30,7 @@ const {
     minutesToTimeValue,
     formatDisplayTime
 } = require("./capacity");
+const { buildGetGoogleReviews } = require("./googleReviews");
 
 const BRANCH_MASTER_KEY = "crownBranchMasterList";
 const SERVICE_MASTER_KEY = "crownServiceMasterList";
@@ -216,8 +217,8 @@ const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
    crownServiceMasterList staff edit in CrownOS (List of Services), instead
    of a hardcoded copy that silently goes stale whenever a name or duration
    changes there. Only the name/duration are exposed — never pricing or
-   commission fields, which live on the same record. Inactive services are
-   left out entirely. */
+   commission fields, which live on the same record. Inactive services and
+   services not marked "Available for Online Booking" are left out entirely. */
 exports.getBookableServices = onCall(async () => {
     const raw = await readAppDataKey(db, SERVICE_MASTER_KEY);
     const list = Array.isArray(raw) ? raw : [];
@@ -228,6 +229,7 @@ exports.getBookableServices = onCall(async () => {
                 service &&
                 typeof service === "object" &&
                 service.status === "Active" &&
+                service.availableForOnlineBooking === true &&
                 service.name &&
                 Number(service.duration) > 0
             );
@@ -242,6 +244,11 @@ exports.getBookableServices = onCall(async () => {
 
     return { services };
 });
+
+/* ---------- getGoogleReviews ---------- */
+
+/* Backs the public testimonials page (see googleReviews.js). */
+exports.getGoogleReviews = buildGetGoogleReviews(db);
 
 /* ---------- getAvailableSlots ---------- */
 

@@ -295,6 +295,25 @@
     /* An item can be linked to several services. Items saved before that
        was possible carry a single `service` string, so both shapes are
        read here and everything downstream only ever sees an array. */
+    function getConsumableProductNames(){
+        return readList(PRODUCT_MASTER_KEY)
+            .filter(function(product){
+                return (
+                    product &&
+                    typeof product === "object" &&
+                    product.availableForConsumable === true &&
+                    (product.status || "Active") === "Active" &&
+                    Boolean(String(product.name || "").trim())
+                );
+            })
+            .map(function(product){
+                return product.name;
+            })
+            .sort(function(a, b){
+                return a.localeCompare(b);
+            });
+    }
+
     function getItemServices(item){
         if(Array.isArray(item?.services)){
             return item.services.filter(function(name){
@@ -318,6 +337,25 @@
             return getItemServices(item).some(function(name){
                 return normalizeName(name) === target;
             });
+        });
+    }
+
+    /* Retail-transaction items link to a single product (item.linkedProduct)
+       instead of a list of services — see applyTransactionVisibility() in
+       inventory-items.js. Selling that product on the Daily Income Report
+       consumes the linked item the same way selling a service does. */
+    function getItemsForProduct(productName){
+        const target = normalizeName(productName);
+
+        if(!target){
+            return [];
+        }
+
+        return getItems().filter(function(item){
+            return (
+                item.transaction === "Retail" &&
+                normalizeName(item.linkedProduct) === target
+            );
         });
     }
 
@@ -393,7 +431,12 @@
         const desired = [];
 
         (sale.lines || []).forEach(function(line){
-            getItemsForService(line.service).forEach(function(item){
+            const linkedItems =
+                line.kind === "product"
+                    ? getItemsForProduct(line.product)
+                    : getItemsForService(line.service);
+
+            linkedItems.forEach(function(item){
                 desired.push({
                     id: [
                         "AUD",
@@ -725,8 +768,10 @@
         getServiceNames,
         getTherapistNames,
         getProductNames,
+        getConsumableProductNames,
         getItemServices,
         getItemsForService,
+        getItemsForProduct,
         shiftDateValue,
         getStockAudit,
         saveStockAudit,
