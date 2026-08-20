@@ -1,4 +1,3 @@
-const CLIENT_STORAGE_KEY = "crownClientMasterList";
 const BRANCH_MASTER_KEY = "crownBranchMasterList";
 const SELECTED_BRANCH_KEY = "crownSelectedBranch";
 const SALES_PREFIX = "crownDailySales_";
@@ -32,8 +31,8 @@ function applyRoleRestrictions(){
     });
 }
 
-document.addEventListener("DOMContentLoaded", function(){
-    loadClients();
+document.addEventListener("DOMContentLoaded", async function(){
+    await loadClients();
     loadBranchOptions();
     applyRoleRestrictions();
     renderClients();
@@ -230,12 +229,9 @@ function formatDate(dateValue){
     });
 }
 
-function loadClients(){
+async function loadClients(){
     try{
-        const saved = localStorage.getItem(CLIENT_STORAGE_KEY);
-        const parsed = saved ? JSON.parse(saved) : [];
-
-        clients = Array.isArray(parsed) ? parsed : [];
+        clients = await window.CrownClientStore.getAll();
     }catch(error){
         console.error("Unable to load clients:", error);
         clients = [];
@@ -243,16 +239,15 @@ function loadClients(){
     }
 }
 
+/* Fire-and-forget, same as everywhere else in the app that saves to the
+   cloud mirror (e.g. resyncLocalSalesRowsToCloud in script.js) — callers
+   already update the in-memory `clients` array and re-render from that
+   before calling this, so nothing here needs to be awaited. */
 function saveClientsToStorage(){
-    try{
-        localStorage.setItem(
-            CLIENT_STORAGE_KEY,
-            JSON.stringify(clients)
-        );
-    }catch(error){
+    window.CrownClientStore.saveAll(clients).catch(function(error){
         console.error("Unable to save clients:", error);
         alert("Unable to save the client database.");
-    }
+    });
 }
 
 function getBranchList(){

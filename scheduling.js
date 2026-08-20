@@ -1,11 +1,17 @@
 const BRANCH_MASTER_KEY = "crownBranchMasterList";
 const SERVICE_MASTER_KEY = "crownServiceMasterList";
-const CLIENT_MASTER_KEY = "crownClientMasterList";
 const THERAPIST_MASTER_KEY = "crownTherapistMasterList";
 const SELECTED_BRANCH_KEY = "crownSelectedBranch";
 const SCHEDULE_PREFIX = "crownSchedule_";
 const BLOCKED_DATES_KEY = "crownBlockedDates";
 const ALL_BRANCHES_LABEL = "All Branches";
+
+/* Synchronous snapshot of the client list, kept up to date by getClients()
+   (see client-store.js — the actual storage is IndexedDB, which is
+   async). Exists purely so display-only lookups like getClientMobile()
+   don't have to turn their whole call chain (buildScheduleRowHtml and
+   its .map() callers) async just to read a fallback phone number. */
+let cachedClients = [];
 
 /* Synthetic service, not part of crownServiceMasterList — lets staff book
    a slot (with a flat 1-hour hold) before the client has settled on a
@@ -61,10 +67,10 @@ let pendingRequestId = null;
    wherever pendingRequestId is cleared. */
 let pendingRequestContact = null;
 
-document.addEventListener("DOMContentLoaded", function(){
+document.addEventListener("DOMContentLoaded", async function(){
     initializeDate();
     loadBranchOptions();
-    loadClientOptions();
+    await loadClientOptions();
     attachEvents();
     renderSchedule();
     renderUpcomingAndHistory();
@@ -351,15 +357,13 @@ function getServices(){
     }
 }
 
-function getClients(){
+/* Also refreshes cachedClients (below) as a side effect, so the handful
+   of call sites that only need a synchronous, display-purposes lookup
+   (getClientMobile) don't have to go async themselves. */
+async function getClients(){
     try{
-        const saved =
-            localStorage.getItem(CLIENT_MASTER_KEY);
-
-        const parsed =
-            saved ? JSON.parse(saved) : [];
-
-        return Array.isArray(parsed) ? parsed : [];
+        cachedClients = await window.CrownClientStore.getAll();
+        return cachedClients;
     }catch(error){
         console.error("Unable to load clients:", error);
         return [];
@@ -1474,13 +1478,13 @@ function updateAllCompanionPreviews(){
     });
 }
 
-function loadClientOptions(){
+async function loadClientOptions(){
     const datalist =
         document.getElementById("clientOptions");
 
     datalist.innerHTML = "";
 
-    getClients()
+    (await getClients())
         .slice()
         .sort(function(a, b){
             return String(a.name || "")
@@ -2422,9 +2426,13 @@ function getAllScheduleGroups(){
     return groups;
 }
 
+/* Synchronous on purpose — reads the cachedClients snapshot getClients()
+   keeps current, rather than awaiting IndexedDB, since this is called
+   from buildScheduleRowHtml() inside a plain .map(). A moment-stale
+   snapshot is an acceptable tradeoff for a fallback display value. */
 function getClientMobile(clientName){
     const client =
-        getClients().find(function(item){
+        cachedClients.find(function(item){
             return (
                 String(item.name || "").toLowerCase() ===
                 String(clientName || "").toLowerCase()
@@ -3555,15 +3563,15 @@ async function saveSchedule(){
         }
     }
 
-    ensureClientExists(
+    await ensureClientExists(
         client,
         branch.name,
         pendingRequestContact?.mobile || ""
     );
 
-    companionPayloads.forEach(function(payload){
-        ensureClientExists(payload.name, branch.name);
-    });
+    for(const payload of companionPayloads){
+        await ensureClientExists(payload.name, branch.name);
+    }
 
     notifyScheduleAssignments({
         branch: branch.name,
@@ -3637,9 +3645,9 @@ function notifyScheduleAssignments(options){
     });
 }
 
-function ensureClientExists(clientName, branchName, mobile){
+async function ensureClientExists(clientName, branchName, mobile){
     const clients =
-        getClients();
+        await getClients();
 
     const existing =
         clients.find(function(client){
@@ -3656,10 +3664,7 @@ function ensureClientExists(clientName, branchName, mobile){
         if(mobile && !existing.mobile){
             existing.mobile = mobile;
 
-            localStorage.setItem(
-                CLIENT_MASTER_KEY,
-                JSON.stringify(clients)
-            );
+            await window.CrownClientStore.saveAll(clients);
         }
 
         return;
@@ -3679,12 +3684,9 @@ function ensureClientExists(clientName, branchName, mobile){
         createdAt: new Date().toISOString()
     });
 
-    localStorage.setItem(
-        CLIENT_MASTER_KEY,
-        JSON.stringify(clients)
-    );
+    await window.CrownClientStore.saveAll(clients);
 
-    loadClientOptions();
+    await loadClientOptions();
 }
 
 function deleteSelectedSchedule(){

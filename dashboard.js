@@ -1,10 +1,10 @@
 const BRANCH_KEY = "crownSelectedBranch";
 const BRANCH_MASTER_KEY = "crownBranchMasterList";
 const SCHEDULE_PREFIX = "crownSchedule_";
-const CLIENT_STORAGE_KEY = "crownClientMasterList";
 
 /* Client records, loaded for the appointment card's Forms section
-   (client-forms.js reads/writes this same array + storage key). */
+   (client-forms.js reads/writes this same in-memory array; the storage
+   itself lives in CrownClientStore — see client-store.js). */
 let clients = [];
 let currentScheduleDetailContext = null;
 
@@ -25,9 +25,9 @@ const DEFAULT_BRANCHES = [
     }
 ];
 
-document.addEventListener("DOMContentLoaded", function(){
+document.addEventListener("DOMContentLoaded", async function(){
     ensureDefaultBranches();
-    loadClients();
+    await loadClients();
     loadBranchDropdown();
     initializeScheduleDate();
     syncDashboardControlsFromSidebar();
@@ -153,31 +153,29 @@ function normalizeClientName(value){
     return String(value || "").trim();
 }
 
-function loadClients(){
+async function loadClients(){
     try{
-        const saved = localStorage.getItem(CLIENT_STORAGE_KEY);
-        const parsed = saved ? JSON.parse(saved) : [];
-
-        clients = Array.isArray(parsed) ? parsed : [];
+        clients = await window.CrownClientStore.getAll();
     }catch(error){
         console.error("Unable to load clients:", error);
         clients = [];
     }
 }
 
+/* Fire-and-forget, same as everywhere else in the app that saves to the
+   cloud mirror — callers already update the in-memory `clients` array
+   before calling this, so nothing here needs to be awaited. */
 function saveClientsToStorage(){
-    try{
-        localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(clients));
-    }catch(error){
+    window.CrownClientStore.saveAll(clients).catch(function(error){
         console.error("Unable to save clients:", error);
-    }
+    });
 }
 
 /* Finds the client record matching an appointment's client name (same
    case-insensitive match scheduling.js's ensureClientExists uses), or
    creates a bare one so a Forms entry has somewhere to be saved — mirrors
    how scheduling.js auto-creates client records for new bookings. */
-function ensureClientRecordForForms(clientName, branchName){
+async function ensureClientRecordForForms(clientName, branchName){
     const target = normalizeClientName(clientName).toLowerCase();
 
     let client = clients.find(function(item){
@@ -195,9 +193,7 @@ function ensureClientRecordForForms(clientName, branchName){
         let freshClients;
 
         try{
-            const saved = localStorage.getItem(CLIENT_STORAGE_KEY);
-            const parsed = saved ? JSON.parse(saved) : [];
-            freshClients = Array.isArray(parsed) ? parsed : [];
+            freshClients = await window.CrownClientStore.getAll();
         }catch(error){
             freshClients = clients;
         }
@@ -879,7 +875,7 @@ function getAppointmentServiceList(appointment){
     return ["Service"];
 }
 
-function openScheduleDetailModal(appointment, branch, selectedDate){
+async function openScheduleDetailModal(appointment, branch, selectedDate){
     document.getElementById("scheduleDetailEyebrow").textContent =
         appointment.isCompanionEntry
             ? "Companion Appointment"
@@ -942,7 +938,7 @@ function openScheduleDetailModal(appointment, branch, selectedDate){
 
     if(window.ClientForms){
         const client =
-            ensureClientRecordForForms(appointment.client || "", branch.name);
+            await ensureClientRecordForForms(appointment.client || "", branch.name);
 
         currentScheduleDetailContext = {
             client: client,

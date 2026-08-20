@@ -4,6 +4,69 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-20 — Fixed mobile sync/login breaking from a full localStorage quota
+
+**Reported by:** User — a staff iPhone and the Calamba iPad stopped showing new Daily
+Income Report entries; after deleting and recreating the iPhone's home-screen icon,
+it couldn't log in at all, on any browser, any network, even after a full restart.
+
+**Root cause, found using Safari's Web Inspector over USB (not guessed):**
+
+```
+CrownCloud: initial sync failed. — QuotaExceededError: The quota has been exceeded.
+— firebase-sync.js:551
+```
+
+Queried the live `appData` Firestore collection directly to size what every device
+mirrors into its `localStorage`: **~2.83 MB total, 1.9 MB (68%) of it
+`crownClientMasterList`** — the whole Client Database as one ever-growing JSON blob,
+with no archiving. Mobile Safari/Chrome (WebKit) grants meaningfully less
+`localStorage` per origin than desktop, especially on a device low on free storage —
+consistent with two separate mobile devices failing while desktop was fine.
+
+Worse: `applySnapshotToLocalStorage()`'s per-key write happened inside one
+`forEach` loop with no per-key error handling, so a `QuotaExceededError` on the 1.9 MB
+client list threw out of the loop and silently skipped every key `forEach` hadn't
+reached yet — including `crownUserAccounts` (11 KB). That's why login itself broke,
+not just the client list going stale: `CrownAuth.authenticate()` found no local
+accounts to check the password against.
+
+**Fix, two parts:**
+
+1. **Resilience** — `firebase-sync.js` gained a shared `applyKeyToLocalStorage(key)`
+   used by both places that apply incoming changes (the collection-snapshot pull and
+   the realtime listener, previously two near-duplicate loops). Every key is now
+   independently `try`/`catch`— one key failing to apply can never again take any
+   other key down with it.
+2. **Removed the actual dominant offender from `localStorage`** — new
+   `client-store.js`: a small IndexedDB-backed store (`CrownClientStore`, DB
+   `crownClientCache`), a much larger and more elastic quota than `localStorage`.
+   `crownClientMasterList` is now special-cased out of the normal mirror entirely —
+   `firebase-sync.js`'s apply loop, `flushPending()`'s push read, and every direct
+   page call site (`clients.js`, `dashboard.js`, `scheduling.js`, `script.js`,
+   `list-branches.js`'s branch-rename migration) now read/write it through
+   `CrownClientStore` instead. A one-time migration copies over whatever a device
+   already has cached under the old `localStorage` key the first time this runs
+   there, then removes it, so nothing already-synced just disappears.
+   `client-store.js` is loaded on every page, right before `firebase-sync.js` (same
+   `<head>` position as `access-control.js` and friends).
+
+**Read-only lookups stayed synchronous on purpose** (`getClientByName`,
+`getClientMobile`, the Client datalist in `loadModalOptions`/`loadClientOptions`) —
+each file keeps a `cachedClients` snapshot that `getClients()` refreshes, so
+`buildScheduleRowHtml()`'s tight `.map()` render loop and similar display code never
+had to go `async`. Anything that reads-then-writes (creating/updating a client record)
+does go through the real `await CrownClientStore.getAll()`/`saveAll()` for
+correctness — and where two such writes could race (e.g. a schedule's main client
+plus its companions), calls were sequenced with `await` in a loop instead of
+`forEach`, so the second write can't silently clobber the first.
+
+**Status:** deployed — hosting only; no Firestore rules or Cloud Functions changed,
+so no separate rules/functions deploy needed this time. The two originally-affected
+devices still need their site data cleared once (documented in `manual.html`
+Chapter 25) — the quota-exceeded state doesn't clear itself, since it's already
+stuck before this fix's code ever gets a chance to run there.
+
 ## 2026-08-20 — Add Consumable, live Online Booking filter, Google Reviews, Messenger widget
 
 Four pieces of previously-uncommitted work, found sitting in the working tree from an

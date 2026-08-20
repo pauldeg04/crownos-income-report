@@ -268,6 +268,17 @@
         return { deleted: false, value: value };
     }
 
+    /* crownClientMasterList is kept out of localStorage entirely — see
+       client-store.js. It is the single largest and only truly unbounded
+       synced key (the whole Client Database as one JSON blob, growing
+       forever with no archiving), and localStorage's per-origin quota is
+       small and varies a lot by device — mobile Safari/Chrome in
+       particular can be far tighter than desktop, especially on a device
+       low on free storage. Moving just this one key to IndexedDB (a much
+       larger, more elastic quota) buys back most of the headroom every
+       other synced key shares. */
+    const CLIENT_MASTER_LIST_KEY = "crownClientMasterList";
+
     /* ---------- Outgoing: localStorage → Firestore ---------- */
 
     const nativeSetItem = Storage.prototype.setItem;
@@ -356,7 +367,10 @@
                easy to reason about; pushes are infrequent enough that
                the extra round trips don't matter. */
             for(const key of keys){
-                const value = localStorage.getItem(key);
+                const value =
+                    key === CLIENT_MASTER_LIST_KEY
+                        ? await window.CrownClientStore?.getRaw?.() ?? null
+                        : localStorage.getItem(key);
 
                 const existingSnapshot =
                     await db.collection(collectionForKey(key))
@@ -495,11 +509,80 @@
 
     /* ---------- Incoming: Firestore → localStorage ---------- */
 
+    /* Applies one already-reconstructed key's value locally — either into
+       localStorage, or for CLIENT_MASTER_LIST_KEY, into CrownClientStore's
+       IndexedDB (see client-store.js). Shared by both places that apply
+       incoming changes (the collection-snapshot pull below and the
+       realtime listener), so there is exactly one place to keep both keys
+       skip-if-unclaimed (pendingKeys) and out of the write. Every key is
+       independently try/caught: one key failing to apply (e.g. a full
+       localStorage quota on a constrained device) must never stop any
+       other key — including small, critical ones like crownUserAccounts —
+       from applying. Returns whether this key actually changed. */
+    async function applyKeyToLocalStorage(key){
+        /* If the user makes a local change (e.g. an import) while a fetch
+           is in flight, queuePush() already queued it in pendingKeys —
+           but this snapshot still reflects the OLD cloud value from
+           before that change. Applying it now would silently clobber the
+           newer local write before its own queued push ever runs. Skip it
+           here; the queued push (retried until initialSyncDone, see
+           flushPending) will bring the cloud up to date instead. */
+        if(pendingKeys.has(key)){
+            return false;
+        }
+
+        const result = reconstructIfComplete(key);
+
+        if(!result){
+            return false;
+        }
+
+        try{
+            if(key === CLIENT_MASTER_LIST_KEY){
+                if(result.deleted){
+                    await window.CrownClientStore?.clear?.();
+                    return true;
+                }
+
+                if((await window.CrownClientStore?.getRaw?.()) !== result.value){
+                    await window.CrownClientStore?.saveRaw?.(result.value);
+                    return true;
+                }
+
+                return false;
+            }
+
+            if(result.deleted){
+                if(localStorage.getItem(key) !== null){
+                    nativeRemoveItem.call(localStorage, key);
+                    return true;
+                }
+
+                return false;
+            }
+
+            if(localStorage.getItem(key) !== result.value){
+                nativeSetItem.call(localStorage, key, result.value);
+                return true;
+            }
+
+            return false;
+        }catch(error){
+            console.error(
+                "CrownCloud: could not apply '" + key + "' locally — " +
+                "skipping it, every other key still applies.",
+                error
+            );
+
+            return false;
+        }
+    }
+
     /* Applies one collection snapshot (cached or from the server) to
        localStorage. Shared by the cache-first fast path and the
        authoritative network fetch below — same reconstruction/skip
        logic either way, just a different source for the snapshot. */
-    function applySnapshotToLocalStorage(snapshot){
+    async function applySnapshotToLocalStorage(snapshot){
         const remoteKeys = new Set();
         const changedKeys = [];
 
@@ -519,44 +602,11 @@
             ingestChunkDoc(data);
         });
 
-        remoteKeys.forEach(function(key){
-            /* If the user makes a local change (e.g. an import) while a
-               fetch is in flight, queuePush() already queued it in
-               pendingKeys — but this snapshot still reflects the OLD
-               cloud value from before that change. Applying it now
-               would silently clobber the newer local write before its
-               own queued push ever runs. Skip it here; the queued push
-               (retried until initialSyncDone, see flushPending) will
-               bring the cloud up to date instead. */
-            if(pendingKeys.has(key)){
-                return;
-            }
-
-            const result = reconstructIfComplete(key);
-
-            if(!result){
-                return;
-            }
-
-            if(result.deleted){
-                if(localStorage.getItem(key) !== null){
-                    nativeRemoveItem.call(localStorage, key);
-                    changedKeys.push(key);
-                }
-
-                return;
-            }
-
-            if(localStorage.getItem(key) !== result.value){
-                nativeSetItem.call(
-                    localStorage,
-                    key,
-                    result.value
-                );
-
+        for(const key of remoteKeys){
+            if(await applyKeyToLocalStorage(key)){
                 changedKeys.push(key);
             }
-        });
+        }
 
         applyingRemote = false;
 
@@ -627,7 +677,7 @@
                     await db.collection(COLLECTION).get({ source: "cache" });
 
                 if(!cacheSnapshot.empty){
-                    applySnapshotToLocalStorage(cacheSnapshot);
+                    await applySnapshotToLocalStorage(cacheSnapshot);
                     resolveInitialSync(true);
                 }
             }catch(cacheError){
@@ -638,7 +688,7 @@
                 await db.collection(COLLECTION).get();
 
             const remoteKeys =
-                applySnapshotToLocalStorage(snapshot);
+                await applySnapshotToLocalStorage(snapshot);
 
             /* Separate collection, separate query — see collectionForKey().
                Best-effort: a non-Admin/EA session gets permission-denied
@@ -651,7 +701,7 @@
                 const cashflowSnapshot =
                     await db.collection(CASHFLOW_COLLECTION).get();
 
-                applySnapshotToLocalStorage(cashflowSnapshot)
+                (await applySnapshotToLocalStorage(cashflowSnapshot))
                     .forEach(function(key){
                         remoteKeys.add(key);
                     });
@@ -715,7 +765,7 @@
     /* Shared by both collection listeners below — the actual
        reconstruction/apply logic doesn't care which collection a change
        came from, only the `key` field on each doc. */
-    function handleListenerSnapshot(snapshot){
+    async function handleListenerSnapshot(snapshot){
         const changedKeys = [];
         const touchedKeys = new Set();
 
@@ -752,34 +802,11 @@
             ingestChunkDoc(data);
         });
 
-        touchedKeys.forEach(function(key){
-            /* Same reasoning as the initial-sync pull: don't clobber
-               a local write this tab already queued but hasn't
-               pushed yet. */
-            if(pendingKeys.has(key)){
-                return;
-            }
-
-            const result = reconstructIfComplete(key);
-
-            if(!result){
-                return;
-            }
-
-            if(result.deleted){
-                if(localStorage.getItem(key) !== null){
-                    nativeRemoveItem.call(localStorage, key);
-                    changedKeys.push(key);
-                }
-
-                return;
-            }
-
-            if(localStorage.getItem(key) !== result.value){
-                nativeSetItem.call(localStorage, key, result.value);
+        for(const key of touchedKeys){
+            if(await applyKeyToLocalStorage(key)){
                 changedKeys.push(key);
             }
-        });
+        }
 
         applyingRemote = false;
 
@@ -1026,6 +1053,15 @@
 
             clearTimeout(flushTimer);
             return flushPending();
+        },
+        /* client-store.js calls this after saving a genuine local edit to
+           the client list, since that key bypasses the normal
+           Storage.prototype.setItem override (see CLIENT_MASTER_LIST_KEY
+           above) and so has no other way to queue its own cloud push. */
+        notifyClientListChanged: function(){
+            if(!applyingRemote){
+                queuePush(CLIENT_MASTER_LIST_KEY);
+            }
         },
         signOut: function(){
             try{

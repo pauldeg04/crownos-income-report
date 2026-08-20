@@ -36,6 +36,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script src="firebase-init.js"></script>
     <script src="pwa-register.js"></script>
+    <script src="client-store.js"></script>
     <script src="firebase-sync.js"></script>
     <script src="access-control.js"></script>
     <script src="notifications.js"></script>
@@ -2137,6 +2138,30 @@ Branch receives    →  it is added to the branch's Available Stock</div>
       seconds and try again. If it persists, check whether your account is
       <strong>Inactive</strong> — only an Admin can reactivate it in Account
       Settings.
+    </p>
+  </details>
+
+  <details>
+    <summary>This device won't sync — or can't even log in — no matter what I try.</summary>
+    <p>
+      This can happen when the browser's storage on that specific device is
+      full — it shows the same way whether you're on WiFi or mobile data,
+      and whether you're already logged in elsewhere or not. Restarting the
+      app does not fix it by itself, because the storage stays full. The fix
+      is to clear that site's data on the affected device:
+    </p>
+    <ul>
+      <li><strong>iPhone/iPad (Safari or Chrome):</strong> Settings → Safari
+        (or Chrome) → Advanced → Website Data → find the CrownOS site →
+        Delete, then reopen the app.</li>
+      <li><strong>Android/desktop Chrome:</strong> open the site, then the
+        lock/info icon beside the address bar → Site settings → Clear data,
+        then reload.</li>
+    </ul>
+    <p>
+      This only needs to be done once per affected device — it re-downloads
+      everything fresh afterward. Tell an Admin if it keeps recurring on the
+      same device.
     </p>
   </details>
 </section>

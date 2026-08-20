@@ -3,9 +3,15 @@ const BRANCH_KEY = "crownSelectedBranch";
 const SERVICE_MASTER_KEY = "crownServiceMasterList";
 const PRODUCT_MASTER_KEY = "crownProductMasterList";
 const THERAPIST_MASTER_KEY = "crownTherapistMasterList";
-const CLIENT_MASTER_KEY = "crownClientMasterList";
 const BRANCH_MASTER_KEY = "crownBranchMasterList";
 const SCHEDULE_PREFIX = "crownSchedule_";
+
+/* Synchronous snapshot of the client list, kept current by getClients()
+   (see client-store.js — the actual storage is IndexedDB, which is
+   async). Exists so display-only reads (getClientByName, the Client
+   datalist in loadModalOptions) don't have to turn their whole call
+   chain async just to look something up. */
+let cachedClients = [];
 
 let salesRows = [];
 let editingSaleId = null;
@@ -28,13 +34,14 @@ function canEditSavedSales(){
   return role === "Admin" || role === "Executive Assistant";
 }
 
-document.addEventListener("DOMContentLoaded", function(){
+document.addEventListener("DOMContentLoaded", async function(){
   renderStatisticsSourceSummary();
 
   initializeDate();
   initializeCalendar();
   initializeDateDropdown();
   attachEvents();
+  await getClients();
   loadModalOptions();
   loadDailySales();
   resyncLocalSalesRowsToCloud();
@@ -693,8 +700,19 @@ function getTherapists(){
     .sort();
 }
 
-function getClients(){
-  return readList(CLIENT_MASTER_KEY);
+/* Also refreshes cachedClients (see the top of this file) as a side
+   effect, so the display-only call sites that only need a synchronous
+   lookup (getClientByName, the datalist in loadModalOptions) don't have
+   to go async themselves. */
+async function getClients(){
+  try{
+    cachedClients = await window.CrownClientStore.getAll();
+  }catch(error){
+    console.error("Unable to load clients:", error);
+    cachedClients = [];
+  }
+
+  return cachedClients;
 }
 
 function findService(name){
@@ -733,6 +751,10 @@ function isVipCardName(value){
   );
 }
 
+/* Synchronous on purpose — reads the cachedClients snapshot getClients()
+   keeps current, rather than awaiting IndexedDB, since callers use this
+   for a plain display lookup (VIP check, prefilling the client-details
+   panel). A moment-stale snapshot is an acceptable tradeoff there. */
 function getClientByName(clientName){
   const normalizedName =
     normalizeClientName(clientName).toLowerCase();
@@ -741,7 +763,7 @@ function getClientByName(clientName){
     return null;
   }
 
-  return getClients().find(function(client){
+  return cachedClients.find(function(client){
     return (
       normalizeClientName(client?.name).toLowerCase() ===
       normalizedName
@@ -902,7 +924,7 @@ function hasAnyModalClientDetail(details){
    Client field's typed name (the same key used to match this client
    against sales elsewhere). Blank fields never overwrite existing data —
    this only fills gaps, matching the Client Database Add/Edit modals. */
-function applyModalClientDetailsToDatabase(clientName){
+async function applyModalClientDetailsToDatabase(clientName){
   const details = collectModalClientDetailsInput();
 
   if(!hasAnyModalClientDetail(details)){
@@ -915,7 +937,7 @@ function applyModalClientDetailsToDatabase(clientName){
     return;
   }
 
-  const clients = getClients();
+  const clients = await getClients();
   const key = cleanName.toLowerCase();
 
   let client =
@@ -959,10 +981,7 @@ function applyModalClientDetailsToDatabase(clientName){
 
   client.updatedAt = new Date().toISOString();
 
-  localStorage.setItem(
-    CLIENT_MASTER_KEY,
-    JSON.stringify(clients)
-  );
+  await window.CrownClientStore.saveAll(clients);
 }
 
 function currentTimeValue(){
@@ -1207,7 +1226,7 @@ function loadModalOptions(){
   renderModalVouchers();
 
   document.getElementById("modalClientOptions").innerHTML =
-    getClients()
+    cachedClients
       .slice()
       .sort(function(a, b){
         return String(a?.name || "").localeCompare(String(b?.name || ""));
@@ -2932,14 +2951,14 @@ function findNextAvailableSlot(branchRecord, durationMinutes, pool, searchFromMi
   return null;
 }
 
-function ensureClientExistsForSchedule(clientName, branchName){
+async function ensureClientExistsForSchedule(clientName, branchName){
   const target = normalizeClientName(clientName).toLowerCase();
 
   if(!target){
     return;
   }
 
-  const clients = getClients();
+  const clients = await getClients();
 
   const exists =
     clients.some(function(client){
@@ -2964,7 +2983,7 @@ function ensureClientExistsForSchedule(clientName, branchName){
     createdAt: new Date().toISOString()
   });
 
-  localStorage.setItem(CLIENT_MASTER_KEY, JSON.stringify(clients));
+  await window.CrownClientStore.saveAll(clients);
 }
 
 function saveDailySchedule(branchName, dateValue, entries){
@@ -2979,7 +2998,7 @@ function saveDailySchedule(branchName, dateValue, entries){
   }
 }
 
-function addModalSaleToSchedule(){
+async function addModalSaleToSchedule(){
   hideModalMessage();
 
   const branchName = getSelectedBranch();
@@ -3254,11 +3273,15 @@ function addModalSaleToSchedule(){
 
   saveDailySchedule(branchName, dateValue, updatedSchedule);
 
-  ensureClientExistsForSchedule(clientName, branchName);
+  /* Sequential, not fire-and-forget — each call reads the current client
+     list fresh before deciding whether to append. Firing them in
+     parallel would let two calls read the same "before" snapshot and
+     the second save silently drop whatever the first one just added. */
+  await ensureClientExistsForSchedule(clientName, branchName);
 
-  modalCompanions.forEach(function(companion){
-    ensureClientExistsForSchedule(companion.name.trim(), branchName);
-  });
+  for(const companion of modalCompanions){
+    await ensureClientExistsForSchedule(companion.name.trim(), branchName);
+  }
 
   updateDailyScheduleOverview();
 
@@ -4333,7 +4356,7 @@ function removeSaleFromStockAudit(saleId){
    buildAndValidateSaleData(). Voucher redemption + VIP-card marking are
    real consequences of a finalized sale, so they only run once settled;
    an ongoing/unpaid entry still registers the client record either way. */
-function persistModalSaleData(saleData, validItems){
+async function persistModalSaleData(saleData, validItems){
   if(editingSaleId){
     salesRows =
       salesRows.map(function(sale){
@@ -4349,19 +4372,22 @@ function persistModalSaleData(saleData, validItems){
     return String(a.startTime || "").localeCompare(String(b.startTime || ""));
   });
 
+  /* Sequential, not fire-and-forget — both read-then-write the client
+     list, so running them in parallel risks the second save silently
+     dropping whatever the first one just added/changed. */
   if(saleData.settled){
     if(
       validItems.some(function(item){
         return item.itemType === "Product" && isVipCardName(item.name);
       })
     ){
-      markClientVip(saleData.client);
+      await markClientVip(saleData.client);
     }
 
     syncVoucherRedemptions(saleData);
   }
 
-  applyModalClientDetailsToDatabase(saleData.client);
+  await applyModalClientDetailsToDatabase(saleData.client);
 
   syncSaleToStockAudit(saleData);
 
@@ -4373,7 +4399,7 @@ function persistModalSaleData(saleData, validItems){
   closeSaleModal();
 }
 
-function settleModalSale(){
+async function settleModalSale(){
   const result =
     buildAndValidateSaleData(true);
 
@@ -4381,10 +4407,10 @@ function settleModalSale(){
     return;
   }
 
-  persistModalSaleData(result.saleData, result.validItems);
+  await persistModalSaleData(result.saleData, result.validItems);
 }
 
-function addModalSaleToList(){
+async function addModalSaleToList(){
   const result =
     buildAndValidateSaleData(false);
 
@@ -4392,7 +4418,7 @@ function addModalSaleToList(){
     return;
   }
 
-  persistModalSaleData(result.saleData, result.validItems);
+  await persistModalSaleData(result.saleData, result.validItems);
 }
 
 
@@ -4441,8 +4467,8 @@ function getCompanionSaleSubtotal(companion, sale){
     }, 0);
 }
 
-function syncClientDatabaseFromSales(){
-  const existingClients = getClients();
+async function syncClientDatabaseFromSales(){
+  const existingClients = await getClients();
   const clientMap = new Map();
 
   existingClients.forEach(function(client){
@@ -4678,16 +4704,13 @@ function syncClientDatabaseFromSales(){
         };
       });
 
-  localStorage.setItem(
-    CLIENT_MASTER_KEY,
-    JSON.stringify(updatedClients)
-  );
+  await window.CrownClientStore.saveAll(updatedClients);
 
   loadModalOptions();
 }
 
-function markClientVip(clientName){
-  const clients = getClients();
+async function markClientVip(clientName){
+  const clients = await getClients();
 
   const client =
     clients.find(function(item){
@@ -4718,10 +4741,7 @@ function markClientVip(clientName){
     });
   }
 
-  localStorage.setItem(
-    CLIENT_MASTER_KEY,
-    JSON.stringify(clients)
-  );
+  await window.CrownClientStore.saveAll(clients);
 
   loadModalOptions();
 }
@@ -5555,7 +5575,13 @@ function saveDailySales(){
     })
   );
 
-  syncClientDatabaseFromSales();
+  /* Fire-and-forget — a full recompute from the stored sales data
+     (source of truth), not a targeted add, so back-to-back calls just
+     converge on the same result rather than racing to lose an update. */
+  syncClientDatabaseFromSales().catch(function(error){
+    console.error("Unable to sync the client database from sales:", error);
+  });
+
   renderCalendar();
   updateSalesRecord();
 }

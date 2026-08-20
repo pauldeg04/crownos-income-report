@@ -851,7 +851,7 @@ function editBranch(row, branchId){
 }
 
 
-function migrateBranchReferences(oldName, newName){
+async function migrateBranchReferences(oldName, newName){
     if(!oldName || !newName || oldName === newName){
         return;
     }
@@ -893,10 +893,38 @@ function migrateBranchReferences(oldName, newName){
         localStorage.removeItem(move.oldKey);
     });
 
+    /* Shared by the two localStorage-backed lists below and by
+       crownClientMasterList (kept in IndexedDB — see client-store.js), so
+       a branch rename updates every item.branch / item.branches
+       reference the same way regardless of where the list lives. Mutates
+       `list` in place and returns whether anything changed. */
+    function rewriteBranchRefs(list){
+        let changed = false;
+
+        list.forEach(function(item){
+            if(Array.isArray(item.branches)){
+                item.branches = item.branches.map(function(branch){
+                    if(branch === oldName){
+                        changed = true;
+                        return newName;
+                    }
+
+                    return branch;
+                });
+            }
+
+            if(item.branch === oldName){
+                item.branch = newName;
+                changed = true;
+            }
+        });
+
+        return changed;
+    }
+
     [
         "crownTherapistMasterList",
-        "crownUserAccounts",
-        "crownClientMasterList"
+        "crownUserAccounts"
     ].forEach(function(storageKey){
         try{
             const parsed = JSON.parse(
@@ -907,27 +935,7 @@ function migrateBranchReferences(oldName, newName){
                 return;
             }
 
-            let changed = false;
-
-            parsed.forEach(function(item){
-                if(Array.isArray(item.branches)){
-                    item.branches = item.branches.map(function(branch){
-                        if(branch === oldName){
-                            changed = true;
-                            return newName;
-                        }
-
-                        return branch;
-                    });
-                }
-
-                if(item.branch === oldName){
-                    item.branch = newName;
-                    changed = true;
-                }
-            });
-
-            if(changed){
+            if(rewriteBranchRefs(parsed)){
                 localStorage.setItem(
                     storageKey,
                     JSON.stringify(parsed)
@@ -937,6 +945,16 @@ function migrateBranchReferences(oldName, newName){
             console.error("Unable to migrate branch reference:", storageKey, error);
         }
     });
+
+    try{
+        const clientList = await window.CrownClientStore.getAll();
+
+        if(rewriteBranchRefs(clientList)){
+            await window.CrownClientStore.saveAll(clientList);
+        }
+    }catch(error){
+        console.error("Unable to migrate branch reference:", "crownClientMasterList", error);
+    }
 
     try{
         const raw = localStorage.getItem("crownShareholders");
@@ -1008,7 +1026,7 @@ function branchHasRelatedRecords(branchName){
     return false;
 }
 
-function updateBranch(
+async function updateBranch(
     branchId,
     newValue,
     bedsValue,
@@ -1101,7 +1119,7 @@ function updateBranch(
 
     const oldName = branch.name;
 
-    migrateBranchReferences(oldName, newName);
+    await migrateBranchReferences(oldName, newName);
 
     branch.name = newName;
     branch.beds = newBedCount;
