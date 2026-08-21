@@ -511,6 +511,8 @@
     function formatOutcome(request){
         const label = request.status === "converted"
             ? "<span class=\"badge bg-success\">Appointment created</span>"
+            : request.status === "expired"
+            ? "<span class=\"badge bg-warning text-dark\">Expired</span>"
             : "<span class=\"badge bg-secondary\">Declined</span>";
 
         const details = [];

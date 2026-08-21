@@ -4,6 +4,39 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-22 — Booking requests now auto-expire into Previous Requests
+
+**Requested by:** User — "yung mga booking request na nag expire, pwede ba natin ilagay
+din sa previous request. then lagyan nalang natin ng status na expired."
+
+**Problem:** A `bookingRequests` doc only ever had three statuses — `pending`,
+`declined`, `converted`. If a pending request's requested date passed with no staff
+action, it stayed `pending` forever: it kept cluttering the live Pending table and
+never showed up in Previous Requests, since History is simply "anything not pending"
+(`booking-requests.js` `loadHistory`, filtered client-side to avoid a composite index).
+
+**Fix applied:**
+1. [`functions/index.js`](functions/index.js) — new scheduled function
+   `expireStaleBookingRequests`, running every 15 minutes (same cadence as the existing
+   `releaseExpiredHolds` job). It reads all `pending` requests, compares each `date`
+   (Manila time) against today, and batch-updates any with a past date to
+   `status: "expired"`. Because History is already "not pending", expired requests
+   surface there automatically — no query change needed.
+2. `releaseHoldOnRequestReview` trigger — added `"expired"` alongside `"declined"` /
+   `"converted"` as a status that releases the request's associated `scheduleHolds`
+   entry, so an expired request's slot hold doesn't linger.
+3. [`booking-requests.js`](booking-requests.js) `formatOutcome()` — added a distinct
+   "Expired" badge (warning/yellow) next to the existing "Appointment created" /
+   "Declined" badges in the Previous Requests table.
+4. [`manual.html`](manual.html) Chapter 14 — documented that expiry happens
+   automatically and needs no manual decline.
+
+**Status:** Code changed locally. Requires
+`firebase deploy --only functions:expireStaleBookingRequests,functions:releaseHoldOnRequestReview`
+plus `firebase deploy --only hosting` to go live.
+
+---
+
 ## 2026-08-20 — Fixed mobile sync/login breaking from a full localStorage quota
 
 **Reported by:** User — a staff iPhone and the Calamba iPad stopped showing new Daily

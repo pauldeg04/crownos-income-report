@@ -600,6 +600,43 @@ exports.releaseExpiredHolds = onSchedule("every 15 minutes", async () => {
     await batch.commit();
 });
 
+/* ---------- expireStaleBookingRequests (scheduled) ---------- */
+
+/* A pending request whose requested date has already passed (Manila time)
+   without staff action can no longer be honored — the guest's slot is gone.
+   Marking it "expired" (rather than leaving it "pending" forever) both stops
+   it cluttering the live pending list and, since history is simply "anything
+   not pending" (see loadHistory below), surfaces it in Previous Requests
+   automatically. */
+exports.expireStaleBookingRequests = onSchedule(
+    { schedule: "every 15 minutes", region: "asia-southeast1" },
+    async () => {
+        const nowManila = new Date(Date.now() + MANILA_UTC_OFFSET_MINUTES * 60 * 1000);
+        const todayManila = nowManila.getUTCFullYear() + "-" +
+            String(nowManila.getUTCMonth() + 1).padStart(2, "0") + "-" +
+            String(nowManila.getUTCDate()).padStart(2, "0");
+
+        const snapshot = await db.collection(BOOKING_REQUESTS_COLLECTION)
+            .where("status", "==", "pending")
+            .get();
+
+        const stale = snapshot.docs.filter(function(doc){
+            return String(doc.data().date || "") < todayManila;
+        });
+
+        if(stale.length === 0) return;
+
+        const batch = db.batch();
+        stale.forEach(function(doc){
+            batch.update(doc.ref, {
+                status: "expired",
+                reviewedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+        });
+        await batch.commit();
+    }
+);
+
 /* ---------- releaseHoldOnRequestReview (trigger) ---------- */
 
 exports.releaseHoldOnRequestReview = onDocumentUpdated(
@@ -610,7 +647,7 @@ exports.releaseHoldOnRequestReview = onDocumentUpdated(
 
         const justReviewed =
             before.status !== after.status &&
-            (after.status === "declined" || after.status === "converted");
+            (after.status === "declined" || after.status === "converted" || after.status === "expired");
 
         if(!justReviewed) return;
 
