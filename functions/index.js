@@ -39,6 +39,7 @@ const BLOCKED_DATES_KEY = "crownBlockedDates";
 const ALL_BRANCHES_LABEL = "All Branches";
 const HOLDS_COLLECTION = "scheduleHolds";
 const BOOKING_REQUESTS_COLLECTION = "bookingRequests";
+const UNAVAILABLE_BEDS_KEY = "crownUnavailableBeds";
 const USER_ACCOUNTS_KEY = "crownUserAccounts";
 const STAFF_NOTIFICATIONS_COLLECTION = "staffNotifications";
 
@@ -133,6 +134,20 @@ async function findBlockedEntry(branchName, date){
     }) || null;
 }
 
+/* Beds staff have taken offline for a specific branch+date (the "Available"
+   checkbox on each bed column in Scheduling — see scheduling.js's
+   crownUnavailableBeds). Subtracted from matchedBranch.beds before both
+   capacity checks below so the public site's slot count/capacity gate stays
+   consistent with what CrownOS itself will actually let staff book into. */
+async function countUnavailableBeds(branchName, date){
+    const raw = await readAppDataKey(db, UNAVAILABLE_BEDS_KEY);
+    const entries = Array.isArray(raw) ? raw : [];
+
+    return entries.filter(function(entry){
+        return entry && entry.branch === branchName && entry.date === date;
+    }).length;
+}
+
 /* Active holds for a branch/date, read outside a transaction (used by the
    read-only getAvailableSlots). submitBookingRequest re-reads inside its
    own transaction instead of trusting this snapshot. */
@@ -211,6 +226,22 @@ function resolveDuration(services, serviceName){
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+/* ---------- getBookableBranches ---------- */
+
+/* Lets the public site cap "Number of Guest" at each branch's actual bed
+   count instead of guessing a fixed max — pulled from the same
+   crownBranchMasterList staff edit in CrownOS (Master Lists > Branches).
+   Only name/beds are exposed. */
+exports.getBookableBranches = onCall(async () => {
+    const branches = await getBranches();
+
+    return {
+        branches: branches.map(function(branch){
+            return { name: branch.name, beds: branch.beds };
+        })
+    };
+});
+
 /* ---------- getBookableServices ---------- */
 
 /* Lets the public site build its "Select a treatment" list from the same
@@ -285,16 +316,17 @@ exports.getAvailableSlots = onCall(async (request) => {
         return { slots: [], durationMinutes: 0, blocked: true, reason: blockedEntry.reason || "" };
     }
 
-    const [scheduleEntries, holds] = await Promise.all([
+    const [scheduleEntries, holds, unavailableBedCount] = await Promise.all([
         getScheduleEntries(matchedBranch.name, date),
-        getActiveHolds(matchedBranch.name, date)
+        getActiveHolds(matchedBranch.name, date),
+        countUnavailableBeds(matchedBranch.name, date)
     ]);
 
     let slots = computeSlots({
         openingTime: matchedBranch.openingTime,
         closingTime: matchedBranch.closingTime,
         durationMinutes: durationMinutes,
-        beds: matchedBranch.beds,
+        beds: Math.max(0, matchedBranch.beds - unavailableBedCount),
         occupants: scheduleEntries.concat(holds)
     });
 
@@ -409,7 +441,12 @@ exports.submitBookingRequest = onCall(async (request) => {
         return { ok: false, reason: "no_capacity" };
     }
 
-    const scheduleEntries = await getScheduleEntries(matchedBranch.name, date);
+    const [scheduleEntries, unavailableBedCount] = await Promise.all([
+        getScheduleEntries(matchedBranch.name, date),
+        countUnavailableBeds(matchedBranch.name, date)
+    ]);
+
+    const effectiveBeds = Math.max(0, matchedBranch.beds - unavailableBedCount);
 
     const holdsQuery = db.collection(HOLDS_COLLECTION)
         .where("branch", "==", matchedBranch.name)
@@ -434,7 +471,7 @@ exports.submitBookingRequest = onCall(async (request) => {
             scheduleEntries.concat(activeHolds)
         );
 
-        if(occupied >= matchedBranch.beds){
+        if(occupied >= effectiveBeds){
             return { ok: false, reason: "no_capacity" };
         }
 

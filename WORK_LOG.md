@@ -4,6 +4,89 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-22 — Per-bed "Available" toggle in Scheduling; booking form redesign
+
+**Requested by:** User — (1) a checkbox per bed column in Scheduling, checked by
+default, that takes a bed offline for the day and reflects on the public booking
+page; (2) reorder and simplify the public booking form's fields, replacing the
+free-form "Companions" list with a "Number of Guest" count that drives matching
+Name/Service row pairs, arranged in two clean columns.
+
+**1. Per-bed availability ([scheduling.js](scheduling.js), [scheduling.css](scheduling.css), [functions/index.js](functions/index.js))**
+
+- New `crownUnavailableBeds` key (flat array of `{ id, branch, date, bed,
+  blockedBy, blockedAt }`, same shape/pattern as the existing
+  `crownBlockedDates`) — auto-syncs to Firestore `appData` like every other
+  `crown*` key, so Cloud Functions can read it with no new plumbing.
+- Each bed column header in the Branch Schedule timeline now has an
+  "Available" checkbox (`renderHeader`), delegated through a single
+  `#scheduleHead` change listener (`attachEvents`) calling
+  `toggleBedAvailability(bed, checkbox)`.
+- Unchecking warns first via `confirm()` if the bed already has an
+  appointment that day (existing appointment is left alone either way), then
+  saves an entry and re-renders.
+- `getPersistedConflictPool()` — the single function nearly every conflict
+  check in the file already reads from (`poolHasConflict`,
+  `findNextAvailableStart`, `recommendCompanionSlot`, `findAlternateBed`,
+  the Save button's own check) — now appends a synthetic "occupies the whole
+  business day" entry per unavailable bed, so no new appointment can be
+  placed there without touching any of that logic directly.
+- `renderBody` greys out the column (diagonal hatch, `cursor: not-allowed`)
+  and ignores clicks on it; `buildBedOptionsHtml` disables and labels the
+  bed "(Unavailable)" in the New/Edit Appointment bed dropdown (still
+  selectable if it's the appointment's already-saved bed, so editing an
+  older appointment doesn't silently lose its bed).
+- Server side: new `countUnavailableBeds(branch, date)` helper subtracts
+  from `matchedBranch.beds` before both capacity checks — `getAvailableSlots`
+  and `submitBookingRequest`'s transaction — so the public website's slot
+  count and capacity gate both drop by one for every bed taken offline.
+
+**2. Booking form field order + guest rows ([book.html](../Website/book.html), [main.js](../Website/js/main.js), [style.css](../Website/css/style.css))**
+
+- New field order: Branch, Number of Guest, Preferred Date, Preferred Time,
+  Contact Number (Required), Email Address, then a "Name & Services" section,
+  then Notes.
+- The old "+Add companion" flow is gone. "Number of Guest" now directly
+  controls how many Name/Service row pairs render (`initGuestRows`), laid out
+  as two columns with one shared "Full Name" / "Service" header instead of a
+  label per row. Guest 1's inputs are still the form's real `#name`/`#service`
+  fields (unchanged by `initBookingForm`'s slot-availability logic); guests
+  2+ reuse the existing `companion`/`companionService` field names, so
+  `getCompanions()` and the `submitBookingRequest` payload shape didn't need
+  to change.
+- `initServiceCatalog()`'s live service list (fetched from
+  `getBookableServices`) is now cached in `liveServiceOptionsHtml` and
+  applied to every guest row — including ones added after the fetch
+  resolves — instead of only the one static `#service` select it used to
+  own alone. Init order changed so `initGuestRows()` (which creates
+  `#service`) runs before `initServiceCatalog()` looks it up.
+- Follow-up per user feedback: "Number of Guest" options are no longer a
+  flat 1–6 — they're capped at the selected branch's actual bed count. New
+  `exports.getBookableBranches` Cloud Function (`functions/index.js`, mirrors
+  `getBookableServices`) exposes `{name, beds}` per branch from
+  `crownBranchMasterList`. `initBranchCapacities()` in `main.js` fetches it
+  once, rebuilds the guest-count `<option>` list (`populateGuestCountOptions`)
+  whenever the branch changes, clamping the current selection down if the
+  new branch has fewer beds (which also shrinks the guest rows via the
+  existing change-triggered `renderRows`), and shows a hint
+  (`updateGuestCountHint`) telling guests booking a bigger group to send a
+  second, separate request. Falls back to the static single "1" option
+  already in the markup if the function call fails, same fallback style as
+  `initServiceCatalog`. Verified locally by stubbing `branchBedCapacities`
+  and dispatching a branch-change event (the real function isn't deployed
+  yet, so the live fetch 404s and the fallback path is what actually ran
+  in-browser).
+
+**Status:** Code changed locally, not yet deployed. Website form changes
+verified locally in a browser (dynamic row add/remove, field order,
+branch-capacity clamping via a stubbed response). Scheduling changes need to
+be verified in CrownOS itself (private, does not run in this sandbox) before
+going live — run
+`firebase deploy --only functions:getAvailableSlots,functions:submitBookingRequest,functions:getBookableBranches`
+plus `firebase deploy --only hosting` when ready.
+
+---
+
 ## 2026-08-22 — Booking requests now auto-expire into Previous Requests
 
 **Requested by:** User — "yung mga booking request na nag expire, pwede ba natin ilagay

@@ -1272,6 +1272,32 @@ Meal Allowance     none for these roles</div>
       a free bed and time automatically, so you never have to open Scheduling.
     </p>
   </div>
+
+  <h3>Taking a bed offline for the day</h3>
+
+  <p>
+    Each bed's column in the Branch Schedule timeline has an
+    <span class="ui">Available</span> checkbox, checked by default. Uncheck it
+    to take that bed out of service for the day currently shown:
+  </p>
+
+  <ul>
+    <li>No new appointment can be placed in that bed on that day — the column
+      is greyed out and the bed shows as "(Unavailable)" if picked from the
+      bed dropdown when creating or editing an appointment.</li>
+    <li>If the bed already has an appointment that day, you're asked to
+      confirm first — the existing appointment is <strong>not</strong>
+      removed or moved, unchecking only blocks new ones.</li>
+    <li>The public website's booking page counts one less bed for that
+      branch on that day, so guests can't request a slot the bed can't
+      actually serve.</li>
+  </ul>
+
+  <p>
+    Re-check the box to bring the bed back into service. This only ever
+    applies to the specific day shown — it resets to available again the
+    next day unless unchecked again.
+  </p>
 </section>
 
 <section id="ch-booking">

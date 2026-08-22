@@ -4,6 +4,7 @@ const THERAPIST_MASTER_KEY = "crownTherapistMasterList";
 const SELECTED_BRANCH_KEY = "crownSelectedBranch";
 const SCHEDULE_PREFIX = "crownSchedule_";
 const BLOCKED_DATES_KEY = "crownBlockedDates";
+const UNAVAILABLE_BEDS_KEY = "crownUnavailableBeds";
 const ALL_BRANCHES_LABEL = "All Branches";
 
 /* Synchronous snapshot of the client list, kept up to date by getClients()
@@ -124,6 +125,20 @@ function attachEvents(){
     document
         .getElementById("scheduleDate")
         .addEventListener("change", renderSchedule);
+
+    /* Delegated rather than bound per-checkbox: renderHeader() rebuilds
+       #scheduleHead's innerHTML on every renderSchedule(), which would
+       otherwise drop any listener attached directly to a bed checkbox. */
+    document
+        .getElementById("scheduleHead")
+        .addEventListener("change", function(event){
+            const checkbox = event.target.closest("[data-bed-toggle]");
+            if(!checkbox){
+                return;
+            }
+
+            toggleBedAvailability(Number(checkbox.dataset.bedToggle), checkbox);
+        });
 
     document
         .getElementById("prevDayBtn")
@@ -632,13 +647,28 @@ function buildBedOptionsHtml(branch, selectedBed){
         return html;
     }
 
+    const date =
+        getModalDate();
+
+    const unavailableBeds =
+        date ? getUnavailableBedNumbers(branch.name, date) : [];
+
     for(let bed = 1; bed <= branch.beds; bed++){
+        /* Still selectable if it's already the saved value (e.g. editing an
+           appointment that was placed before the bed went unavailable) so
+           the dropdown doesn't silently drop the current selection —
+           poolHasConflict's synthetic block (see getPersistedConflictPool)
+           is what actually stops it being newly assigned there. */
+        const isUnavailable =
+            unavailableBeds.includes(bed) && String(bed) !== String(selectedBed);
+
         html += `
             <option
                 value="${bed}"
                 ${String(bed) === String(selectedBed) ? "selected" : ""}
+                ${isUnavailable ? "disabled" : ""}
             >
-                Bed ${bed}
+                Bed ${bed}${isUnavailable ? " (Unavailable)" : ""}
             </option>
         `;
     }
@@ -1173,13 +1203,32 @@ function getPersistedConflictPool(){
         return [];
     }
 
-    return getSchedules(branch.name, date).filter(function(item){
-        return (
-            item.status !== "Cancelled" &&
-            item.id !== selectedScheduleId &&
-            item.companionOf !== selectedScheduleId
-        );
-    });
+    const scheduled =
+        getSchedules(branch.name, date).filter(function(item){
+            return (
+                item.status !== "Cancelled" &&
+                item.id !== selectedScheduleId &&
+                item.companionOf !== selectedScheduleId
+            );
+        });
+
+    /* A bed marked unavailable for this branch+date (see
+       toggleBedAvailability) is represented as a synthetic entry that
+       "occupies" the whole business day — every conflict check in this
+       file (poolHasConflict, findNextAvailableStart, recommendCompanionSlot,
+       findAlternateBed) already runs against this pool, so this one
+       injection point is enough to keep new appointments out of the bed
+       without touching any of that logic directly. */
+    const unavailableBlocks =
+        getUnavailableBedNumbers(branch.name, date).map(function(bed){
+            return {
+                bed: bed,
+                startTime: branch.openingTime,
+                endTime: branch.closingTime
+            };
+        });
+
+    return scheduled.concat(unavailableBlocks);
 }
 
 function poolHasConflict(bed, startTime, endTime, pool){
@@ -1731,6 +1780,133 @@ function findBlockedEntry(branchName, date){
     }) || null;
 }
 
+/* Beds marked unavailable for a SPECIFIC branch+date (Income Report/functions/
+   index.js's getAvailableSlots/submitBookingRequest subtract these from
+   matchedBranch.beds via the same crownUnavailableBeds key over appData, so
+   taking a bed offline here also lowers the public website's slot capacity
+   for that day). Unlike crownBlockedDates, this never touches "All
+   Branches" — a bed is a physical thing at one branch. Stored as a flat
+   array (mirrors crownBlockedDates) of
+   { id, branch, date, bed, blockedBy, blockedAt }. */
+function getUnavailableBedEntries(){
+    try{
+        const saved =
+            localStorage.getItem(UNAVAILABLE_BEDS_KEY);
+
+        const parsed =
+            saved ? JSON.parse(saved) : [];
+
+        return Array.isArray(parsed) ? parsed : [];
+    }catch(error){
+        console.error("Unable to load unavailable beds:", error);
+        return [];
+    }
+}
+
+function saveUnavailableBedEntries(entries){
+    localStorage.setItem(
+        UNAVAILABLE_BEDS_KEY,
+        JSON.stringify(entries)
+    );
+}
+
+function findUnavailableBedEntry(branchName, date, bed){
+    return getUnavailableBedEntries().find(function(entry){
+        return (
+            entry.branch === branchName &&
+            entry.date === date &&
+            Number(entry.bed) === Number(bed)
+        );
+    }) || null;
+}
+
+function getUnavailableBedNumbers(branchName, date){
+    if(!branchName || !date){
+        return [];
+    }
+
+    return getUnavailableBedEntries()
+        .filter(function(entry){
+            return entry.branch === branchName && entry.date === date;
+        })
+        .map(function(entry){
+            return Number(entry.bed);
+        });
+}
+
+/* Toggled from the "Available" checkbox in each bed's timeline header
+   cell. Unchecking warns first if the bed already has an appointment that
+   day (the appointment itself is left untouched either way — this only
+   stops NEW appointments from being placed in the bed), matching how
+   toggleBlockDate() confirms nothing destructive happens silently. */
+function toggleBedAvailability(bed, checkbox){
+    const branch =
+        getSelectedBranch();
+
+    const date =
+        document.getElementById("scheduleDate").value;
+
+    if(!branch || !date){
+        checkbox.checked = true;
+        return;
+    }
+
+    if(checkbox.checked){
+        const entry =
+            findUnavailableBedEntry(branch.name, date, bed);
+
+        if(entry){
+            saveUnavailableBedEntries(
+                getUnavailableBedEntries().filter(function(e){
+                    return e.id !== entry.id;
+                })
+            );
+
+            renderSchedule();
+        }
+
+        return;
+    }
+
+    const hasExistingAppointment =
+        getSchedules(branch.name, date).some(function(item){
+            return item.status !== "Cancelled" && Number(item.bed) === Number(bed);
+        });
+
+    if(hasExistingAppointment){
+        const proceed = confirm(
+            "Bed " + bed + " already has an appointment on " + date + ". " +
+            "That appointment will NOT be removed or moved, but no new " +
+            "appointments can be placed in this bed on this day. Continue?"
+        );
+
+        if(!proceed){
+            checkbox.checked = true;
+            return;
+        }
+    }
+
+    const currentUser =
+        typeof CrownAuth !== "undefined" && CrownAuth.getCurrentUser
+            ? CrownAuth.getCurrentUser()
+            : null;
+
+    const entries =
+        getUnavailableBedEntries();
+
+    entries.push({
+        id: createId(),
+        branch: branch.name,
+        date: date,
+        bed: bed,
+        blockedBy: currentUser ? currentUser.account : "",
+        blockedAt: new Date().toISOString()
+    });
+
+    saveUnavailableBedEntries(entries);
+    renderSchedule();
+}
+
 /* Syncs the inline block-date checkbox + reason input to whichever
    branch/date is currently on screen. Always blocks the SPECIFIC branch
    being viewed (unlike the old modal, which could also block "All
@@ -2076,7 +2252,7 @@ function renderSchedule(){
                 year: "numeric"
             });
 
-    renderHeader(branch.beds);
+    renderHeader(branch, date);
     renderBody(branch, date, schedules);
 }
 
@@ -2113,8 +2289,13 @@ function getHourMarks(openingMinutes, closingMinutes){
     return marks;
 }
 
-function renderHeader(numberOfBeds){
+function renderHeader(branch, date){
+    const numberOfBeds = branch.beds;
+
     setTimelineGridColumns(numberOfBeds);
+
+    const unavailableBeds =
+        getUnavailableBedNumbers(branch.name, date);
 
     let html = `
         <div class="timeline-header-cell timeline-corner">
@@ -2123,9 +2304,19 @@ function renderHeader(numberOfBeds){
     `;
 
     for(let bed = 1; bed <= numberOfBeds; bed++){
+        const isAvailable = !unavailableBeds.includes(bed);
+
         html += `
-            <div class="timeline-header-cell">
-                Bed ${bed}
+            <div class="timeline-header-cell${isAvailable ? "" : " timeline-header-cell-unavailable"}">
+                <span>Bed ${bed}</span>
+                <label class="bed-available-toggle">
+                    <input
+                        type="checkbox"
+                        data-bed-toggle="${bed}"
+                        ${isAvailable ? "checked" : ""}
+                    >
+                    Available
+                </label>
             </div>
         `;
     }
@@ -2171,6 +2362,9 @@ function renderBody(branch, date, schedules){
             return item.status !== "Cancelled";
         });
 
+    const unavailableBeds =
+        getUnavailableBedNumbers(branch.name, date);
+
     const timeCol =
         document.createElement("div");
 
@@ -2198,7 +2392,14 @@ function renderBody(branch, date, schedules){
         const col =
             document.createElement("div");
 
-        col.className = "timeline-bed-col";
+        const bedIsUnavailable =
+            unavailableBeds.includes(bed);
+
+        col.className =
+            bedIsUnavailable
+                ? "timeline-bed-col timeline-bed-col-unavailable"
+                : "timeline-bed-col";
+
         col.style.height = totalHeight + "px";
 
         const bedSchedules =
@@ -2209,8 +2410,15 @@ function renderBody(branch, date, schedules){
         /* Clicking empty space starts a new booking at the nearest
            10-min mark (matching the modal's own Start Time picker) —
            appointment cards call stopPropagation() so a click on one
-           of them opens Edit instead of falling through to this. */
+           of them opens Edit instead of falling through to this. A bed
+           marked unavailable for this day (see toggleBedAvailability)
+           never opens the new-appointment modal, same as a fully
+           booked slot. */
         col.addEventListener("click", function(event){
+            if(bedIsUnavailable){
+                return;
+            }
+
             const rect =
                 col.getBoundingClientRect();
 
