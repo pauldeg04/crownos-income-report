@@ -170,10 +170,6 @@ function attachEvents(){
     generateVoucherFromDialog();
   });
 
-  document.getElementById("voucherGenPrintBtn").addEventListener("click", function(){
-    printGeneratedVoucher();
-  });
-
   document.getElementById("voucherGenBackdrop").addEventListener("click", function(event){
     if(event.target === this){
       closeVoucherGenerator();
@@ -2171,7 +2167,7 @@ function renderModalItems(){
           ${getProducts()
             .filter(function(product){
               /* Voucher purchases now go through the dedicated
-                 "Generate Voucher" button — keep them out of this
+                 "Add Purchase Voucher" button — keep them out of this
                  list, but still show one if an existing sale
                  already references it (so editing old sales works). */
               return (
@@ -4375,6 +4371,8 @@ async function persistModalSaleData(saleData, validItems){
   /* Sequential, not fire-and-forget — both read-then-write the client
      list, so running them in parallel risks the second save silently
      dropping whatever the first one just added/changed. */
+  let newlyOfficialVouchers = [];
+
   if(saleData.settled){
     if(
       validItems.some(function(item){
@@ -4385,6 +4383,8 @@ async function persistModalSaleData(saleData, validItems){
     }
 
     syncVoucherRedemptions(saleData);
+
+    newlyOfficialVouchers = finalizeSaleVouchers(saleData);
   }
 
   await applyModalClientDetailsToDatabase(saleData.client);
@@ -4397,6 +4397,17 @@ async function persistModalSaleData(saleData, validItems){
   updateSummary();
   updateSalesRecord();
   closeSaleModal();
+
+  /* Any voucher purchase on this sale that just went from "pending" to
+     official gets its branded PDF generated and downloaded now — this
+     is the only point a purchase voucher's PDF exists, so it can't be
+     produced before the sale (and its payment) is actually settled. */
+  if(newlyOfficialVouchers.length > 0){
+    downloadCrownVoucherPdf(
+      newlyOfficialVouchers,
+      crownVoucherPdfFilename(newlyOfficialVouchers)
+    );
+  }
 }
 
 async function settleModalSale(){
@@ -5503,11 +5514,20 @@ function settleSaleRow(saleId){
   sale.settled = true;
   sale.updatedAt = new Date().toISOString();
 
+  const newlyOfficialVouchers = finalizeSaleVouchers(sale);
+
   saveDailySales();
   transactionalSyncSaleRow(sale.id, sale);
   renderSalesTable();
   updateSummary();
   updateSalesRecord();
+
+  if(newlyOfficialVouchers.length > 0){
+    downloadCrownVoucherPdf(
+      newlyOfficialVouchers,
+      crownVoucherPdfFilename(newlyOfficialVouchers)
+    );
+  }
 }
 
 function deleteSale(saleId){
@@ -7432,8 +7452,9 @@ function normalizeVoucherCode(value){
     .trim();
 }
 
-function generateVoucherCode(){
+function generateVoucherCode(extraReservedCodes){
   const registry = getVoucherRegistry();
+  const reserved = extraReservedCodes || new Set();
 
   for(let attempt = 0; attempt < 50; attempt++){
     let body = "";
@@ -7448,6 +7469,7 @@ function generateVoucherCode(){
       "CHS-" + body.slice(0, 4) + "-" + body.slice(4);
 
     const exists =
+      reserved.has(code) ||
       registry.some(function(entry){
         return entry.code === code;
       });
@@ -7502,16 +7524,6 @@ function openVoucherGenerator(){
   document.getElementById("voucherGenClient").value =
     document.getElementById("modalClientInput")?.value.trim() || "";
 
-  document.getElementById("voucherGenResult")
-    .classList.add("d-none");
-
-  document.getElementById("voucherGenPrintBtn")
-    .classList.add("d-none");
-
-  document.getElementById("voucherGenCreateBtn").disabled = false;
-
-  lastGeneratedVoucher = null;
-
   document.getElementById("voucherGenBackdrop")
     .classList.remove("d-none");
 }
@@ -7521,7 +7533,30 @@ function closeVoucherGenerator(){
     .classList.add("d-none");
 }
 
-let lastGeneratedVoucher = null;
+/* Codes already reserved by pending (not-yet-official) voucher purchases
+   sitting on today's sales and in the modal currently being edited — kept
+   out of the Voucher Masterlist registry until Settle, so
+   generateVoucherCode() alone wouldn't see them and could hand out the
+   same code twice. */
+function getPendingVoucherCodes(){
+  const codes = new Set();
+
+  const collect = function(items){
+    (items || []).forEach(function(item){
+      if(item.productKind === "Service Voucher" && item.voucherCode && !item.voucherOfficial){
+        codes.add(normalizeVoucherCode(item.voucherCode));
+      }
+    });
+  };
+
+  collect(modalItems);
+
+  (salesRows || []).forEach(function(sale){
+    collect(sale.services);
+  });
+
+  return codes;
+}
 
 function generateVoucherFromDialog(){
   const selectValue =
@@ -7548,34 +7583,12 @@ function generateVoucherFromDialog(){
   }
 
   const code =
-    generateVoucherCode();
+    generateVoucherCode(getPendingVoucherCodes());
 
-  const registry =
-    getVoucherRegistry();
-
-  const registryEntry = {
-    code: code,
-    itemType: item.itemType,
-    name: item.name,
-    tier: item.tier || "",
-    value: Number(item.voucherValue) || 0,
-    client: clientName,
-    branch:
-      localStorage.getItem("crownSelectedBranch") || "",
-    issuedAt: new Date().toISOString(),
-    issuedBy:
-      window.CrownAuth?.getCurrentUser?.()?.account || "",
-    status: "active",
-    redeemedAt: "",
-    redeemedSaleId: "",
-    redeemedBranch: ""
-  };
-
-  registry.push(registryEntry);
-
-  saveVoucherRegistry(registry);
-
-  lastGeneratedVoucher = registryEntry;
+  /* Not written to the Voucher Masterlist registry yet — this code is
+     only reserved. It becomes an official registry entry (and its PDF
+     gets generated) in finalizeSaleVouchers(), which runs when this
+     sale is Settled. Until then it just rides along on the sale item. */
 
   /* Add the voucher purchase as a product line on this sale —
      same shape as the existing "Voucher — X" virtual products. */
@@ -7594,32 +7607,83 @@ function generateVoucherFromDialog(){
     manualUnitPrice: false,
     productKind: "Service Voucher",
     sourceServiceName: item.itemType === "Service" ? item.name : "",
-    voucherCode: code
+    voucherCode: code,
+    voucherOfficial: false,
+    voucherClient: clientName,
+    voucherItemType: item.itemType,
+    voucherItemName: item.name,
+    voucherTier: item.tier || "",
+    voucherValue: Number(item.voucherValue) || 0
   });
 
   renderModalItems();
   updateModalTotal();
 
-  document.getElementById("voucherGenCode").textContent = code;
-
-  document.getElementById("voucherGenIssuedTo").textContent =
-    clientName;
-
-  document.getElementById("voucherGenResult")
-    .classList.remove("d-none");
-
-  document.getElementById("voucherGenPrintBtn")
-    .classList.remove("d-none");
-
-  document.getElementById("voucherGenCreateBtn").disabled = true;
+  closeVoucherGenerator();
 }
 
-/* Delegates to the shared voucher-print.js used by both this page
-   and the Voucher Masterlist. */
-function printGeneratedVoucher(){
-  if(lastGeneratedVoucher){
-    printCrownVoucher(lastGeneratedVoucher);
+/* ---------- Sale-settle finalization ----------
+   Turns every still-pending ("not yet official") voucher purchase on a
+   just-settled sale into a real Voucher Masterlist entry — the code was
+   already reserved when it was added to the sale, so this keeps that
+   same code rather than minting a new one. Mutates the sale's items in
+   place (voucherOfficial: true) so re-settling the same sale later
+   doesn't finalize them twice. Returns the newly-finalized entries so
+   the caller can hand them straight to the PDF download. */
+function finalizeSaleVouchers(saleData){
+  const pendingItems =
+    (saleData.services || []).filter(function(item){
+      return (
+        item.productKind === "Service Voucher" &&
+        item.voucherCode &&
+        !item.voucherOfficial
+      );
+    });
+
+  if(pendingItems.length === 0){
+    return [];
   }
+
+  const registry =
+    getVoucherRegistry();
+
+  const branch =
+    localStorage.getItem("crownSelectedBranch") || "";
+
+  const issuedBy =
+    window.CrownAuth?.getCurrentUser?.()?.account || "";
+
+  const newlyOfficial = [];
+
+  pendingItems.forEach(function(item){
+    const issuedAt = new Date().toISOString();
+
+    const registryEntry = {
+      code: normalizeVoucherCode(item.voucherCode),
+      itemType: item.voucherItemType || "",
+      name: item.voucherItemName || "",
+      tier: item.voucherTier || "",
+      value: Number(item.voucherValue) || 0,
+      client: item.voucherClient || "",
+      branch: branch,
+      issuedAt: issuedAt,
+      expiresAt: crownVoucherExpiresAt(issuedAt),
+      issuedBy: issuedBy,
+      status: "active",
+      redeemedAt: "",
+      redeemedSaleId: "",
+      redeemedBranch: ""
+    };
+
+    registry.push(registryEntry);
+    newlyOfficial.push(registryEntry);
+
+    item.voucherOfficial = true;
+  });
+
+  saveVoucherRegistry(registry);
+
+  return newlyOfficial;
 }
 
 /* ---------- Redemption validation ---------- */
@@ -7653,6 +7717,10 @@ function getVoucherCodeStatus(voucher){
     entry.redeemedSaleId !== (editingSaleId || "")
   ){
     return `Voucher ${code} has already been used.`;
+  }
+
+  if(entry.status === "active" && isCrownVoucherExpired(entry)){
+    return `Voucher ${code} expired on ${crownVoucherDateLabel(entry.expiresAt)} and can no longer be used.`;
   }
 
   return "";

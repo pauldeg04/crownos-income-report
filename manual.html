@@ -805,8 +805,8 @@
     <dt>Add VIP Card</dt>
     <dd>Sells a VIP membership card and immediately switches every service in the transaction to VIP pricing.</dd>
 
-    <dt>Generate Voucher</dt>
-    <dd>Creates a new voucher the client is buying now. See <a href="#ch-vouchers">Chapter 8</a>.</dd>
+    <dt>Add Purchase Voucher</dt>
+    <dd>Adds a voucher the client is buying now to this transaction. See <a href="#ch-vouchers">Chapter 8</a>.</dd>
   </dl>
 
   <h3>3 · Automatic pricing</h3>
@@ -942,12 +942,19 @@ Amount to Pay      what the client actually pays</div>
   <h3>The voucher life cycle</h3>
 
   <ol class="steps">
-    <li><strong>Purchase.</strong> In Add Sale, press <span class="ui">Generate Voucher</span>. Choose the Voucher Item and enter the buyer's name (required).</li>
-    <li><strong>Number issued.</strong> The system creates a unique code in the form <code>CHS-XXXX-XXXX</code> and records it in the Voucher Masterlist.</li>
-    <li><strong>Print it.</strong> Press <span class="ui">🖨 Print / Save PDF</span> for the client's copy.</li>
+    <li><strong>Purchase.</strong> In Add Sale, press <span class="ui">Add Purchase Voucher</span>. Choose the Voucher Item and enter the buyer's name (required), then press <span class="ui">Add to Sale</span>.</li>
+    <li><strong>Number reserved.</strong> The system creates a unique code in the form <code>CHS-XXXX-XXXX</code> and attaches it to this sale as a line item — but it is <strong>not yet official</strong> and does not appear in the Voucher Masterlist yet.</li>
+    <li><strong>Settle.</strong> Only when this sale is <span class="ui">Settled</span> does the voucher become official: it is recorded in the Voucher Masterlist with that same reserved code, and its branded PDF is generated and downloaded automatically — one combined PDF file even if the sale has several vouchers. Saving to <span class="ui">Add to List</span> or <span class="ui">Add to Schedule</span> keeps it pending; nothing is recorded until it is actually settled.</li>
     <li><strong>Redemption.</strong> When the holder returns, enter the code in the <strong>Voucher</strong> section of a new sale. It is deducted from the Amount to Pay.</li>
-    <li><strong>Closed.</strong> After settling, the code is marked <strong>redeemed</strong> and cannot be used again.</li>
+    <li><strong>Closed.</strong> After settling that redeeming sale, the code is marked <strong>redeemed</strong> and cannot be used again.</li>
   </ol>
+
+  <p>
+    Every voucher is valid for <strong>6 months</strong> from the date it became
+    official (the Settle date, not the draft date). Once that date passes, an
+    unredeemed voucher is automatically treated as <strong>Expired</strong> —
+    no manual step needed — and can no longer be used as payment.
+  </p>
 
   <h3>Voucher messages</h3>
 
@@ -977,6 +984,11 @@ Amount to Pay      what the client actually pays</div>
           <td>It was redeemed in an earlier transaction.</td>
           <td>Check Redemption in the Voucher Masterlist to see when it was used.</td>
         </tr>
+        <tr>
+          <td>Voucher … expired on … and can no longer be used</td>
+          <td>More than 6 months have passed since it became official.</td>
+          <td>It can no longer be used as payment. Refer to management.</td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -985,9 +997,13 @@ Amount to Pay      what the client actually pays</div>
 
   <p>
     Under <strong>Settings</strong> you will find the full record of every
-    voucher issued: Voucher #, Item, Value, Client, Issued, Status, and
-    Redemption. It has Search and a Status filter. This is where you look when
-    someone asks about a voucher.
+    voucher issued: Voucher #, Item, Value, Client, Issued (with its Valid
+    Until date), Status, and Redemption. Status shows <strong>Expired</strong>
+    automatically once a voucher's 6-month validity has passed, even though it
+    was never redeemed or voided. It has Search and a Status filter (Active,
+    Expired, Redeemed, Voided). This is where you look when someone asks about
+    a voucher, and where you press <span class="ui">🖨 Download PDF</span> to
+    reprint one.
   </p>
 
   <h3>VIP Cards</h3>

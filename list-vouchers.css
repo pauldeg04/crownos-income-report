@@ -131,6 +131,12 @@
     border:1px solid var(--state-red-border);
 }
 
+.voucher-status-expired{
+    color:#9A5B00;
+    background:#FDECC8;
+    border:1px solid var(--gold, #E8B321);
+}
+
 .empty-state{
     padding:26px;
     color:var(--muted);

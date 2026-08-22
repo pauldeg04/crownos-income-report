@@ -1,231 +1,363 @@
 /* ==========================================================================
-   Crown Head Spa — Shared printable voucher
-   Used by the Daily Income Report (after generating) and the
-   Voucher Masterlist (reprint). Opens a print-ready branded voucher;
-   the browser's print dialog also allows "Save as PDF".
+   Crown Head Spa — Shared printable voucher (jsPDF, vector-drawn)
+   Used by the Daily Income Report (after a sale settles) and the
+   Voucher Masterlist (reprint / download). Renders the branded dark-blue
+   voucher card straight into a real PDF with jsPDF's drawing API — no
+   html2canvas rasterization, so the output never gets blurry no matter
+   how many vouchers are packed onto the A4 page.
    ========================================================================== */
 
+const CROWN_VOUCHER_PDF = {
+    pageWidth: 210,
+    pageHeight: 297,
+    margin: 14,
+    cardHeight: 82,
+    cardGap: 8,
+
+    colors: {
+        navyDark: [11, 24, 73],      /* #0B1849 */
+        navyLight: [22, 36, 92],     /* #16245C */
+        gold: [232, 179, 33],        /* #E8B321 */
+        cream: [255, 244, 207],      /* #FFF4CF */
+        white: [255, 255, 255],
+        softWhite: [214, 220, 240],
+        red: [179, 38, 30]           /* #B3261E */
+    }
+};
+
+/* Registers the Cinzel Decorative typeface (loaded from
+   voucher-font-cinzel.js, which must be included before this file) for
+   the "CROWN HEAD SPA" wordmark. jsPDF de-dupes addFont calls by VFS
+   filename, so calling this once per document build is enough. */
+function registerCrownVoucherFonts(doc){
+    if(typeof CROWN_VOUCHER_FONT_CINZEL_BOLD === "undefined"){
+        return false;
+    }
+
+    doc.addFileToVFS("CinzelDecorative-Bold.ttf", CROWN_VOUCHER_FONT_CINZEL_BOLD);
+    doc.addFont("CinzelDecorative-Bold.ttf", "CinzelDecorative", "bold");
+
+    return true;
+}
+
+/* jsPDF's built-in helvetica has no peso glyph — it prints as a
+   replacement character. Use "PHP" for anything drawn on the PDF. */
+function crownVoucherPesoPdf(amount){
+    return "PHP " + (Number(amount) || 0).toLocaleString("en-PH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function crownVoucherDateLabel(isoValue){
+    if(!isoValue){
+        return "—";
+    }
+
+    return new Date(isoValue).toLocaleDateString("en-PH", {
+        month: "long",
+        day: "numeric",
+        year: "numeric"
+    });
+}
+
+/* Purchase vouchers are valid for 6 months from the date they became
+   official (i.e. from finalizeSaleVouchers() in script.js, when the
+   sale carrying them is Settled) — shared by the redemption check in
+   script.js, the Masterlist's Expired badge, and this PDF. */
+const CROWN_VOUCHER_VALIDITY_MONTHS = 6;
+
+function crownVoucherExpiresAt(issuedAtIso){
+    if(!issuedAtIso){
+        return "";
+    }
+
+    const issued = new Date(issuedAtIso);
+
+    if(isNaN(issued.getTime())){
+        return "";
+    }
+
+    issued.setMonth(issued.getMonth() + CROWN_VOUCHER_VALIDITY_MONTHS);
+
+    return issued.toISOString();
+}
+
+function isCrownVoucherExpired(voucher){
+    if(!voucher || !voucher.expiresAt){
+        return false;
+    }
+
+    return new Date(voucher.expiresAt).getTime() < Date.now();
+}
+
+function crownVoucherStatusStamp(voucher){
+    if(voucher.status === "redeemed"){
+        return {
+            label: "REDEEMED",
+            detail: voucher.redeemedAt
+                ? "on " + crownVoucherDateLabel(voucher.redeemedAt)
+                : ""
+        };
+    }
+
+    if(voucher.status === "cancelled"){
+        return { label: "CANCELLED", detail: "" };
+    }
+
+    if(isCrownVoucherExpired(voucher)){
+        return {
+            label: "EXPIRED",
+            detail: "on " + crownVoucherDateLabel(voucher.expiresAt)
+        };
+    }
+
+    return null;
+}
+
+/* Draws one voucher card with its top-left corner at (x, y). */
+function drawCrownVoucherCard(doc, voucher, x, y, hasWordmarkFont){
+    const C = CROWN_VOUCHER_PDF;
+    const width = C.pageWidth - C.margin * 2;
+    const height = C.cardHeight;
+
+    const tierLabel = voucher.tier ? ` (${voucher.tier})` : "";
+
+    /* Card background + gold border. */
+    doc.setFillColor(...C.colors.navyDark);
+    doc.setDrawColor(...C.colors.gold);
+    doc.setLineWidth(0.6);
+    doc.roundedRect(x, y, width, height, 3, 3, "FD");
+
+    /* Subtle header band for depth (no true gradients in jsPDF). */
+    doc.setFillColor(...C.colors.navyLight);
+    doc.roundedRect(x, y, width, 20, 3, 3, "F");
+    doc.rect(x, y + 12, width, 8, "F");
+
+    doc.setTextColor(...C.colors.gold);
+
+    if(hasWordmarkFont){
+        doc.setFont("CinzelDecorative", "bold");
+        doc.setFontSize(13);
+        doc.text("CROWN HEAD SPA", x + width / 2, y + 9.5, { align: "center" });
+    }else{
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(15);
+        doc.text("CROWN HEAD SPA", x + width / 2, y + 9, { align: "center" });
+    }
+
+    doc.setTextColor(...C.colors.softWhite);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text("G I F T   V O U C H E R", x + width / 2, y + 15.5, { align: "center" });
+
+    /* Item + value. */
+    doc.setTextColor(...C.colors.white);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12.5);
+    doc.text(
+        `${voucher.name || ""}${tierLabel}`,
+        x + width / 2,
+        y + 29,
+        { align: "center" }
+    );
+
+    doc.setTextColor(...C.colors.softWhite);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(
+        `Voucher Value: ${crownVoucherPesoPdf(voucher.value)}`,
+        x + width / 2,
+        y + 35,
+        { align: "center" }
+    );
+
+    /* Voucher code box. */
+    const codeBoxWidth = 78;
+    const codeBoxX = x + (width - codeBoxWidth) / 2;
+    const codeBoxY = y + 39;
+    const codeBoxHeight = 13;
+
+    doc.setFillColor(...C.colors.cream);
+    doc.setDrawColor(...C.colors.gold);
+    doc.setLineWidth(0.7);
+    doc.roundedRect(codeBoxX, codeBoxY, codeBoxWidth, codeBoxHeight, 2, 2, "FD");
+
+    /* Thin inner hairline for a framed, premium look instead of a
+       dashed border. */
+    doc.setLineWidth(0.25);
+    doc.roundedRect(
+        codeBoxX + 1.3,
+        codeBoxY + 1.3,
+        codeBoxWidth - 2.6,
+        codeBoxHeight - 2.6,
+        1.4,
+        1.4,
+        "D"
+    );
+
+    doc.setTextColor(...C.colors.navyDark);
+    doc.setFont("courier", "bold");
+    doc.setFontSize(14);
+    doc.text(
+        String(voucher.code || ""),
+        x + width / 2,
+        codeBoxY + codeBoxHeight / 2 + 1.6,
+        { align: "center" }
+    );
+
+    /* Meta row: Issued To / Branch / Date Issued / Valid Until. */
+    const metaY = y + 60;
+    doc.setDrawColor(...C.colors.navyLight);
+    doc.setLineWidth(0.3);
+    doc.line(x + 8, metaY - 4, x + width - 8, metaY - 4);
+
+    const metaCols = [
+        { label: "Issued To", value: voucher.client || "—" },
+        { label: "Branch", value: voucher.branch || "Crown Head Spa" },
+        { label: "Date Issued", value: crownVoucherDateLabel(voucher.issuedAt) },
+        { label: "Valid Until", value: crownVoucherDateLabel(voucher.expiresAt) }
+    ];
+
+    const metaColWidth = (width - 16) / 4;
+
+    metaCols.forEach(function(col, index){
+        const colX = x + 8 + metaColWidth * index;
+
+        doc.setTextColor(...C.colors.softWhite);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+        doc.text(col.label, colX, metaY);
+
+        doc.setTextColor(...C.colors.white);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8.5);
+        doc.text(
+            String(col.value).slice(0, 20),
+            colX,
+            metaY + 4.5
+        );
+    });
+
+    /* Terms footer. */
+    doc.setTextColor(...C.colors.softWhite);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.3);
+    doc.text(
+        "Present this voucher number upon availing. Valid for one-time use only and verified against the Crown Head Spa system.",
+        x + width / 2,
+        y + height - 8,
+        { align: "center" }
+    );
+    doc.text(
+        "Non-transferable and not convertible to cash.",
+        x + width / 2,
+        y + height - 4.8,
+        { align: "center" }
+    );
+
+    /* Status stamp, if reprinting a redeemed/cancelled voucher. */
+    const stamp = crownVoucherStatusStamp(voucher);
+
+    if(stamp){
+        doc.saveGraphicsState();
+        doc.setTextColor(...C.colors.red);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+
+        const centerX = x + width / 2;
+        const centerY = y + height / 2;
+
+        doc.text(stamp.label, centerX, centerY, {
+            align: "center",
+            angle: 12
+        });
+
+        if(stamp.detail){
+            doc.setFontSize(8);
+            doc.text(stamp.detail, centerX, centerY + 6, {
+                align: "center",
+                angle: 12
+            });
+        }
+
+        doc.restoreGraphicsState();
+    }
+}
+
+/* Builds a jsPDF document with one card per voucher, stacked on A4 pages —
+   as many as fit per page, continuing onto new pages as needed. */
+function buildCrownVoucherPdf(vouchers){
+    if(!window.jspdf || !window.jspdf.jsPDF){
+        alert("PDF library failed to load. Please refresh the page and try again.");
+        return null;
+    }
+
+    const list = (Array.isArray(vouchers) ? vouchers : [vouchers]).filter(Boolean);
+
+    if(list.length === 0){
+        return null;
+    }
+
+    const C = CROWN_VOUCHER_PDF;
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+    });
+
+    const hasWordmarkFont = registerCrownVoucherFonts(doc);
+
+    const usableHeight = C.pageHeight - C.margin * 2;
+    const perPage = Math.max(
+        1,
+        Math.floor((usableHeight + C.cardGap) / (C.cardHeight + C.cardGap))
+    );
+
+    list.forEach(function(voucher, index){
+        const posOnPage = index % perPage;
+
+        if(index > 0 && posOnPage === 0){
+            doc.addPage();
+        }
+
+        const y = C.margin + posOnPage * (C.cardHeight + C.cardGap);
+
+        drawCrownVoucherCard(doc, voucher, C.margin, y, hasWordmarkFont);
+    });
+
+    return doc;
+}
+
+function crownVoucherPdfFilename(vouchers){
+    const list = (Array.isArray(vouchers) ? vouchers : [vouchers]).filter(Boolean);
+
+    if(list.length === 1){
+        return `Crown-Voucher-${list[0].code || "voucher"}.pdf`;
+    }
+
+    return `Crown-Vouchers-${list.length}-${new Date().toISOString().slice(0, 10)}.pdf`;
+}
+
+/* Builds the PDF and downloads it immediately — no browser print dialog. */
+function downloadCrownVoucherPdf(vouchers, filename){
+    const doc = buildCrownVoucherPdf(vouchers);
+
+    if(!doc){
+        return;
+    }
+
+    doc.save(filename || crownVoucherPdfFilename(vouchers));
+}
+
+/* Kept for the Voucher Masterlist's reprint button — same instant
+   download behavior, single voucher. */
 function printCrownVoucher(voucher){
     if(!voucher || !voucher.code){
         return;
     }
 
-    function esc(value){
-        return String(value ?? "")
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll('"', "&quot;")
-            .replaceAll("'", "&#039;");
-    }
-
-    const tierLabel =
-        voucher.tier ? ` (${voucher.tier})` : "";
-
-    const issuedDate =
-        voucher.issuedAt
-            ? new Date(voucher.issuedAt).toLocaleDateString("en-PH", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric"
-              })
-            : "—";
-
-    /* list-vouchers.js only hides the Print button for status ===
-       "cancelled" — a redeemed voucher can still be reprinted (e.g. for
-       a customer dispute), and this template used to render exactly the
-       same as a fresh, unused one either way. Stamp it whenever status
-       isn't "active" so a reprint can never be mistaken for a valid
-       voucher. */
-    const statusStamp =
-        voucher.status === "redeemed"
-            ? {
-                  label: "REDEEMED",
-                  detail: voucher.redeemedAt
-                      ? "on " + new Date(voucher.redeemedAt).toLocaleDateString("en-PH", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric"
-                        })
-                      : ""
-              }
-            : voucher.status === "cancelled"
-                ? { label: "CANCELLED", detail: "" }
-                : null;
-
-    const printWindow =
-        window.open("", "_blank", "width=800,height=600");
-
-    if(!printWindow){
-        alert("Please allow pop-ups for this site to print the voucher.");
-        return;
-    }
-
-    printWindow.document.write(`<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Crown Head Spa — Gift Voucher ${esc(voucher.code)}</title>
-<style>
-  *{ margin:0; padding:0; box-sizing:border-box; }
-  body{
-    font-family:Georgia, "Times New Roman", serif;
-    background:#F4F3EC;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-height:100vh;
-    padding:24px;
-  }
-  .voucher{
-    position:relative;
-    width:640px;
-    background:#fff;
-    border:2px solid #E8B321;
-    border-radius:18px;
-    overflow:hidden;
-    box-shadow:0 10px 40px rgba(11,24,73,.18);
-  }
-  .voucher-status-stamp{
-    position:absolute;
-    top:38%;
-    left:50%;
-    transform:translate(-50%,-50%) rotate(-18deg);
-    z-index:5;
-    padding:10px 26px;
-    border:4px solid #B3261E;
-    border-radius:10px;
-    color:#B3261E;
-    font-family:Arial, Helvetica, sans-serif;
-    font-weight:900;
-    font-size:34px;
-    letter-spacing:.14em;
-    text-align:center;
-    opacity:.82;
-    pointer-events:none;
-  }
-  .voucher-status-stamp small{
-    display:block;
-    margin-top:2px;
-    font-size:11px;
-    font-weight:700;
-    letter-spacing:.04em;
-  }
-  .voucher-head{
-    background:linear-gradient(120deg,#0B1849,#16245C);
-    color:#fff;
-    text-align:center;
-    padding:28px 24px 22px;
-  }
-  .voucher-head .brand{
-    font-size:26px;
-    font-weight:bold;
-    color:#E8B321;
-    letter-spacing:.04em;
-  }
-  .voucher-head .tagline{
-    font-size:12px;
-    letter-spacing:.28em;
-    text-transform:uppercase;
-    color:rgba(255,255,255,.75);
-    margin-top:6px;
-  }
-  .voucher-body{
-    padding:28px 36px;
-    text-align:center;
-  }
-  .voucher-item{
-    font-size:21px;
-    color:#0B1849;
-    font-weight:bold;
-  }
-  .voucher-value{
-    font-size:15px;
-    color:#6F746F;
-    margin-top:4px;
-  }
-  .voucher-code{
-    margin:22px auto;
-    display:inline-block;
-    padding:14px 30px;
-    border:2px dashed #E8B321;
-    border-radius:12px;
-    background:#FFF4CF;
-    font-family:"Courier New", monospace;
-    font-size:28px;
-    font-weight:bold;
-    letter-spacing:.12em;
-    color:#0B1849;
-  }
-  .voucher-meta{
-    display:flex;
-    justify-content:space-between;
-    gap:16px;
-    margin-top:10px;
-    padding-top:18px;
-    border-top:1px solid #E9E9E4;
-    font-size:13px;
-    color:#3d4147;
-    text-align:left;
-  }
-  .voucher-meta strong{ display:block; color:#0B1849; font-size:14px; }
-  .voucher-terms{
-    background:#FAF9F4;
-    padding:14px 36px 18px;
-    font-size:10.5px;
-    color:#91958F;
-    text-align:center;
-    line-height:1.6;
-  }
-  @media print{
-    body{ background:#fff; padding:0; }
-    .voucher{ box-shadow:none; }
-  }
-</style>
-</head>
-<body>
-  <div class="voucher">
-    ${
-        statusStamp
-            ? `<div class="voucher-status-stamp">${esc(statusStamp.label)}${statusStamp.detail ? `<small>${esc(statusStamp.detail)}</small>` : ""}</div>`
-            : ""
-    }
-    <div class="voucher-head">
-      <div class="brand">CROWN HEAD SPA</div>
-      <div class="tagline">Gift Voucher</div>
-    </div>
-
-    <div class="voucher-body">
-      <div class="voucher-item">${esc(voucher.name)}${esc(tierLabel)}</div>
-      <div class="voucher-value">Voucher Value: &#8369;${(Number(voucher.value) || 0).toLocaleString("en-PH", {minimumFractionDigits:2})}</div>
-
-      <div class="voucher-code">${esc(voucher.code)}</div>
-
-      <div class="voucher-meta">
-        <div>
-          <span>Issued To</span>
-          <strong>${esc(voucher.client || "—")}</strong>
-        </div>
-        <div>
-          <span>Issued At</span>
-          <strong>${esc(voucher.branch || "Crown Head Spa")}</strong>
-        </div>
-        <div>
-          <span>Date Issued</span>
-          <strong>${esc(issuedDate)}</strong>
-        </div>
-      </div>
-    </div>
-
-    <div class="voucher-terms">
-      Present this voucher number upon availing. Valid for one-time use only
-      and verified against the Crown Head Spa system. Non-transferable
-      and not convertible to cash.
-    </div>
-  </div>
-  <script>window.onload = function(){ window.print(); };<\/script>
-</body>
-</html>`);
-
-    printWindow.document.close();
+    downloadCrownVoucherPdf([voucher]);
 }

@@ -158,6 +158,18 @@ function shortBranch(branchName){
         .replace("Crown Head Spa ", "");
 }
 
+/* "expired" isn't a status stored on the entry — it's derived at
+   render time from expiresAt, same as the PDF's EXPIRED stamp
+   (see isCrownVoucherExpired() in voucher-print.js). An entry that's
+   already redeemed or voided keeps showing that instead. */
+function effectiveVoucherStatus(entry){
+    if(entry.status === "active" && isCrownVoucherExpired(entry)){
+        return "expired";
+    }
+
+    return entry.status || "active";
+}
+
 function statusBadge(status){
     if(status === "redeemed"){
         return '<span class="voucher-status-badge voucher-status-redeemed">Redeemed</span>';
@@ -165,6 +177,10 @@ function statusBadge(status){
 
     if(status === "cancelled"){
         return '<span class="voucher-status-badge voucher-status-cancelled">Voided</span>';
+    }
+
+    if(status === "expired"){
+        return '<span class="voucher-status-badge voucher-status-expired">Expired</span>';
     }
 
     return '<span class="voucher-status-badge voucher-status-active">Active</span>';
@@ -234,7 +250,7 @@ function renderVoucherList(){
         registry.filter(function(entry){
             const matchesStatus =
                 !statusFilter ||
-                (entry.status || "active") === statusFilter;
+                effectiveVoucherStatus(entry) === statusFilter;
 
             const matchesSearch =
                 !search ||
@@ -279,9 +295,10 @@ function renderVoucherList(){
             <td class="voucher-issued-cell">
                 ${formatDateTime(entry.issuedAt)}
                 <small>${escapeHtml(shortBranch(entry.branch) || "—")}${entry.issuedBy ? " · " + escapeHtml(entry.issuedBy) : ""}</small>
+                ${entry.expiresAt ? `<small>Expires ${escapeHtml(crownVoucherDateLabel(entry.expiresAt))}</small>` : ""}
             </td>
 
-            <td>${statusBadge(entry.status)}</td>
+            <td>${statusBadge(effectiveVoucherStatus(entry))}</td>
 
             <td class="voucher-issued-cell">
                 ${
@@ -297,7 +314,7 @@ function renderVoucherList(){
             <td class="voucher-action-cell">
                 ${
                     entry.status !== "cancelled"
-                        ? '<button type="button" class="btn btn-sm btn-outline-primary print-btn" title="Print / Save as PDF">🖨 Print</button>'
+                        ? '<button type="button" class="btn btn-sm btn-outline-primary print-btn" title="Download as PDF">🖨 Download PDF</button>'
                         : ""
                 }
                 ${

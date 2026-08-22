@@ -4,6 +4,59 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-22 — Purchase voucher rework: draft-until-settled, redesigned PDF, 6-month expiry
+
+**Requested by:** User — the Add Sale "Generate Voucher" button immediately
+wrote to the Voucher Masterlist and had no printable output worth using; the
+official record should only exist once the sale is actually paid for, and the
+voucher's look/format needed to match the branded design the user had in
+mind, laid out for real printing, plus a validity window.
+
+**Change ([index.html](index.html), [script.js](script.js)):**
+- "Generate Voucher" renamed **Add Purchase Voucher**; its dialog no longer
+  writes to the Voucher Masterlist registry on click. It now only reserves a
+  voucher code (`generateVoucherCode()` checks both the registry and every
+  other pending/unsaved sale's codes to avoid collisions) and attaches it to
+  the sale line item as a draft (`voucherOfficial: false`), then closes the
+  dialog immediately — no more confirmation popup.
+- New `finalizeSaleVouchers(saleData)` promotes every pending voucher
+  purchase on a sale into a real Voucher Masterlist entry, keeping the same
+  reserved code. It runs whenever a sale is Settled — both from the sale
+  modal's Settle button and the Ongoing Transactions row's quick-settle
+  button — never from Add to List / Add to Schedule.
+
+**Change ([voucher-print.js](voucher-print.js), new
+[voucher-font-cinzel.js](voucher-font-cinzel.js)):** rewritten from an HTML
+print-window (browser Print dialog, `#F4F3EC` background) to direct jsPDF
+vector rendering — dark-navy/gold branded card, "CROWN HEAD SPA" set in an
+embedded Cinzel Decorative font, code box redesigned from a dashed border to
+a solid double-line gold frame. `buildCrownVoucherPdf()` lays out as many
+cards as fit per A4 page (3), continuing onto new pages — settling a sale
+with vouchers now auto-downloads one combined PDF for everything finalized
+in that sale, no print dialog involved. `printCrownVoucher()` (used by the
+Voucher Masterlist's reprint button, relabeled "🖨 Download PDF") now goes
+through the same renderer.
+
+**Change (validity):** every voucher gets `expiresAt` = issue date + 6
+months, set at the moment it becomes official (Settle), not at draft time.
+`isCrownVoucherExpired()` in voucher-print.js is the single source of truth,
+used by: the sale modal's redemption check (new "Voucher … expired on …"
+message), the PDF (an EXPIRED diagonal stamp + a 4th "Valid Until" meta
+column), and the Voucher Masterlist ([list-vouchers.js](list-vouchers.js),
+[list-vouchers.css](list-vouchers.css)) — new amber "Expired" status badge
+(derived live, not stored) and a matching filter option.
+
+**Change ([manual.html](manual.html)):** Chapter 8 rewritten for the
+draft→settle life cycle, the auto-downloaded combined PDF, the 6-month
+expiry rule, and the new "expired" voucher message; the Add Sale command
+reference entry renamed to match the button.
+
+**Status:** Code changed locally, not yet deployed — run
+`firebase deploy --only hosting` from `Income Report/` when ready to push
+live.
+
+---
+
 ## 2026-08-22 — SMS error surfacing + copy update
 
 **Requested by:** User — first live SMS test failed silently with a generic

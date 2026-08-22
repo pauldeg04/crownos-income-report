@@ -517,7 +517,7 @@
                 Add VIP Card
               </button>
               <button type="button" class="btn btn-sm btn-warning" id="modalGenerateVoucherBtn">
-                Generate Voucher
+                Add Purchase Voucher
               </button>
             </div>
           </div>
@@ -722,10 +722,11 @@
 
 <div class="voucher-gen-backdrop d-none" id="voucherGenBackdrop">
   <div class="voucher-gen-modal">
-    <h4>🎟 Generate Voucher</h4>
+    <h4>🎟 Add Purchase Voucher</h4>
     <p class="voucher-gen-subtitle">
-      Creates an official voucher number, records it in the system,
-      and adds the voucher purchase to this transaction.
+      Adds the voucher purchase to this transaction with a reserved voucher
+      number. It only becomes official in the Voucher Masterlist — and its
+      PDF is generated and downloaded — once this sale is Settled.
     </p>
 
     <label class="form-label">Voucher Item</label>
@@ -740,26 +741,13 @@
       autocomplete="off"
     >
 
-    <div class="voucher-gen-result d-none" id="voucherGenResult">
-      <span>Voucher Number</span>
-      <strong id="voucherGenCode">—</strong>
-      <small>
-        Issued to <strong id="voucherGenIssuedTo">—</strong>.
-        This number is required when the voucher is used for payment.
-      </small>
-    </div>
-
     <div class="voucher-gen-actions">
       <button type="button" class="btn btn-outline-secondary" id="voucherGenCloseBtn">
         Close
       </button>
 
-      <button type="button" class="btn btn-outline-primary d-none" id="voucherGenPrintBtn">
-        🖨 Print / Save PDF
-      </button>
-
       <button type="button" class="btn btn-warning" id="voucherGenCreateBtn">
-        Generate &amp; Add to Sale
+        Add to Sale
       </button>
     </div>
   </div>
@@ -767,6 +755,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="sidebar.js"></script>
+<script src="voucher-font-cinzel.js"></script>
 <script src="voucher-print.js"></script>
 <script src="script.js"></script>
 </body>
