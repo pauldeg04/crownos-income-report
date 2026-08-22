@@ -17,7 +17,12 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onDocumentUpdated, onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
+const nodemailer = require("nodemailer");
+
+const EMAIL_PASSWORD = defineSecret("EMAIL_PASSWORD");
+const BOOKING_EMAIL_FROM = "info@crownheadspa.com";
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -702,6 +707,220 @@ exports.releaseHoldOnRequestReview = onDocumentUpdated(
         await batch.commit();
     }
 );
+
+/* ---------- sendAppointmentEmailConfirmation / sendAppointmentSmsConfirmation (callable) ----------
+
+   Staff now choose per-appointment, via a checkbox popup in the
+   scheduling.js "Save Schedule" flow, whether to send a confirmation —
+   replacing the old automatic send-on-convert trigger (which could not
+   distinguish staff intent and would fire for every booking-request
+   conversion regardless of whether the client wanted one). */
+
+function buildMailer(){
+    return nodemailer.createTransport({
+        host: "smtpout.secureserver.net",
+        port: 465,
+        secure: true,
+        auth: {
+            user: BOOKING_EMAIL_FROM,
+            pass: EMAIL_PASSWORD.value()
+        }
+    });
+}
+
+const MONTH_NAMES = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];
+
+function formatDisplayDate(dateStr){
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateStr || ""));
+
+    if(!match){
+        return dateStr;
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]) - 1;
+    const day = Number(match[3]);
+
+    return `${MONTH_NAMES[month]} ${day}, ${year}`;
+}
+
+function escapeHtml(value){
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+function buildCompanionLinesText(companions){
+    if(!Array.isArray(companions) || companions.length === 0){
+        return "";
+    }
+
+    return (
+        "\n\nCompanions:\n" +
+        companions
+            .map(function(companion){ return `- ${companion.name} (${companion.serviceName})`; })
+            .join("\n")
+    );
+}
+
+function buildConfirmationEmailText({ clientName, branch, serviceName, date, time, companions }){
+    return (
+        `Hi ${clientName || "there"},\n\n` +
+        `Your booking at Crown Head Spa is confirmed!\n\n` +
+        `Branch: ${branch}\n` +
+        `Service: ${serviceName}\n` +
+        `Date: ${date}\n` +
+        `Time: ${time}` +
+        buildCompanionLinesText(companions) +
+        `\n\nThank you for booking with us\n\n` +
+        `Kindly arrive early for check-in\n` +
+        `Head spa clients: please avoid washing your hair before your visit for better checking of "Scalp Analysis" (For Serenity & Detox and Glow service).\n\n` +
+        `Note: Discounts will be applied on the day of your visit.\n\n` +
+        `See you soon\n\nCrown Head Spa\nwww.crownheadspa.com`
+    );
+}
+
+function buildConfirmationEmailHtml({ clientName, branch, serviceName, date, time, companions }){
+    const row = function(label, value){
+        return `
+            <tr>
+                <td style="padding:10px 0;border-bottom:1px solid #e4ddc9;font-family:Arial,Helvetica,sans-serif;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#6b645a;">${label}</td>
+                <td style="padding:10px 0;border-bottom:1px solid #e4ddc9;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;text-align:right;font-weight:600;">${escapeHtml(value)}</td>
+            </tr>`;
+    };
+
+    const companionsSection =
+        Array.isArray(companions) && companions.length > 0
+            ? `
+        <p style="margin:20px 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#6b645a;">Companions</p>
+        <ul style="margin:0;padding-left:18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1c1a16;line-height:1.7;">
+            ${companions.map(function(companion){
+                return `<li>${escapeHtml(companion.name)} &mdash; ${escapeHtml(companion.serviceName)}</li>`;
+            }).join("")}
+        </ul>`
+            : "";
+
+    return `
+<!doctype html>
+<html>
+<head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#efeae0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#efeae0;padding:32px 16px;">
+<tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#f7f5f0;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(20,17,10,0.12);">
+
+<tr>
+    <td style="background-color:#0E1B3D;background-image:linear-gradient(180deg, #0E1B3D 0%, #16245C 100%);padding:28px 32px;text-align:center;">
+        <img src="https://crownheadspa.com/images/crown-mark.png" width="44" height="44" alt="Crown Head Spa" style="display:block;margin:0 auto 10px;">
+        <div style="font-family:'Cinzel Decorative',Georgia,'Times New Roman',serif;font-size:20px;letter-spacing:.06em;color:#d4af37;font-weight:700;">CROWN HEAD SPA</div>
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.18em;color:#e0c877;text-transform:uppercase;margin-top:4px;">Relax &middot; Renew &middot; Reign</div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding:32px;">
+        <p style="margin:0 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;">Hi ${escapeHtml(clientName) || "there"},</p>
+        <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;">Your booking at <strong>Crown Head Spa</strong> is confirmed. We look forward to welcoming you.</p>
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border:1px solid #e4ddc9;border-radius:12px;padding:18px 20px;">
+            ${row("Branch", branch)}
+            ${row("Service", serviceName)}
+            ${row("Date", date)}
+            ${row("Time", time)}
+        </table>
+        ${companionsSection}
+
+        <p style="margin:24px 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;font-weight:600;">Thank you for booking with us</p>
+
+        <ul style="margin:0 0 16px;padding-left:18px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6b645a;line-height:1.6;">
+            <li>Kindly arrive early for check-in</li>
+            <li>Head spa clients: please avoid washing your hair before your visit for better checking of &quot;Scalp Analysis&quot; (For Serenity &amp; Detox and Glow service).</li>
+        </ul>
+
+        <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6b645a;font-style:italic;">Note: Discounts will be applied on the day of your visit.</p>
+
+        <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;">See you soon!</p>
+    </td>
+</tr>
+
+<tr>
+    <td style="background-color:#e4ddc9;padding:18px 32px;text-align:center;">
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b645a;">Bi&ntilde;an: 0939 588 4068 &nbsp;&bull;&nbsp; Calamba: 0961 440 2807</div>
+        <div style="margin-top:8px;">
+            <a href="https://crownheadspa.com" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#a9790a;text-decoration:none;font-weight:700;letter-spacing:.02em;">www.crownheadspa.com</a>
+        </div>
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#9c7d1c;margin-top:8px;">&copy; 2026 Crown Head Spa. All rights reserved.</div>
+    </td>
+</tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
+exports.sendAppointmentEmailConfirmation = onCall(
+    { secrets: [EMAIL_PASSWORD] },
+    async (request) => {
+        const data = request.data || {};
+        const email = String(data.email || "").trim();
+
+        if(!email){
+            throw new HttpsError("invalid-argument", "email is required.");
+        }
+
+        const mailer = buildMailer();
+
+        const companions = Array.isArray(data.companions)
+            ? data.companions
+                .map(function(companion){
+                    return {
+                        name: String(companion?.name || "").trim(),
+                        serviceName: String(companion?.serviceName || "").trim()
+                    };
+                })
+                .filter(function(companion){
+                    return companion.name.length > 0 && companion.serviceName.length > 0;
+                })
+                .slice(0, 10)
+            : [];
+
+        const details = {
+            clientName: String(data.clientName || "").trim(),
+            branch: String(data.branch || "").trim(),
+            serviceName: String(data.serviceName || "").trim(),
+            date: formatDisplayDate(String(data.date || "").trim()),
+            time: String(data.time || "").trim(),
+            companions: companions
+        };
+
+        await mailer.sendMail({
+            from: `"Crown Head Spa" <${BOOKING_EMAIL_FROM}>`,
+            to: email,
+            subject: "Your Crown Head Spa booking is confirmed",
+            text: buildConfirmationEmailText(details),
+            html: buildConfirmationEmailHtml(details)
+        });
+
+        return { ok: true };
+    }
+);
+
+/* Provision only — no SMS provider is configured yet (see conversation
+   with the client: parking SMS until they pick a provider). The
+   checkbox flow on the client already calls this end-to-end, so wiring
+   a real provider later only means filling in this function body. */
+exports.sendAppointmentSmsConfirmation = onCall(async (request) => {
+    return { ok: false, reason: "sms_not_configured" };
+});
 
 /* ---------- notifyReceptionistsOnNewBookingRequest (trigger) ----------
 

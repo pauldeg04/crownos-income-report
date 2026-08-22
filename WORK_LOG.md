@@ -4,6 +4,73 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-22 — Booking confirmation email/SMS (staff-controlled, on Save Schedule)
+
+**Requested by:** User — set up `info@crownheadspa.com` (GoDaddy Professional Email)
+and wanted clients to receive a confirmation once staff creates/confirms their
+appointment. Later refined into an explicit staff choice per appointment rather
+than an automatic send, plus a request to reorder the public booking form and
+make the email itself look professional/on-brand.
+
+**1. Cloud Functions ([functions/index.js](functions/index.js))**
+
+- Removed the old `sendBookingConfirmationEmail` Firestore trigger (fired
+  automatically whenever a `bookingRequests` doc's status became `"converted"`)
+  — replaced with two `onCall` functions the client invokes explicitly, so a
+  staff member's choice controls whether anything is sent at all:
+  - `sendAppointmentEmailConfirmation` — sends the branded confirmation email
+    via GoDaddy/Titan SMTP (`smtpout.secureserver.net:465`), using nodemailer
+    with the mailbox password stored as the `EMAIL_PASSWORD` Firebase secret.
+  - `sendAppointmentSmsConfirmation` — **provision only**, no SMS provider
+    configured yet. Currently a stub that returns
+    `{ ok: false, reason: "sms_not_configured" }`; the checkbox flow already
+    calls it end-to-end, so wiring a real provider later (e.g. Semaphore) only
+    means filling in this function's body.
+- Email is HTML + plain-text fallback, branded to match CrownOS/Crown Head Spa:
+  royal-blue-to-navy gradient header (`#0E1B3D` → `#16245C`, same as the
+  CrownOS sidebar) with gold "CROWN HEAD SPA" wordmark in **Cinzel Decorative**
+  (Google Fonts), crown mark logo, a details card (branch/service/date/time —
+  date reformatted to "August 25, 2026" style), a Companions list (only shown
+  if the appointment has any), arrival/scalp-analysis/discount notes, and a
+  footer promoting `www.crownheadspa.com`.
+- `nodemailer` added to [functions/package.json](functions/package.json).
+
+**2. Staff panel ([scheduling.html](scheduling.html), [scheduling.js](scheduling.js))**
+
+- Added `firebase-functions-compat.js` script tag (scheduling.html previously
+  only loaded app/auth/firestore — never called a Cloud Function directly).
+- New popup modal (`#sendConfirmationBackdrop`) — "Send booking confirmation?"
+  with two checkboxes, **Email** and **SMS**, both unchecked by default.
+  `openSendConfirmationModal()` disables whichever checkbox has no contact
+  info available (currently sourced from `pendingRequestContact.email` /
+  `.mobile`, only populated when the appointment came from a web booking
+  request — a from-scratch walk-in appointment has no email/mobile capture
+  point yet, so both stay disabled there).
+- Wired into `saveSchedule()` right after all validation/conflict checks pass
+  but *before* `claimBookingRequest`/the Firestore write — staff closing the
+  popup aborts the save entirely (nothing written yet); confirming proceeds
+  with the save and then fires `sendAppointmentConfirmations()` for whichever
+  boxes were checked, including the companion list built from
+  `companionPayloads`.
+
+**Not changed:** manual/walk-in appointments (no linked booking request) still
+have no way to capture a client's email or mobile in the Add Appointment modal
+itself — the confirmation popup will show for them too, just with both
+checkboxes permanently disabled until that capture point exists.
+
+**Also in this session:**
+- [Website/book.html](../Website/book.html) — moved "Preferred Time" to appear
+  after the Service field (was between Preferred Date and Contact Number,
+  confusingly disabled until Service was picked further down the form).
+
+**Deployed:** `firebase deploy --only functions,hosting` from `Income Report/`
+(functions in `us-central1`; old trigger deleted via
+`firebase functions:delete sendBookingConfirmationEmail --region asia-southeast1`).
+`Website/` deployed separately via `firebase deploy --only hosting` (site
+`crownheadspa`) for the book.html field reorder.
+
+---
+
 ## 2026-08-22 — Per-bed "Available" toggle in Scheduling; booking form redesign
 
 **Requested by:** User — (1) a checkbox per bed column in Scheduling, checked by

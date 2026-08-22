@@ -3528,6 +3528,16 @@ async function saveSchedule(){
         }
     }
 
+    const confirmationEmail = pendingRequestContact?.email || "";
+    const confirmationMobile = pendingRequestContact?.mobile || "";
+
+    const confirmation =
+        await openSendConfirmationModal(!!confirmationEmail, !!confirmationMobile);
+
+    if(!confirmation.proceed){
+        return;
+    }
+
     const mainId =
         selectedScheduleId || createId();
 
@@ -3792,9 +3802,110 @@ async function saveSchedule(){
         previousCompanionEntries: previousCompanionEntries
     });
 
+    sendAppointmentConfirmations(confirmation, {
+        email: confirmationEmail,
+        mobile: confirmationMobile,
+        clientName: client,
+        branch: branch.name,
+        serviceName: scheduleData.service,
+        date: date,
+        time: formatTime(selectedStartTime),
+        companions: companionPayloads.map(function(payload){
+            return {
+                name: payload.name,
+                serviceName: payload.services.map(function(service){
+                    return service.name;
+                }).join(", ")
+            };
+        })
+    });
+
     closeModal();
     renderSchedule();
     renderUpcomingAndHistory();
+}
+
+/* ---------- send-confirmation popup (Save Schedule step) ---------- */
+
+function openSendConfirmationModal(emailAvailable, mobileAvailable){
+    return new Promise(function(resolve){
+        const backdrop = document.getElementById("sendConfirmationBackdrop");
+        const emailCheckbox = document.getElementById("confirmSendEmail");
+        const smsCheckbox = document.getElementById("confirmSendSms");
+        const emailRow = document.getElementById("confirmEmailRow");
+        const smsRow = document.getElementById("confirmSmsRow");
+        const confirmBtn = document.getElementById("confirmSendBtn");
+        const closeBtn = document.getElementById("confirmSendCloseBtn");
+
+        emailCheckbox.checked = false;
+        smsCheckbox.checked = false;
+        emailCheckbox.disabled = !emailAvailable;
+        smsCheckbox.disabled = !mobileAvailable;
+        emailRow.classList.toggle("text-muted", !emailAvailable);
+        smsRow.classList.toggle("text-muted", !mobileAvailable);
+
+        backdrop.classList.remove("d-none");
+        document.body.classList.add("modal-open");
+
+        function cleanup(){
+            backdrop.classList.add("d-none");
+            document.body.classList.remove("modal-open");
+            confirmBtn.removeEventListener("click", onConfirm);
+            closeBtn.removeEventListener("click", onCancel);
+        }
+
+        function onConfirm(){
+            const result = {
+                proceed: true,
+                sendEmail: emailCheckbox.checked,
+                sendSms: smsCheckbox.checked
+            };
+            cleanup();
+            resolve(result);
+        }
+
+        function onCancel(){
+            cleanup();
+            resolve({ proceed: false, sendEmail: false, sendSms: false });
+        }
+
+        confirmBtn.addEventListener("click", onConfirm);
+        closeBtn.addEventListener("click", onCancel);
+    });
+}
+
+function sendAppointmentConfirmations(confirmation, details){
+    if(confirmation.sendEmail && details.email){
+        firebase.functions().httpsCallable("sendAppointmentEmailConfirmation")({
+            email: details.email,
+            clientName: details.clientName,
+            branch: details.branch,
+            serviceName: details.serviceName,
+            date: details.date,
+            time: details.time,
+            companions: details.companions
+        }).catch(function(error){
+            console.error("Failed to send appointment email confirmation:", error);
+            alert("Could not send the email confirmation. The appointment was saved regardless.");
+        });
+    }
+
+    if(confirmation.sendSms && details.mobile){
+        firebase.functions().httpsCallable("sendAppointmentSmsConfirmation")({
+            mobile: details.mobile,
+            clientName: details.clientName,
+            branch: details.branch,
+            serviceName: details.serviceName,
+            date: details.date,
+            time: details.time
+        }).then(function(result){
+            if(result?.data?.ok === false){
+                console.info("SMS confirmation not sent — provider not configured yet.");
+            }
+        }).catch(function(error){
+            console.error("Failed to send appointment SMS confirmation:", error);
+        });
+    }
 }
 
 /* Notifies a therapist only when their assignment actually changed

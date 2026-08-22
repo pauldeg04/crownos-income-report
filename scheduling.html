@@ -32,6 +32,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-functions-compat.js"></script>
     <script src="firebase-init.js"></script>
     <script src="pwa-register.js"></script>
     <script src="client-store.js"></script>
@@ -588,6 +589,59 @@
                 </button>
             </div>
 
+        </div>
+
+    </div>
+
+</div>
+
+<div class="schedule-modal-backdrop d-none" id="sendConfirmationBackdrop">
+
+    <div class="schedule-modal" role="dialog" aria-modal="true" style="max-width:420px;">
+
+        <div class="schedule-modal-header">
+            <div>
+                <h3>Send booking confirmation?</h3>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close-btn"
+                id="confirmSendCloseBtn"
+                aria-label="Close"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="schedule-modal-body">
+
+            <div class="form-check mb-2" id="confirmEmailRow">
+                <input class="form-check-input" type="checkbox" id="confirmSendEmail">
+                <label class="form-check-label" for="confirmSendEmail">
+                    Email — send a confirmation to the client's email address
+                </label>
+            </div>
+
+            <div class="form-check" id="confirmSmsRow">
+                <input class="form-check-input" type="checkbox" id="confirmSendSms">
+                <label class="form-check-label" for="confirmSendSms">
+                    SMS — send a confirmation text to the client's mobile number
+                </label>
+            </div>
+
+        </div>
+
+        <div class="schedule-modal-footer">
+            <div class="modal-footer-actions">
+                <button
+                    type="button"
+                    class="btn btn-success"
+                    id="confirmSendBtn"
+                >
+                    Save Appointment
+                </button>
+            </div>
         </div>
 
     </div>
