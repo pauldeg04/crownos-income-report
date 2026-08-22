@@ -4,6 +4,23 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-22 — Booking confirmation modal: styled the Email/SMS options box
+
+**Requested by:** User — the "Send booking confirmation?" popup's Email/SMS
+checkboxes sat on plain white with no visual separation from the rest of the
+modal, hard to notice.
+
+**Change ([scheduling.html](scheduling.html), [scheduling.css](scheduling.css)):**
+wrapped both checkbox rows in a new `.confirm-send-options` container styled
+with the app's own cream/gold tokens (`var(--cream)` background, `1px solid
+var(--accent-border)`, 12px radius) — the same beige used elsewhere in the
+app — so the options read as one grouped, on-theme box instead of two bare
+rows. No behavior changed.
+
+**Deployed:** `firebase deploy --only hosting` from `Income Report/`.
+
+---
+
 ## 2026-08-22 — Purchase voucher rework: draft-until-settled, redesigned PDF, 6-month expiry
 
 **Requested by:** User — the Add Sale "Generate Voucher" button immediately

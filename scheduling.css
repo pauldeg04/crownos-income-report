@@ -521,6 +521,24 @@ body.modal-open{
     padding:22px 24px;
 }
 
+.confirm-send-options{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    padding:14px 16px;
+    background:var(--cream);
+    border:1px solid var(--accent-border);
+    border-radius:12px;
+}
+
+.confirm-send-options .form-check{
+    margin:0;
+}
+
+.confirm-send-options .form-check-label{
+    color:var(--navy);
+}
+
 .modal-readout{
     min-height:40px;
     display:flex;
