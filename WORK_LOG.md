@@ -4,6 +4,34 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-22 — SMS confirmation wired to Semaphore
+
+**Requested by:** User — signed up for Semaphore (SMS API, Philippines) and loaded
+credits, asked to activate the SMS half of the booking-confirmation checkbox
+popup that had been left as a provision-only stub.
+
+**Change ([functions/index.js](functions/index.js)):**
+- `sendAppointmentSmsConfirmation` no longer returns
+  `{ ok: false, reason: "sms_not_configured" }` — it now POSTs to Semaphore's
+  `https://api.semaphore.co/api/v4/messages` endpoint (`apikey`, `number`,
+  `message`) using Node 20's built-in `fetch`, with the API key stored as the
+  `SEMAPHORE_API_KEY` Firebase secret (`firebase functions:secrets:set
+  SEMAPHORE_API_KEY`). Throws `HttpsError("internal", ...)` on a non-OK
+  response so the staff-side alert in `scheduling.js` fires correctly.
+- `buildConfirmationSmsText()` — short single-message text (client name,
+  service, branch, date, time, site link), separate from the HTML email copy.
+- [scheduling.js](scheduling.js) — the SMS `.then()` no longer special-cases
+  `ok:false` as "not configured yet"; a failed send now alerts the staff
+  member the same way a failed email send does, while the appointment itself
+  still saves regardless.
+- No sender name is passed in the request, so Semaphore falls back to
+  whatever sender name is registered as default on the account — if that
+  registration is still pending, sends may fail until it's approved.
+
+**Deployed:** `firebase deploy --only functions:sendAppointmentSmsConfirmation,hosting`.
+
+---
+
 ## 2026-08-22 — Booking confirmation email/SMS (staff-controlled, on Save Schedule)
 
 **Requested by:** User — set up `info@crownheadspa.com` (GoDaddy Professional Email)

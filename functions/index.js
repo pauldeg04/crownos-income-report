@@ -22,6 +22,7 @@ const admin = require("firebase-admin");
 const nodemailer = require("nodemailer");
 
 const EMAIL_PASSWORD = defineSecret("EMAIL_PASSWORD");
+const SEMAPHORE_API_KEY = defineSecret("SEMAPHORE_API_KEY");
 const BOOKING_EMAIL_FROM = "info@crownheadspa.com";
 
 admin.initializeApp();
@@ -914,13 +915,51 @@ exports.sendAppointmentEmailConfirmation = onCall(
     }
 );
 
-/* Provision only — no SMS provider is configured yet (see conversation
-   with the client: parking SMS until they pick a provider). The
-   checkbox flow on the client already calls this end-to-end, so wiring
-   a real provider later only means filling in this function body. */
-exports.sendAppointmentSmsConfirmation = onCall(async (request) => {
-    return { ok: false, reason: "sms_not_configured" };
-});
+function buildConfirmationSmsText({ clientName, branch, serviceName, date, time }){
+    return (
+        `Hi ${clientName || "there"}! Your Crown Head Spa booking is confirmed: ` +
+        `${serviceName} at ${branch} on ${date}, ${time}. See you soon! ` +
+        `www.crownheadspa.com`
+    );
+}
+
+exports.sendAppointmentSmsConfirmation = onCall(
+    { secrets: [SEMAPHORE_API_KEY] },
+    async (request) => {
+        const data = request.data || {};
+        const mobile = String(data.mobile || "").trim();
+
+        if(!mobile){
+            throw new HttpsError("invalid-argument", "mobile is required.");
+        }
+
+        const message = buildConfirmationSmsText({
+            clientName: String(data.clientName || "").trim(),
+            branch: String(data.branch || "").trim(),
+            serviceName: String(data.serviceName || "").trim(),
+            date: formatDisplayDate(String(data.date || "").trim()),
+            time: String(data.time || "").trim()
+        });
+
+        const response = await fetch("https://api.semaphore.co/api/v4/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+                apikey: SEMAPHORE_API_KEY.value(),
+                number: mobile,
+                message: message
+            })
+        });
+
+        const result = await response.json();
+
+        if(!response.ok){
+            throw new HttpsError("internal", "Semaphore API error: " + JSON.stringify(result));
+        }
+
+        return { ok: true, result };
+    }
+);
 
 /* ---------- notifyReceptionistsOnNewBookingRequest (trigger) ----------
 

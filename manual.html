@@ -1277,8 +1277,9 @@ Meal Allowance     none for these roles</div>
       Email needs an email address, SMS needs a mobile number, both currently
       only available when the appointment came from a web booking request. The
       Email confirmation is a branded email with the booking details and any
-      companions. SMS is not wired to a provider yet, so checking it currently
-      does nothing — the plumbing is ready for when one is set up.
+      companions. SMS sends a short text via Semaphore — make sure the
+      Semaphore account has SMS credits loaded, or the SMS checkbox will
+      silently fail (an alert appears, but the appointment still saves).
     </p>
   </div>
 

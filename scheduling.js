@@ -3898,12 +3898,9 @@ function sendAppointmentConfirmations(confirmation, details){
             serviceName: details.serviceName,
             date: details.date,
             time: details.time
-        }).then(function(result){
-            if(result?.data?.ok === false){
-                console.info("SMS confirmation not sent — provider not configured yet.");
-            }
         }).catch(function(error){
             console.error("Failed to send appointment SMS confirmation:", error);
+            alert("Could not send the SMS confirmation. The appointment was saved regardless.");
         });
     }
 }
