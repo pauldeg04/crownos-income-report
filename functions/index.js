@@ -918,8 +918,8 @@ exports.sendAppointmentEmailConfirmation = onCall(
 function buildConfirmationSmsText({ clientName, branch, serviceName, date, time }){
     return (
         `Hi ${clientName || "there"}! Your Crown Head Spa booking is confirmed: ` +
-        `${serviceName} at ${branch} on ${date}, ${time}. See you soon! ` +
-        `www.crownheadspa.com`
+        `${serviceName} at ${branch} on ${date}, ${time}. See you soon!\n` +
+        `For more details, visit our website: www.crownheadspa.com`
     );
 }
 
@@ -941,20 +941,43 @@ exports.sendAppointmentSmsConfirmation = onCall(
             time: String(data.time || "").trim()
         });
 
-        const response = await fetch("https://api.semaphore.co/api/v4/messages", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({
-                apikey: SEMAPHORE_API_KEY.value(),
-                number: mobile,
-                message: message
-            })
-        });
+        let response;
+        let bodyText;
 
-        const result = await response.json();
+        try {
+            response = await fetch("https://api.semaphore.co/api/v4/messages", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    apikey: SEMAPHORE_API_KEY.value(),
+                    number: mobile,
+                    message: message
+                })
+            });
+            bodyText = await response.text();
+        } catch (networkError) {
+            console.error("Semaphore request failed (network):", networkError);
+            throw new HttpsError("unavailable", "Could not reach Semaphore: " + networkError.message);
+        }
 
-        if(!response.ok){
-            throw new HttpsError("internal", "Semaphore API error: " + JSON.stringify(result));
+        let result;
+
+        try {
+            result = JSON.parse(bodyText);
+        } catch (parseError) {
+            console.error("Semaphore returned a non-JSON response:", response.status, bodyText);
+            throw new HttpsError(
+                "internal",
+                `Semaphore returned an unexpected response (HTTP ${response.status}): ${bodyText.slice(0, 300)}`
+            );
+        }
+
+        console.log("Semaphore response:", response.status, JSON.stringify(result));
+
+        if(!response.ok || result?.message){
+            const reason = result?.message || JSON.stringify(result);
+            console.error("Semaphore API error:", response.status, reason);
+            throw new HttpsError("internal", `Semaphore error: ${reason}`);
         }
 
         return { ok: true, result };

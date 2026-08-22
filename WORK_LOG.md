@@ -4,6 +4,41 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-22 — SMS error surfacing + copy update
+
+**Requested by:** User — first live SMS test failed silently with a generic
+alert; needed the real reason surfaced, then wanted the message copy
+expanded with a website call-to-action.
+
+**Change ([functions/index.js](functions/index.js)):**
+- `sendAppointmentSmsConfirmation` previously assumed a failed Semaphore call
+  would show up as a non-OK HTTP status. In practice Semaphore returns
+  `{"senderName": "No active sender name found..."}` (an error object, not
+  the documented array) even on some non-200 responses that don't parse
+  cleanly — the function now reads the raw response text first, parses it
+  itself, and treats a present `result.message` (or a non-OK status) as a
+  failure either way, logging the status/body via `console.error` and
+  throwing an `HttpsError` whose message carries the real reason through to
+  the client.
+- Root cause of the first failure: the Semaphore sender name ("CrownSpa")
+  had just been applied for and was still "Pending" — Semaphore requires an
+  **approved, active** default Sender Name before it will send anything,
+  separate from having credits loaded.
+- `buildConfirmationSmsText()` now appends a second line: "For more details,
+  visit our website: www.crownheadspa.com".
+
+**Change ([scheduling.js](scheduling.js)):** the SMS failure `alert()` now
+appends `error?.message` from the thrown `HttpsError`, so staff see the exact
+Semaphore rejection reason instead of a generic "could not send" message.
+
+**Status:** Sender name approval is pending on Semaphore's end as of this
+entry — SMS sends will keep failing with "No active sender name found" until
+Semaphore approves it, independent of any code here.
+
+**Deployed:** `firebase deploy --only functions:sendAppointmentSmsConfirmation,hosting`.
+
+---
+
 ## 2026-08-22 — SMS confirmation wired to Semaphore
 
 **Requested by:** User — signed up for Semaphore (SMS API, Philippines) and loaded

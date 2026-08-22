@@ -3900,7 +3900,10 @@ function sendAppointmentConfirmations(confirmation, details){
             time: details.time
         }).catch(function(error){
             console.error("Failed to send appointment SMS confirmation:", error);
-            alert("Could not send the SMS confirmation. The appointment was saved regardless.");
+            alert(
+                "Could not send the SMS confirmation. The appointment was saved regardless.\n\n" +
+                "Reason: " + (error?.message || "Unknown error")
+            );
         });
     }
 }
