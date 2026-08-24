@@ -4,6 +4,121 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-24 — New "Admin Hub" sidebar section: Announcement, Memo, Staff Schedule, Leave Request, Incident Report, Payroll relocation
+
+**Requested by:** User — wanted a single sidebar section grouping
+day-to-day admin/HR operations that either didn't exist yet or were
+scattered elsewhere, with per-role views (Admin/Executive Assistant/Team
+Leader manage; Receptionist/Therapist mostly self-service), plus a round
+of refinements once the first version was reviewed against real usage.
+
+**New sidebar section ([sidebar.js](sidebar.js), [sidebar.css](sidebar.css)):**
+"Admin Hub" inserted right after Booking Requests (inside Operations),
+containing Announcement, Memo, Staff Schedule, Leave Request, Incident
+Report, and the existing Payroll page (moved here from its old spot,
+`payroll.html`/`.js`/`.css` unchanged). Every sidebar section header
+(Operations, Admin Hub, Inventory, etc.) is now a click-to-fold/unfold
+accordion toggle, independent of the existing whole-sidebar collapse-to-
+icons button, remembered per-section in `localStorage`. Fixed a closure
+bug found during testing where every section's toggle was silently
+folding *Settings'* group instead of its own (all the per-iteration
+`pendingSection`/`pendingGroup` variables were shared across the whole
+`MENU_ITEMS` loop, so a deferred click handler only ever saw whichever
+section was built *last*) — each button now carries its own group
+reference (`pendingSection._targetGroup`), set at creation time.
+Notification bell widened from Therapist/Receptionist-only to all roles,
+merging in a new `staffNotificationsClient`-backed source (see below).
+
+**New page — Announcement ([admin-announcement.html](admin-announcement.html)/[.css](admin-announcement.css)/[.js](admin-announcement.js)):**
+single-slot box (Firestore `announcement/current`), editable by Admin and
+Executive Assistant, notifies every active account on publish. "Send to
+Archive" copies the current announcement into a new `announcementArchive`
+collection and clears the slot; "View Archive" lists everything archived.
+
+**New page — Memo ([memos.html](memos.html)/[.css](memos.css)/[.js](memos.js)):**
+mailbox in Firestore `memos`, composed by Admin/Executive Assistant to
+chosen recipients, with per-recipient Acknowledge + timestamp tracked in
+an `acknowledgements` map. "Create Group" saves named recipient sets
+(`memoGroups` collection) for reuse. Fixed a bug where Acknowledge always
+failed with "Missing or insufficient permissions": the write used a
+plain string key (`"acknowledgements." + email`), and since a sync email
+always contains a literal "." (`u-name@crownos-sync.com`), Firestore read
+that as a 3-segment path instead of one flat key — switched to
+`firebase.firestore.FieldPath("acknowledgements", email)`.
+
+**New page — Staff Schedule ([staff-schedule.html](staff-schedule.html)/[.css](staff-schedule.css)/[.js](staff-schedule.js)):**
+went through several iterations before landing on: a weekly grid per
+branch (Firestore `staffScheduleGrids`, one doc per branch+week) with
+Opening/Closing sections (one Receptionist row, one or more Therapist
+rows via "+ Add Therapist"), a Rest Day row, and Notes — all cells are
+staff dropdowns (now also listing Executive Assistant accounts, so an EA
+can be assigned to cover Receptionist duty). The page shows only the
+*current* week by default; "History" and "Upcoming Schedule" are
+collapsible banners at the bottom (styled as full-width bars with the
+label boxed at the right) listing past/future generated weeks. "Create
+Schedule" opens a week-picker (dropdown of "Week N (date range)" options)
+plus the grid, submitting via "Generate Schedule"; editing an existing
+week reuses the same form with "Save Schedule" and a "Clear Schedule"
+reset button. Receptionist accounts see the same grid read-only (their
+"Edit Schedule" action on Upcoming items was silently opening the real
+edit modal — fixed to route non-editors to the read-only view instead)
+plus an "On Leave This Week" panel. Therapist accounts (not Team Leaders)
+see only their own assignments for a selected week, plus their own
+"Upcoming Schedule" list — fixed a routing bug where Team Leaders
+(`teamLeader: true` on a Therapist account) were being sent to this
+plain view instead of the full editable grid. Leave Request approval
+(below) writes directly into a therapist's own-week view via the
+separate `staffSchedules` collection, tagged `source: "leave"`.
+
+**New page — Leave Request ([leave-requests.html](leave-requests.html)/[.css](leave-requests.css)/[.js](leave-requests.js)):**
+`leaveRequests` collection; any account submits (Leave Type, dates,
+reason — Total Days auto-computed from the date range). Admin/Executive
+Assistant/Team Leader see all requests; opening one flips it from
+Pending to Processing, then Approve/Decline. Approving writes one
+`staffSchedules` doc per date in range (`source: "leave"`) so it shows up
+automatically on that person's Staff Schedule.
+
+**New page — Incident Report ([incident-report.html](incident-report.html)/[.css](incident-report.css)/[.js](incident-report.js)):**
+`incidentReports` collection, submit-only (no approval workflow) —
+Admin/Executive Assistant/Team Leader see a history table with full-text
+view.
+
+**Account Settings ([account-settings.html](account-settings.html)/[.js](account-settings.js)):**
+new "Enable Secondary Role: TL Floater" checkbox, available on both
+Receptionist and Therapist accounts (unlike Team Leader / secondary-role-
+Receptionist, which are Therapist-only) — saved as `tlFloater: true/false`
+on the account record, no behavior wired up yet per request (reserved for
+a later task).
+
+**Firestore rules ([firestore.rules](firestore.rules)):** new blocks for
+`announcement`, `announcementArchive`, `memos`, `memoGroups`,
+`leaveRequests`, `incidentReports`, `staffScheduleGrids`, and
+`staffNotificationsClient` (a client-writable notification feed used for
+Announcement/Memo broadcasts, kept separate from the existing
+Cloud-Function-only `staffNotifications` so that collection's server-only
+guarantee stays intact). **Known accepted gap:** Staff Schedule and Leave
+Request approve/edit writes are open to any authenticated user at the
+rules level, not restricted to Admin/Executive Assistant/Team Leader,
+because `teamLeader` is a plain field on the account record, not a
+Firebase Auth custom claim rules can check — enforcement for that case is
+UI-only for now, by the user's choice, until/unless a `syncMyRole`-style
+claim is added later. **Deployed to the live project** (`firebase deploy
+--only firestore:rules`) — this part is already live regardless of when
+the hosting files below go out.
+
+**User Manual ([manual.html](manual.html)):** new "Part Six · Admin Hub"
+(Chapters 24–28: Announcement, Memo, Staff Schedule, Leave Request,
+Incident Report), pushing the old Part Six "Reference" to Part Seven
+(Checklists/Troubleshooting renumbered 29–30). Updated the Chapter 3
+sidebar layout table and the Chapter 4 access matrix to match, and added
+a short note under Payroll (Chapter 10) pointing at its new location.
+
+**Status:** Firestore rules live; page code (HTML/CSS/JS) and the manual
+are committed locally, not yet deployed — run `firebase deploy --only
+hosting` from `Income Report/` when ready to push live.
+
+---
+
 ## 2026-08-24 — User Account: "Set as Team Leader" checkbox with auto-granted access
 
 **Requested by:** User — wanted a way to mark a Therapist as a Team Leader

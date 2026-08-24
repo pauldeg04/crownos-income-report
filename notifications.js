@@ -248,3 +248,139 @@ window.CrownServerNotifications = {
     markRead: crownMarkServerNotificationRead,
     markAllRead: crownMarkAllServerNotificationsRead
 };
+
+/* ==========================================================================
+   CrownOS — Client-writable notifications ("staffNotificationsClient")
+
+   Same shape/addressing as staffNotifications above (one doc per
+   notification, addressed by recipientEmail via crownToSyncEmail()), but
+   client-side create is allowed by the Firestore rules for this collection
+   specifically, unlike staffNotifications (Cloud-Function-only) — this is
+   how Admin Hub broadcasts (Announcement publish, Memo send) reach every
+   addressed recipient without weakening staffNotifications' server-only
+   invariant. Merged into the same bell UI by sidebar.js.
+   ========================================================================== */
+
+/* recipientAccounts: string[] of CrownOS login usernames. Writes one doc
+   per recipient via a single batch (Firestore caps batches at 500 writes,
+   so this chunks if ever needed). No-ops quietly if Firestore isn't
+   available yet or there's nothing to send. */
+function crownBroadcastClientNotifications(recipientAccounts, message, type){
+    if(
+        !window.firebase ||
+        !firebase.apps ||
+        firebase.apps.length === 0 ||
+        !Array.isArray(recipientAccounts) ||
+        recipientAccounts.length === 0
+    ){
+        return Promise.resolve();
+    }
+
+    const db = firebase.firestore();
+    const chunks = [];
+
+    for(let i = 0; i < recipientAccounts.length; i += 450){
+        chunks.push(recipientAccounts.slice(i, i + 450));
+    }
+
+    const commits = chunks.map(function(chunk){
+        const batch = db.batch();
+
+        chunk.forEach(function(account){
+            const ref = db.collection("staffNotificationsClient").doc();
+            batch.set(ref, {
+                recipientEmail: crownToSyncEmail(account),
+                message: message || "",
+                type: type || "general",
+                read: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        });
+
+        return batch.commit();
+    });
+
+    return Promise.all(commits).catch(function(error){
+        console.error("Unable to broadcast notifications:", error);
+    });
+}
+
+function crownListenClientNotifications(recipient, onChange){
+    if(
+        !window.firebase ||
+        !firebase.apps ||
+        firebase.apps.length === 0 ||
+        !recipient?.account
+    ){
+        onChange([]);
+        return function(){};
+    }
+
+    return firebase.firestore()
+        .collection("staffNotificationsClient")
+        .where("recipientEmail", "==", crownToSyncEmail(recipient.account))
+        .onSnapshot(function(snapshot){
+            const list = snapshot.docs
+                .map(function(doc){
+                    return Object.assign({ id: doc.id }, doc.data());
+                })
+                .sort(function(a, b){
+                    const aTime = a.createdAt?.toMillis?.() || 0;
+                    const bTime = b.createdAt?.toMillis?.() || 0;
+                    return bTime - aTime;
+                });
+
+            onChange(list);
+        }, function(error){
+            console.error("Unable to load client notifications:", error);
+            onChange([]);
+        });
+}
+
+function crownMarkClientNotificationRead(id){
+    if(!window.firebase || !firebase.apps || firebase.apps.length === 0 || !id){
+        return;
+    }
+
+    firebase.firestore()
+        .collection("staffNotificationsClient")
+        .doc(id)
+        .update({ read: true })
+        .catch(function(error){
+            console.error("Unable to mark client notification read:", error);
+        });
+}
+
+function crownMarkAllClientNotificationsRead(list){
+    if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
+        return;
+    }
+
+    const unread = (list || []).filter(function(item){
+        return !item.read;
+    });
+
+    if(unread.length === 0){
+        return;
+    }
+
+    const batch = firebase.firestore().batch();
+
+    unread.forEach(function(item){
+        batch.update(
+            firebase.firestore().collection("staffNotificationsClient").doc(item.id),
+            { read: true }
+        );
+    });
+
+    batch.commit().catch(function(error){
+        console.error("Unable to mark client notifications read:", error);
+    });
+}
+
+window.CrownClientNotifications = {
+    broadcast: crownBroadcastClientNotifications,
+    listenForUser: crownListenClientNotifications,
+    markRead: crownMarkClientNotificationRead,
+    markAllRead: crownMarkAllClientNotificationsRead
+};

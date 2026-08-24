@@ -990,16 +990,36 @@ body:not(.sidebar-collapsed) .app-sidebar-sub-link{
     padding-left:22px;
 }
 
-/* Replace visible section titles with subtle separators. */
+/* Section headers double as accordion toggles: click to fold/unfold the
+   items under that section without collapsing the whole sidebar (see
+   sidebar.js's per-section pendingSection/pendingGroup wiring). */
 .app-sidebar-section{
-    height:1px;
-    margin:18px 10px 12px;
-    overflow:hidden;
-    padding:0;
-    color:transparent;
-    background:rgba(255,255,255,.13);
-    font-size:0;
-    line-height:0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    width:100%;
+    margin:18px 10px 8px;
+    padding:2px 2px 6px;
+    border:none;
+    border-bottom:1px solid rgba(255,255,255,.13);
+    background:transparent;
+    color:var(--gold);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.11em;
+    text-transform:uppercase;
+    text-align:left;
+    cursor:pointer;
+}
+
+.app-sidebar-section-chevron{
+    font-size:10px;
+    opacity:.8;
+}
+
+.app-sidebar-section-group.collapsed{
+    display:none;
 }
 
 /* Refined text navigation states. */
@@ -1035,6 +1055,13 @@ body:not(.sidebar-collapsed) .app-sidebar-link.active{
         height:1px;
         margin:15px auto 11px;
         background:rgba(255,255,255,.14);
+        pointer-events:none;
+    }
+
+    /* Icon-only mode has no room for a folded label — always show every
+       item's icon regardless of any section's per-group collapse state. */
+    body.sidebar-collapsed .app-sidebar-section-group.collapsed{
+        display:block;
     }
 }
 

@@ -91,7 +91,12 @@
         "Attendance": "◷",
         "Warehouse": "▣",
         "Branches": "▥",
-        "Inventory Settings": "▤"
+        "Inventory Settings": "▤",
+        "Announcement": "◎",
+        "Memo": "✎",
+        "Staff Schedule": "▧",
+        "Leave Request": "⌘",
+        "Incident Report": "!"
     };
 
     const MENU_ITEMS = [
@@ -118,12 +123,6 @@
         },
 
         {
-            label: "Payroll",
-            href: "payroll.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent"]
-        },
-
-        {
             label: "Sales Invoice Summary",
             href: "invoice-report.html",
             roles: ["Admin", "Executive Assistant", "Receptionist"]
@@ -145,6 +144,45 @@
             label: "Booking Requests",
             href: "booking-requests.html",
             roles: ["Admin", "Executive Assistant", "Receptionist"]
+        },
+
+        { section: "Admin Hub" },
+
+        {
+            label: "Announcement",
+            href: "admin-announcement.html",
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device"]
+        },
+
+        {
+            label: "Memo",
+            href: "memos.html",
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device"]
+        },
+
+        {
+            label: "Staff Schedule",
+            href: "staff-schedule.html",
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist"]
+        },
+
+        {
+            label: "Leave Request",
+            href: "leave-requests.html",
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent"]
+        },
+
+        {
+            label: "Incident Report",
+            href: "incident-report.html",
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent"]
+        },
+
+        {
+            label: "Payroll",
+            href: "payroll.html",
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent"],
+            sub: true
         },
 
         { section: "Inventory" },
@@ -391,18 +429,61 @@
             );
 
         let pendingSection = null;
+        let pendingGroup = null;
         let sectionVisible = false;
 
         MENU_ITEMS.forEach(function(item){
             if(item.section){
                 pendingSection =
-                    document.createElement("div");
+                    document.createElement("button");
+
+                pendingSection.type = "button";
 
                 pendingSection.className =
                     "app-sidebar-section";
 
-                pendingSection.textContent =
-                    item.section;
+                const sectionCollapseKey =
+                    "crownSidebarSectionCollapsed:" + item.section;
+
+                const startCollapsed =
+                    localStorage.getItem(sectionCollapseKey) === "true";
+
+                pendingSection.innerHTML = `
+                    <span>${escapeHtml(item.section)}</span>
+                    <span class="app-sidebar-section-chevron" aria-hidden="true">${startCollapsed ? "▸" : "▾"}</span>
+                `;
+
+                pendingGroup =
+                    document.createElement("div");
+
+                pendingGroup.className =
+                    "app-sidebar-section-group" +
+                    (startCollapsed ? " collapsed" : "");
+
+                /* pendingSection/pendingGroup are reassigned on every
+                   {section} entry in MENU_ITEMS, so a closure over those
+                   outer variables would see whatever they happened to
+                   hold by the time a click actually fires — in practice
+                   always the LAST section built (Settings), which is why
+                   only Settings ever collapsed correctly and every other
+                   header silently toggled Settings' group instead. Snapshot
+                   this iteration's group directly onto the button (and use
+                   `this` for the button itself) so each header only ever
+                   affects its own group. */
+                pendingSection._targetGroup = pendingGroup;
+
+                pendingSection.addEventListener("click", function(){
+                    const collapsed =
+                        this._targetGroup.classList.toggle("collapsed");
+
+                    localStorage.setItem(
+                        sectionCollapseKey,
+                        String(collapsed)
+                    );
+
+                    this.querySelector(".app-sidebar-section-chevron").textContent =
+                        collapsed ? "▸" : "▾";
+                });
 
                 sectionVisible = false;
                 return;
@@ -425,6 +506,10 @@
             ){
                 nav.appendChild(
                     pendingSection
+                );
+
+                nav.appendChild(
+                    pendingGroup
                 );
 
                 sectionVisible = true;
@@ -491,7 +576,7 @@
                 );
             }
 
-            nav.appendChild(link);
+            (pendingGroup || nav).appendChild(link);
         });
 
         sidebar.appendChild(collapseButton);
@@ -1049,6 +1134,7 @@
        runs before the toolbar element is attached to the document. */
 
     let serverNotificationsCache = [];
+    let clientNotificationsCache = [];
     let notificationToolbarEl = null;
 
     /* Any logged-in Therapist or Receptionist can receive notifications —
@@ -1068,10 +1154,6 @@
 
         const effectiveRole =
             window.CrownAuth?.getEffectiveRole?.(user) || user.role;
-
-        if(effectiveRole !== "Therapist" && effectiveRole !== "Receptionist"){
-            return null;
-        }
 
         return {
             account: String(user.account || "").trim(),
@@ -1131,6 +1213,7 @@
             .addEventListener("click", function(){
                 CrownNotifications.markAllRead(recipient);
                 window.CrownServerNotifications?.markAllRead?.(serverNotificationsCache);
+                window.CrownClientNotifications?.markAllRead?.(clientNotificationsCache);
                 renderNotificationPanel(recipient);
                 updateNotificationBadge(recipient);
             });
@@ -1154,15 +1237,26 @@
             }
         });
 
+        window.CrownClientNotifications?.listenForUser?.(recipient, function(list){
+            clientNotificationsCache = list;
+            updateNotificationBadge(recipient);
+
+            if(!panel.classList.contains("d-none")){
+                renderNotificationPanel(recipient);
+            }
+        });
+
         updateNotificationBadge(recipient);
     }
 
     /* Combines the client-owned local list (CrownNotifications, mirrored
        from localStorage) with the live server-created list
        (staffNotifications, e.g. new booking requests for a Receptionist
-       — see notifications.js / notifyReceptionistsOnNewBookingRequest),
-       newest first. Server entries are tagged source:"server" so
-       mark-read routes to the right backend. */
+       — see notifications.js / notifyReceptionistsOnNewBookingRequest)
+       and the client-writable Admin Hub broadcast list
+       (staffNotificationsClient — Announcement publishes, Memo sends),
+       newest first. Entries are tagged by source so mark-read routes to
+       the right backend. */
     function getMergedNotifications(recipient){
         const local =
             CrownNotifications.getForUser(recipient)
@@ -1178,7 +1272,15 @@
                 });
             });
 
-        return local.concat(server).sort(function(a, b){
+        const client =
+            clientNotificationsCache.map(function(item){
+                return Object.assign({}, item, {
+                    source: "client",
+                    createdAt: item.createdAt?.toDate?.().toISOString() || null
+                });
+            });
+
+        return local.concat(server, client).sort(function(a, b){
             return (
                 new Date(b.createdAt || 0) -
                 new Date(a.createdAt || 0)
@@ -1247,6 +1349,8 @@
                 row.addEventListener("click", function(){
                     if(row.dataset.source === "server"){
                         CrownServerNotifications.markRead(row.dataset.id);
+                    }else if(row.dataset.source === "client"){
+                        window.CrownClientNotifications?.markRead?.(row.dataset.id);
                     }else{
                         CrownNotifications.markRead(row.dataset.id);
                     }
@@ -1302,7 +1406,12 @@
             "invoice-report.html": "Sales Invoice Summary",
             "inventory-warehouse.html": "Warehouse",
             "inventory-branches.html": "Branches",
-            "inventory-items.html": "Inventory Settings"
+            "inventory-items.html": "Inventory Settings",
+            "admin-announcement.html": "Announcement",
+            "memos.html": "Memo",
+            "staff-schedule.html": "Staff Schedule",
+            "leave-requests.html": "Leave Request",
+            "incident-report.html": "Incident Report"
         };
 
         return titles[currentPage] || "CrownOS";

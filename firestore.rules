@@ -131,5 +131,130 @@ service cloud.firestore {
       allow read, write: if request.auth != null &&
         request.auth.token.role in ['Admin', 'Executive Assistant'];
     }
+
+    /* --- Admin Hub collections --- */
+
+    /* Single-slot announcement, doc id always "current". Only Admin may
+       publish/overwrite; everyone authenticated may read it. */
+    match /announcement/{docId} {
+      allow get, list: if request.auth != null;
+      allow create, update: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
+      allow delete: if false;
+    }
+
+    /* Archived announcements, one doc per "Send to Archive" action (see
+       admin-announcement.js). Admin/Executive Assistant only, both to
+       write and to browse the archive — matches the current announcement
+       collection's editor permissions. */
+    match /announcementArchive/{docId} {
+      allow create: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
+      allow get, list: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
+      allow update, delete: if false;
+    }
+
+    /* Memo mailbox. Admin/Executive Assistant compose; any authenticated
+       recipient may acknowledge by writing ONLY their own key (their sync
+       email, request.auth.token.email) under acknowledgements. Reads are
+       blanket-authenticated (see appData note above for why Firestore
+       rules can't cleanly filter "sender OR array-contains(recipients)"
+       as a read condition) — the client queries narrowly, this rule just
+       can't enforce that narrowing itself. */
+    match /memos/{memoId} {
+      allow create: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
+      allow get, list: if request.auth != null;
+      allow update: if request.auth != null &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['acknowledgements']) &&
+        request.resource.data.acknowledgements.diff(resource.data.get('acknowledgements', {}))
+          .affectedKeys().hasOnly([request.auth.token.email]);
+      allow delete: if false;
+    }
+
+    /* Leave requests. A staff member creates their own Pending request
+       (requesterEmail must match their own sync email). Any authenticated
+       user may flip Pending->Processing (opening the review modal) or
+       Processing->Approved/Declined — this is intentionally NOT restricted
+       to Admin/Executive Assistant/Team Leader at the rules level, because
+       "Team Leader" is a boolean flag on the account record, not a Firebase
+       Auth custom claim, so rules cannot see it; access is gated in the
+       CrownOS UI instead (accepted gap, see WORK_LOG.md). The requester
+       may cancel their own still-open request. */
+    match /leaveRequests/{requestId} {
+      allow create: if request.auth != null &&
+        request.resource.data.requesterEmail == request.auth.token.email &&
+        request.resource.data.status == 'Pending';
+      allow get, list: if request.auth != null;
+      allow update: if request.auth != null && (
+        (resource.data.status == 'Pending' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'processingAt', 'processingBy']) &&
+          request.resource.data.status == 'Processing')
+        ||
+        (resource.data.status == 'Processing' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedAt', 'reviewedBy']) &&
+          request.resource.data.status in ['Approved', 'Declined'])
+        ||
+        (resource.data.requesterEmail == request.auth.token.email &&
+          resource.data.status in ['Pending', 'Processing'] &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelReason']) &&
+          request.resource.data.status == 'Canceled')
+      );
+      allow delete: if false;
+    }
+
+    /* Incident reports. Submit-only log, no workflow/status. */
+    match /incidentReports/{reportId} {
+      allow create: if request.auth != null &&
+        request.resource.data.reportedByEmail == request.auth.token.email;
+      allow get, list: if request.auth != null;
+      allow update, delete: if false;
+    }
+
+    /* Staff duty roster, one doc per (branch, date, staffAccount). Create
+       is intentionally open to any authenticated user for the same
+       "Team Leader isn't a custom claim" reason as leaveRequests above —
+       gated to Admin/Executive Assistant/Team Leader in the CrownOS UI. */
+    match /staffSchedules/{scheduleId} {
+      allow get, list: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    /* Named recipient groups for faster Memo composing (see memos.js
+       "Create Group"). Same editor set as memo composing itself. */
+    match /memoGroups/{groupId} {
+      allow create, update, delete: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
+      allow get, list: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
+    }
+
+    /* Weekly Staff Schedule grid (Opening/Closing/Line Up rows per
+       branch+week, see staff-schedule.js) — one doc per (branch,
+       weekStartDate). Create/update is intentionally open to any
+       authenticated user for the same "Team Leader isn't a custom claim"
+       reason as staffSchedules below; gated to Admin/Executive
+       Assistant/Team Leader in the CrownOS UI. Readable by everyone so a
+       Therapist can see their own row. */
+    match /staffScheduleGrids/{gridId} {
+      allow get, list: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    /* Client-writable notification feed for Admin Hub broadcasts
+       (Announcement publish, Memo send) — kept separate from the
+       Cloud-Function-only /staffNotifications above so that collection's
+       server-only invariant stays intact. A recipient may only read their
+       own notifications and may only ever flip "read". */
+    match /staffNotificationsClient/{notificationId} {
+      allow create: if request.auth != null;
+      allow get, list: if request.auth != null &&
+        request.auth.token.email == resource.data.recipientEmail;
+      allow update: if request.auth != null &&
+        request.auth.token.email == resource.data.recipientEmail &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if false;
+    }
   }
 }

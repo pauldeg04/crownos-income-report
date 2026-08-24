@@ -166,6 +166,13 @@ function attachEvents(){
         .getElementById("userRoleInput")
         .addEventListener(
             "change",
+            updateTlFloaterFieldState
+        );
+
+    document
+        .getElementById("userRoleInput")
+        .addEventListener(
+            "change",
             function(){
                 renderExtraAccessCheckboxes(
                     getSelectedExtraAccess()
@@ -386,6 +393,11 @@ function openCreateUserModal(){
 
     updateTeamLeaderFieldState();
 
+    document.getElementById("tlFloaterInput").checked =
+        false;
+
+    updateTlFloaterFieldState();
+
     renderBranchCheckboxes([]);
     renderLinkedTherapistOptions("");
     updateLinkedTherapistFieldState();
@@ -473,6 +485,11 @@ function openEditUserModal(userId){
         user.teamLeader === true;
 
     updateTeamLeaderFieldState();
+
+    document.getElementById("tlFloaterInput").checked =
+        user.tlFloater === true;
+
+    updateTlFloaterFieldState();
 
     renderExtraAccessCheckboxes(
         Array.isArray(user.extraAccess)
@@ -749,6 +766,37 @@ function updateTeamLeaderFieldState(){
     }
 }
 
+/* TL Floater — reserved for an upcoming feature, no behavior wired up
+   yet beyond saving the flag. Available on Receptionist and Therapist
+   accounts (unlike Team Leader / secondary-role-Receptionist, which are
+   Therapist-only). */
+function updateTlFloaterFieldState(){
+    const role =
+        document.getElementById("userRoleInput").value;
+
+    const field =
+        document.getElementById("tlFloaterField");
+
+    const checkbox =
+        document.getElementById("tlFloaterInput");
+
+    if(!field || !checkbox){
+        return;
+    }
+
+    const isEligibleRole =
+        role === "Therapist" || role === "Receptionist";
+
+    field.classList.toggle(
+        "d-none",
+        !isEligibleRole
+    );
+
+    if(!isEligibleRole){
+        checkbox.checked = false;
+    }
+}
+
 function renderExtraAccessCheckboxes(selectedPages = []){
     const container =
         document.getElementById("extraAccessCheckboxList");
@@ -898,6 +946,12 @@ async function saveUserAccount(){
         role === "Therapist" &&
         document
             .getElementById("teamLeaderInput")
+            .checked;
+
+    const tlFloater =
+        (role === "Therapist" || role === "Receptionist") &&
+        document
+            .getElementById("tlFloaterInput")
             .checked;
 
     const compensationSchedule =
@@ -1072,6 +1126,7 @@ async function saveUserAccount(){
                 : "";
         user.secondaryRole = secondaryRole;
         user.teamLeader = teamLeader;
+        user.tlFloater = tlFloater;
         user.extraAccess = extraAccess;
         user.compensationSchedule = compensationSchedule;
         user.hiddenFromAdminGroup = hiddenFromAdminGroup;
@@ -1143,6 +1198,7 @@ async function saveUserAccount(){
                     : "",
             secondaryRole: secondaryRole,
             teamLeader: teamLeader,
+            tlFloater: tlFloater,
             extraAccess: extraAccess,
             status: status,
             compensationSchedule: compensationSchedule,

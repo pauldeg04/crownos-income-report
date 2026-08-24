@@ -1,0 +1,138 @@
+/* Page-specific styles for Leave Request. */
+
+.empty-state{
+    padding:26px;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border-radius:var(--radius-md);
+    text-align:center;
+}
+
+.leave-table{
+    margin-bottom:0;
+    min-width:700px;
+}
+
+.leave-table th{
+    background:var(--surface-soft);
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    border-bottom:2px solid var(--border);
+    padding:10px 12px;
+    white-space:nowrap;
+}
+
+.leave-table td{
+    padding:10px 12px;
+    font-size:13px;
+    color:var(--ink);
+    border-color:var(--border-light);
+    vertical-align:top;
+}
+
+.leave-type-options{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+}
+
+.leave-type-option{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:13px;
+}
+
+/* ---- Modals ---- */
+
+.leave-modal-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:2300;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(11,24,73,.55);
+    padding:20px;
+}
+
+.leave-modal{
+    width:100%;
+    max-width:640px;
+    max-height:90vh;
+    display:flex;
+    flex-direction:column;
+    background:#fff;
+    border-radius:var(--radius-lg);
+    box-shadow:0 22px 60px rgba(7,16,51,.35);
+    overflow:hidden;
+}
+
+.leave-modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 22px;
+    background:linear-gradient(120deg,var(--navy),var(--navy-soft));
+    color:#fff;
+}
+
+.leave-modal-header h4{
+    margin:0;
+    color:#fff;
+    font-weight:800;
+}
+
+.leave-modal-close{
+    border:none;
+    background:transparent;
+    color:#fff;
+    font-size:24px;
+    line-height:1;
+    cursor:pointer;
+    opacity:.85;
+}
+
+.leave-modal-close:hover{
+    opacity:1;
+}
+
+.leave-modal-body{
+    padding:22px;
+    overflow-y:auto;
+}
+
+.leave-modal-footer{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    padding:16px 22px;
+    border-top:1px solid var(--border-light);
+    background:var(--surface-soft);
+}
+
+.leave-view-row{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:8px 0;
+    border-bottom:1px solid var(--border-light);
+    font-size:13px;
+}
+
+.leave-view-row strong{
+    color:var(--muted);
+    font-weight:700;
+    text-transform:uppercase;
+    font-size:11px;
+    letter-spacing:.05em;
+}
+
+.leave-view-row span{
+    color:var(--ink);
+    text-align:right;
+    white-space:pre-wrap;
+}

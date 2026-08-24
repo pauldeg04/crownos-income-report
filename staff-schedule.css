@@ -1,0 +1,401 @@
+/* Page-specific styles for Staff Schedule. */
+
+.empty-state{
+    padding:20px;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border-radius:var(--radius-md);
+    text-align:center;
+}
+
+/* ---- Toolbar (Branch / Week) ---- */
+
+.schedule-toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:14px;
+    margin-bottom:18px;
+}
+
+.schedule-toolbar-fields{
+    display:flex;
+    flex-wrap:wrap;
+    gap:18px;
+}
+
+.schedule-field label{
+    display:block;
+    color:var(--navy);
+    font-weight:800;
+    font-size:12px;
+    margin-bottom:4px;
+}
+
+.schedule-field select,
+.schedule-field .date-stepper-group input[type="date"]{
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    padding:6px 10px;
+    font-size:13px;
+    color:var(--ink);
+    background:#fff;
+}
+
+/* ---- Weekly grid (Admin / Executive Assistant / Team Leader) ---- */
+
+.schedule-band-title{
+    background:linear-gradient(120deg,var(--navy),var(--navy-soft));
+    color:#fff;
+    font-weight:800;
+    font-size:20px;
+    letter-spacing:.03em;
+    text-align:center;
+    padding:14px 10px;
+    border-radius:var(--radius-md);
+    margin-bottom:16px;
+}
+
+.schedule-section-table{
+    width:100%;
+    min-width:780px;
+    border-collapse:collapse;
+    table-layout:fixed;
+    border:1px solid var(--navy);
+}
+
+.schedule-section-table col.schedule-label-col{
+    width:130px;
+}
+
+.schedule-section-table th,
+.schedule-section-table td{
+    border:1px solid var(--border);
+    padding:9px 10px;
+    text-align:center;
+    font-size:12px;
+    vertical-align:middle;
+}
+
+.schedule-section-title{
+    background:var(--navy-soft);
+    color:var(--gold-soft);
+    font-weight:800;
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    text-align:left;
+    padding-left:12px;
+}
+
+.schedule-day-header{
+    background:var(--surface-soft);
+    color:var(--muted);
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    font-size:11px;
+    border-bottom:2px solid var(--border);
+}
+
+.schedule-day-date{
+    display:inline-block;
+    margin-top:2px;
+    color:var(--soft-text);
+    font-weight:700;
+    text-transform:none;
+    letter-spacing:normal;
+    font-size:10px;
+}
+
+.schedule-row-label{
+    background:var(--surface-soft);
+    color:var(--navy);
+    font-weight:800;
+    font-size:12px;
+    text-align:left;
+    padding-left:12px;
+}
+
+.schedule-cell{
+    min-width:100px;
+    color:var(--ink);
+    font-weight:600;
+}
+
+.schedule-cell select,
+.schedule-cell input{
+    width:100%;
+    border:none;
+    background:transparent;
+    text-align:center;
+    font-weight:600;
+    font-size:12px;
+    color:inherit;
+}
+
+.schedule-remove-col{
+    width:34px;
+    padding:0 !important;
+}
+
+.schedule-row-remove-btn{
+    border:none;
+    background:transparent;
+    color:var(--state-red);
+    font-size:16px;
+    line-height:1;
+    cursor:pointer;
+}
+
+.schedule-row-remove-btn:hover{
+    color:var(--state-red-dark);
+}
+
+.schedule-add-row{
+    margin:8px 2px 0;
+}
+
+.schedule-add-link{
+    border:none;
+    background:transparent;
+    color:var(--gold-dark);
+    font-weight:800;
+    font-style:italic;
+    font-size:13px;
+    padding:0;
+    cursor:pointer;
+}
+
+.schedule-add-link:hover{
+    text-decoration:underline;
+}
+
+.schedule-notes-cell{
+    text-align:left;
+}
+
+.schedule-notes-cell textarea,
+.schedule-notes-cell span{
+    width:100%;
+    border:none;
+    background:transparent;
+    font-size:12px;
+    color:var(--ink);
+    resize:vertical;
+}
+
+/* ---- Therapist's own week ---- */
+
+.schedule-own-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.schedule-own-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 14px;
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-md);
+}
+
+.schedule-own-week-heading{
+    color:var(--gold-dark);
+    font-weight:800;
+    font-size:12px;
+    letter-spacing:.03em;
+    margin:4px 0 8px;
+}
+
+.schedule-own-item-day{
+    font-weight:800;
+    color:var(--navy);
+}
+
+.schedule-own-item-role{
+    color:var(--muted);
+    font-size:12px;
+}
+
+/* ---- On Leave list ---- */
+
+.schedule-leave-list{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+
+.schedule-leave-chip{
+    padding:6px 12px;
+    background:var(--gold-soft);
+    border:1px solid var(--accent-border);
+    border-radius:999px;
+    font-size:12px;
+    color:var(--gold-dark);
+    font-weight:700;
+}
+
+/* ---- View / Create / Edit modals ---- */
+
+.schedule-modal-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:2300;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(11,24,73,.55);
+    padding:20px;
+}
+
+.schedule-edit-modal{
+    width:100%;
+    max-width:900px;
+    max-height:90vh;
+    display:flex;
+    flex-direction:column;
+    background:#fff;
+    border-radius:var(--radius-lg);
+    box-shadow:0 22px 60px rgba(7,16,51,.35);
+    overflow:hidden;
+}
+
+.schedule-modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 22px;
+    background:linear-gradient(120deg,var(--navy),var(--navy-soft));
+    color:#fff;
+}
+
+.schedule-modal-header h4{
+    margin:0;
+    color:#fff;
+    font-weight:800;
+}
+
+.schedule-modal-close{
+    border:none;
+    background:transparent;
+    color:#fff;
+    font-size:24px;
+    line-height:1;
+    cursor:pointer;
+    opacity:.85;
+}
+
+.schedule-modal-close:hover{
+    opacity:1;
+}
+
+.schedule-modal-body{
+    padding:22px;
+    overflow-y:auto;
+}
+
+.schedule-modal-footer{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    padding:16px 22px;
+    border-top:1px solid var(--border-light);
+    background:var(--surface-soft);
+}
+
+/* Collapsible History / Upcoming banners — a full-width bar with the
+   label boxed at the right end, echoing the OPENING/CLOSING/REST DAY
+   section bands above but in a neutral tone so they read as "more below"
+   rather than another schedule section. */
+.schedule-collapse-band{
+    display:flex;
+    align-items:stretch;
+    width:100%;
+    border:1px solid var(--navy);
+    border-radius:var(--radius-md);
+    padding:0;
+    background:none;
+    cursor:pointer;
+    overflow:hidden;
+}
+
+.schedule-collapse-fill{
+    flex:1;
+    background:var(--navy-soft);
+    min-height:38px;
+}
+
+.schedule-collapse-label{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-width:220px;
+    padding:8px 18px;
+    background:#fff;
+    border-left:1px solid var(--navy);
+    color:var(--navy);
+    font-weight:800;
+    font-size:14px;
+}
+
+.schedule-collapse-band[aria-expanded="true"] .schedule-collapse-label{
+    background:var(--gold-soft);
+    color:var(--gold-dark);
+}
+
+.schedule-collapse-body{
+    margin-top:12px;
+    padding:16px;
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-md);
+    background:var(--surface-soft);
+}
+
+.schedule-week-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.schedule-week-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    padding:12px 14px;
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-md);
+}
+
+.schedule-week-item-label{
+    font-weight:800;
+    color:var(--navy);
+}
+
+.schedule-week-item-range{
+    display:block;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:600;
+}
+
+#scheduleEditWeekWrap select{
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    padding:6px 10px;
+    font-size:13px;
+    color:var(--ink);
+    background:#fff;
+    min-width:280px;
+}
+
+#scheduleEditWeekWrap select[disabled]{
+    background:var(--surface-soft);
+    color:var(--muted);
+}

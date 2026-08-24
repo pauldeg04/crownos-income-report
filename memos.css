@@ -1,0 +1,184 @@
+/* Page-specific styles for Memo. */
+
+.empty-state{
+    padding:26px;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border-radius:var(--radius-md);
+    text-align:center;
+}
+
+.memo-list{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.memo-card{
+    padding:16px;
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-md);
+}
+
+.memo-card-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:8px;
+}
+
+.memo-subject{
+    color:var(--navy);
+    font-weight:800;
+    margin:0;
+}
+
+.memo-meta{
+    color:var(--muted);
+    font-size:11px;
+    font-weight:600;
+}
+
+.memo-body{
+    white-space:pre-wrap;
+    color:var(--ink);
+    font-size:13px;
+    margin-bottom:10px;
+}
+
+.memo-ack-list{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    margin-top:8px;
+    padding-top:8px;
+    border-top:1px solid var(--border-light);
+}
+
+.memo-ack-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+}
+
+.memo-ack-row.acked{
+    color:#1a7d3c;
+}
+
+.memo-ack-row.pending{
+    color:var(--muted);
+}
+
+/* ---- Compose modal ---- */
+
+.memo-modal-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:2300;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(11,24,73,.55);
+    padding:20px;
+}
+
+.memo-modal{
+    width:100%;
+    max-width:560px;
+    max-height:90vh;
+    display:flex;
+    flex-direction:column;
+    background:#fff;
+    border-radius:var(--radius-lg);
+    box-shadow:0 22px 60px rgba(7,16,51,.35);
+    overflow:hidden;
+}
+
+.memo-modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 22px;
+    background:linear-gradient(120deg,var(--navy),var(--navy-soft));
+    color:#fff;
+}
+
+.memo-modal-header h4{
+    margin:0;
+    color:#fff;
+    font-weight:800;
+}
+
+.memo-modal-close{
+    border:none;
+    background:transparent;
+    color:#fff;
+    font-size:24px;
+    line-height:1;
+    cursor:pointer;
+    opacity:.85;
+}
+
+.memo-modal-close:hover{
+    opacity:1;
+}
+
+.memo-modal-body{
+    padding:22px;
+    overflow-y:auto;
+}
+
+.memo-modal-footer{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    padding:16px 22px;
+    border-top:1px solid var(--border-light);
+    background:var(--surface-soft);
+}
+
+.memo-recipient-list{
+    max-height:220px;
+    overflow-y:auto;
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-md);
+    padding:10px 12px;
+}
+
+.memo-recipient-option{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:4px 0;
+    font-size:13px;
+}
+
+.memo-group-existing-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:6px;
+}
+
+.memo-group-existing-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:8px 10px;
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-md);
+    font-size:13px;
+}
+
+.memo-group-existing-item strong{
+    color:var(--navy);
+}
+
+.memo-group-existing-item small{
+    display:block;
+    color:var(--muted);
+}

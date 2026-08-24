@@ -177,6 +177,47 @@
 
         "inventory-branches.html": [
             "Admin"
+        ],
+
+        "admin-announcement.html": [
+            "Admin",
+            "Executive Assistant",
+            "Receptionist",
+            "Therapist",
+            "Marketing Agent",
+            "Branch Device"
+        ],
+
+        "memos.html": [
+            "Admin",
+            "Executive Assistant",
+            "Receptionist",
+            "Therapist",
+            "Marketing Agent",
+            "Branch Device"
+        ],
+
+        "staff-schedule.html": [
+            "Admin",
+            "Executive Assistant",
+            "Receptionist",
+            "Therapist"
+        ],
+
+        "leave-requests.html": [
+            "Admin",
+            "Executive Assistant",
+            "Receptionist",
+            "Therapist",
+            "Marketing Agent"
+        ],
+
+        "incident-report.html": [
+            "Admin",
+            "Executive Assistant",
+            "Receptionist",
+            "Therapist",
+            "Marketing Agent"
         ]
     };
 
