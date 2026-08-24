@@ -113,9 +113,9 @@ Incident Report), pushing the old Part Six "Reference" to Part Seven
 sidebar layout table and the Chapter 4 access matrix to match, and added
 a short note under Payroll (Chapter 10) pointing at its new location.
 
-**Status:** Firestore rules live; page code (HTML/CSS/JS) and the manual
-are committed locally, not yet deployed — run `firebase deploy --only
-hosting` from `Income Report/` when ready to push live.
+**Deployed:** `firebase deploy --only firestore:rules` and `firebase
+deploy --only hosting` from `Income Report/`. Live at
+`crownos-5f03d.web.app`.
 
 ---
 
