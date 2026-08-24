@@ -29,6 +29,32 @@ const EXTRA_ACCESS_PAGES = [
     { href: "inventory-items.html", label: "Inventory - Settings" }
 ];
 
+/* Set as Team Leader auto-grants these on top of the plain Therapist
+   default, so a Team Leader doesn't also need someone to manually tick
+   them under Additional Access. */
+const TEAM_LEADER_AUTO_ACCESS_PAGES = [
+    "index.html",
+    "statistics.html",
+    "scheduling.html"
+];
+
+function applyTeamLeaderAutoAccess(){
+    if(!document.getElementById("teamLeaderInput").checked){
+        return;
+    }
+
+    TEAM_LEADER_AUTO_ACCESS_PAGES.forEach(function(href){
+        const checkbox =
+            document.querySelector(
+                `.extra-access-checkbox[value="${href}"]`
+            );
+
+        if(checkbox){
+            checkbox.checked = true;
+        }
+    });
+}
+
 document.addEventListener("DOMContentLoaded", async function(){
     await CrownAuth.ensureDefaultAdmin();
 
@@ -120,6 +146,20 @@ function attachEvents(){
         .addEventListener(
             "change",
             updateSecondaryRoleFieldState
+        );
+
+    document
+        .getElementById("userRoleInput")
+        .addEventListener(
+            "change",
+            updateTeamLeaderFieldState
+        );
+
+    document
+        .getElementById("teamLeaderInput")
+        .addEventListener(
+            "change",
+            applyTeamLeaderAutoAccess
         );
 
     document
@@ -341,6 +381,11 @@ function openCreateUserModal(){
 
     updateSecondaryRoleFieldState();
 
+    document.getElementById("teamLeaderInput").checked =
+        false;
+
+    updateTeamLeaderFieldState();
+
     renderBranchCheckboxes([]);
     renderLinkedTherapistOptions("");
     updateLinkedTherapistFieldState();
@@ -424,11 +469,18 @@ function openEditUserModal(userId){
 
     updateSecondaryRoleFieldState();
 
+    document.getElementById("teamLeaderInput").checked =
+        user.teamLeader === true;
+
+    updateTeamLeaderFieldState();
+
     renderExtraAccessCheckboxes(
         Array.isArray(user.extraAccess)
             ? user.extraAccess
             : []
     );
+
+    applyTeamLeaderAutoAccess();
 
     document.getElementById("saveUserBtn").textContent =
         "Update Account";
@@ -670,6 +722,33 @@ function updateSecondaryRoleFieldState(){
     }
 }
 
+function updateTeamLeaderFieldState(){
+    const role =
+        document.getElementById("userRoleInput").value;
+
+    const field =
+        document.getElementById("teamLeaderField");
+
+    const checkbox =
+        document.getElementById("teamLeaderInput");
+
+    if(!field || !checkbox){
+        return;
+    }
+
+    const isTherapistRole =
+        role === "Therapist";
+
+    field.classList.toggle(
+        "d-none",
+        !isTherapistRole
+    );
+
+    if(!isTherapistRole){
+        checkbox.checked = false;
+    }
+}
+
 function renderExtraAccessCheckboxes(selectedPages = []){
     const container =
         document.getElementById("extraAccessCheckboxList");
@@ -814,6 +893,12 @@ async function saveUserAccount(){
             .checked
             ? "Receptionist"
             : "";
+
+    const teamLeader =
+        role === "Therapist" &&
+        document
+            .getElementById("teamLeaderInput")
+            .checked;
 
     const compensationSchedule =
         document
@@ -986,6 +1071,7 @@ async function saveUserAccount(){
                 ? linkedTherapistName
                 : "";
         user.secondaryRole = secondaryRole;
+        user.teamLeader = teamLeader;
         user.extraAccess = extraAccess;
         user.compensationSchedule = compensationSchedule;
         user.hiddenFromAdminGroup = hiddenFromAdminGroup;
@@ -1056,6 +1142,7 @@ async function saveUserAccount(){
                     ? linkedTherapistName
                     : "",
             secondaryRole: secondaryRole,
+            teamLeader: teamLeader,
             extraAccess: extraAccess,
             status: status,
             compensationSchedule: compensationSchedule,

@@ -4,6 +4,46 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-24 — User Account: "Set as Team Leader" checkbox with auto-granted access
+
+**Requested by:** User — wanted a way to mark a Therapist as a Team Leader
+when creating/editing their account, with its actual behavior to be defined
+in a later task; then asked for it to automatically grant the pages a Team
+Leader needs. Also asked to drop the helper text under Enable Secondary
+Role: Receptionist.
+
+**Change ([account-settings.html](account-settings.html)):** new "Set as
+Team Leader" checkbox directly under Enable Secondary Role: Receptionist,
+inside a `#teamLeaderField` container that shows only when Type of User is
+Therapist — same show/hide pattern as the Secondary Role field next to it.
+Also removed the Secondary Role field's `<small>` helper text per request.
+
+**Change ([account-settings.js](account-settings.js)):**
+- `updateTeamLeaderFieldState()` mirrors `updateSecondaryRoleFieldState()`:
+  shows the field only for Therapist, force-unchecks it otherwise.
+- The checkbox state is reset on new-account, populated on edit
+  (`user.teamLeader === true`), and saved as a plain `teamLeader: true/false`
+  field on the user record — same as `secondaryRole` — with no behavior
+  attached to it yet.
+- `applyTeamLeaderAutoAccess()`: when the checkbox is checked, auto-checks
+  the three `.extra-access-checkbox` boxes for `index.html` (Daily Income
+  Report), `statistics.html`, and `scheduling.html`, so they get saved into
+  `extraAccess` like any manually-granted page. Wired to the checkbox's own
+  `change` event, and also re-applied when opening an existing Team
+  Leader's account for edit (so accounts marked Team Leader before this
+  existed self-heal to the same access on next edit+save). Unchecking Team
+  Leader does not strip access already granted — intentional, admin removes
+  it manually under Additional Access if needed.
+
+**Not yet implemented:** what "Team Leader" actually changes beyond page
+access (the user said this comes in a later task).
+
+**Status:** Code changed locally, not yet deployed — run
+`firebase deploy --only hosting` from `Income Report/` when ready to push
+live.
+
+---
+
 ## 2026-08-22 — Booking confirmation modal: styled the Email/SMS options box
 
 **Requested by:** User — the "Send booking confirmation?" popup's Email/SMS
