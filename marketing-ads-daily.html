@@ -45,7 +45,6 @@
                 </div>
 
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-outline-primary" id="marketingHistoryBtn">History</button>
                     <button type="button" class="btn btn-primary" id="marketingCreateCampaignBtn">+ Create Campaign</button>
                     <a href="home.html" class="btn-dashboard text-decoration-none">
                         ← Back to Dashboard
@@ -61,6 +60,34 @@
     <div class="card shadow-sm border-0 d-none" id="marketingEmptyCard">
         <div class="card-body">
             <div class="empty-state">No campaigns yet. Click "Create Campaign" to start one.</div>
+        </div>
+    </div>
+
+    <!-- History (archived campaigns) — collapsed by default, own section
+         at the bottom so it doesn't crowd the active campaigns above. -->
+    <div class="card shadow-sm border-0 mt-4">
+        <div class="card-body">
+            <button type="button" class="marketing-collapse-toggle" id="marketingHistoryToggle">
+                <span>History (Archived Campaigns)</span>
+                <span class="marketing-collapse-chevron" aria-hidden="true">▸</span>
+            </button>
+
+            <div class="marketing-collapse-body d-none" id="marketingHistoryBody">
+                <div class="table-responsive">
+                    <table class="table marketing-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Campaign</th>
+                                <th>Archived</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="marketingHistoryTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="empty-state d-none" id="marketingHistoryEmptyState">No archived campaigns yet.</div>
+            </div>
         </div>
     </div>
 
@@ -181,7 +208,7 @@
 
     <!-- View (full history) modal -->
     <div class="marketing-modal-backdrop d-none" id="marketingViewBackdrop">
-        <div class="marketing-modal">
+        <div class="marketing-modal marketing-modal-wide">
             <div class="marketing-modal-header">
                 <h4 id="marketingViewTitle">Campaign History</h4>
                 <button type="button" class="marketing-modal-close" id="marketingViewCloseBtn">&times;</button>
@@ -195,36 +222,6 @@
         </div>
     </div>
 
-    <!-- History (archived campaigns) modal -->
-    <div class="marketing-modal-backdrop d-none" id="marketingHistoryBackdrop">
-        <div class="marketing-modal">
-            <div class="marketing-modal-header">
-                <h4>Campaign History</h4>
-                <button type="button" class="marketing-modal-close" id="marketingHistoryCloseBtn">&times;</button>
-            </div>
-
-            <div class="marketing-modal-body">
-                <div class="table-responsive">
-                    <table class="table marketing-table align-middle">
-                        <thead>
-                            <tr>
-                                <th>Campaign</th>
-                                <th>Archived</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="marketingHistoryTableBody"></tbody>
-                    </table>
-                </div>
-
-                <div class="empty-state d-none" id="marketingHistoryEmptyState">No archived campaigns yet.</div>
-            </div>
-
-            <div class="marketing-modal-footer">
-                <button type="button" class="btn btn-outline-secondary" id="marketingHistoryCloseFooterBtn">Close</button>
-            </div>
-        </div>
-    </div>
 
 </div>
 

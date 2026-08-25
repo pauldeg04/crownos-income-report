@@ -79,6 +79,13 @@
     overflow:hidden;
 }
 
+/* Used by the full-history View modal — its table has too many columns
+   (Date Created, CPM, Cost, Impression, Views, Inquiries, Notes) to sit
+   comfortably in the default 640px width. */
+.marketing-modal-wide{
+    max-width:min(1100px, 95vw);
+}
+
 .marketing-modal-header{
     display:flex;
     align-items:center;
@@ -171,4 +178,33 @@
     justify-content:flex-start;
     gap:8px;
     margin-top:14px;
+}
+
+/* ---- Collapsible History section ---- */
+
+.marketing-collapse-toggle{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    background:var(--surface-soft);
+    border:1px solid var(--border);
+    border-radius:var(--radius-md);
+    padding:12px 16px;
+    font-weight:800;
+    font-size:14px;
+    color:var(--navy);
+    cursor:pointer;
+}
+
+.marketing-collapse-chevron{
+    transition:transform .15s ease;
+}
+
+.marketing-collapse-toggle.expanded .marketing-collapse-chevron{
+    transform:rotate(90deg);
+}
+
+.marketing-collapse-body{
+    margin-top:16px;
 }

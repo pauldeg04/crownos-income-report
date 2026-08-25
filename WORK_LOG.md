@@ -4,6 +4,34 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-25 — Ads Monitoring: full-history View modal widened + History moved to a collapsed section
+
+**Requested by:** User — two separate "too cramped" complaints, addressed
+together in the end: (1) the "View" modal's full update-history table felt
+squeezed at the default 640px modal width, and (2) the History
+(archived campaigns) table felt crowded on the page.
+
+- [marketing-ads-daily.html](marketing-ads-daily.html): the View modal's
+  `.marketing-modal` now also carries `.marketing-modal-wide`. The
+  "History" button + popup modal are gone — archived campaigns now live
+  in their own card at the very bottom of the page, collapsed by default
+  (`marketing-collapse-toggle` / `.expanded` chevron); expanding it loads
+  the archived-campaigns table at that point. Each archived row's
+  **View** still opens the same (now wide) full-history modal used
+  elsewhere on this page.
+- [marketing-ads-daily.js](marketing-ads-daily.js): `openHistoryModal()`/
+  `closeHistoryModal()` replaced by `toggleHistorySection()` /
+  `loadHistorySection()`.
+- [marketing.css](marketing.css): new `.marketing-modal-wide` class
+  (`max-width:min(1100px, 95vw)`, vs. the default 640px) for the View
+  modal's seven columns (Date Created, CPM, Cost, Impression, Views,
+  Inquiries, Notes); new `.marketing-collapse-toggle` /
+  `.marketing-collapse-chevron` / `.marketing-collapse-body` styles for
+  the History section.
+- [manual.html](manual.html): Chapter 29's Ads Monitoring section updated
+  to describe History as the collapsed section at the bottom of the page
+  instead of a header button/modal.
+
 ## 2026-08-25 — User Manual: new "Marketing" part covering Ads Monitoring / Monitoring Summary
 
 **Changes applied ([manual.html](manual.html)):**

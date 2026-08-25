@@ -535,16 +535,28 @@
         }
     }
 
-    /* ---- History (archived campaigns) ---- */
+    /* ---- History (archived campaigns) — a collapsed section at the
+       bottom of the page, not a modal, so it doesn't crowd the active
+       campaigns above. Reloads its contents each time it's expanded. ---- */
 
-    async function openHistoryModal(){
+    function toggleHistorySection(){
+        const toggle = document.getElementById("marketingHistoryToggle");
+        const body = document.getElementById("marketingHistoryBody");
+
+        const expanded = toggle.classList.toggle("expanded");
+        body.classList.toggle("d-none", !expanded);
+
+        if(expanded){
+            loadHistorySection();
+        }
+    }
+
+    async function loadHistorySection(){
         const body = document.getElementById("marketingHistoryTableBody");
         const empty = document.getElementById("marketingHistoryEmptyState");
 
         body.innerHTML = "";
         empty.classList.add("d-none");
-
-        document.getElementById("marketingHistoryBackdrop").classList.remove("d-none");
 
         try{
             const snapshot = await db()
@@ -587,10 +599,6 @@
         }catch(error){
             console.error("Unable to load campaign history:", error);
         }
-    }
-
-    function closeHistoryModal(){
-        document.getElementById("marketingHistoryBackdrop").classList.add("d-none");
     }
 
     /* ---- Wire up ---- */
@@ -638,14 +646,6 @@
             }
         });
 
-        document.getElementById("marketingHistoryBtn").addEventListener("click", openHistoryModal);
-        document.getElementById("marketingHistoryCloseBtn").addEventListener("click", closeHistoryModal);
-        document.getElementById("marketingHistoryCloseFooterBtn").addEventListener("click", closeHistoryModal);
-
-        document.getElementById("marketingHistoryBackdrop").addEventListener("click", function(event){
-            if(event.target === event.currentTarget){
-                closeHistoryModal();
-            }
-        });
+        document.getElementById("marketingHistoryToggle").addEventListener("click", toggleHistorySection);
     });
 })();
