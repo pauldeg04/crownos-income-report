@@ -527,16 +527,18 @@ function exportExpensesPDF(){
         drawHeader();
 
         let cursorY = 34;
+        let isFirstSection = true;
 
         expenseTables.forEach(table => {
             const rows = sortedEntries(table.key);
             const total = rows.reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
 
-            if(cursorY > pageHeight - 45){
+            if(!isFirstSection){
                 doc.addPage();
                 drawHeader();
                 cursorY = 34;
             }
+            isFirstSection = false;
 
             doc.setTextColor(11, 24, 73);
             doc.setFont("helvetica", "bold");
@@ -583,6 +585,7 @@ function exportExpensesPDF(){
                         ? ["", "", "Subtotal", pesoPdf(total), "", ""]
                         : ["", "Subtotal", pesoPdf(total), ""]
                 ] : undefined,
+                showFoot: "lastPage",
                 theme: "grid",
                 styles: {
                     font: "helvetica",
@@ -614,11 +617,9 @@ function exportExpensesPDF(){
             cursorY = doc.lastAutoTable.finalY + 10;
         });
 
-        if(cursorY > pageHeight - 60){
-            doc.addPage();
-            drawHeader();
-            cursorY = 34;
-        }
+        doc.addPage();
+        drawHeader();
+        cursorY = 34;
 
         doc.setTextColor(11, 24, 73);
         doc.setFont("helvetica", "bold");
@@ -654,6 +655,7 @@ function exportExpensesPDF(){
             head: [["Expense Category", "Total Amount"]],
             body: summaryRows,
             foot: [["Total Expenses", pesoPdf(grandTotal)]],
+            showFoot: "lastPage",
             theme: "grid",
             styles: {
                 font: "helvetica",

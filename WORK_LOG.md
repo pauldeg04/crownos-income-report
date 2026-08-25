@@ -4,6 +4,31 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-25 — Expenses Report PDF export: one section per page, totals only on a table's last page
+
+**Requested by:** User — exported PDF was mixing sections together when a
+category table only filled part of a page (e.g. Operation Expenses ending
+mid-page with Salary starting right below it instead of on its own page),
+and wanted every section on its own A4 page. Also wanted a table's
+Subtotal/Total row to appear only once, on the last page, if the table
+itself spans more than one PDF page.
+
+**Fix applied ([expenses-report.js](expenses-report.js)):**
+- `exportExpensesPDF()` now always calls `doc.addPage()` before every
+  category ledger table (except the first, which follows the report
+  header on page 1) and before the Summary Table, instead of the old
+  conditional check (`cursorY > pageHeight - 45`) that only broke to a
+  new page when the current section didn't fit in the remaining space.
+- Added `showFoot: "lastPage"` to all three `autoTable()` calls (each
+  category table + the Summary Table) so a Subtotal/Total row isn't
+  repeated on every page of a table that overflows past one page — it
+  now prints once, on the table's final page.
+- Page format was already `"a4"` — no change needed there.
+
+**Status:** Deployed via `firebase deploy --only hosting`.
+
+---
+
 ## 2026-08-24 — New "Admin Hub" sidebar section: Announcement, Memo, Staff Schedule, Leave Request, Incident Report, Payroll relocation
 
 **Requested by:** User — wanted a single sidebar section grouping
