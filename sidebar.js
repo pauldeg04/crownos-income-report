@@ -96,7 +96,9 @@
         "Memo": "✎",
         "Staff Schedule": "▧",
         "Leave Request": "⌘",
-        "Incident Report": "!"
+        "Incident Report": "!",
+        "Ads Monitoring": "📣",
+        "Monitoring Summary": "📈"
     };
 
     const MENU_ITEMS = [
@@ -182,6 +184,21 @@
             label: "Payroll",
             href: "payroll.html",
             roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent"],
+            sub: true
+        },
+
+        { section: "Marketing" },
+
+        {
+            label: "Ads Monitoring",
+            href: "marketing-ads-daily.html",
+            roles: ["Admin", "Marketing Agent"]
+        },
+
+        {
+            label: "Monitoring Summary",
+            href: "marketing-ads-summary.html",
+            roles: ["Admin", "Marketing Agent"],
             sub: true
         },
 
@@ -1411,7 +1428,9 @@
             "memos.html": "Memo",
             "staff-schedule.html": "Staff Schedule",
             "leave-requests.html": "Leave Request",
-            "incident-report.html": "Incident Report"
+            "incident-report.html": "Incident Report",
+            "marketing-ads-daily.html": "Ads Monitoring",
+            "marketing-ads-summary.html": "Monitoring Summary"
         };
 
         return titles[currentPage] || "CrownOS";

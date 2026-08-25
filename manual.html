@@ -299,17 +299,29 @@
                         </div>
 
                         <div class="manual-contents-part">
-                            <h3>Part Seven &middot; Reference</h3>
+                            <h3>Part Seven &middot; Marketing</h3>
+                            <ol>
+                                <li>
+                                    <a href="#ch-marketing">
+                                        <span class="manual-ch">29</span>
+                                        <span>Ads Monitoring and Monitoring Summary</span>
+                                    </a>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <div class="manual-contents-part">
+                            <h3>Part Eight &middot; Reference</h3>
                             <ol>
                                 <li>
                                     <a href="#ch-checklists">
-                                        <span class="manual-ch">29</span>
+                                        <span class="manual-ch">30</span>
                                         <span>Checklists</span>
                                     </a>
                                 </li>
                                 <li>
                                     <a href="#ch-faq">
-                                        <span class="manual-ch">30</span>
+                                        <span class="manual-ch">31</span>
                                         <span>Troubleshooting</span>
                                     </a>
                                 </li>
@@ -508,6 +520,10 @@
           <td>Announcement · Memo · Staff Schedule · Leave Request · Incident Report · Payroll — see Part Six</td>
         </tr>
         <tr>
+          <td><strong>Marketing</strong></td>
+          <td>Ads Monitoring · Monitoring Summary — see Part Seven</td>
+        </tr>
+        <tr>
           <td><strong>Inventory</strong></td>
           <td>Warehouse · Branches</td>
         </tr>
@@ -603,6 +619,8 @@
         <tr><td>Staff Schedule (Admin Hub)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
         <tr><td>Leave Request (Admin Hub)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
         <tr><td>Incident Report (Admin Hub)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
+        <tr><td>Ads Monitoring</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
+        <tr><td>Monitoring Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
         <tr><td>Inventory (all pages)</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
         <tr><td>Statistics</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
         <tr><td>Petty Cash</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
@@ -1754,10 +1772,9 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     <p>
       Confirming Liquidate <strong>automatically posts every transaction into
       the Expenses Report</strong> as Operation Expenses — Category
-      <strong>Branch Expenses</strong>, Mode of Payment <strong>Petty
-      Cash</strong>. There is no need to retype them. The entries use the
-      <strong>liquidation date</strong> rather than each expense's own date,
-      because they are submitted as one batch.
+      <strong>Branch Expenses</strong>. There is no need to retype them. The
+      entries use the <strong>liquidation date</strong> rather than each
+      expense's own date, because they are submitted as one batch.
     </p>
   </div>
 </section>
@@ -1795,9 +1812,15 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   <p>
     Expense categories are <strong>Operation Supplies</strong>,
     <strong>Maintenance</strong>, <strong>Management</strong>, <strong>Branch
-    Expenses</strong>, and <strong>Others</strong>. Modes of payment are
-    <strong>Cash</strong>, <strong>Gcash</strong>, <strong>BDO</strong>,
-    <strong>RCBC</strong>, and <strong>Petty Cash</strong>.
+    Expenses</strong>, and <strong>Others</strong>.
+  </p>
+
+  <p>
+    The Date field only asks for a month (shown as, e.g., <strong>Aug-25</strong>)
+    — no specific day. Operation Expenses, Utilities / Monthly Dues, and
+    Installments each also carry <strong>S.I. No.</strong> and <strong>TIN</strong>
+    columns; Marketing carries a <strong>Transaction ID</strong> column instead.
+    All three are optional reference fields, entered between Amount and Remarks.
   </p>
 
   <h3>Cash Flow</h3>
@@ -2349,12 +2372,83 @@ Branch receives    →  it is added to the branch's Available Stock</div>
 <!-- ================= PART SEVEN ================= -->
 <div class="part-opener">
   <p class="part-label">Part Seven</p>
+  <h2>Marketing</h2>
+  <p>Tracking ad campaign performance, one campaign at a time.</p>
+</div>
+
+<section id="ch-marketing">
+  <h2><span class="h2-num">Chapter 29</span>Ads Monitoring and Monitoring Summary</h2>
+
+  <ul class="roleline">
+    <li><span class="pill pill-role">Admin</span></li>
+    <li><span class="pill pill-role">Marketing Agent</span></li>
+  </ul>
+
+  <p>
+    Any other account can be handed either page individually through
+    <strong>Additional Access</strong> in Account Settings — see
+    <a href="#ch-roles">Chapter 4</a>.
+  </p>
+
+  <h3>Ads Monitoring — how a campaign works</h3>
+
+  <p>
+    Each ad campaign lives in its own table on this page — press
+    <span class="ui">+ Create Campaign</span>, name it, and fill in its
+    first update (CPM, Cost, Impression, Views, Inquiries, Notes). Every
+    press of <span class="ui">+ Create Campaign</span> starts a brand-new
+    campaign; it never adds to an existing one.
+  </p>
+
+  <p>
+    A campaign's table shows one summary row — CPM averaged across every
+    update ever logged for it, and the Cost/Impression/Views/Inquiries/
+    Notes from its most recent update. Three buttons sit below the table:
+  </p>
+
+  <ul class="checklist">
+    <li><span class="ui">View</span> — the full, dated history of every
+      update logged for this campaign, in a table.</li>
+    <li><span class="ui">Update</span> — always <em>adds</em> a new dated
+      update; it never edits a past one. Fill in the fields and press
+      <span class="ui">Save</span>.</li>
+    <li><span class="ui">End</span> — flips the campaign from Active to
+      Inactive. Its buttons then become <span class="ui">Resume</span>
+      (back to Active) and <span class="ui">Archive</span> (moves it out
+      of this page).</li>
+  </ul>
+
+  <p>
+    An Active campaign keeps showing on this page no matter what date is
+    selected in the top toolbar — the date filter doesn't apply here.
+    Only <span class="ui">Archive</span> removes a campaign from the
+    page; archived campaigns move to <span class="ui">History</span>
+    (button at the top of the page), where each still has its own
+    <span class="ui">View</span> into its full update history.
+  </p>
+
+  <h3>Monitoring Summary</h3>
+
+  <p>
+    A single table listing every campaign — Active ones first, then
+    Inactive (including archived) at the bottom, alphabetically within
+    each group. Same figures as each campaign's summary row on Ads
+    Monitoring (CPM averaged over its whole history; Cost/Impression/
+    Views/Inquiries from its latest update), plus a
+    <span class="ui">View</span> button on Notes listing every dated
+    note left on that campaign.
+  </p>
+</section>
+
+<!-- ================= PART EIGHT ================= -->
+<div class="part-opener">
+  <p class="part-label">Part Eight</p>
   <h2>Reference</h2>
   <p>Routines to follow, and what to do when something goes wrong.</p>
 </div>
 
 <section id="ch-checklists">
-  <h2><span class="h2-num">Chapter 29</span>Checklists</h2>
+  <h2><span class="h2-num">Chapter 30</span>Checklists</h2>
 
   <h3>Opening the branch</h3>
   <ul class="checklist">
@@ -2400,7 +2494,7 @@ Branch receives    →  it is added to the branch's Available Stock</div>
 </section>
 
 <section id="ch-faq">
-  <h2><span class="h2-num">Chapter 30</span>Troubleshooting</h2>
+  <h2><span class="h2-num">Chapter 31</span>Troubleshooting</h2>
 
   <details>
     <summary>The page shows no data.</summary>

@@ -4,6 +4,191 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-25 — User Manual: new "Marketing" part covering Ads Monitoring / Monitoring Summary
+
+**Changes applied ([manual.html](manual.html)):**
+- New **Part Seven · Marketing**, Chapter 29 "Ads Monitoring and
+  Monitoring Summary" — documents the Create Campaign flow, the
+  View/Update/End/Resume/Archive buttons, the History view, and how
+  Monitoring Summary rolls each campaign up (Active-first, Inactive at
+  the bottom). Inserted before the existing Reference part, which shifts
+  to **Part Eight** (Checklists/Troubleshooting renumbered 30/31).
+- Chapter 4's role access matrix gained rows for **Ads Monitoring** and
+  **Monitoring Summary** (Admin/Marketing Agent only, like the sidebar).
+- Chapter 3's sidebar-layout table gained a **Marketing** group row.
+
+## 2026-08-25 — Ads Monitoring: per-campaign table now shows one summary row, View is a table with timestamps, Monitoring Summary sorts Active-first
+
+**Requested by:** User — follow-up refinement right after the per-campaign
+redesign above.
+
+- [marketing-ads-daily.js](marketing-ads-daily.js): each campaign's visible
+  table on the page no longer lists every entry — it now shows a single
+  summary row (CPM average / latest Cost, Impression, Views, Inquiries,
+  Notes), same figures Monitoring Summary computes per campaign. The full,
+  untruncated entry-by-entry history moved entirely into the **View**
+  modal, which is now rendered as a table (`renderEntriesHistory()`)
+  instead of a stacked list. Its Date Created cell stacks the entry's
+  timestamp under the date (`formatTimestampDateTime()`) rather than
+  adding a separate column.
+- [marketing-ads-summary.js](marketing-ads-summary.js): the campaign list
+  now sorts Active campaigns first, Inactive (including archived — a
+  campaign is always Inactive by the time it's archived) to the bottom,
+  alphabetically within each group. This is now the one real difference
+  between the two pages: Monitoring Summary is a single table listing
+  every campaign, while Ads Monitoring keeps each campaign as its own
+  separate table (just a one-row summary instead of full history).
+
+## 2026-08-25 — Ads Monitoring redesigned: one persistent table per Campaign, append-only updates, End/Resume/Archive/History
+
+**Requested by:** User — reworked the just-added Ads Monitoring page from
+a single flat daily-entries table into a per-campaign model, right after
+the first version shipped.
+
+**New data model:** the flat `marketingAdsDaily` collection is replaced
+by `marketingCampaigns/{campaignId}` (name, status Active/Inactive,
+archived flag, createdAt/endedAt/archivedAt) with an append-only
+`entries` subcollection per campaign (createdAt = "Date Created", cpm,
+cost, impressions, views, inquiries, notes). Nothing carried over from
+the short-lived old collection — it was never live.
+
+**[marketing-ads-daily.html](marketing-ads-daily.html) / [marketing-ads-daily.js](marketing-ads-daily.js) — "Ads Monitoring":**
+- "+ Create Campaign" (was "+ Add Entry") opens a modal for the campaign
+  name plus its first update (CPM/Cost/Impression/Views/Inquiries/Notes).
+  Every click always creates a brand-new campaign/table — it never merges
+  into an existing one by name.
+- Each non-archived campaign renders as its own card/table titled
+  "{Campaign Name} - {Status}" (status color-coded text, no more Status
+  or Campaign columns in the table itself). Columns are now Date Created
+  (auto, immutable — set once per entry, not user-editable) / CPM / Cost
+  / Impression / Views / Inquiries / Notes.
+- Row-level Edit/Delete is gone. Instead, three campaign-level buttons sit
+  bottom-left under each table:
+  - **View** — full, untruncated history of every update ever logged for
+    that campaign (the on-page table's Notes column stays truncated to
+    60 chars for compactness).
+  - **Update** — always *adds* a new entry (Date Created = now); it never
+    edits a past one. Save/Cancel footer.
+  - **End** — flips status Active → Inactive; buttons swap to
+    Resume/Archive.
+- Inactive campaigns: **Resume** flips status back to Active; **Archive**
+  sets `archived: true` and removes the campaign from this page entirely.
+- New "History" button (page header) opens a modal listing every archived
+  campaign with its own on-demand **View** into its full update history.
+- Campaigns are NOT filtered by the sidebar's global date picker — an
+  Active campaign keeps showing regardless of the selected date, only
+  Archive removes it from the main list.
+
+**[marketing-ads-summary.html](marketing-ads-summary.html) / [marketing-ads-summary.js](marketing-ads-summary.js) — "Monitoring Summary":**
+- Same flat-list format as before, but now sourced from
+  `marketingCampaigns` + each campaign's `entries` subcollection instead
+  of grouping a flat log by campaign-name string. Lists every campaign
+  (Active, Inactive, and archived alike) as one row: Status = the
+  campaign's own status field; CPM = average across ALL of that
+  campaign's entries (whole history, not month-limited); Cost/Impression/
+  Views/Inquiries = its most recent entry; Notes = "View" button listing
+  every dated note.
+
+**[firestore.rules](firestore.rules):** replaced the `marketingAdsDaily`
+rule with `marketingCampaigns/{campaignId}` (+ its `entries`
+subcollection) — same open-to-any-authenticated-user CRUD pattern as
+staffSchedules/leaveRequests, gated by role in the CrownOS UI. **Deployed**
+via `firebase deploy --only firestore:rules`.
+
+## 2026-08-25 — New "Marketing" sidebar menu: Ads Monitoring (daily) + Monitoring Summary [superseded above same day]
+
+## 2026-08-25 — New "Marketing" sidebar menu: Ads Monitoring (daily) + Monitoring Summary
+
+**Requested by:** User — wanted a new sidebar section visible to the
+Marketing Agent role and Admin (plus optionally grantable to any other
+account), starting with a daily Ads Monitoring log and a per-campaign
+Monitoring Summary rollup.
+
+**New pages:**
+- [marketing-ads-daily.html](marketing-ads-daily.html) / [marketing-ads-daily.js](marketing-ads-daily.js)
+  — "Ads Monitoring". Daily entries in Firestore collection
+  `marketingAdsDaily`: Campaign (text), Date (date picker, shown as
+  "Aug-25-2026"), Status (Active/Inactive dropdown, green/yellow pill),
+  CPM and Cost (₱ amount inputs), Impression/Views/Inquiries (numbers),
+  Notes (text). Full add/edit/delete, no branch scoping (marketing spend
+  isn't tracked per-branch).
+- [marketing-ads-summary.html](marketing-ads-summary.html) / [marketing-ads-summary.js](marketing-ads-summary.js)
+  — "Monitoring Summary". Read-only rollup computed client-side from the
+  same `marketingAdsDaily` collection, grouped by Campaign: Status and
+  Cost/Impression/Views/Inquiries come from that campaign's most recent
+  daily entry; CPM is averaged across ALL of that campaign's daily
+  entries (not limited to the current month); Notes is a "View" button
+  listing every dated note logged for the campaign. No Date or Next Step
+  columns (per request).
+- [marketing.css](marketing.css) — shared table/status-pill/modal styles
+  for both pages, matching the existing incident-report.css pattern.
+
+**Access:**
+- [sidebar.js](sidebar.js): new "Marketing" section with both links,
+  visible to Admin/Marketing Agent by default.
+- [access-control.js](access-control.js): both pages added to
+  `PAGE_ACCESS` (Admin/Marketing Agent) — not added to
+  `EXTRA_ACCESS_EXCLUDED_PAGES`, so either page can also be granted to
+  any other account.
+- [account-settings.js](account-settings.js): both pages added to
+  `EXTRA_ACCESS_PAGES` so an Admin can tick them under a user's
+  "Additional Access" list.
+- [firestore.rules](firestore.rules): new `marketingAdsDaily` collection,
+  full CRUD for any authenticated user (role/extraAccess gating happens
+  in the CrownOS UI, same pattern already used for staffSchedules /
+  leaveRequests — Firestore rules can't see custom role/extraAccess
+  claims). **Not yet deployed** — run `firebase deploy --only
+  firestore:rules` from this folder before Marketing entries can be
+  saved in production.
+
+## 2026-08-25 — Expenses Report: month-only Date, S.I. No./TIN/Transaction ID columns, Mode of Payment removed
+
+**Requested by:** User — wanted the Date field to only ask for a month (no
+day), shown short like "Aug-25", across all six category tables. Also
+wanted Operation Expenses' Mode of Payment column replaced by two new
+columns (S.I. No. and TIN); the same two columns added to Utilities /
+Monthly Dues and Installments (between Amount and Remarks); and a
+Transaction ID column added to Marketing (also between Amount and
+Remarks). Salary and Accounting / Government Dues only get the Date
+change.
+
+**Changes applied ([expenses-report.js](expenses-report.js), [expenses-report.html](expenses-report.html)):**
+- The shared Add/Edit modal's Date field changed from `type="date"` to
+  `type="month"`, so every table now stores just a "YYYY-MM" value.
+  `formatDateText()` now renders that (or the first 7 chars of any older
+  full date) as "MMM-YY", e.g. "Aug-26".
+- `expenseTables` config gained an `extraFields` array per table
+  (`["siNo","tin"]` for Operation/Utilities/Installments, `["transactionId"]`
+  for Marketing, `[]` for Salary/Gov) driving which modal fields show,
+  which table columns render, and which fields get saved/loaded — replacing
+  the old `isOperation`-only special-casing for Mode of Payment.
+  `renderTableBody()` and the PDF export's row-building are now generic
+  over `table.columns`/`extraFields` instead of hardcoding the Operation
+  layout.
+- The old "Mode of Payment" modal field/column is gone everywhere
+  (dropped from Operation Expenses; it wasn't used by any other table).
+- [petty-cash.js](petty-cash.js): liquidation still auto-posts entries
+  into Operation Expenses, minus the now-removed `payment: "Petty Cash"`
+  field (`PETTY_CASH_EXPENSE_PAYMENT` constant removed too).
+- [manual.html](manual.html): updated the Petty Cash liquidation and
+  Expenses Report sections to drop the Mode-of-Payment mention and
+  document the month-only Date and the new S.I. No./TIN/Transaction ID
+  columns.
+
+**Verified:** served the page locally (temp copy with the Firebase/login
+gate stripped, deleted after testing — not committed), added a real
+Operation Expenses entry and a Marketing entry through the actual modal,
+confirmed the on-screen tables render the new columns with no Mode of
+Payment, then captured `exportExpensesPDF()`'s output as a blob and
+rendered its pages to PNG — confirmed "Aug-26" date formatting, the new
+columns/labels, and correct subtotal placement in the generated PDF.
+
+**Status:** Code changed locally, not yet deployed — run
+`firebase deploy --only hosting` from `Income Report/` when ready to push
+live.
+
+---
+
 ## 2026-08-25 — Expenses Report PDF export: one section per page, totals only on a table's last page
 
 **Requested by:** User — exported PDF was mixing sections together when a

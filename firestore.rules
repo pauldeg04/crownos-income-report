@@ -242,6 +242,23 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null;
     }
 
+    /* Marketing / Ads Monitoring (see marketing-ads-daily.js /
+       marketing-ads-summary.js). One campaign doc per campaign, with an
+       append-only "entries" subcollection of dated updates underneath.
+       Full CRUD, open to any authenticated user for the same "role isn't
+       a custom claim" reason as staffSchedules/leaveRequests above —
+       gated to Admin/Marketing Agent (plus per-user Additional Access
+       grants) in the CrownOS UI. */
+    match /marketingCampaigns/{campaignId} {
+      allow get, list: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
+
+      match /entries/{entryId} {
+        allow get, list: if request.auth != null;
+        allow create, update, delete: if request.auth != null;
+      }
+    }
+
     /* Client-writable notification feed for Admin Hub broadcasts
        (Announcement publish, Memo send) — kept separate from the
        Cloud-Function-only /staffNotifications above so that collection's

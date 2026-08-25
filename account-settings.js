@@ -26,7 +26,9 @@ const EXTRA_ACCESS_PAGES = [
     { href: "list-branches.html", label: "List of Branches" },
     { href: "inventory-warehouse.html", label: "Inventory - Warehouse" },
     { href: "inventory-branches.html", label: "Inventory - Branches" },
-    { href: "inventory-items.html", label: "Inventory - Settings" }
+    { href: "inventory-items.html", label: "Inventory - Settings" },
+    { href: "marketing-ads-daily.html", label: "Ads Monitoring" },
+    { href: "marketing-ads-summary.html", label: "Monitoring Summary" }
 ];
 
 /* Set as Team Leader auto-grants these on top of the plain Therapist

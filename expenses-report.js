@@ -16,39 +16,51 @@ const expenseTables = [
         key: "operation",
         title: "Operation Expenses",
         headerClass: "operation-header",
-        columns: ["Date", "Category", "Particular", "Amount", "Mode of Payment", "Remarks"]
+        columns: ["Date", "Category", "Particular", "Amount", "S.I. No.", "TIN", "Remarks"],
+        extraFields: ["siNo", "tin"]
     },
     {
         key: "salary",
         title: "Salary",
         headerClass: "salary-header",
-        columns: ["Date", "Particular", "Amount", "Remarks"]
+        columns: ["Date", "Particular", "Amount", "Remarks"],
+        extraFields: []
     },
     {
         key: "utilities",
         title: "Utilities / Monthly Dues",
         headerClass: "utilities-header",
-        columns: ["Date", "Particular", "Amount", "Remarks"]
+        columns: ["Date", "Particular", "Amount", "S.I. No.", "TIN", "Remarks"],
+        extraFields: ["siNo", "tin"]
     },
     {
         key: "installments",
         title: "Installments",
         headerClass: "installments-header",
-        columns: ["Date", "Particular", "Amount", "Remarks"]
+        columns: ["Date", "Particular", "Amount", "S.I. No.", "TIN", "Remarks"],
+        extraFields: ["siNo", "tin"]
     },
     {
         key: "gov",
         title: "Accounting / Government Dues",
         headerClass: "gov-header",
-        columns: ["Date", "Particular", "Amount", "Remarks"]
+        columns: ["Date", "Particular", "Amount", "Remarks"],
+        extraFields: []
     },
     {
         key: "marketing",
         title: "Marketing",
         headerClass: "marketing-header",
-        columns: ["Date", "Particular", "Amount", "Remarks"]
+        columns: ["Date", "Particular", "Amount", "Transaction ID", "Remarks"],
+        extraFields: ["transactionId"]
     }
 ];
+
+const EXTRA_FIELD_LABELS = {
+    siNo: "S.I. No.",
+    tin: "TIN",
+    transactionId: "Transaction ID"
+};
 
 let expenseData = {};
 let activeModal = { tableKey: null, entryId: null };
@@ -117,15 +129,19 @@ function formatMonth(monthValue){
     });
 }
 
+/* Entries only carry a month now (the modal's Date field is type="month"),
+   though petty-cash liquidation still posts a full "YYYY-MM-DD" — slicing
+   to the first 7 chars handles both. */
 function formatDateText(dateValue){
     if(!dateValue) return "";
 
-    return new Date(dateValue + "T00:00:00").toLocaleDateString("en-PH", {
-        weekday:"long",
-        month:"long",
-        day:"numeric",
-        year:"numeric"
-    });
+    let [year, month] = dateValue.slice(0, 7).split("-");
+    if(!year || !month) return "";
+
+    let monthAbbr = new Date(Number(year), Number(month) - 1, 1)
+        .toLocaleDateString("en-PH", { month: "short" });
+
+    return `${monthAbbr}-${year.slice(2)}`;
 }
 
 function changeBranchMonth(){
@@ -191,35 +207,27 @@ function renderTableBody(tableKey){
     }
 
     tbody.innerHTML = rows.map(entry => {
-        let dateCell = `<td class="text-start"><div class="date-text">${entry.date ? formatDateText(entry.date) : "—"}</div></td>`;
+        let cells = [`<td class="text-start"><div class="date-text">${entry.date ? formatDateText(entry.date) : "—"}</div></td>`];
 
         if(tableKey === "operation"){
-            return `
-                <tr>
-                    ${dateCell}
-                    <td>${escapeHtml(entry.category) || "—"}</td>
-                    <td class="text-start">${escapeHtml(entry.particular)}</td>
-                    <td class="amount-cell">${peso(entry.amount)}</td>
-                    <td>${escapeHtml(entry.payment) || "—"}</td>
-                    <td class="text-start">${escapeHtml(entry.remarks) || "—"}</td>
-                    <td>
-                        <button type="button" class="btn btn-sm btn-outline-primary edit-btn" onclick="openExpenseModal('operation','${entry.id}')">✎ Edit</button>
-                    </td>
-                </tr>
-            `;
+            cells.push(`<td>${escapeHtml(entry.category) || "—"}</td>`);
         }
 
-        return `
-            <tr>
-                ${dateCell}
-                <td class="text-start">${escapeHtml(entry.particular)}</td>
-                <td class="amount-cell">${peso(entry.amount)}</td>
-                <td class="text-start">${escapeHtml(entry.remarks) || "—"}</td>
-                <td>
-                    <button type="button" class="btn btn-sm btn-outline-primary edit-btn" onclick="openExpenseModal('${tableKey}','${entry.id}')">✎ Edit</button>
-                </td>
-            </tr>
-        `;
+        cells.push(`<td class="text-start">${escapeHtml(entry.particular)}</td>`);
+        cells.push(`<td class="amount-cell">${peso(entry.amount)}</td>`);
+
+        table.extraFields.forEach(field => {
+            cells.push(`<td>${escapeHtml(entry[field]) || "—"}</td>`);
+        });
+
+        cells.push(`<td class="text-start">${escapeHtml(entry.remarks) || "—"}</td>`);
+        cells.push(`
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-primary edit-btn" onclick="openExpenseModal('${tableKey}','${entry.id}')">✎ Edit</button>
+            </td>
+        `);
+
+        return `<tr>${cells.join("")}</tr>`;
     }).join("");
 }
 
@@ -287,7 +295,9 @@ function openExpenseModal(tableKey, entryId){
     activeModal = { tableKey, entryId: entry ? entryId : null };
 
     document.getElementById("expenseModalCategoryWrapper").classList.toggle("d-none", !isOperation);
-    document.getElementById("expenseModalPaymentWrapper").classList.toggle("d-none", !isOperation);
+    document.getElementById("expenseModalSiNoWrapper").classList.toggle("d-none", !table.extraFields.includes("siNo"));
+    document.getElementById("expenseModalTinWrapper").classList.toggle("d-none", !table.extraFields.includes("tin"));
+    document.getElementById("expenseModalTransactionIdWrapper").classList.toggle("d-none", !table.extraFields.includes("transactionId"));
 
     document.getElementById("expenseModalTitle").textContent =
         (entry ? "Edit " : "Add ") + table.title + " Entry";
@@ -296,7 +306,9 @@ function openExpenseModal(tableKey, entryId){
     document.getElementById("expenseModalCategory").value = entry?.category || "";
     document.getElementById("expenseModalParticular").value = entry?.particular || "";
     document.getElementById("expenseModalAmount").value = entry?.amount || "";
-    document.getElementById("expenseModalPayment").value = entry?.payment || "";
+    document.getElementById("expenseModalSiNo").value = entry?.siNo || "";
+    document.getElementById("expenseModalTin").value = entry?.tin || "";
+    document.getElementById("expenseModalTransactionId").value = entry?.transactionId || "";
     document.getElementById("expenseModalRemarks").value = entry?.remarks || "";
 
     document.getElementById("deleteExpenseEntryBtn").classList.toggle("d-none", !entry);
@@ -322,12 +334,15 @@ function saveExpenseEntryFromModal(){
         return;
     }
 
+    let table = expenseTables.find(t => t.key === tableKey);
     let isOperation = tableKey === "operation";
     let date = document.getElementById("expenseModalDate").value;
     let category = document.getElementById("expenseModalCategory").value;
     let particular = document.getElementById("expenseModalParticular").value.trim();
     let amount = parseFloat(document.getElementById("expenseModalAmount").value) || 0;
-    let payment = document.getElementById("expenseModalPayment").value;
+    let siNo = document.getElementById("expenseModalSiNo").value.trim();
+    let tin = document.getElementById("expenseModalTin").value.trim();
+    let transactionId = document.getElementById("expenseModalTransactionId").value.trim();
     let remarks = document.getElementById("expenseModalRemarks").value.trim();
 
     if(!particular){
@@ -345,11 +360,6 @@ function saveExpenseEntryFromModal(){
         return;
     }
 
-    if(isOperation && !payment){
-        alert("Please select a Mode of Payment.");
-        return;
-    }
-
     let entry = {
         id: entryId || createExpenseId(),
         date,
@@ -360,8 +370,11 @@ function saveExpenseEntryFromModal(){
 
     if(isOperation){
         entry.category = category;
-        entry.payment = payment;
     }
+
+    if(table.extraFields.includes("siNo")) entry.siNo = siNo;
+    if(table.extraFields.includes("tin")) entry.tin = tin;
+    if(table.extraFields.includes("transactionId")) entry.transactionId = transactionId;
 
     if(!expenseData[tableKey]){
         expenseData[tableKey] = [];
@@ -437,8 +450,11 @@ function loadExpenses(){
 
                     if(table.key === "operation"){
                         entry.category = row.category || "";
-                        entry.payment = row.payment || "";
                     }
+
+                    table.extraFields.forEach(field => {
+                        entry[field] = row[field] || "";
+                    });
 
                     return entry;
                 });
@@ -546,45 +562,45 @@ function exportExpensesPDF(){
             doc.text(table.title, 14, cursorY);
             cursorY += 4;
 
-            const isOperation = table.key === "operation";
-            const amountColIndex = isOperation ? 3 : 2;
+            const amountColIndex = table.columns.indexOf("Amount");
+            const particularColIndex = table.columns.indexOf("Particular");
 
-            const head = isOperation
-                ? [["Date", "Category", "Particular", "Amount", "Mode of Payment", "Remarks"]]
-                : [["Date", "Particular", "Amount", "Remarks"]];
+            const columnValue = (col, entry) => {
+                switch(col){
+                    case "Date": return entry.date ? formatDateText(entry.date) : "—";
+                    case "Category": return entry.category || "—";
+                    case "Particular": return entry.particular || "—";
+                    case "Amount": return pesoPdf(entry.amount);
+                    case "S.I. No.": return entry.siNo || "—";
+                    case "TIN": return entry.tin || "—";
+                    case "Transaction ID": return entry.transactionId || "—";
+                    case "Remarks": return entry.remarks || "—";
+                    default: return "—";
+                }
+            };
+
+            const head = [table.columns];
 
             const body = rows.length
-                ? rows.map(entry => isOperation
-                    ? [
-                        entry.date ? formatDateText(entry.date) : "—",
-                        entry.category || "—",
-                        entry.particular || "—",
-                        pesoPdf(entry.amount),
-                        entry.payment || "—",
-                        entry.remarks || "—"
-                    ]
-                    : [
-                        entry.date ? formatDateText(entry.date) : "—",
-                        entry.particular || "—",
-                        pesoPdf(entry.amount),
-                        entry.remarks || "—"
-                    ])
+                ? rows.map(entry => table.columns.map(col => columnValue(col, entry)))
                 : [[{
                     content: "No entries recorded for this period.",
                     colSpan: head[0].length,
                     styles: { halign: "center", textColor: [140, 146, 158], fontStyle: "italic" }
                 }]];
 
+            const footRow = table.columns.map((col, index) => {
+                if(index === particularColIndex) return "Subtotal";
+                if(index === amountColIndex) return pesoPdf(total);
+                return "";
+            });
+
             doc.autoTable({
                 startY: cursorY,
                 margin: { top: 30, left: 14, right: 14, bottom: 16 },
                 head,
                 body,
-                foot: rows.length ? [
-                    isOperation
-                        ? ["", "", "Subtotal", pesoPdf(total), "", ""]
-                        : ["", "Subtotal", pesoPdf(total), ""]
-                ] : undefined,
+                foot: rows.length ? [footRow] : undefined,
                 showFoot: "lastPage",
                 theme: "grid",
                 styles: {

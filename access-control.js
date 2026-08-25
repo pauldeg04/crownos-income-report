@@ -218,6 +218,16 @@
             "Receptionist",
             "Therapist",
             "Marketing Agent"
+        ],
+
+        "marketing-ads-daily.html": [
+            "Admin",
+            "Marketing Agent"
+        ],
+
+        "marketing-ads-summary.html": [
+            "Admin",
+            "Marketing Agent"
         ]
     };
 

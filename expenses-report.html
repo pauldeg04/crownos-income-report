@@ -111,7 +111,7 @@
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label fw-bold">Date</label>
-                    <input type="date" id="expenseModalDate" class="form-control">
+                    <input type="month" id="expenseModalDate" class="form-control">
                 </div>
 
                 <div class="col-md-6 d-none" id="expenseModalCategoryWrapper">
@@ -139,16 +139,19 @@
                     </div>
                 </div>
 
-                <div class="col-md-6 d-none" id="expenseModalPaymentWrapper">
-                    <label class="form-label fw-bold">Mode of Payment</label>
-                    <select id="expenseModalPayment" class="form-select">
-                        <option value="">Select Mode of Payment</option>
-                        <option value="Cash">Cash</option>
-                        <option value="Gcash">Gcash</option>
-                        <option value="Petty Cash">Petty Cash</option>
-                        <option value="BDO">BDO</option>
-                        <option value="RCBC">RCBC</option>
-                    </select>
+                <div class="col-md-6 d-none" id="expenseModalSiNoWrapper">
+                    <label class="form-label fw-bold">S.I. No.</label>
+                    <input type="text" id="expenseModalSiNo" class="form-control" placeholder="e.g. 00123">
+                </div>
+
+                <div class="col-md-6 d-none" id="expenseModalTinWrapper">
+                    <label class="form-label fw-bold">TIN</label>
+                    <input type="text" id="expenseModalTin" class="form-control" placeholder="e.g. 123-456-789-000">
+                </div>
+
+                <div class="col-md-6 d-none" id="expenseModalTransactionIdWrapper">
+                    <label class="form-label fw-bold">Transaction ID</label>
+                    <input type="text" id="expenseModalTransactionId" class="form-control" placeholder="e.g. TXN-000123">
                 </div>
 
                 <div class="col-12">

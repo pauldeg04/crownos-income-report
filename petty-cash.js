@@ -17,7 +17,6 @@ const PETTY_CASH_BRANCH_KEY = "crownSelectedBranch";
    there without being re-typed. */
 const PETTY_CASH_EXPENSE_PREFIX = "crownExpenses_";
 const PETTY_CASH_EXPENSE_CATEGORY = "Branch Expenses";
-const PETTY_CASH_EXPENSE_PAYMENT = "Petty Cash";
 
 let pettyCashState = { activeFund: null, history: [] };
 let activePettyCashEntryId = null;
@@ -467,7 +466,6 @@ function postPettyCashEntriesToExpenses(fund){
             category: PETTY_CASH_EXPENSE_CATEGORY,
             particular: entry.particular,
             amount: Number(entry.totalCost) || 0,
-            payment: PETTY_CASH_EXPENSE_PAYMENT,
             remarks: entry.remarks
         });
     });
