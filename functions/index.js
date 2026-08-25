@@ -915,11 +915,49 @@ exports.sendAppointmentEmailConfirmation = onCall(
     }
 );
 
-function buildConfirmationSmsText({ clientName, branch, serviceName, date, time }){
-    return (
-        `Hi ${clientName || "there"}! Your Crown Head Spa booking is confirmed: ` +
-        `${serviceName} at ${branch} on ${date}, ${time}. See you soon!\n` +
-        `For more details, visit our website: www.crownheadspa.com`
+/* Strips diacritics (e.g. "Biñan" -> "Binan") so the SMS body stays in
+   plain GSM-7 characters — a single accented letter forces the whole
+   message into Unicode (UCS-2) encoding, which Smart appears to silently
+   drop even though Semaphore reports it as "Sent". Display strings
+   elsewhere (dashboard, BIR compliance, payroll) keep the real spelling;
+   this only affects the outgoing SMS text. */
+function toGsm7Safe(text){
+    return String(text || "")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "");
+}
+
+/* Every branch name is "Crown Head Spa {City}" — the prefix is dropped
+   here since it's already implied by the "Your Crown Head Spa booking..."
+   opening line, keeping the message inside the 160-char single-segment
+   limit (Semaphore bills per 160-char segment; going over doubles the
+   cost of every send). */
+function shortBranchName(branch){
+    return String(branch || "").replace(/^Crown Head Spa\s*/i, "");
+}
+
+/* No link in this text — Smart silently drops SMS containing a URL from
+   a sender name that isn't separately whitelisted for link content
+   (confirmed via isolated test sends; a bare URL alone never arrived).
+   The email confirmation still carries the website link. */
+function buildConfirmationSmsText({ clientName, branch, serviceName, date, time, companions }){
+    const companionNames =
+        Array.isArray(companions)
+            ? companions.map(function(companion){ return companion.name; }).filter(Boolean)
+            : [];
+
+    const companionLine =
+        companionNames.length > 0
+            ? `\nCompanion: ${companionNames.join(", ")}`
+            : "";
+
+    return toGsm7Safe(
+        `Hi ${clientName || "there"}! Your Crown Head Spa booking is confirmed:\n` +
+        `Service: ${serviceName}\n` +
+        `Branch: ${shortBranchName(branch)}\n` +
+        `Date: ${date}, ${time}` +
+        companionLine +
+        `\nSee you soon!`
     );
 }
 
@@ -933,12 +971,16 @@ exports.sendAppointmentSmsConfirmation = onCall(
             throw new HttpsError("invalid-argument", "mobile is required.");
         }
 
+        const companions =
+            Array.isArray(data.companions) ? data.companions : [];
+
         const message = buildConfirmationSmsText({
             clientName: String(data.clientName || "").trim(),
             branch: String(data.branch || "").trim(),
             serviceName: String(data.serviceName || "").trim(),
             date: formatDisplayDate(String(data.date || "").trim()),
-            time: String(data.time || "").trim()
+            time: String(data.time || "").trim(),
+            companions: companions
         });
 
         let response;

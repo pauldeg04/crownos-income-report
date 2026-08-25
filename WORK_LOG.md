@@ -4,6 +4,51 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-26 — Scheduling: manual Mobile/Email fields on appointments, SMS text rework
+
+**Requested by:** User — booking confirmations (Email/SMS) previously only
+worked for appointments created from a web booking request, since that was
+the only path that carried a mobile/email. Staff booking a client directly
+in Scheduling had no way to trigger a confirmation.
+
+- [scheduling.html](scheduling.html): added **Mobile Number** and
+  **Email Address** fields to the Add/Edit Appointment modal, next to
+  Client.
+- [scheduling.js](scheduling.js): the modal's mobile/email fields are now
+  the single source for the confirmation popup and for backfilling the
+  client's contact info (`ensureClientExists`), replacing the old
+  `pendingRequestContact` (booking-request-only) path — auto-filled from
+  the booking request when the appointment originates from one, but now
+  editable and usable for any appointment. Saved onto the schedule record
+  as `mobile` / `email`.
+- [functions/index.js](functions/index.js): `buildConfirmationSmsText`
+  reworked — strips diacritics (`toGsm7Safe`) so an accented character
+  (e.g. "Biñan") doesn't silently bump the whole message into Unicode
+  encoding, which Smart was dropping despite Semaphore reporting "Sent";
+  drops the "Crown Head Spa" prefix from the branch name
+  (`shortBranchName`) to stay inside the 160-char single-segment limit;
+  adds companion names to the message body.
+- [manual.html](manual.html): Chapter 13 (Scheduling) updated — contact
+  fields are entered directly on the appointment now, not only inherited
+  from a web booking request.
+
+## 2026-08-26 — Notifications: tap/click now navigates to the subject
+
+**Requested by:** User — tapping (mobile) or clicking (desktop) a
+notification in the bell panel only marked it read; it should also jump to
+whatever the notification is about, e.g. a Memo notification should open
+the Memo page.
+
+- [sidebar.js](sidebar.js): notification rows now carry the source item's
+  `type` (`data-type`), and clicking one (same handler for tap and click)
+  marks it read as before, then routes to the matching page via a new
+  `NOTIFICATION_TYPE_PAGES` map — `schedule` → Staff Schedule, `attendance`
+  → Attendance, `memo` → Memo, `announcement` → Announcement,
+  `booking-request` → Booking Requests. No-ops (stays put) if already on
+  that page or the type is unrecognized.
+- [manual.html](manual.html): Notifications entry in Chapter — Toolbar
+  updated to describe the new tap/click-to-navigate behavior.
+
 ## 2026-08-25 — BIR Compliance Desk: fixed zero-padding cards across the whole page
 
 **Requested by:** User — screenshot showed "Next deadline" / "Missing

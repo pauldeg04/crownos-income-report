@@ -60,14 +60,6 @@ let activeHoldsCache = [];
    closeModal() on cancel, or by saveSchedule() after use. */
 let pendingRequestId = null;
 
-/* The mobile/email the guest entered on the public booking form, carried
-   alongside pendingRequestId so saveSchedule() can back-fill it onto the
-   client's record in crownClientMasterList (see ensureClientExists) —
-   otherwise a client created from a booking request would have no
-   Contact info recorded anywhere except free-text inside Notes. Cleared
-   wherever pendingRequestId is cleared. */
-let pendingRequestContact = null;
-
 document.addEventListener("DOMContentLoaded", async function(){
     initializeDate();
     loadBranchOptions();
@@ -2963,6 +2955,8 @@ async function openNewModalFromBookingRequest(requestId){
     openNewModal(null, parseDisplayTimeToValue(request.time));
 
     document.getElementById("modalClient").value = request.clientName || "";
+    document.getElementById("modalMobile").value = request.mobile || "";
+    document.getElementById("modalEmail").value = request.email || "";
     resetModalServices(request.serviceName ? [request.serviceName] : []);
 
     const contactLines = [request.mobile, request.email]
@@ -3004,10 +2998,6 @@ async function openNewModalFromBookingRequest(requestId){
     updateModalPreview();
 
     pendingRequestId = requestId;
-    pendingRequestContact = {
-        mobile: request.mobile || "",
-        email: request.email || ""
-    };
 
     /* Drop the query param so refreshing the page doesn't reopen the
        same prefilled modal. */
@@ -3078,6 +3068,12 @@ function openEditModal(scheduleId){
     document.getElementById("modalClient").value =
         item.client || "";
 
+    document.getElementById("modalMobile").value =
+        item.mobile || "";
+
+    document.getElementById("modalEmail").value =
+        item.email || "";
+
     const savedServiceNames =
         Array.isArray(item.services) && item.services.length > 0
             ? item.services
@@ -3140,6 +3136,8 @@ function updateSelectedSlotLabel(){
 
 function resetModalFields(){
     document.getElementById("modalClient").value = "";
+    document.getElementById("modalMobile").value = "";
+    document.getElementById("modalEmail").value = "";
     document.getElementById("modalTherapist").value = "";
     document.getElementById("modalStatus").value = "Confirmed";
     document.getElementById("modalNotes").value = "";
@@ -3290,6 +3288,12 @@ async function saveSchedule(){
 
     const client =
         document.getElementById("modalClient").value.trim();
+
+    const mobile =
+        document.getElementById("modalMobile").value.trim();
+
+    const email =
+        document.getElementById("modalEmail").value.trim();
 
     const services =
         getSelectedServiceObjects();
@@ -3528,8 +3532,8 @@ async function saveSchedule(){
         }
     }
 
-    const confirmationEmail = pendingRequestContact?.email || "";
-    const confirmationMobile = pendingRequestContact?.mobile || "";
+    const confirmationEmail = email;
+    const confirmationMobile = mobile;
 
     const confirmation =
         await openSendConfirmationModal(!!confirmationEmail, !!confirmationMobile);
@@ -3567,6 +3571,8 @@ async function saveSchedule(){
     const scheduleData = {
         id: mainId,
         client: client,
+        mobile: mobile,
+        email: email,
         services: services.map(function(service){
             return service.name;
         }),
@@ -3784,7 +3790,7 @@ async function saveSchedule(){
     await ensureClientExists(
         client,
         branch.name,
-        pendingRequestContact?.mobile || ""
+        mobile
     );
 
     for(const payload of companionPayloads){
@@ -3897,7 +3903,8 @@ function sendAppointmentConfirmations(confirmation, details){
             branch: details.branch,
             serviceName: details.serviceName,
             date: details.date,
-            time: details.time
+            time: details.time,
+            companions: details.companions
         }).catch(function(error){
             console.error("Failed to send appointment SMS confirmation:", error);
             alert(
@@ -4085,7 +4092,6 @@ function closeModal(){
     selectedBed = null;
     selectedStartTime = "";
     pendingRequestId = null;
-    pendingRequestContact = null;
 
     resetModalFields();
 }

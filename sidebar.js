@@ -1361,6 +1361,7 @@
                             class="notification-item ${item.read ? "" : "unread"}"
                             data-id="${escapeHtml(item.id)}"
                             data-source="${escapeHtml(item.source)}"
+                            data-type="${escapeHtml(item.type || "")}"
                         >
                             <strong>${escapeHtml(item.message)}</strong>
                             <small>${escapeHtml(formatNotificationDate(item))}</small>
@@ -1383,8 +1384,42 @@
 
                     row.classList.remove("unread");
                     updateNotificationBadge(recipient);
+
+                    const destination =
+                        getNotificationDestination(row.dataset.type);
+
+                    if(destination){
+                        window.location.href = destination;
+                    }
                 });
             });
+    }
+
+    /* Maps a notification's type to the page it's about, so tapping/
+       clicking a notification (bell panel or a future push notification)
+       takes the user straight there instead of just marking it read. */
+    const NOTIFICATION_TYPE_PAGES = {
+        schedule: "staff-schedule.html",
+        attendance: "attendance.html",
+        memo: "memos.html",
+        announcement: "admin-announcement.html",
+        "booking-request": "booking-requests.html"
+    };
+
+    function getNotificationDestination(type){
+        const page = NOTIFICATION_TYPE_PAGES[type || "schedule"];
+
+        if(!page || page === currentPageFileName()){
+            return null;
+        }
+
+        return page;
+    }
+
+    function currentPageFileName(){
+        return (
+            window.location.pathname.split("/").pop() || "index.html"
+        );
     }
 
     function formatNotificationDate(item){
