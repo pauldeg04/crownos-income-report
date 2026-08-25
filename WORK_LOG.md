@@ -4,6 +4,24 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-25 — BIR Compliance Desk: fixed zero-padding cards across the whole page
+
+**Requested by:** User — screenshot showed "Next deadline" / "Missing
+documents" card headings flush against the card's top-left corner, no
+breathing room, across many cards on the page.
+
+- [bir-compliance.css](bir-compliance.css): `shared.css`'s `.card` has no
+  padding of its own — it expects a nested `.card-body` wrapper
+  (bootstrap's pattern), which the ported `render*()` functions in
+  [bir-compliance.js](bir-compliance.js) never include (they build
+  `<div class="card">` directly, matching the original CrownADMIN app's
+  own `.card`, which carried its own `padding:18px 20px` — lost when that
+  rule wasn't ported over). Added `padding:18px 20px; margin-bottom:16px;`
+  straight onto `.card` in this stylesheet, matching the original. Since
+  nearly every view on this page is built from `.card` blocks, this one
+  rule was the fix for every instance of the cramped look, not just the
+  Dashboard cards in the screenshot.
+
 ## 2026-08-25 — BIR Compliance Desk: fixed the misplaced ₱ marker on money fields
 
 **Requested by:** User — screenshots showed a stray mark floating over each
