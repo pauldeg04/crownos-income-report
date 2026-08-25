@@ -132,6 +132,15 @@ service cloud.firestore {
         request.auth.token.role in ['Admin', 'Executive Assistant'];
     }
 
+    /* BIR Compliance Desk — same reasoning as appDataCashflow above: its
+       own collection, not a key inside appData, so the blanket "any
+       authenticated user" query on appData never has to account for a
+       restricted document mixed in. */
+    match /birCompliance/{docId} {
+      allow read, write: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
+    }
+
     /* --- Admin Hub collections --- */
 
     /* Single-slot announcement, doc id always "current". Only Admin may

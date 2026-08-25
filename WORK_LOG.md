@@ -4,6 +4,52 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-25 — New page: BIR Compliance Desk, ported from the standalone CrownADMIN app
+
+**Requested by:** User — integrate the separate "CrownADMIN" app (a BIR tax
+compliance tracker with its own Google Sign-In, sidebar, theme, and
+Firebase project) into CrownOS as a normal page: no separate login, a
+sidebar entry, CrownOS's own theme, and its own Firebase project's data
+migrated to CrownOS's project (`crownos-5f03d`). Access limited to Admin +
+Executive Assistant. The old `CrownADMIN/` folder and its `crown-admin-cfa9e`
+Firebase project are left untouched as a dormant backup — not deployed, not
+linked from anywhere.
+
+- New [bir-compliance.html](bir-compliance.html) / [bir-compliance.js](bir-compliance.js) /
+  [bir-compliance.css](bir-compliance.css): the ported app, unchanged in
+  business logic (tax-period tracking, document checklist, accountant/owner
+  approval workflow, tax calendar, filings, CSV/print reports, audit trail).
+  Its own Google Sign-In gate, allowlist ("Manage access" in Settings), and
+  `firebase-config.js` are gone — it now runs on the CrownOS session
+  (`window.CrownAuth`) and CrownOS's own Firebase app, syncing to a new
+  `birCompliance/state` Firestore document instead of the old project's
+  `app/state`. Its own internal sidebar/topbar became a header actions row
+  (period selector, workflow role switch, acting-name field, sync status)
+  plus a `.tabs` view-switcher, styled with CrownOS's `shared.css` tokens
+  instead of its own dark-green theme.
+- [sidebar.js](sidebar.js): new "Compliance" section, "🧾 BIR Compliance
+  Desk" entry (`roles: ["Admin", "Executive Assistant"]`, no
+  `branchRequired` — company-wide).
+- [access-control.js](access-control.js): `PAGE_ACCESS["bir-compliance.html"]`
+  gate, same two roles.
+- [firestore.rules](firestore.rules): new `birCompliance` collection rule,
+  same shape as `appDataCashflow` (its own collection rather than a key
+  inside `appData`, so a restricted document never breaks the blanket
+  "any authenticated user" query other roles rely on).
+- [storage.rules](storage.rules): new file — CrownOS had no Cloud Storage
+  usage before this. Restricts `birCompliance/**` uploads (BMBE
+  certificate, document checklist files, filing/payment proofs) to the
+  same two roles. [firebase.json](firebase.json) gained the matching
+  `"storage"` config block (explicit `bucket`, since `--only storage:rules`
+  alone errored with "Could not find rules for the following storage
+  targets: rules" until the bucket was named explicitly and deploy used
+  `--only storage` instead).
+- [manual.html](manual.html): new **Part Eight · Compliance**, Chapter 30
+  "BIR Compliance Desk", inserted before the Reference part (now Part
+  Nine, Checklists/Troubleshooting renumbered 31/32). Chapter 3's
+  sidebar-layout table gained a Compliance row; Chapter 4's role matrix
+  gained a BIR Compliance Desk row (Admin/Executive Assistant only).
+
 ## 2026-08-25 — Ads Monitoring: full-history View modal widened + History moved to a collapsed section
 
 **Requested by:** User — two separate "too cramped" complaints, addressed

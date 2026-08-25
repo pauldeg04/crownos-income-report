@@ -1,0 +1,21 @@
+rules_version = '2';
+
+// CrownOS did not use Cloud Storage before the BIR Compliance Desk was
+// added — this file is new. Cloud Storage must be enabled for the
+// crownos-5f03d project in the Firebase Console (if not already) before
+// uploads will work, and these rules deployed via
+// `firebase deploy --only storage:rules` (or set through the console).
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // BMBE certificate, per-document checklist files, and filing/payment
+    // proofs uploaded from bir-compliance.html — see uploadFile() in
+    // bir-compliance.js. Mirrors the birCompliance Firestore collection's
+    // access rule (Admin + Executive Assistant, matched on the same
+    // Firebase Auth custom claim minted by the syncMyRole Cloud Function).
+    match /birCompliance/{allPaths=**} {
+      allow read, write: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
+    }
+  }
+}

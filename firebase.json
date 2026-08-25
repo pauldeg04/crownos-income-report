@@ -3,6 +3,10 @@
         "rules": "firestore.rules",
         "indexes": "firestore.indexes.json"
     },
+    "storage": {
+        "bucket": "crownos-5f03d.firebasestorage.app",
+        "rules": "storage.rules"
+    },
     "functions": [
         {
             "source": "functions",
@@ -16,6 +20,7 @@
             "firebase.json",
             "firestore.rules",
             "firestore.indexes.json",
+            "storage.rules",
             "**/.*",
             "**/node_modules/**",
             "*.txt",

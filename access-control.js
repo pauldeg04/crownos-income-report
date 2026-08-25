@@ -50,6 +50,11 @@
             "Admin"
         ],
 
+        "bir-compliance.html": [
+            "Admin",
+            "Executive Assistant"
+        ],
+
         "loyalty-card-summary.html": [
             "Admin"
         ],

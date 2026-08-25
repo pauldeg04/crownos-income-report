@@ -311,17 +311,29 @@
                         </div>
 
                         <div class="manual-contents-part">
-                            <h3>Part Eight &middot; Reference</h3>
+                            <h3>Part Eight &middot; Compliance</h3>
+                            <ol>
+                                <li>
+                                    <a href="#ch-bir-compliance">
+                                        <span class="manual-ch">30</span>
+                                        <span>BIR Compliance Desk</span>
+                                    </a>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <div class="manual-contents-part">
+                            <h3>Part Nine &middot; Reference</h3>
                             <ol>
                                 <li>
                                     <a href="#ch-checklists">
-                                        <span class="manual-ch">30</span>
+                                        <span class="manual-ch">31</span>
                                         <span>Checklists</span>
                                     </a>
                                 </li>
                                 <li>
                                     <a href="#ch-faq">
-                                        <span class="manual-ch">31</span>
+                                        <span class="manual-ch">32</span>
                                         <span>Troubleshooting</span>
                                     </a>
                                 </li>
@@ -524,6 +536,10 @@
           <td>Ads Monitoring · Monitoring Summary — see Part Seven</td>
         </tr>
         <tr>
+          <td><strong>Compliance</strong></td>
+          <td>BIR Compliance Desk — see Part Eight</td>
+        </tr>
+        <tr>
           <td><strong>Inventory</strong></td>
           <td>Warehouse · Branches</td>
         </tr>
@@ -621,6 +637,7 @@
         <tr><td>Incident Report (Admin Hub)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
         <tr><td>Ads Monitoring</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
         <tr><td>Monitoring Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
+        <tr><td>BIR Compliance Desk</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
         <tr><td>Inventory (all pages)</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
         <tr><td>Statistics</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
         <tr><td>Petty Cash</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
@@ -2444,12 +2461,136 @@ Branch receives    →  it is added to the branch's Available Stock</div>
 <!-- ================= PART EIGHT ================= -->
 <div class="part-opener">
   <p class="part-label">Part Eight</p>
+  <h2>Compliance</h2>
+  <p>Organizing monthly business data for BIR tax filing — not a filer, and not a substitute for your accountant.</p>
+</div>
+
+<section id="ch-bir-compliance">
+  <h2><span class="h2-num">Chapter 30</span>BIR Compliance Desk</h2>
+
+  <ul class="roleline">
+    <li><span class="pill pill-role">Admin</span></li>
+    <li><span class="pill pill-role">Executive Assistant</span></li>
+  </ul>
+
+  <div class="stop">
+    <span class="callout-label">What this is not</span>
+    <p>
+      The BIR Compliance Desk does not file anything with the BIR and does
+      not compute an official, final tax due. Every figure it shows is an
+      <strong>estimate for preparation only</strong>, always subject to your
+      accountant's review — this is stated on the Dashboard and Estimated
+      Tax screens themselves.
+    </p>
+  </div>
+
+  <p>
+    Company-wide, not per-branch — it does not follow the Branch selector
+    in the top toolbar, and works the same regardless of which branch you
+    have selected. Its data is completely separate from the rest of
+    CrownOS: nothing here affects Daily Income Report, Cash Flow, or any
+    other page, and nothing from those pages feeds into it automatically.
+  </p>
+
+  <h3>Layout</h3>
+
+  <p>
+    A header bar holds the <strong>Tax Period</strong> selector
+    (<span class="ui">+ Period</span> creates a new month), a workflow
+    <strong>role switch</strong> — Owner / Accountant / Admin — that
+    controls which action buttons are enabled elsewhere on the page (this
+    is separate from your CrownOS login role), a
+    <strong>Your name</strong> field recorded on every audit-trail entry
+    you make, and a sync-status indicator. Below that, a row of tabs
+    switches between the desk's own views:
+  </p>
+
+  <dl class="deflist">
+    <dt>Dashboard</dt>
+    <dd>The estimated tax to prepare for the selected period, workflow
+      status, data completeness, next deadline, and missing documents —
+      plus a <span class="ui">Copy summary for Accountant</span> button
+      that copies a plain-text summary to the clipboard.</dd>
+
+    <dt>Monthly Business Data</dt>
+    <dd>Tabbed entry for the period's Sales &amp; Branches, Purchases,
+      Operating Expenses, Payroll, Withholding, Previous Payments/Credits,
+      BMBE registration, and Other Items.</dd>
+
+    <dt>Documents</dt>
+    <dd>A per-category checklist (Sales, Expenses, Payroll, Withholding,
+      Tax) with a status dropdown and file attachment per document.</dd>
+
+    <dt>Estimated Tax</dt>
+    <dd>The computed Percentage Tax, Income Tax, EWT, and Compensation
+      Withholding estimates, with an expandable computation breakdown.</dd>
+
+    <dt>Accountant Review</dt>
+    <dd>Set tax applicability and rates, log adjustments against the
+      original figures (nothing is overwritten — every change is kept),
+      and mark the estimate Accountant-Approved. Enabled when the workflow
+      role switch is set to Accountant or Admin.</dd>
+
+    <dt>Owner Approval</dt>
+    <dd>Approve for Filing, Return to Accountant, Request Clarification,
+      or Place on Hold. Enabled when the workflow role switch is set to
+      Owner or Admin.</dd>
+
+    <dt>Tax Calendar</dt>
+    <dd>BIR form deadlines (1601-C, 2551Q, 1702Q, and so on) — not tied to
+      a specific tax period.</dd>
+
+    <dt>Filings &amp; Payments</dt>
+    <dd>The actual filing/payment record once a return is filed — form,
+      reference number, payment date/amount, and proof-of-filing /
+      proof-of-payment attachments.</dd>
+
+    <dt>Tax Fund</dt>
+    <dd>Compares the estimated tax against how much has been set aside so
+      far, and flags a shortfall.</dd>
+
+    <dt>Period Comparison</dt>
+    <dd>Side-by-side figures for any two tax periods.</dd>
+
+    <dt>Reports</dt>
+    <dd>CSV exports (sales, expenses, withholding, missing documents, tax
+      calendar, filing history, audit trail) and a printable monthly BIR
+      summary.</dd>
+
+    <dt>Audit Trail</dt>
+    <dd>A read-only log of every recorded change, tagged with the acting
+      name and workflow role at the time.</dd>
+
+    <dt>BIR Assistant</dt>
+    <dd>Canned Tagalog Q&amp;A about the current period, generated from
+      the data already on this desk — it does not call out to any outside
+      service and never sets its own rate, deadline, or conclusion.</dd>
+
+    <dt>Settings</dt>
+    <dd>Business registration details, registered branches, and a full
+      JSON backup export separate from CrownOS's own Data Protection
+      backup.</dd>
+  </dl>
+
+  <div class="note">
+    <span class="callout-label">Uploaded files</span>
+    <p>
+      BMBE certificates, document attachments, and filing/payment proofs
+      are stored in Firebase Storage, not inside the tax-period data
+      itself.
+    </p>
+  </div>
+</section>
+
+<!-- ================= PART NINE ================= -->
+<div class="part-opener">
+  <p class="part-label">Part Nine</p>
   <h2>Reference</h2>
   <p>Routines to follow, and what to do when something goes wrong.</p>
 </div>
 
 <section id="ch-checklists">
-  <h2><span class="h2-num">Chapter 30</span>Checklists</h2>
+  <h2><span class="h2-num">Chapter 31</span>Checklists</h2>
 
   <h3>Opening the branch</h3>
   <ul class="checklist">
@@ -2495,7 +2636,7 @@ Branch receives    →  it is added to the branch's Available Stock</div>
 </section>
 
 <section id="ch-faq">
-  <h2><span class="h2-num">Chapter 31</span>Troubleshooting</h2>
+  <h2><span class="h2-num">Chapter 32</span>Troubleshooting</h2>
 
   <details>
     <summary>The page shows no data.</summary>

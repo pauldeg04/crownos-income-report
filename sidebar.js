@@ -98,7 +98,8 @@
         "Leave Request": "⌘",
         "Incident Report": "!",
         "Ads Monitoring": "📣",
-        "Monitoring Summary": "📈"
+        "Monitoring Summary": "📈",
+        "BIR Compliance Desk": "🧾"
     };
 
     const MENU_ITEMS = [
@@ -215,6 +216,14 @@
             href: "inventory-branches.html",
             roles: ["Admin"],
             branchRequired: true
+        },
+
+        { section: "Compliance" },
+
+        {
+            label: "BIR Compliance Desk",
+            href: "bir-compliance.html",
+            roles: ["Admin", "Executive Assistant"]
         },
 
         { section: "Summary Reports" },
@@ -1430,7 +1439,8 @@
             "leave-requests.html": "Leave Request",
             "incident-report.html": "Incident Report",
             "marketing-ads-daily.html": "Ads Monitoring",
-            "marketing-ads-summary.html": "Monitoring Summary"
+            "marketing-ads-summary.html": "Monitoring Summary",
+            "bir-compliance.html": "BIR Compliance Desk"
         };
 
         return titles[currentPage] || "CrownOS";
