@@ -4,6 +4,26 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-25 — BIR Compliance Desk: fixed the misplaced ₱ marker on money fields
+
+**Requested by:** User — screenshots showed a stray mark floating over each
+money field's label instead of sitting inside the input, right after the
+page above shipped.
+
+- [bir-compliance.css](bir-compliance.css): `.money-field::before`'s ₱
+  marker was positioned with `top:33px` (`top:10px` for `.compact`),
+  measured from the top of the field wrapper — which includes the label.
+  Any label taller than what those two hardcoded numbers assumed put the
+  ₱ sign over the label text instead of inside the input below it. Now
+  anchored from the `bottom` of the wrapper instead (`bottom:0` +
+  `height:38px` + `align-items:center`), which lines up with the input's
+  own box regardless of label height — removes the separate `.compact`
+  override entirely, since both cases now use the same rule. Also pinned
+  an explicit `font-family` on the marker (shared.css's Inter/Segoe UI
+  stack renders the ₱ glyph correctly, but tiny at 13px it can look like
+  a flag rather than a peso sign at a glance — confirmed by rendering it
+  large side-by-side with a plain "P").
+
 ## 2026-08-25 — New page: BIR Compliance Desk, ported from the standalone CrownADMIN app
 
 **Requested by:** User — integrate the separate "CrownADMIN" app (a BIR tax

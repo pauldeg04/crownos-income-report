@@ -67,10 +67,22 @@
 }
 .field textarea{ resize:vertical; min-height:56px; font-family:inherit; }
 .field{ margin-bottom:12px; }
+/* The ₱ marker sits on the .field wrapper (label + input), not the input
+   itself — inputs can't take ::before/::after. Anchored from the BOTTOM
+   so it always lands centered inside the input regardless of whether the
+   label above it is one line (compact) or wraps to two. */
 .money-field{ position:relative; }
 .money-field .fctl{ padding-left:26px; }
-.money-field::before{ content:"₱"; position:absolute; left:10px; top:33px; color:var(--soft-text); font-size:13px; }
-.money-field.compact::before{ top:10px; }
+.money-field::before{
+    content:"₱"; position:absolute; left:10px; bottom:0;
+    height:38px; display:flex; align-items:center;
+    color:var(--soft-text); font-size:13px; pointer-events:none;
+    /* shared.css's body font stack (Inter, not actually loaded, then
+       "Segoe UI") has no ₱ glyph on most systems and falls back to a
+       tofu/flag-shaped placeholder — force a stack that reliably covers
+       the peso sign instead. */
+    font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+}
 
 /* ---------- Buttons (bootstrap already covers .btn-primary/.btn-danger/.btn-sm) ---------- */
 .btn-ghost{ background:#fff; color:var(--ink); border:1px solid var(--border); font-weight:700; font-size:13px; border-radius:8px; padding:8px 14px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
