@@ -1,3 +1,12 @@
+/* VIP Point System: ₱1 spent earns 1 point (so ₱500 = 500 points);
+   100 points redeem for ₱1 credit on a future visit. */
+const VIP_POINTS_PER_PESO = 1;
+const VIP_POINTS_PER_PESO_CREDIT = 100;
+
+function computeEarnedPoints(amount){
+    return Math.floor(Math.max(0, Number(amount) || 0) * VIP_POINTS_PER_PESO);
+}
+
 const BRANCH_MASTER_KEY = "crownBranchMasterList";
 const SELECTED_BRANCH_KEY = "crownSelectedBranch";
 const SALES_PREFIX = "crownDailySales_";
@@ -22,7 +31,7 @@ function applyRoleRestrictions(){
         return;
     }
 
-    ["openImportClientsBtn", "openAddClientBtn"].forEach(function(id){
+    ["openAddClientBtn"].forEach(function(id){
         const el = document.getElementById(id);
 
         if(el){
@@ -52,6 +61,18 @@ document.addEventListener("DOMContentLoaded", async function(){
     document
         .getElementById("saveClientBtn")
         .addEventListener("click", saveClient);
+
+    document
+        .getElementById("vipStatus")
+        .addEventListener("change", function(){
+            toggleVipPointsWrapper("vipPointsWrapper", this.value === "Yes");
+        });
+
+    document
+        .getElementById("editVipStatus")
+        .addEventListener("change", function(){
+            toggleVipPointsWrapper("editVipPointsWrapper", this.value === "Yes");
+        });
 
     document
         .getElementById("closeViewClientBtn")
@@ -100,27 +121,10 @@ document.addEventListener("DOMContentLoaded", async function(){
         });
     });
 
-    document
-        .getElementById("openImportClientsBtn")
-        .addEventListener("click", openImportClientsModal);
-
-    document
-        .getElementById("closeImportClientsBtn")
-        .addEventListener("click", closeImportClientsModal);
-
-    document
-        .getElementById("cancelImportClientsBtn")
-        .addEventListener("click", closeImportClientsModal);
-
-    document
-        .getElementById("runImportClientsBtn")
-        .addEventListener("click", runImportClients);
-
     [
         "addClientBackdrop",
         "viewClientBackdrop",
-        "editClientBackdrop",
-        "importClientsBackdrop"
+        "editClientBackdrop"
     ].forEach(function(id){
         document.getElementById(id).addEventListener("click", function(event){
             if(event.target === this){
@@ -194,6 +198,12 @@ function splitLegacyName(name){
         firstName: parts.slice(0, -1).join(" "),
         lastName: parts[parts.length - 1]
     };
+}
+
+/* VIP Points only means anything for a VIP client, so the field stays
+   hidden on the Add/Edit forms until VIP Status is switched to Yes. */
+function toggleVipPointsWrapper(wrapperId, show){
+    document.getElementById(wrapperId).classList.toggle("d-none", !show);
 }
 
 function digitsOnly(value){
@@ -489,6 +499,8 @@ function openAddClientModal(){
 
     document.getElementById("homeBranch").value = selectedBranch;
     document.getElementById("vipStatus").value = "No";
+    document.getElementById("vipPoints").value = "0";
+    toggleVipPointsWrapper("vipPointsWrapper", false);
     document.getElementById("loyaltyCardNumber").value = "";
     document.getElementById("clientNotes").value = "";
 
@@ -531,6 +543,11 @@ function saveClient(){
     const vip =
         document.getElementById("vipStatus").value;
 
+    const points =
+        vip === "Yes"
+            ? Math.max(0, Number(document.getElementById("vipPoints").value) || 0)
+            : 0;
+
     const loyaltyCardNumber =
         document.getElementById("loyaltyCardNumber").value.trim();
 
@@ -567,6 +584,7 @@ function saveClient(){
         homeAddress: homeAddress,
         branch: branch,
         vip: vip,
+        points: points,
         loyaltyCardNumber: loyaltyCardNumber,
         notes: notes,
         totalVisits: 0,
@@ -640,6 +658,11 @@ function collectClientVisits(clientName){
                     .join(", ");
             };
 
+            const saleAmount =
+                Number.isFinite(Number(sale.netAmount))
+                    ? Number(sale.netAmount)
+                    : Number(sale.grossAmount) || 0;
+
             if(
                 normalizeClientName(sale.client).toLowerCase() ===
                 target
@@ -650,10 +673,8 @@ function collectClientVisits(clientName){
                     items: itemNames(sale.services) || "—",
                     therapist: sale.therapist || "—",
                     payment: sale.payment || (sale.payments?.length ? "Multiple" : "—"),
-                    amount:
-                        Number.isFinite(Number(sale.netAmount))
-                            ? Number(sale.netAmount)
-                            : Number(sale.grossAmount) || 0
+                    amount: saleAmount,
+                    earnedPoints: computeEarnedPoints(saleAmount)
                 });
             }
 
@@ -678,9 +699,31 @@ function collectClientVisits(clientName){
                         items: itemNames(companion.items) || "—",
                         therapist: companion.therapist || "—",
                         payment: "Companion of " + (sale.client || "—"),
-                        amount: companionAmount
+                        amount: companionAmount,
+                        earnedPoints: computeEarnedPoints(companionAmount)
                     });
                 });
+
+            /* Referral: someone else used this client's VIP card for
+               their own visit — the card owner still earns points on
+               that transaction, per the VIP Point System's referral
+               rule. Skipped when the owner is the one who used their
+               own card (that's just their own visit above already). */
+            if(
+                sale.vipCardOwnerName &&
+                normalizeClientName(sale.vipCardOwnerName).toLowerCase() === target &&
+                normalizeClientName(sale.client).toLowerCase() !== target
+            ){
+                visits.push({
+                    date: sale.reportDate || record.date || sale.startTime?.slice(0, 10) || "",
+                    branch: record.branch || sale.branch || "",
+                    items: itemNames(sale.services) || "—",
+                    therapist: sale.therapist || "—",
+                    payment: "VIP Card used by " + (sale.client || "—"),
+                    amount: saleAmount,
+                    earnedPoints: computeEarnedPoints(saleAmount)
+                });
+            }
         });
     }
 
@@ -709,6 +752,7 @@ function openViewClientModal(clientId){
         <div><span>Home Address</span><strong>${escapeHtml(client.homeAddress || "—")}</strong></div>
         <div><span>Home Branch</span><strong>${escapeHtml(client.branch || "—")}</strong></div>
         <div><span>VIP Status</span><strong>${client.vip === "Yes" ? "VIP" : "Non-VIP"}</strong></div>
+        <div><span>VIP Points</span><strong>${client.vip === "Yes" ? (Number(client.points) || 0) : "—"}</strong></div>
         <div><span>Loyalty Card Number</span><strong>${escapeHtml(client.loyaltyCardNumber || "—")}</strong></div>
         <div><span>Total Visits</span><strong>${Number(client.totalVisits) || 0}</strong></div>
         <div><span>Last Visit</span><strong>${formatDate(client.lastVisit)}</strong></div>
@@ -745,6 +789,7 @@ function renderClientVisitsTable(client){
                 <td>${escapeHtml(visit.therapist)}</td>
                 <td>${escapeHtml(visit.payment)}</td>
                 <td class="visit-amount-cell">${peso(visit.amount)}</td>
+                <td class="visit-points-cell">${client.vip === "Yes" ? Number(visit.earnedPoints || 0).toLocaleString("en-PH") : "—"}</td>
                 <td class="visit-forms-cell">
                     ${
                         window.ClientForms
@@ -802,6 +847,8 @@ function openEditClientModal(clientId){
     document.getElementById("editHomeAddress").value = client.homeAddress || "";
     document.getElementById("editHomeBranch").value = client.branch || "";
     document.getElementById("editVipStatus").value = client.vip || "No";
+    document.getElementById("editVipPoints").value = Number(client.points) || 0;
+    toggleVipPointsWrapper("editVipPointsWrapper", client.vip === "Yes");
     document.getElementById("editLoyaltyCardNumber").value = client.loyaltyCardNumber || "";
 
     document.getElementById("editClientBackdrop").classList.remove("d-none");
@@ -864,6 +911,13 @@ function updateClient(){
     client.homeAddress = document.getElementById("editHomeAddress").value.trim();
     client.branch = document.getElementById("editHomeBranch").value;
     client.vip = document.getElementById("editVipStatus").value;
+
+    /* Points stay on the record even if VIP status is toggled off —
+       just not shown/used while Non-VIP, so a mistaken toggle doesn't
+       wipe an accumulated balance. */
+    client.points =
+        Math.max(0, Number(document.getElementById("editVipPoints").value) || 0);
+
     client.loyaltyCardNumber = document.getElementById("editLoyaltyCardNumber").value.trim();
 
     saveClientsToStorage();
@@ -895,157 +949,3 @@ function deleteClient(clientId){
     renderClients();
 }
 
-/* ---------- Import Clients modal ---------- */
-
-function openImportClientsModal(){
-    document.getElementById("importClientsFileInput").value = "";
-
-    const result = document.getElementById("importClientsResult");
-    result.classList.add("d-none");
-    result.textContent = "";
-
-    document.getElementById("importClientsBackdrop").classList.remove("d-none");
-}
-
-function closeImportClientsModal(){
-    document.getElementById("importClientsBackdrop").classList.add("d-none");
-}
-
-function runImportClients(){
-    const fileInput = document.getElementById("importClientsFileInput");
-    const file = fileInput.files && fileInput.files[0];
-
-    if(!file){
-        alert("Please choose a JSON file to import.");
-        return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = function(){
-        let parsed;
-
-        try{
-            parsed = JSON.parse(reader.result);
-        }catch(error){
-            alert("That file is not valid JSON.");
-            return;
-        }
-
-        if(!Array.isArray(parsed)){
-            alert("The file must contain a JSON array of client records.");
-            return;
-        }
-
-        const fillBlanks =
-            document.getElementById("importFillBlanksCheckbox").checked;
-
-        mergeImportedClients(parsed, fillBlanks);
-    };
-
-    reader.onerror = function(){
-        alert("Unable to read that file.");
-    };
-
-    reader.readAsText(file);
-}
-
-/* Fields eligible for "fill blanks on match" — never includes name parts
-   (the match key itself) or vip/totalVisits/lastVisit/totalSpent (real
-   business data that must never be silently touched by an import). */
-const FILLABLE_IMPORT_FIELDS = [
-    "sex", "contactNumber", "email", "birthday",
-    "homeAddress", "branch", "loyaltyCardNumber", "notes"
-];
-
-function mergeImportedClients(importedRecords, fillBlanks){
-    const byName = new Map(
-        clients.map(function(client){
-            return [normalizeNameForCompare(getClientDisplayName(client)), client];
-        })
-    );
-
-    let imported = 0;
-    let updated = 0;
-    let skippedDuplicate = 0;
-    let skippedNoName = 0;
-
-    importedRecords.forEach(function(record){
-        const displayName =
-            getClientDisplayName(record).trim();
-
-        if(!displayName){
-            skippedNoName++;
-            return;
-        }
-
-        const key = normalizeNameForCompare(displayName);
-
-        if(byName.has(key)){
-            if(fillBlanks){
-                const existing = byName.get(key);
-                let touched = false;
-
-                FILLABLE_IMPORT_FIELDS.forEach(function(field){
-                    if(!existing[field] && record[field]){
-                        existing[field] = record[field];
-                        touched = true;
-                    }
-                });
-
-                if(touched){
-                    existing.updatedAt = new Date().toISOString();
-                    updated++;
-                }else{
-                    skippedDuplicate++;
-                }
-            }else{
-                skippedDuplicate++;
-            }
-
-            return;
-        }
-
-        byName.set(key, record);
-        imported++;
-
-        clients.push({
-            id: record.id || createId(),
-            name: record.name || displayName,
-            lastName: record.lastName || "",
-            firstName: record.firstName || "",
-            middleInitial: record.middleInitial || "",
-            sex: record.sex || "",
-            contactNumber: record.contactNumber || "",
-            email: record.email || "",
-            birthday: record.birthday || "",
-            homeAddress: record.homeAddress || "",
-            branch: record.branch || "",
-            vip: record.vip === "Yes" ? "Yes" : "No",
-            loyaltyCardNumber: record.loyaltyCardNumber || "",
-            notes: record.notes || "",
-            totalVisits: 0,
-            lastVisit: "",
-            totalSpent: 0,
-            clientRole: "Principal",
-            principalClients: [],
-            salesBranches: [],
-            createdAt: record.createdAt || new Date().toISOString()
-        });
-    });
-
-    if(imported > 0 || updated > 0){
-        saveClientsToStorage();
-        renderClients();
-    }
-
-    const result = document.getElementById("importClientsResult");
-
-    result.textContent =
-        `Imported (new clients): ${imported}\n` +
-        (fillBlanks ? `Updated (filled blank fields on existing match): ${updated}\n` : "") +
-        `Skipped (already in database, no blanks to fill): ${skippedDuplicate}\n` +
-        `Skipped (no name): ${skippedNoName}`;
-
-    result.classList.remove("d-none");
-}

@@ -136,9 +136,26 @@ function attachEvents(){
   ["input", "change", "blur"].forEach(function(eventName){
     document.getElementById("modalClientInput").addEventListener(eventName, function(){
       refreshModalVipState();
+      refreshModalVipCardOwnerHint();
       renderModalItems();
       renderModalCompanions();
     });
+  });
+
+  document.getElementById("modalVipClientCheckbox").addEventListener("change", function(){
+    document.getElementById("modalVipCardNumberWrapper").classList.toggle("d-none", !this.checked);
+
+    if(!this.checked){
+      document.getElementById("modalVipCardNumberInput").value = "";
+      document.getElementById("modalVipCardOwnerHint").textContent = "";
+    }
+
+    refreshModalVipState();
+  });
+
+  document.getElementById("modalVipCardNumberInput").addEventListener("input", function(){
+    refreshModalVipCardOwnerHint();
+    refreshModalVipState();
   });
 
   document.getElementById("modalClientMoreBtn").addEventListener("click", function(){
@@ -765,6 +782,83 @@ function getClientByName(clientName){
       normalizedName
     );
   }) || null;
+}
+
+/* Finds the client who actually owns a VIP card number, so a borrowed
+   card can be acknowledged against its real owner (for future points
+   crediting) while still granting VIP pricing/status to whoever is
+   named in the Client field for this sale. */
+function findVipCardOwnerByNumber(cardNumber){
+  const target =
+    String(cardNumber || "").trim().toLowerCase();
+
+  if(!target){
+    return null;
+  }
+
+  return cachedClients.find(function(client){
+    return String(client?.loyaltyCardNumber || "").trim().toLowerCase() === target;
+  }) || null;
+}
+
+/* True only once the VIP Client checkbox is on AND the typed card
+   number actually matches a client record — an unchecked box or a
+   number nobody owns should not grant VIP pricing. */
+function modalHasValidVipCardNumber(){
+  const checkbox =
+    document.getElementById("modalVipClientCheckbox");
+
+  if(!checkbox?.checked){
+    return false;
+  }
+
+  const cardNumber =
+    document.getElementById("modalVipCardNumberInput").value.trim();
+
+  return Boolean(cardNumber) && Boolean(findVipCardOwnerByNumber(cardNumber));
+}
+
+/* Live "whose card is this" hint under the VIP Card Number field —
+   also defaults the "More" panel's VIP Status to Yes once a real
+   owner is found, since using a valid VIP card makes this client VIP
+   for this visit regardless of whose card it is. Also auto-picks the
+   Source: same name as the card owner means a Returning visit on
+   their own card; a different name means this visit is a Referral
+   riding on someone else's card. Re-run whenever either the card
+   number or the Client field changes, so the order typed doesn't
+   matter. */
+function refreshModalVipCardOwnerHint(){
+  const cardNumber =
+    document.getElementById("modalVipCardNumberInput").value.trim();
+
+  const hintEl =
+    document.getElementById("modalVipCardOwnerHint");
+
+  if(!cardNumber){
+    hintEl.textContent = "";
+    return;
+  }
+
+  const owner = findVipCardOwnerByNumber(cardNumber);
+
+  hintEl.textContent = owner
+    ? `Card belongs to: ${owner.name}`
+    : "No client found with this card number.";
+
+  if(owner){
+    document.getElementById("modalClientVipStatus").value = "Yes";
+
+    const clientName =
+      document.getElementById("modalClientInput").value.trim();
+
+    if(clientName){
+      document.getElementById("modalSourceInput").value =
+        normalizeClientName(clientName).toLowerCase() ===
+        normalizeClientName(owner.name).toLowerCase()
+          ? "Returning"
+          : "Referral";
+    }
+  }
 }
 
 function clientHasVipStatus(client){
@@ -1445,6 +1539,10 @@ function openNewSaleModal(){
 
   document.getElementById("modalTimeInput").value = currentTimeValue();
   document.getElementById("modalClientInput").value = "";
+  document.getElementById("modalVipClientCheckbox").checked = false;
+  document.getElementById("modalVipCardNumberWrapper").classList.add("d-none");
+  document.getElementById("modalVipCardNumberInput").value = "";
+  document.getElementById("modalVipCardOwnerHint").textContent = "";
   document.getElementById("modalSeniorPwdIdInput").value = "";
   document.getElementById("modalSourceInput").value = "Facebook";
   document.getElementById("modalTherapistInput").value = "";
@@ -1683,6 +1781,16 @@ function openEditSaleModal(saleId){
     sale.tinNumber || ""
   );
 
+  document.getElementById("modalVipClientCheckbox").checked =
+    Boolean(sale.vipCardNumberUsed);
+
+  document.getElementById("modalVipCardNumberWrapper")
+    .classList.toggle("d-none", !sale.vipCardNumberUsed);
+
+  document.getElementById("modalVipCardNumberInput").value =
+    sale.vipCardNumberUsed || "";
+
+  refreshModalVipCardOwnerHint();
   refreshModalVipState();
   renderModalItems();
   renderModalCompanions();
@@ -1715,6 +1823,61 @@ function closeSaleModal(){
   hideModalMessage();
 }
 
+
+/* Branch abbreviations used in the physical VIP card numbering scheme
+   (e.g. CBIN260701 = Crown, Biñan, 2026, July, card #001). */
+const VIP_CARD_BRANCH_CODES = {
+  "BIÑAN": "BIN",
+  "BINAN": "BIN",
+  "CALAMBA": "CAL",
+  "MAIN BRANCH": "MAIN",
+  "DEMO BRANCH": "DEMO"
+};
+
+function getVipCardBranchCode(branchName){
+  const key =
+    String(branchName || "")
+      .toUpperCase()
+      .replace(/^CROWN HEAD SPA\s+/, "")
+      .trim();
+
+  return (
+    VIP_CARD_BRANCH_CODES[key] ||
+    key.replace(/[^A-Z]/g, "").slice(0, 4) ||
+    "GEN"
+  );
+}
+
+/* New VIP card numbers follow the branch's own numbering convention:
+   C<BranchCode><YY><MM><NNN> — e.g. CBIN2608001. NNN is a per-branch,
+   per-year running count that keeps climbing all year and resets to
+   001 on a new year, independent of month. Finds the current highest
+   sequence for this branch+year across the client database and picks
+   the next one. */
+function generateVipCardNumber(branchName){
+  const code = getVipCardBranchCode(branchName);
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+
+  const prefix = "C" + code + yy;
+  const pattern = new RegExp("^" + prefix + "\\d{2}(\\d{3})$");
+
+  let maxSeq = 0;
+
+  cachedClients.forEach(function(client){
+    const match =
+      pattern.exec(String(client?.loyaltyCardNumber || "").toUpperCase());
+
+    if(match){
+      maxSeq = Math.max(maxSeq, Number(match[1]) || 0);
+    }
+  });
+
+  const nextSeq = String(maxSeq + 1).padStart(3, "0");
+
+  return prefix + mm + nextSeq;
+}
 
 function findVipCardProduct(){
   return getProducts().find(function(product){
@@ -1778,6 +1941,25 @@ function addVipCardToModal(){
     return;
   }
 
+  /* First-time cardholder — no existing client record with a card on
+     file yet — gets a brand-new card number generated right now, so
+     staff can write it on the physical card immediately. It's saved
+     to their Client Database record when the sale settles. */
+  const clientName =
+    document.getElementById("modalClientInput").value.trim();
+
+  const existingClient = getClientByName(clientName);
+  const cardNumberInput = document.getElementById("modalClientLoyaltyCardNumber");
+
+  let generatedCardNumber = "";
+
+  if(!existingClient?.loyaltyCardNumber && !cardNumberInput.value.trim()){
+    generatedCardNumber = generateVipCardNumber(getSelectedBranch());
+    cardNumberInput.value = generatedCardNumber;
+    document.getElementById("modalClientVipStatus").value = "Yes";
+    toggleModalClientDetailsPanel(true);
+  }
+
   const product = findVipCardProduct();
   const price =
     Number(
@@ -1805,6 +1987,10 @@ function addVipCardToModal(){
   refreshModalVipState();
   renderModalItems();
   renderModalCompanions();
+
+  if(generatedCardNumber){
+    showModalMessage(`New VIP Card Number generated: ${generatedCardNumber}`);
+  }
 }
 
 /* End time (HH:MM) of a Service item, using its own serviceStartTime
@@ -3420,6 +3606,7 @@ function isModalVip(){
 
   return (
     modalHasVipCard() ||
+    modalHasValidVipCardNumber() ||
     isExistingVipClient(clientName) ||
     principalHasVipPriceType()
   );
@@ -4049,6 +4236,18 @@ function buildAndValidateSaleData(settledFlag){
     id: editingSaleId || createId(),
     startTime: document.getElementById("modalTimeInput").value,
     client: document.getElementById("modalClientInput").value.trim(),
+    vipCardNumberUsed:
+      document.getElementById("modalVipClientCheckbox").checked
+        ? document.getElementById("modalVipCardNumberInput").value.trim()
+        : "",
+    vipCardOwnerName:
+      (function(){
+        const owner = findVipCardOwnerByNumber(
+          document.getElementById("modalVipCardNumberInput").value.trim()
+        );
+
+        return owner ? owner.name : "";
+      })(),
     source: document.getElementById("modalSourceInput").value,
     therapist: document.getElementById("modalTherapistInput").value,
     services: validItems.map(function(item){
@@ -4389,6 +4588,13 @@ async function persistModalSaleData(saleData, validItems){
 
   await applyModalClientDetailsToDatabase(saleData.client);
 
+  /* Runs after applyModalClientDetailsToDatabase so a client who just
+     became VIP on this very sale (e.g. bought a VIP Card, or a valid
+     VIP Card Number was entered) still earns points on it. */
+  if(saleData.settled){
+    await creditVipPointsForSale(saleData);
+  }
+
   syncSaleToStockAudit(saleData);
 
   saveDailySales();
@@ -4476,6 +4682,87 @@ function getCompanionSaleSubtotal(companion, sale){
     .reduce(function(sum, item){
       return sum + Number(item?.amount || 0);
     }, 0);
+}
+
+/* VIP Point System: ₱1 spent = 1 point. Credited once per settled sale
+   (guarded by sale.pointsCredited) so editing/re-saving an already-
+   settled sale never adds the same points twice — existing balances
+   imported from the old masterlist are a starting point, never
+   recomputed, only added to from here on. Covers the sale's own VIP
+   client, each VIP companion, and — for a referral — the actual VIP
+   card owner when someone else used their card, per the rule that all
+   points from a borrowed card accrue to its real owner. */
+async function creditVipPointsForSale(saleData){
+  if(saleData.pointsCredited){
+    return;
+  }
+
+  const clients = await getClients();
+
+  const findClientByName = function(name){
+    const key = normalizeClientName(name).toLowerCase();
+
+    if(!key){
+      return null;
+    }
+
+    return clients.find(function(client){
+      return normalizeClientName(client?.name).toLowerCase() === key;
+    }) || null;
+  };
+
+  const addPoints = function(client, amount){
+    if(!client || client.vip !== "Yes"){
+      return;
+    }
+
+    const earned = Math.floor(Math.max(0, Number(amount) || 0));
+
+    if(earned <= 0){
+      return;
+    }
+
+    client.points = Number(client.points || 0) + earned;
+    client.updatedAt = new Date().toISOString();
+  };
+
+  const saleCompanions =
+    Array.isArray(saleData.companions) ? saleData.companions : [];
+
+  const companionsSubtotal =
+    saleCompanions.reduce(function(sum, companion){
+      return sum + getCompanionSaleSubtotal(companion, saleData);
+    }, 0);
+
+  const saleNet = calculateStoredSaleNet(saleData);
+
+  addPoints(
+    findClientByName(saleData.client),
+    saleNet - companionsSubtotal
+  );
+
+  saleCompanions.forEach(function(companion){
+    if(companion?.vip !== true){
+      return;
+    }
+
+    addPoints(
+      findClientByName(companion.name),
+      getCompanionSaleSubtotal(companion, saleData)
+    );
+  });
+
+  if(
+    saleData.vipCardOwnerName &&
+    normalizeClientName(saleData.vipCardOwnerName).toLowerCase() !==
+      normalizeClientName(saleData.client).toLowerCase()
+  ){
+    addPoints(findClientByName(saleData.vipCardOwnerName), saleNet);
+  }
+
+  saleData.pointsCredited = true;
+
+  await window.CrownClientStore.saveAll(clients);
 }
 
 async function syncClientDatabaseFromSales(){

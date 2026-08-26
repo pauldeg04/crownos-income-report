@@ -4,6 +4,63 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-26 — VIP Point System, VIP Card usage detection, and auto-generated card numbers
+
+**Requested by:** User — wanted a points program for VIP clients (₱1
+spent = 1 point, 100 points = ₱1 credit on a future visit), a way to
+record when a VIP is using their own card versus someone borrowing
+theirs, and card numbers generated automatically instead of typed by
+hand, all following the branch's existing numbering convention
+(`C<BranchCode><YY><MM><NNN>`, e.g. `CBIN2608231`).
+
+- [index.html](index.html) / [script.js](script.js): new **VIP Client**
+  checkbox and **VIP Card Number** field at the very top of Add Sale,
+  above Time. Typing a number that matches an existing client's Loyalty
+  Card Number shows who owns it, switches this transaction to VIP
+  pricing/status, and auto-picks **Source** — Returning if the Client
+  field matches the card owner's own name, Referral if it's someone
+  else. `findVipCardOwnerByNumber`, `modalHasValidVipCardNumber`,
+  `refreshModalVipCardOwnerHint`.
+- [script.js](script.js): `addVipCardToModal()` now auto-generates a
+  new Loyalty Card Number for a first-time client (no existing card on
+  file) the moment **Add VIP Card** is pressed, following the branch's
+  numbering convention — `generateVipCardNumber`,
+  `getVipCardBranchCode`, `VIP_CARD_BRANCH_CODES` (BIN / CAL / MAIN /
+  DEMO). Never overwrites a client who already has a card.
+- [script.js](script.js): `creditVipPointsForSale()` — on every settled
+  sale, credits ₱1-spent-=-1-point to the sale's own VIP client and any
+  VIP companion (on their own portion only), and credits the **full**
+  transaction to the VIP Card owner when someone else used their card
+  (a referral). Guarded by a `pointsCredited` flag on the sale so
+  editing/re-saving a settled sale never double-credits. Runs after
+  `applyModalClientDetailsToDatabase` so a client who becomes VIP on
+  this very sale still earns points on it.
+- [clients.html](clients.html) / [clients.js](clients.js): new **VIP
+  Points** field on the Add/Edit Client forms and View Client panel —
+  only shown/used once VIP Status is Yes; toggling VIP off does not
+  erase an existing balance. New **Earned Points** column in the Visit
+  History table (between Amount and Forms), computed live per visit;
+  a visit where someone else used this client's card shows up here too
+  as "VIP Card used by …", crediting that visit's points to the card
+  owner even though they weren't physically there.
+- Client Database data migration: reconciled the historical
+  `Copy of MASTERLIST_LOYALTY CARD_PRODUCTS.xlsx` and
+  `Calamba LOYALTY CARD RECORDS.xlsx` masterlists against the live
+  client database (name/card/phone/email/points), seeding starting VIP
+  Point balances and filling in missing Loyalty Card Numbers, phone
+  numbers, and emails. Built and then removed two one-off admin tools
+  used only for this migration (**Import Clients** with a "fill blanks
+  only" merge mode, and **Correct Client Info** for deliberate
+  overwrites against a confirmed source-of-truth) — not needed for
+  day-to-day reception work, so pulled from clients.html/clients.js
+  once the migration was done.
+- [manual.html](manual.html): Chapter 7 (Recording a Sale) documents
+  the VIP Client checkbox, VIP Card Number field, and auto-generated
+  card numbers; Chapter 8 (Vouchers and VIP Cards) gets a new **VIP
+  Points** section explaining the earning rule and referral crediting;
+  Chapter 12 (Client Database) documents the VIP Points field and
+  Earned Points column, and drops its now-removed Import Clients note.
+
 ## 2026-08-26 — Client Database: Birthday Celebrants panel is now collapsible
 
 **Requested by:** User — the Birthday Celebrants This Month panel was

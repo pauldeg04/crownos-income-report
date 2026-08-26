@@ -346,6 +346,19 @@
 
       <div class="row g-3">
 
+        <div class="col-12">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="modalVipClientCheckbox">
+            <label class="form-check-label fw-bold" for="modalVipClientCheckbox">VIP Client</label>
+          </div>
+        </div>
+
+        <div class="col-md-6 d-none" id="modalVipCardNumberWrapper">
+          <label class="form-label">VIP Card Number</label>
+          <input type="text" id="modalVipCardNumberInput" class="form-control" placeholder="Enter VIP card number" autocomplete="off">
+          <div class="form-text" id="modalVipCardOwnerHint"></div>
+        </div>
+
         <div class="col-md-4">
           <label class="form-label">Time *</label>
           <input type="time" id="modalTimeInput" class="form-control" step="60">

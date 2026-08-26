@@ -164,13 +164,14 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    /* Memo mailbox. Admin/Executive Assistant compose; any authenticated
-       recipient may acknowledge by writing ONLY their own key (their sync
-       email, request.auth.token.email) under acknowledgements. Reads are
-       blanket-authenticated (see appData note above for why Firestore
-       rules can't cleanly filter "sender OR array-contains(recipients)"
-       as a read condition) — the client queries narrowly, this rule just
-       can't enforce that narrowing itself. */
+    /* Memo mailbox. Admin/Executive Assistant compose, edit, and delete;
+       any authenticated recipient may acknowledge by writing ONLY their
+       own key (their sync email, request.auth.token.email) under
+       acknowledgements. Reads are blanket-authenticated (see appData note
+       above for why Firestore rules can't cleanly filter "sender OR
+       array-contains(recipients)" as a read condition) — the client
+       queries narrowly, this rule just can't enforce that narrowing
+       itself. */
     match /memos/{memoId} {
       allow create: if request.auth != null &&
         request.auth.token.role in ['Admin', 'Executive Assistant'];
@@ -179,7 +180,10 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['acknowledgements']) &&
         request.resource.data.acknowledgements.diff(resource.data.get('acknowledgements', {}))
           .affectedKeys().hasOnly([request.auth.token.email]);
-      allow delete: if false;
+      allow update: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
+      allow delete: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
     }
 
     /* Leave requests. A staff member creates their own Pending request

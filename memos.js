@@ -14,6 +14,7 @@
     const COLLECTION = "memos";
     let currentUser = null;
     let canCompose = false;
+    let editingMemoId = null;
 
     function escapeHtml(value){
         return String(value ?? "")
@@ -110,9 +111,13 @@
         });
     }
 
+    let sentMemosCache = [];
+
     function renderSent(memos){
         const list = document.getElementById("memoSentList");
         const empty = document.getElementById("memoSentEmpty");
+
+        sentMemosCache = memos;
 
         if(memos.length === 0){
             list.innerHTML = "";
@@ -145,12 +150,40 @@
                             <p class="memo-subject">${escapeHtml(memo.subject || "(No subject)")}</p>
                             <div class="memo-meta">${escapeHtml(formatDate(memo.createdAt))}</div>
                         </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary memo-edit-btn" data-id="${escapeHtml(memo.id)}">Edit</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger memo-delete-btn" data-id="${escapeHtml(memo.id)}">Delete</button>
+                        </div>
                     </div>
                     <div class="memo-body">${escapeHtml(memo.body || "")}</div>
                     <div class="memo-ack-list">${ackRows}</div>
                 </div>
             `;
         }).join("");
+
+        list.querySelectorAll(".memo-edit-btn").forEach(function(btn){
+            btn.addEventListener("click", function(){
+                openComposeModal(sentMemosCache.find(function(m){ return m.id === btn.dataset.id; }));
+            });
+        });
+
+        list.querySelectorAll(".memo-delete-btn").forEach(function(btn){
+            btn.addEventListener("click", async function(){
+                if(!confirm("Delete this memo? This cannot be undone.")){
+                    return;
+                }
+
+                btn.disabled = true;
+
+                try{
+                    await firebase.firestore().collection(COLLECTION).doc(btn.dataset.id).delete();
+                }catch(error){
+                    console.error("Unable to delete memo:", error);
+                    alert("Unable to delete this memo. Please try again.");
+                    btn.disabled = false;
+                }
+            });
+        });
     }
 
     function renderRecipientOptions(containerId){
@@ -217,6 +250,27 @@
                 }
             });
         });
+    }
+
+    function openComposeModal(memo){
+        editingMemoId = memo ? memo.id : null;
+
+        document.getElementById("memoComposeTitle").textContent = memo ? "Edit Memo" : "Compose Memo";
+        document.getElementById("memoComposeSendBtn").textContent = memo ? "Save Changes" : "Send Memo";
+        document.getElementById("memoComposeDeleteBtn").classList.toggle("d-none", !memo);
+
+        document.getElementById("memoSubjectInput").value = memo ? (memo.subject || "") : "";
+        document.getElementById("memoBodyInput").value = memo ? (memo.body || "") : "";
+        document.getElementById("memoGroupSelect").value = "";
+        renderRecipientOptions("memoRecipientList");
+
+        if(memo){
+            document.querySelectorAll("#memoRecipientList input[type=checkbox]").forEach(function(input){
+                input.checked = (memo.recipients || []).includes(input.value);
+            });
+        }
+
+        document.getElementById("memoComposeBackdrop").classList.remove("d-none");
     }
 
     function switchTab(tab){
@@ -286,11 +340,30 @@
             const backdrop = document.getElementById("memoComposeBackdrop");
 
             document.getElementById("memoComposeBtn").addEventListener("click", function(){
-                document.getElementById("memoSubjectInput").value = "";
-                document.getElementById("memoBodyInput").value = "";
-                document.getElementById("memoGroupSelect").value = "";
-                renderRecipientOptions("memoRecipientList");
-                backdrop.classList.remove("d-none");
+                openComposeModal(null);
+            });
+
+            document.getElementById("memoComposeDeleteBtn").addEventListener("click", async function(){
+                if(!editingMemoId){
+                    return;
+                }
+
+                if(!confirm("Delete this memo? This cannot be undone.")){
+                    return;
+                }
+
+                const btn = this;
+                btn.disabled = true;
+
+                try{
+                    await firebase.firestore().collection(COLLECTION).doc(editingMemoId).delete();
+                    backdrop.classList.add("d-none");
+                }catch(error){
+                    console.error("Unable to delete memo:", error);
+                    alert("Unable to delete this memo. Please try again.");
+                }finally{
+                    btn.disabled = false;
+                }
             });
 
             document.getElementById("memoGroupSelect").addEventListener("change", function(){
@@ -309,15 +382,18 @@
             });
 
             document.getElementById("memoComposeCloseBtn").addEventListener("click", function(){
+                editingMemoId = null;
                 backdrop.classList.add("d-none");
             });
 
             document.getElementById("memoComposeCancelBtn").addEventListener("click", function(){
+                editingMemoId = null;
                 backdrop.classList.add("d-none");
             });
 
             backdrop.addEventListener("click", function(event){
                 if(event.target === backdrop){
+                    editingMemoId = null;
                     backdrop.classList.add("d-none");
                 }
             });
@@ -344,28 +420,37 @@
                 btn.disabled = true;
 
                 try{
-                    await firebase.firestore()
-                        .collection(COLLECTION)
-                        .add({
-                            subject,
-                            body,
-                            senderAccount: currentUser.account,
-                            senderName: currentUser.nickname || currentUser.account,
-                            recipients,
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                            acknowledgements: {}
-                        });
+                    if(editingMemoId){
+                        await firebase.firestore()
+                            .collection(COLLECTION)
+                            .doc(editingMemoId)
+                            .update({ subject, body, recipients });
 
-                    await window.CrownClientNotifications?.broadcast?.(
-                        recipients,
-                        "New memo: " + subject,
-                        "memo"
-                    );
+                        editingMemoId = null;
+                    }else{
+                        await firebase.firestore()
+                            .collection(COLLECTION)
+                            .add({
+                                subject,
+                                body,
+                                senderAccount: currentUser.account,
+                                senderName: currentUser.nickname || currentUser.account,
+                                recipients,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                acknowledgements: {}
+                            });
+
+                        await window.CrownClientNotifications?.broadcast?.(
+                            recipients,
+                            "New memo: " + subject,
+                            "memo"
+                        );
+                    }
 
                     backdrop.classList.add("d-none");
                 }catch(error){
-                    console.error("Unable to send memo:", error);
-                    alert("Unable to send this memo. Please try again.");
+                    console.error("Unable to save memo:", error);
+                    alert("Unable to save this memo. Please try again.");
                 }finally{
                     btn.disabled = false;
                 }

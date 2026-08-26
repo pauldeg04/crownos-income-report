@@ -105,10 +105,6 @@
                         >
                     </div>
 
-                    <button type="button" class="btn btn-outline-primary" id="openImportClientsBtn">
-                        Import Clients
-                    </button>
-
                     <button type="button" class="btn btn-success" id="openAddClientBtn">
                         + Add Client
                     </button>
@@ -226,6 +222,11 @@
                     </select>
                 </div>
 
+                <div class="col-md-6" id="vipPointsWrapper">
+                    <label class="form-label fw-bold">VIP Points</label>
+                    <input type="number" id="vipPoints" class="form-control" min="0" step="1" placeholder="0">
+                </div>
+
                 <div class="col-12">
                     <label class="form-label fw-bold">Remarks</label>
                     <textarea id="clientNotes" class="form-control" rows="2" placeholder="Preferences, concerns, reminders, etc."></textarea>
@@ -268,6 +269,7 @@
                             <th>Therapist</th>
                             <th>Payment</th>
                             <th>Amount</th>
+                            <th>Earned Points</th>
                             <th>Forms</th>
                         </tr>
                     </thead>
@@ -365,6 +367,11 @@
                     </select>
                 </div>
 
+                <div class="col-md-6" id="editVipPointsWrapper">
+                    <label class="form-label fw-bold">VIP Points</label>
+                    <input type="number" id="editVipPoints" class="form-control" min="0" step="1" placeholder="0">
+                </div>
+
             </div>
         </div>
 
@@ -382,48 +389,6 @@
                     Save Changes
                 </button>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Import Clients modal -->
-<div class="client-modal-backdrop d-none" id="importClientsBackdrop">
-    <div class="client-modal">
-        <div class="client-modal-header">
-            <h4>Import Clients</h4>
-            <button type="button" class="client-modal-close" id="closeImportClientsBtn">&times;</button>
-        </div>
-
-        <div class="client-modal-body">
-            <p class="text-muted">
-                Select a client list JSON file (e.g. a converted masterlist). Clients whose name
-                already exists in the database are skipped by default — existing records are
-                never overwritten with different data, only optionally filled in where blank
-                (see checkbox below). Visits and Total Spent always start at 0 for newly imported
-                clients; these are only tracked automatically once settled sales are recorded for
-                them.
-            </p>
-
-            <input type="file" id="importClientsFileInput" class="form-control" accept="application/json,.json">
-
-            <div class="form-check mt-3">
-                <input type="checkbox" class="form-check-input" id="importFillBlanksCheckbox">
-                <label class="form-check-label" for="importFillBlanksCheckbox">
-                    For names that already exist, fill in only their missing/blank fields (won't overwrite fields that already have a value)
-                </label>
-            </div>
-
-            <div class="import-clients-result d-none" id="importClientsResult"></div>
-        </div>
-
-        <div class="client-modal-footer">
-            <button type="button" class="btn btn-outline-secondary" id="cancelImportClientsBtn">
-                Cancel
-            </button>
-
-            <button type="button" class="btn btn-success" id="runImportClientsBtn">
-                Import
-            </button>
         </div>
     </div>
 </div>

@@ -842,7 +842,33 @@
     through it in this order.
   </p>
 
-  <h3>1 · Time and client</h3>
+  <h3>1 · VIP Client and card, time, and client</h3>
+
+  <dl class="deflist">
+    <dt>VIP Client</dt>
+    <dd>
+      A checkbox above everything else in the form. Tick it when this visit
+      involves a VIP Card, and a <strong>VIP Card Number</strong> field
+      appears. Type the number and CrownOS looks it up right away:
+    </dd>
+  </dl>
+
+  <ul>
+    <li>A hint appears underneath showing who the card actually belongs to (<em>Card belongs to: …</em>), or that no client owns that number.</li>
+    <li>VIP pricing switches on for this transaction, and the client's VIP Status is set to Yes.</li>
+    <li><strong>Source</strong> (below) is picked automatically: <strong>Returning</strong> if the Client field matches the card owner's own name, <strong>Referral</strong> if it's someone else using that card.</li>
+  </ul>
+
+  <div class="note">
+    <span class="callout-label">Points follow the card, not the visitor</span>
+    <p>
+      When a card is used by someone other than its owner, every VIP Point
+      earned on that transaction is credited to the <strong>card
+      owner</strong> — not to whoever is physically in the chair. This is
+      deliberate: it rewards the VIP for referring the person using their
+      card. See <a href="#ch-vouchers">Chapter 8</a> for how VIP Points work.
+    </p>
+  </div>
 
   <dl class="deflist">
     <dt>Time *</dt>
@@ -888,7 +914,15 @@
     </dd>
 
     <dt>Add VIP Card</dt>
-    <dd>Sells a VIP membership card and immediately switches every service in the transaction to VIP pricing.</dd>
+    <dd>
+      Sells a VIP membership card and immediately switches every service in
+      the transaction to VIP pricing. For a client with no card on file yet,
+      pressing this <strong>auto-generates a new Loyalty Card Number</strong>
+      right away (shown in a message and filled into Additional Client
+      Details) so it can be written on the physical card on the spot —
+      nothing to type by hand. A client who already has a card keeps it;
+      this never overwrites an existing number.
+    </dd>
 
     <dt>Add Purchase Voucher</dt>
     <dd>Adds a voucher the client is buying now to this transaction. See <a href="#ch-vouchers">Chapter 8</a>.</dd>
@@ -1112,6 +1146,52 @@ Amount to Pay      what the client actually pays</div>
       Sales Summary</strong>.
     </p>
   </div>
+
+  <h3>Using an existing VIP Card</h3>
+
+  <p>
+    Not every visit is a first-time purchase. When a returning VIP — or
+    someone using a VIP's card on their behalf — comes in, tick
+    <span class="ui">VIP Client</span> at the top of Add Sale and type the
+    <strong>VIP Card Number</strong> instead of pressing
+    <span class="ui">Add VIP Card</span> again. See
+    <a href="#ch-add-sale">Chapter 7, Section 1</a> for what happens once a
+    valid number is entered.
+  </p>
+
+  <h3>VIP Points</h3>
+
+  <p>
+    Every VIP client earns points on their VIP transactions, automatically,
+    the moment the sale is settled — no separate step.
+  </p>
+
+  <div class="formula">₱1 spent   =   1 Point
+₱500 spent =   500 Points</div>
+
+  <p>Points are earned on:</p>
+
+  <ul>
+    <li>The VIP's own portion of the sale (companion items are excluded from this, and counted separately below).</li>
+    <li>A companion's own portion, credited to the companion — but only if that companion is themselves VIP.</li>
+    <li>A referral: the full transaction amount, credited to the <strong>VIP Card owner</strong>, whenever someone else uses their card. See the note in Chapter 7.</li>
+  </ul>
+
+  <div class="note">
+    <span class="callout-label">100 Points = ₱1 of credit</span>
+    <p>
+      Points are meant to be spent on a future visit — 100 Points redeem for
+      ₱1 off. Redeeming them as a payment method in Add Sale is planned but
+      not available yet; for now, points only accumulate.
+    </p>
+  </div>
+
+  <p>
+    A client's running balance shows as <strong>VIP Points</strong> on their
+    Client Database record (Chapter 12). Points already on a client's record
+    before this system went live were carried over as a starting balance —
+    only sales settled from that point onward add to it automatically.
+  </p>
 </section>
 
 <section id="ch-therapist-sales">
@@ -1291,6 +1371,13 @@ Meal Allowance     none for these roles</div>
     Use Remarks for preferences, concerns, and reminders about the client.
   </p>
 
+  <p>
+    A VIP client also carries a <strong>VIP Points</strong> balance — the
+    field only appears once VIP Status is set to Yes. See
+    <a href="#ch-vouchers">Chapter 8</a> for how points are earned and what
+    they're for.
+  </p>
+
   <div class="note">
     <span class="callout-label">Added automatically</span>
     <p>
@@ -1304,8 +1391,11 @@ Meal Allowance     none for these roles</div>
 
   <p>
     Click a client to see every visit: Date, Branch, Services / Products,
-    Therapist, Payment, and Amount — along with the <strong>Forms</strong> they
-    have signed.
+    Therapist, Payment, Amount, and — for a VIP client — <strong>Earned
+    Points</strong>, along with the <strong>Forms</strong> they have signed.
+    A visit where someone else used this client's VIP Card shows up here too,
+    labeled <em>VIP Card used by …</em>, with its points credited to this
+    client as the card owner.
   </p>
 
   <h3>Forms</h3>
@@ -1331,12 +1421,6 @@ Meal Allowance     none for these roles</div>
     review them on the client's next return.
   </p>
 
-  <h3>Import Clients</h3>
-
-  <p>
-    For bringing in many records at once from a list. Use it when migrating a
-    branch masterlist — not for day-to-day work.
-  </p>
 </section>
 
 <section id="ch-scheduling">
