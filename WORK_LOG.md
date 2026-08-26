@@ -4,6 +4,27 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-26 — Scheduling: appointment reminder also sends by email, not just SMS
+
+**Requested by:** User — the automatic 2-hour-before reminder shipped
+earlier today only covered SMS; the client's email should get the same
+reminder too.
+
+- [functions/index.js](functions/index.js): `sendAppointmentReminders`
+  now sends by whichever contact channel(s) the schedule entry actually
+  has — SMS if a mobile number is on file, email if an email address is,
+  both if both. New `buildReminderEmailText` / `buildReminderEmailHtml`
+  reuse the confirmation email's branded shell (header/footer, Cinzel
+  Decorative branding) with reminder copy in place of the booking-details
+  table; unlike the SMS version, the full "Crown Head Spa {City} Branch"
+  name is used since email has no 160-char pressure. "Already sent" moved
+  from one flag per `appointmentReminders` doc to two —
+  `smsSentAt` / `emailSentAt` — so an entry with only one contact detail
+  gets exactly that one channel, and a retry after a failed send only
+  re-attempts the channel that actually failed.
+- [manual.html](manual.html): the "Automatic SMS reminder" note in
+  Chapter 13 (Scheduling) updated to cover both channels.
+
 ## 2026-08-26 — Scheduling: automatic SMS reminder 2 hours before an appointment
 
 **Requested by:** User — wants clients to automatically get a reminder text

@@ -951,6 +951,69 @@ function buildReminderSmsText({ clientName, branch, time }){
     );
 }
 
+/* Email has no 160-char pressure, so this keeps the full "Crown Head Spa
+   {City} Branch" name rather than the SMS's shortened one. Reuses the
+   confirmation email's branded shell (buildMailer/escapeHtml above), just
+   with reminder copy instead of the booking-details table. */
+function buildReminderEmailText({ clientName, branch, time }){
+    return (
+        `Hi ${clientName || "there"},\n\n` +
+        `A gentle reminder that you booked an appointment at Crown Head Spa ` +
+        `${shortBranchName(branch)} Branch today at ${time}.\n\n` +
+        `Please arrive earlier than your appointment.\n\n` +
+        `See you soon!\n\nCrown Head Spa\nwww.crownheadspa.com`
+    );
+}
+
+function buildReminderEmailHtml({ clientName, branch, time }){
+    return `
+<!doctype html>
+<html>
+<head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#efeae0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#efeae0;padding:32px 16px;">
+<tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#f7f5f0;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(20,17,10,0.12);">
+
+<tr>
+    <td style="background-color:#0E1B3D;background-image:linear-gradient(180deg, #0E1B3D 0%, #16245C 100%);padding:28px 32px;text-align:center;">
+        <img src="https://crownheadspa.com/images/crown-mark.png" width="44" height="44" alt="Crown Head Spa" style="display:block;margin:0 auto 10px;">
+        <div style="font-family:'Cinzel Decorative',Georgia,'Times New Roman',serif;font-size:20px;letter-spacing:.06em;color:#d4af37;font-weight:700;">CROWN HEAD SPA</div>
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.18em;color:#e0c877;text-transform:uppercase;margin-top:4px;">Relax &middot; Renew &middot; Reign</div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding:32px;">
+        <p style="margin:0 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;">Hi ${escapeHtml(clientName) || "there"},</p>
+        <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;">A gentle reminder that you booked an appointment at <strong>Crown Head Spa ${escapeHtml(shortBranchName(branch))} Branch</strong> today at <strong>${escapeHtml(time)}</strong>.</p>
+
+        <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6b645a;">Please arrive earlier than your appointment.</p>
+
+        <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;">See you soon!</p>
+    </td>
+</tr>
+
+<tr>
+    <td style="background-color:#e4ddc9;padding:18px 32px;text-align:center;">
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b645a;">Bi&ntilde;an: 0939 588 4068 &nbsp;&bull;&nbsp; Calamba: 0961 440 2807</div>
+        <div style="margin-top:8px;">
+            <a href="https://crownheadspa.com" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#a9790a;text-decoration:none;font-weight:700;letter-spacing:.02em;">www.crownheadspa.com</a>
+        </div>
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#9c7d1c;margin-top:8px;">&copy; 2026 Crown Head Spa. All rights reserved.</div>
+    </td>
+</tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
 /* No link in this text — Smart silently drops SMS containing a URL from
    a sender name that isn't separately whitelisted for link content
    (confirmed via isolated test sends; a bare URL alone never arrived).
@@ -1043,18 +1106,20 @@ exports.sendAppointmentSmsConfirmation = onCall(
 
 /* ---------- sendAppointmentReminders (scheduled) ----------
 
-   Sends an SMS ~REMINDER_LEAD_MINUTES before an appointment's startTime,
-   to whatever mobile number is on the schedule entry itself (set either
-   from a web booking request or typed directly into the appointment
-   modal — see scheduling.js/scheduling.html). Reads crownSchedule_
-   entries straight from the appData mirror the same read-only way as
-   getScheduleEntries() above; never writes back to that client-owned
-   blob (see appData.js's header comment for why). "Already sent" is
-   tracked in its own appointmentReminders collection instead, one doc
-   per schedule entry id, so a re-run inside the same 2-hour window is a
-   no-op. */
+   Sends an SMS and/or email ~REMINDER_LEAD_MINUTES before an
+   appointment's startTime, to whatever mobile/email is on the schedule
+   entry itself (set either from a web booking request or typed directly
+   into the appointment modal — see scheduling.js/scheduling.html). Reads
+   crownSchedule_ entries straight from the appData mirror the same
+   read-only way as getScheduleEntries() above; never writes back to
+   that client-owned blob (see appData.js's header comment for why).
+   "Already sent" is tracked per channel (smsSentAt / emailSentAt) in its
+   own appointmentReminders collection instead, one doc per schedule
+   entry id — an entry with only one contact detail on file just gets
+   that one channel, and a re-run inside the same 2-hour window is a
+   no-op for whichever channel(s) already went out. */
 exports.sendAppointmentReminders = onSchedule(
-    { schedule: "every 15 minutes", secrets: [SEMAPHORE_API_KEY] },
+    { schedule: "every 15 minutes", secrets: [SEMAPHORE_API_KEY, EMAIL_PASSWORD] },
     async () => {
         const nowMs = Date.now();
         const nowManila = new Date(nowMs + MANILA_UTC_OFFSET_MINUTES * 60 * 1000);
@@ -1091,13 +1156,14 @@ exports.sendAppointmentReminders = onSchedule(
                         return;
                     }
 
-                    if(!entry.id || !entry.mobile || !TIME_PATTERN.test(entry.startTime || "")){
+                    if(!entry.id || (!entry.mobile && !entry.email) || !TIME_PATTERN.test(entry.startTime || "")){
                         return;
                     }
 
                     candidates.push({
                         id: entry.id,
-                        mobile: entry.mobile,
+                        mobile: entry.mobile || "",
+                        email: entry.email || "",
                         client: entry.client || "",
                         branch: branch.name,
                         date: dateStr,
@@ -1129,51 +1195,100 @@ exports.sendAppointmentReminders = onSchedule(
         });
 
         const reminderSnaps = await db.getAll(...reminderRefs);
-        const alreadySent = new Set(
-            reminderSnaps.filter(function(snap){ return snap.exists; })
-                .map(function(snap){ return snap.id; })
-        );
+        const sentState = new Map();
+        reminderSnaps.forEach(function(snap){
+            sentState.set(snap.id, snap.exists ? (snap.data() || {}) : {});
+        });
 
-        const toSend = due.filter(function(item){ return !alreadySent.has(item.id); });
+        const toSend = due
+            .map(function(item){
+                const state = sentState.get(item.id) || {};
+                return {
+                    item: item,
+                    needsSms: !!item.mobile && !state.smsSentAt,
+                    needsEmail: !!item.email && !state.emailSentAt
+                };
+            })
+            .filter(function(entry){ return entry.needsSms || entry.needsEmail; });
 
-        for(const item of toSend){
-            const message = buildReminderSmsText({
-                clientName: item.client,
-                branch: item.branch,
-                time: formatDisplayTime(item.startTime)
-            });
+        if(toSend.length === 0){
+            return;
+        }
 
-            try{
-                const response = await fetch("https://api.semaphore.co/api/v4/messages", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: new URLSearchParams({
-                        apikey: SEMAPHORE_API_KEY.value(),
-                        number: item.mobile,
-                        message: message
-                    })
+        const mailer = toSend.some(function(entry){ return entry.needsEmail; })
+            ? buildMailer()
+            : null;
+
+        for(const { item, needsSms, needsEmail } of toSend){
+            const updates = {};
+            const time = formatDisplayTime(item.startTime);
+
+            if(needsSms){
+                const message = buildReminderSmsText({
+                    clientName: item.client,
+                    branch: item.branch,
+                    time: time
                 });
-
-                const bodyText = await response.text();
-                let result = null;
 
                 try{
-                    result = JSON.parse(bodyText);
-                }catch(parseError){
-                    console.error("Reminder SMS: Semaphore returned a non-JSON response for", item.id, response.status, bodyText);
-                }
+                    const response = await fetch("https://api.semaphore.co/api/v4/messages", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: new URLSearchParams({
+                            apikey: SEMAPHORE_API_KEY.value(),
+                            number: item.mobile,
+                            message: message
+                        })
+                    });
 
-                if(!response.ok || result?.message){
-                    console.error("Reminder SMS failed for", item.id, response.status, bodyText);
-                    continue; // left unmarked — the next run (within the window) retries it
-                }
+                    const bodyText = await response.text();
+                    let result = null;
 
-                await db.collection(APPOINTMENT_REMINDERS_COLLECTION).doc(item.id).set({
-                    sentAt: admin.firestore.FieldValue.serverTimestamp(),
-                    mobile: item.mobile
-                });
-            }catch(networkError){
-                console.error("Reminder SMS network error for", item.id, networkError);
+                    try{
+                        result = JSON.parse(bodyText);
+                    }catch(parseError){
+                        console.error("Reminder SMS: Semaphore returned a non-JSON response for", item.id, response.status, bodyText);
+                    }
+
+                    if(!response.ok || result?.message){
+                        console.error("Reminder SMS failed for", item.id, response.status, bodyText);
+                    }else{
+                        updates.smsSentAt = admin.firestore.FieldValue.serverTimestamp();
+                        updates.mobile = item.mobile;
+                    }
+                }catch(networkError){
+                    console.error("Reminder SMS network error for", item.id, networkError);
+                }
+            }
+
+            if(needsEmail){
+                try{
+                    await mailer.sendMail({
+                        from: `"Crown Head Spa" <${BOOKING_EMAIL_FROM}>`,
+                        to: item.email,
+                        subject: "Reminder: your Crown Head Spa appointment today",
+                        text: buildReminderEmailText({
+                            clientName: item.client,
+                            branch: item.branch,
+                            time: time
+                        }),
+                        html: buildReminderEmailHtml({
+                            clientName: item.client,
+                            branch: item.branch,
+                            time: time
+                        })
+                    });
+
+                    updates.emailSentAt = admin.firestore.FieldValue.serverTimestamp();
+                    updates.email = item.email;
+                }catch(emailError){
+                    console.error("Reminder email failed for", item.id, emailError);
+                }
+            }
+
+            if(Object.keys(updates).length > 0){
+                // left unmarked per-channel on failure — the next run (still inside the window) retries just that channel
+                await db.collection(APPOINTMENT_REMINDERS_COLLECTION).doc(item.id).set(updates, { merge: true });
             }
         }
     }
