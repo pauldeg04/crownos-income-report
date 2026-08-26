@@ -290,5 +290,18 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
       allow delete: if false;
     }
+
+    /* One doc per registered device push token (doc ID = the token
+       itself), written by push-notifications.js on opt-in. A user may
+       only manage tokens addressed to their own recipientEmail; the
+       Cloud Functions that actually send pushes (functions/index.js
+       sendPushToAccount) use the Admin SDK and bypass these rules. */
+    match /staffPushTokens/{token} {
+      allow get, list: if false;
+      allow create, update: if request.auth != null &&
+        request.auth.token.email == request.resource.data.recipientEmail;
+      allow delete: if request.auth != null &&
+        request.auth.token.email == resource.data.recipientEmail;
+    }
   }
 }

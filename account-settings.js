@@ -101,6 +101,10 @@ function attachEvents(){
         .getElementById("changePasswordBtn")
         .addEventListener("click", changeOwnPassword);
 
+    document
+        .getElementById("pushNotificationsToggle")
+        .addEventListener("change", handlePushNotificationsToggle);
+
     const openCreateUserBtn =
         document.getElementById("openCreateUserBtn");
 
@@ -247,12 +251,57 @@ function displayCurrentUser(user){
 
 function openMyAccountModal(){
     clearPasswordFields();
+    refreshPushNotificationsToggle();
 
     document
         .getElementById("myAccountModalBackdrop")
         .classList.remove("d-none");
 
     document.body.classList.add("modal-open");
+}
+
+function refreshPushNotificationsToggle(){
+    const toggle = document.getElementById("pushNotificationsToggle");
+    const hint = document.getElementById("pushNotificationsHint");
+
+    if(!window.CrownPush || !CrownPush.isSupported()){
+        toggle.checked = false;
+        toggle.disabled = true;
+        hint.textContent =
+            "Not supported on this browser/device.";
+        return;
+    }
+
+    toggle.disabled = false;
+    toggle.checked = CrownPush.isEnabled();
+}
+
+async function handlePushNotificationsToggle(event){
+    const toggle = event.target;
+    const hint = document.getElementById("pushNotificationsHint");
+
+    toggle.disabled = true;
+
+    if(toggle.checked){
+        const result = await CrownPush.enable();
+
+        if(!result.ok){
+            toggle.checked = false;
+            hint.textContent =
+                result.reason === "denied"
+                    ? "Notifications were blocked — enable them in your browser/phone settings and try again."
+                    : "Couldn't enable notifications on this device. Please try again.";
+        }else{
+            hint.textContent =
+                "You'll be notified on this device for new booking requests, schedule assignments, and announcements.";
+        }
+    }else{
+        await CrownPush.disable();
+        hint.textContent =
+            "Get notified on this device's home screen when there's a new booking request, schedule assignment, or announcement.";
+    }
+
+    toggle.disabled = false;
 }
 
 function closeMyAccountModal(){

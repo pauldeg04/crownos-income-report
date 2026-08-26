@@ -325,3 +325,14 @@
     font-variant-numeric:tabular-nums;
     white-space:nowrap;
 }
+
+.birthday-collapse-icon{
+    display:inline-block;
+    transition:transform 0.2s ease;
+    font-size:0.7em;
+    vertical-align:middle;
+}
+
+#birthdayCollapseToggle[aria-expanded="true"] .birthday-collapse-icon{
+    transform:rotate(180deg);
+}

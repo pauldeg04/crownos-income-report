@@ -48,6 +48,8 @@ const BOOKING_REQUESTS_COLLECTION = "bookingRequests";
 const UNAVAILABLE_BEDS_KEY = "crownUnavailableBeds";
 const USER_ACCOUNTS_KEY = "crownUserAccounts";
 const STAFF_NOTIFICATIONS_COLLECTION = "staffNotifications";
+const STAFF_NOTIFICATIONS_CLIENT_COLLECTION = "staffNotificationsClient";
+const STAFF_PUSH_TOKENS_COLLECTION = "staffPushTokens";
 const APPOINTMENT_REMINDERS_COLLECTION = "appointmentReminders";
 const REMINDER_LEAD_MINUTES = 120; // send the SMS reminder this many minutes before startTime
 
@@ -68,6 +70,74 @@ function toSyncEmail(username){
 
 function toSyncPassword(password){
     return String(password || "") + "::CrownOS#sync";
+}
+
+/* Sends a push to every device an account has registered (see
+   push-notifications.js / staffPushTokens), badged with that account's
+   current total unread count across both notification collections so
+   the home screen icon badge (sw.js onBackgroundMessage) matches what
+   the in-app bell would show. Stale tokens (uninstalled app, revoked
+   permission) are pruned as they're discovered rather than up front. */
+async function sendPushToAccount(account, message){
+    const recipientEmail = toSyncEmail(account);
+
+    const tokensSnap = await db
+        .collection(STAFF_PUSH_TOKENS_COLLECTION)
+        .where("recipientEmail", "==", recipientEmail)
+        .get();
+
+    if(tokensSnap.empty){
+        return;
+    }
+
+    const tokens = tokensSnap.docs.map(function(doc){
+        return doc.id;
+    });
+
+    const [serverUnread, clientUnread] = await Promise.all([
+        db.collection(STAFF_NOTIFICATIONS_COLLECTION)
+            .where("recipientEmail", "==", recipientEmail)
+            .where("read", "==", false)
+            .get(),
+        db.collection(STAFF_NOTIFICATIONS_CLIENT_COLLECTION)
+            .where("recipientEmail", "==", recipientEmail)
+            .where("read", "==", false)
+            .get()
+    ]);
+
+    const badgeCount = serverUnread.size + clientUnread.size;
+
+    const response = await admin.messaging().sendEachForMulticast({
+        tokens: tokens,
+        notification: {
+            title: "CrownOS",
+            body: message
+        },
+        data: {
+            badgeCount: String(badgeCount)
+        }
+    });
+
+    const staleTokens = [];
+
+    response.responses.forEach(function(result, index){
+        if(
+            !result.success &&
+            result.error?.code === "messaging/registration-token-not-registered"
+        ){
+            staleTokens.push(tokens[index]);
+        }
+    });
+
+    if(staleTokens.length > 0){
+        const batch = db.batch();
+
+        staleTokens.forEach(function(token){
+            batch.delete(db.collection(STAFF_PUSH_TOKENS_COLLECTION).doc(token));
+        });
+
+        await batch.commit();
+    }
 }
 
 const DEFAULT_UNKNOWN_SERVICE_MINUTES = 45; // used only for "Not sure yet"
@@ -1359,5 +1429,40 @@ exports.notifyReceptionistsOnNewBookingRequest = onDocumentCreated(
         });
 
         await batch.commit();
+
+        await Promise.all(
+            recipients.map(function(user){
+                return sendPushToAccount(user.account, message);
+            })
+        );
+    }
+);
+
+/* Admin Hub broadcasts (Announcement publish, Memo send) write directly
+   to staffNotificationsClient from the client (see
+   crownBroadcastClientNotifications in notifications.js) since those
+   originate from an already-authenticated staff action rather than an
+   untrusted public write — this trigger just adds the push side, mirroring
+   notifyReceptionistsOnNewBookingRequest above. */
+exports.sendPushOnClientNotification = onDocumentCreated(
+    { document: STAFF_NOTIFICATIONS_CLIENT_COLLECTION + "/{notificationId}", region: "asia-southeast1" },
+    async (event) => {
+        const notification = event.data?.data();
+
+        if(!notification?.recipientEmail || !notification?.message){
+            return;
+        }
+
+        const tokenSnap = await db
+            .collection(STAFF_PUSH_TOKENS_COLLECTION)
+            .where("recipientEmail", "==", notification.recipientEmail)
+            .limit(1)
+            .get();
+
+        if(tokenSnap.empty){
+            return;
+        }
+
+        await sendPushToAccount(tokenSnap.docs[0].data().account, notification.message);
     }
 );

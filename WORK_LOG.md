@@ -4,6 +4,60 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-26 — Client Database: Birthday Celebrants panel is now collapsible
+
+**Requested by:** User — the Birthday Celebrants This Month panel was
+always expanded on the Client Database page, making the page feel
+crowded.
+
+- [clients.html](clients.html): the panel's table now sits inside a
+  Bootstrap `collapse`, closed by default. Clicking the "Birthday
+  Celebrants This Month" heading toggles it; a chevron next to the
+  heading rotates to show open/closed state.
+- [clients.css](clients.css): `.birthday-collapse-icon` rotation
+  transition, driven off the toggle's `aria-expanded` attribute (set
+  automatically by Bootstrap's collapse JS, already loaded on this
+  page — no new script needed).
+
+## 2026-08-26 — Push notifications on the home screen (device-level, not just the in-app bell)
+
+**Requested by:** User — the existing 🔔 bell only surfaces new booking
+requests, schedule assignments, and announcements while CrownOS is open;
+staff wanted these on the device home screen even when the app isn't
+open. Built and deployed earlier; this entry is the first Work Log /
+Git record of it.
+
+- [push-notifications.js](push-notifications.js) (new): `CrownPush`
+  module — requests browser/device notification permission, registers
+  an FCM token per device, and exposes `isSupported`, `isEnabled`,
+  `enable`, `disable`. Loaded on every page (see below).
+- [account-settings.html](account-settings.html) /
+  [account-settings.js](account-settings.js): new "Enable notifications
+  on this device" toggle under My Account, backed by `CrownPush`. Shows
+  a plain-language reason (unsupported browser, permission denied) when
+  it can't be turned on.
+- [sw.js](sw.js): service worker now also handles FCM push delivery
+  while CrownOS itself isn't running — shows the OS notification and
+  sets the home-screen icon badge count via `onBackgroundMessage`.
+- [sidebar.js](sidebar.js): the in-app unread bell badge now also calls
+  the Badging API (`navigator.setAppBadge` / `clearAppBadge`) so the
+  home-screen icon badge stays in sync while the app is open or
+  backgrounded; the fully-closed-app case is covered by `sw.js` instead.
+- [functions/index.js](functions/index.js): new `sendPushToAccount`
+  helper — sends to every device token an account has registered,
+  badged with that account's current total unread count across both
+  notification collections, and prunes stale/unregistered tokens as
+  they're discovered. Wired into the existing new-booking-request
+  trigger, plus a new `sendPushOnClientNotification` trigger for
+  Admin Hub broadcasts (Announcement publish, Memo send).
+- [firestore.rules](firestore.rules): new `staffPushTokens` collection
+  — a user may only create/update/delete tokens addressed to their own
+  account; direct read is blocked entirely (the sending Cloud Functions
+  use the Admin SDK and bypass these rules).
+- [manual.html](manual.html): new note under Chapter 20 (Account
+  Settings) → My Account, explaining the device notification toggle and
+  how it differs from the in-app bell.
+
 ## 2026-08-26 — Scheduling: appointment reminder also sends by email, not just SMS
 
 **Requested by:** User — the automatic 2-hour-before reminder shipped

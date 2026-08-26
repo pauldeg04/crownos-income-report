@@ -31,6 +31,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-functions-compat.js"></script>
     <script src="firebase-init.js"></script>
     <script src="pwa-register.js"></script>
@@ -38,6 +39,7 @@
     <script src="firebase-sync.js"></script>
     <script src="access-control.js"></script>
     <script src="notifications.js"></script>
+    <script src="push-notifications.js"></script>
 </head>
 
 <body>
@@ -200,6 +202,29 @@
                 </div>
 
             </div>
+
+            <hr class="my-4">
+
+            <h4 class="modal-section-title">
+                Notifications
+            </h4>
+
+            <div class="form-check form-switch">
+                <input
+                    type="checkbox"
+                    class="form-check-input"
+                    id="pushNotificationsToggle"
+                >
+
+                <label class="form-check-label" for="pushNotificationsToggle">
+                    Enable notifications on this device
+                </label>
+            </div>
+
+            <p class="form-text mt-1" id="pushNotificationsHint">
+                Get notified on this device's home screen when there's a new
+                booking request, schedule assignment, or announcement.
+            </p>
 
             <hr class="my-4">
 

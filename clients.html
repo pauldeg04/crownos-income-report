@@ -25,12 +25,14 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
     <script src="firebase-init.js"></script>
     <script src="pwa-register.js"></script>
     <script src="client-store.js"></script>
     <script src="firebase-sync.js"></script>
     <script src="access-control.js"></script>
     <script src="notifications.js"></script>
+    <script src="push-notifications.js"></script>
 </head>
 
 <body>
@@ -52,28 +54,33 @@
 
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-0" role="button" data-bs-toggle="collapse" data-bs-target="#birthdayCollapse" aria-expanded="false" aria-controls="birthdayCollapse" id="birthdayCollapseToggle" style="cursor: pointer;">
                 <div>
-                    <h3 class="fw-bold mb-0">Birthday Celebrants This Month</h3>
+                    <h3 class="fw-bold mb-0">
+                        Birthday Celebrants This Month
+                        <span class="small ms-1 birthday-collapse-icon" id="birthdayCollapseIcon">&#9660;</span>
+                    </h3>
                 </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle client-table client-birthday-table">
-                    <thead class="table-primary text-center">
-                        <tr>
-                            <th>Client</th>
-                            <th>Birthday</th>
-                            <th>Contact Number</th>
-                        </tr>
-                    </thead>
+            <div class="collapse" id="birthdayCollapse">
+                <div class="table-responsive mt-3">
+                    <table class="table table-bordered table-hover align-middle client-table client-birthday-table">
+                        <thead class="table-primary text-center">
+                            <tr>
+                                <th>Client</th>
+                                <th>Birthday</th>
+                                <th>Contact Number</th>
+                            </tr>
+                        </thead>
 
-                    <tbody id="birthdayClientsBody"></tbody>
-                </table>
-            </div>
+                        <tbody id="birthdayClientsBody"></tbody>
+                    </table>
+                </div>
 
-            <div class="empty-state d-none" id="birthdayEmptyState">
-                No clients with a birthday this month.
+                <div class="empty-state d-none" id="birthdayEmptyState">
+                    No clients with a birthday this month.
+                </div>
             </div>
         </div>
     </div>

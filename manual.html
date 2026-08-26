@@ -34,12 +34,14 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
     <script src="firebase-init.js"></script>
     <script src="pwa-register.js"></script>
     <script src="client-store.js"></script>
     <script src="firebase-sync.js"></script>
     <script src="access-control.js"></script>
     <script src="notifications.js"></script>
+    <script src="push-notifications.js"></script>
 </head>
 
 <body>
@@ -1934,6 +1936,18 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     Your own details and <strong>Change Password</strong>. Every staff member
     has access to this.
   </p>
+
+  <div class="note">
+    <span class="callout-label">Enable notifications on this device</span>
+    <p>
+      A toggle here turns on push notifications for the device/browser you're
+      currently using — a new booking request, schedule assignment, or
+      announcement shows up on the home screen even when CrownOS isn't open.
+      This is separate from the 🔔 bell in the top toolbar, which always
+      works while the app is open. If the browser/device doesn't support it,
+      the toggle is disabled and says so.
+    </p>
+  </div>
 
   <h3>User Accounts — for Admins</h3>
 

@@ -1341,6 +1341,16 @@
             unreadCount > 99 ? "99+" : String(unreadCount);
 
         badge.classList.toggle("d-none", unreadCount === 0);
+
+        /* Home screen icon badge (Badging API) — same count, so it stays
+           in sync with the in-app bell whenever CrownOS is open/backgrounded.
+           The fully-closed-app case is covered by sw.js's onBackgroundMessage
+           instead. */
+        if(unreadCount > 0 && navigator.setAppBadge){
+            navigator.setAppBadge(unreadCount).catch(function(){});
+        }else if(navigator.clearAppBadge){
+            navigator.clearAppBadge().catch(function(){});
+        }
     }
 
     function renderNotificationPanel(recipient){
