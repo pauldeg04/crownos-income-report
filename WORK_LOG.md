@@ -4,6 +4,55 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-26 — Warehouse: Edit (Admin only) quantity, and partial Send Stock fulfillment
+
+**Requested by:** User — wanted a way to correct a warehouse item's
+quantity directly (including resetting it back to 0) instead of only
+ever being able to add to it, restricted to Admin accounts; and wanted
+Send Stock, when fulfilling a branch request, to ship whatever the
+warehouse actually has instead of being blocked outright when it falls
+short of what was requested.
+
+- [inventory-warehouse.html](inventory-warehouse.html) /
+  [inventory-warehouse.js](inventory-warehouse.js): Warehouse Stock
+  table keeps its original **Add Stock** button (adds to the existing
+  quantity, unchanged from before) and gains a second **Edit** button,
+  visible only to accounts with `role === "Admin"` — checked both when
+  rendering the button and again in `confirmAddStock()` so the action
+  itself is guarded, not just its visibility. Edit opens the same modal
+  as Add Stock but in a different mode: the quantity field pre-fills
+  with the item's current stock and the value entered becomes the new
+  quantity outright (`min="0"`, so it can go back down to 0), instead
+  of being added on top. Logged to Warehouse History as an
+  **Adjustment** with a signed delta (e.g. `-42`) rather than a
+  Stock In/Out entry.
+  Send Stock was removed from this table — it now only lives in the
+  Stock Requests table below, where it fulfills a specific branch
+  request.
+- [inventory-data.js](inventory-data.js): new `setWarehouseStock()`
+  (sets a row's qty to an exact value, floor-clamped at 0) alongside
+  the existing delta-based `adjustWarehouseStock()`.
+  [inventory-warehouse.js](inventory-warehouse.js): matching
+  `transactionalSetWarehouseStock()` Firestore-transaction helper, same
+  shape as `transactionalAddWarehouseStock()`, so an Edit is written
+  atomically against the live cloud doc the same way Add Stock already
+  was.
+- [inventory-warehouse.js](inventory-warehouse.js): `confirmSendStock()`
+  — when fulfilling a Stock Request and the requested quantity exceeds
+  what's on hand, sends the available amount instead of blocking with
+  "exceeds available warehouse stock" (a free-form Send Stock with no
+  request behind it still blocks, unchanged). `applyRequestFulfillment()`
+  now splits the request line on a partial send: the amount actually
+  sent is marked **Ready for Delivery** (so the branch can still
+  receive that shipment), and a new line is created for the shortfall,
+  staying **Awaiting Response** so it keeps showing in Stock Requests
+  until the rest is covered by a later Add Stock + Send Stock.
+- [manual.html](manual.html): Chapter 15 (Warehouse and Branches)
+  updated — Add Stock, the new Admin-only Edit, and the Stock Requests
+  partial-fulfillment behavior.
+
+---
+
 ## 2026-08-26 — VIP Point System, VIP Card usage detection, and auto-generated card numbers
 
 **Requested by:** User — wanted a points program for VIP clients (₱1

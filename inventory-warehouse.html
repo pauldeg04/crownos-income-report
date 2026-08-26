@@ -66,7 +66,7 @@
             </div>
 
             <div class="alert premium-alert mt-3 mb-0">
-                Add Stock records supplies coming into the warehouse. Send Stock moves supplies out to a branch and reduces available warehouse quantity.
+                Add Stock records supplies coming into the warehouse. Send Stock (from Stock Requests) moves supplies out to a branch and reduces available warehouse quantity. Edit (Admin only) sets an item's warehouse quantity directly.
             </div>
 
         </div>
@@ -197,7 +197,7 @@
 
         <div class="inv-modal-header">
             <div>
-                <p class="modal-eyebrow">
+                <p class="modal-eyebrow" id="addStockEyebrow">
                     Stock In
                 </p>
 
@@ -222,7 +222,7 @@
 
                 <div class="col-md-6">
                     <label class="form-label">
-                        Date Replenished *
+                        Date *
                     </label>
 
                     <input
@@ -233,7 +233,7 @@
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">
+                    <label class="form-label" id="addStockQtyLabel">
                         Quantity *
                     </label>
 

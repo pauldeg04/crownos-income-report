@@ -5,8 +5,12 @@ let requests = [];
 let currentAddStockItemId = null;
 let currentSendStockItemId = null;
 let currentSendStockContext = null;
+let currentStockModalMode = "add";
+let currentUser = null;
 
 document.addEventListener("DOMContentLoaded", function(){
+    currentUser = window.CrownAuth?.getCurrentUser?.() || null;
+
     loadData();
     attachEvents();
     renderWarehouseTable();
@@ -114,6 +118,9 @@ function renderWarehouseTable(){
         const qty =
             row ? Number(row.qty) || 0 : 0;
 
+        const isAdmin =
+            currentUser?.role === "Admin";
+
         const tr =
             document.createElement("tr");
 
@@ -130,9 +137,11 @@ function renderWarehouseTable(){
                         Add Stock
                     </button>
 
-                    <button type="button" class="btn btn-sm btn-primary send-stock-btn">
-                        Send Stock
+                    ${isAdmin ? `
+                    <button type="button" class="btn btn-sm btn-outline-primary edit-stock-btn">
+                        Edit
                     </button>
+                    ` : ""}
                 </div>
             </td>
         `;
@@ -142,10 +151,14 @@ function renderWarehouseTable(){
                 openAddStockModal(item.id);
             });
 
-        tr.querySelector(".send-stock-btn")
-            .addEventListener("click", function(){
-                openSendStockModal(item.id, null);
+        const editBtn =
+            tr.querySelector(".edit-stock-btn");
+
+        if(editBtn){
+            editBtn.addEventListener("click", function(){
+                openEditStockModal(item.id);
             });
+        }
 
         tbody.appendChild(tr);
     });
@@ -157,17 +170,68 @@ function renderWarehouseTable(){
 
 function openAddStockModal(itemId){
     currentAddStockItemId = itemId;
+    currentStockModalMode = "add";
 
     const item =
         items.find(function(row){ return row.id === itemId; });
 
+    document.getElementById("addStockEyebrow").textContent =
+        "Stock In";
+
     document.getElementById("addStockTitle").textContent =
         "Add Stock — " + (item ? item.name : "");
+
+    document.getElementById("addStockQtyLabel").textContent =
+        "Quantity *";
+
+    document.getElementById("addStockQtyInput").min = "1";
+    document.getElementById("addStockQtyInput").value = "";
+
+    document.getElementById("confirmAddStockBtn").textContent =
+        "Add Stock";
 
     document.getElementById("addStockDateInput").value =
         CrownInventory.getTodayValue();
 
-    document.getElementById("addStockQtyInput").value = "";
+    document
+        .getElementById("addStockModalBackdrop")
+        .classList.remove("d-none");
+
+    document.body.classList.add("modal-open");
+}
+
+/* Admin-only: sets an item's warehouse quantity to an exact value
+   instead of adding to it — lets staff correct a miscount (including
+   back down to 0) without faking a fictitious stock-in/out movement. */
+function openEditStockModal(itemId){
+    if(currentUser?.role !== "Admin"){
+        return;
+    }
+
+    currentAddStockItemId = itemId;
+    currentStockModalMode = "edit";
+
+    const item =
+        items.find(function(row){ return row.id === itemId; });
+
+    document.getElementById("addStockEyebrow").textContent =
+        "Edit Stock";
+
+    document.getElementById("addStockTitle").textContent =
+        "Edit Stock — " + (item ? item.name : "");
+
+    document.getElementById("addStockQtyLabel").textContent =
+        "New Quantity *";
+
+    document.getElementById("addStockQtyInput").min = "0";
+    document.getElementById("addStockQtyInput").value =
+        getWarehouseQty(itemId);
+
+    document.getElementById("confirmAddStockBtn").textContent =
+        "Save";
+
+    document.getElementById("addStockDateInput").value =
+        CrownInventory.getTodayValue();
 
     document
         .getElementById("addStockModalBackdrop")
@@ -184,6 +248,7 @@ function closeAddStockModal(){
     document.body.classList.remove("modal-open");
 
     currentAddStockItemId = null;
+    currentStockModalMode = "add";
 }
 
 async function confirmAddStock(){
@@ -191,18 +256,66 @@ async function confirmAddStock(){
         return;
     }
 
+    if(currentStockModalMode === "edit" && currentUser?.role !== "Admin"){
+        closeAddStockModal();
+        return;
+    }
+
     /* Captured before the await below — closing the modal (Escape, a
        backdrop click) clears currentAddStockItemId mid-flight. */
     const itemId = currentAddStockItemId;
+    const mode = currentStockModalMode;
 
     const date =
         document.getElementById("addStockDateInput").value;
 
+    const qtyRaw =
+        document.getElementById("addStockQtyInput").value;
+
     const qty =
-        Number(document.getElementById("addStockQtyInput").value);
+        Number(qtyRaw);
 
     if(!date){
-        alert("Please select the date replenished.");
+        alert("Please select the date" + (mode === "add" ? " replenished." : "."));
+        return;
+    }
+
+    if(mode === "edit"){
+        if(qtyRaw === "" || qty < 0){
+            alert("Please enter a valid quantity.");
+            return;
+        }
+
+        const previousQty =
+            getWarehouseQty(itemId);
+
+        if(qty === previousQty){
+            closeAddStockModal();
+            return;
+        }
+
+        const setOutcome =
+            await transactionalSetWarehouseStock(itemId, qty, date);
+
+        /* Offline, local-test, unreachable, or the rare chunked-doc case —
+           fall back to the plain local write rather than blocking staff. */
+        if(setOutcome.status !== "ok"){
+            CrownInventory.setWarehouseStock(itemId, qty, date);
+        }
+
+        CrownInventory.addWarehouseLog({
+            type: "ADJUST",
+            date: date,
+            itemId: itemId,
+            qty: qty - previousQty
+        });
+
+        loadData();
+        renderWarehouseTable();
+        renderRequestsTable();
+        closeAddStockModal();
+
+        alert("Stock updated successfully.");
         return;
     }
 
@@ -445,6 +558,80 @@ async function transactionalAddWarehouseStock(itemId, qty, date){
     }
 }
 
+/* Same shape as transactionalAddWarehouseStock, but sets the row's qty
+   to an absolute value instead of adding a delta — used by the Edit
+   Stock modal, which lets staff correct the on-hand quantity directly
+   (including back down to 0) rather than only ever adding to it. */
+async function transactionalSetWarehouseStock(itemId, qty, date){
+    if(!canUseCloudStockTransactions()){
+        return { status: "offline" };
+    }
+
+    const warehouseKey = "crownWarehouseStock";
+
+    const warehouseRef =
+        firebase.firestore().collection("appData").doc(encodeURIComponent(warehouseKey));
+
+    try{
+        const outcome =
+            await firebase.firestore().runTransaction(async function(transaction){
+                const snap = await transaction.get(warehouseRef);
+                const data = snap.exists ? snap.data() : null;
+
+                if(data && Number.isInteger(data.chunkCount) && data.chunkCount > 1){
+                    return { status: "unsupported" };
+                }
+
+                let rows = [];
+
+                if(data && !data.deleted && data.value){
+                    try{
+                        const parsed = JSON.parse(data.value);
+                        rows = Array.isArray(parsed) ? parsed : [];
+                    }catch(error){
+                        rows = [];
+                    }
+                }
+
+                let row =
+                    rows.find(function(item){
+                        return item.itemId === itemId;
+                    });
+
+                if(!row){
+                    row = { itemId: itemId, qty: 0, lastDate: "" };
+                    rows.push(row);
+                }
+
+                row.qty = Math.max(0, Number(qty) || 0);
+
+                if(date){
+                    row.lastDate = date;
+                }
+
+                transaction.set(warehouseRef, {
+                    key: warehouseKey,
+                    chunkIndex: 0,
+                    chunkCount: 1,
+                    value: JSON.stringify(rows),
+                    deleted: false,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                return { status: "ok", rows: rows };
+            });
+
+        if(outcome.status === "ok"){
+            localStorage.setItem(warehouseKey, JSON.stringify(outcome.rows));
+        }
+
+        return outcome;
+    }catch(error){
+        console.error("transactionalSetWarehouseStock failed:", error);
+        return { status: "error" };
+    }
+}
+
 /* Atomically moves qty of itemId from the warehouse to a branch: reads
    BOTH the crownWarehouseStock and crownBranchStock appData docs fresh
    inside one Firestore transaction, re-validates warehouse availability
@@ -671,7 +858,7 @@ async function confirmSendStock(){
     const date =
         document.getElementById("sendStockDateInput").value;
 
-    const qty =
+    const requestedQty =
         Number(document.getElementById("sendStockQtyInput").value);
 
     const errorNote =
@@ -694,7 +881,7 @@ async function confirmSendStock(){
         return;
     }
 
-    if(!qty || qty <= 0){
+    if(!requestedQty || requestedQty <= 0){
         alert("Please enter a valid quantity.");
         return;
     }
@@ -702,12 +889,31 @@ async function confirmSendStock(){
     const available =
         getWarehouseQty(itemId);
 
-    if(qty > available){
-        errorNote.textContent =
-            `Quantity exceeds available warehouse stock (Available: ${available}).`;
+    /* Fulfilling a branch request is allowed to ship less than what was
+       asked for — send whatever the warehouse actually has now, and
+       leave the rest pending in Stock Requests (see
+       applyRequestFulfillment). A free-form Send Stock with no request
+       behind it still has to fit what's on hand. */
+    let qty = requestedQty;
 
-        errorNote.classList.remove("d-none");
-        return;
+    if(qty > available){
+        if(currentSendStockContext){
+            if(available <= 0){
+                errorNote.textContent =
+                    "No stock available for this item (Available: 0).";
+
+                errorNote.classList.remove("d-none");
+                return;
+            }
+
+            qty = available;
+        }else{
+            errorNote.textContent =
+                `Quantity exceeds available warehouse stock (Available: ${available}).`;
+
+            errorNote.classList.remove("d-none");
+            return;
+        }
     }
 
     /* The `available` check above reads a possibly-stale local snapshot
@@ -775,7 +981,11 @@ async function confirmSendStock(){
     renderRequestsTable();
     closeSendStockModal();
 
-    alert("Stock sent successfully.");
+    alert(
+        qty < requestedQty
+            ? `Sent ${qty} (only what's available in the warehouse). ${requestedQty - qty} still pending in Stock Requests.`
+            : "Stock sent successfully."
+    );
 }
 
 function applyRequestFulfillment(requestId, lineId, sentQty, date){
@@ -797,9 +1007,32 @@ function applyRequestFulfillment(requestId, lineId, sentQty, date){
         return;
     }
 
+    const requestedQty =
+        Number(line.qty) || 0;
+
+    const shortfall =
+        requestedQty - sentQty;
+
     line.status = "Ready for Delivery";
+    line.qty = sentQty;
     line.sentQty = sentQty;
     line.sentDate = date;
+
+    /* Only part of this line's request could be covered — leave a fresh
+       line, still Awaiting Response, for the amount that didn't go out
+       so it keeps showing in Stock Requests instead of the shortfall
+       silently vanishing as if the full request had been met. */
+    if(shortfall > 0){
+        request.items.push({
+            lineId: CrownInventory.createId("RLN"),
+            itemId: line.itemId,
+            qty: shortfall,
+            status: "Awaiting Response",
+            sentQty: 0,
+            sentDate: "",
+            receivedDate: ""
+        });
+    }
 
     CrownInventory.saveRequests(requests);
 }
@@ -902,10 +1135,10 @@ function openHistoryModal(){
 
         row.innerHTML = `
             <td>${CrownInventory.formatDate(entry.date)}</td>
-            <td>${entry.type === "IN" ? "Stock In" : "Stock Out"}</td>
+            <td>${entry.type === "IN" ? "Stock In" : entry.type === "OUT" ? "Stock Out" : "Adjustment"}</td>
             <td>${CrownInventory.escapeHtml(item?.name || "Unknown Item")}</td>
             <td>${CrownInventory.escapeHtml(entry.branch) || "—"}</td>
-            <td>${entry.qty}</td>
+            <td>${entry.type === "ADJUST" && entry.qty > 0 ? "+" + entry.qty : entry.qty}</td>
         `;
 
         tbody.appendChild(row);

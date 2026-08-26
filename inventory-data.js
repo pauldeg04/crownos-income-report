@@ -120,6 +120,25 @@
         return row;
     }
 
+    function setWarehouseStock(itemId, qty, date){
+        const rows = getWarehouseStock();
+        let row = getWarehouseRow(itemId, rows);
+
+        if(!row){
+            row = { itemId: itemId, qty: 0, lastDate: "" };
+            rows.push(row);
+        }
+
+        row.qty = Math.max(0, Number(qty) || 0);
+
+        if(date){
+            row.lastDate = date;
+        }
+
+        saveWarehouseStock(rows);
+        return row;
+    }
+
     function getWarehouseLog(){
         return readList(WAREHOUSE_LOG_KEY);
     }
@@ -756,6 +775,7 @@
         saveWarehouseStock,
         getWarehouseRow,
         adjustWarehouseStock,
+        setWarehouseStock,
         getWarehouseLog,
         addWarehouseLog,
         getBranchStock,
