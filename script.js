@@ -5921,6 +5921,9 @@ function loadDailySales(){
                       (Number(row.voucherValue) || 0)
                     ),
               remarks: row.remarks || "",
+              issueInvoice: row.issueInvoice === true,
+              invoiceNumber: row.invoiceNumber || "",
+              tinNumber: row.tinNumber || "",
               vip: row.vip === true,
               settled:
                 row.settled !== false

@@ -4,6 +4,43 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-26 — Fix: "Issue Sales Invoice" silently dropped from saved sales
+
+**Reported by:** User — Receptionists ticking "Issue Sales Invoice" and
+entering an Invoice Number said the entry never showed up in the Sales
+Invoice Summary, even though nothing looked wrong on their end.
+
+**Found:** `loadDailySales()` ([`script.js`](script.js)) rebuilds every sale
+row from its raw stored JSON using an explicit field-by-field whitelist —
+this runs on every page load, date change, and incoming cloud sync event.
+The whitelist never included `issueInvoice`, `invoiceNumber`, or
+`tinNumber`, so those three fields were silently stripped from the
+in-memory copy the moment this function ran, on any device. Confirmed live:
+a Receptionist ticked the box and entered an invoice number in Biñan, but an
+Admin opening the same sale afterward saw the checkbox unchecked. If any
+other save happened afterward for that branch/date while the fields were
+missing in memory, the whole-day record got overwritten and the invoice
+data was permanently lost from storage — explaining why entries never
+reached the Sales Invoice Summary (`invoice-report.js`), which reads the
+stored record directly.
+
+**Fix applied** (`script.js`, `loadDailySales()`): added `issueInvoice`,
+`invoiceNumber`, and `tinNumber` to the row-rebuild whitelist so they
+survive every reload/sync going forward.
+
+**Not fixed by this change:** sales entered before this fix that already
+lost their invoice flag/number need to be manually reopened and re-checked
+by staff — this fix only stops new data loss, it does not recover what was
+already stripped.
+
+**Manual:** no update needed — [Chapter 11](manual.html#ch-invoice)'s
+description of Sales Invoice Summary already describes the intended
+(post-fix) behavior.
+
+**Status:** Deployed — `firebase deploy --only hosting`.
+
+---
+
 ## 2026-08-26 — Leave Request: branch-scoped visibility for Team Leaders
 
 **Requested by:** User — Team Leader accounts should be able to view all leave
