@@ -4,6 +4,22 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-26 — Scheduling: booking-request appointments default to the first available bed
+
+**Requested by:** User — opening "Add Appointment" from a booking request
+left the Bed dropdown on "Select Bed" since guests don't pick one on the
+public form, unlike a companion row which already defaulted to the first
+available bed.
+
+- [scheduling.js](scheduling.js): `openNewModalFromBookingRequest` now
+  picks the first bed with no scheduling conflict at the request's time
+  (via `findAlternateBed`/`getConflictPool`, the same building blocks
+  `recommendCompanionSlot` already used for companions) and pre-selects it
+  on the modal's Bed dropdown, right after services are filled in so the
+  service duration is known. Doing this before the companion-prefill loop
+  also lets companion bed recommendations anchor off a real bed number
+  instead of always defaulting to bed 1.
+
 ## 2026-08-26 — Staff Schedule: multiple Rest Day rows, "Add Therapist" renamed to "Add Row"
 
 **Requested by:** User — the Rest Day row had no way to add a second staff

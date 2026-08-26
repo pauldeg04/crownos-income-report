@@ -2959,6 +2959,29 @@ async function openNewModalFromBookingRequest(requestId){
     document.getElementById("modalEmail").value = request.email || "";
     resetModalServices(request.serviceName ? [request.serviceName] : []);
 
+    /* Booking requests don't specify a bed, so the dropdown defaulted to
+       "Select Bed" and staff had to pick one manually every time. Default
+       to the first bed with no conflict at this time instead — same idea
+       as the companion auto-recommendation below. */
+    if(selectedStartTime){
+        const durationGuess =
+            getSelectedServiceObjects().reduce(function(sum, service){
+                return sum + service.duration;
+            }, 0) || 10;
+
+        const endTime =
+            minutesToTimeValue(timeToMinutes(selectedStartTime) + durationGuess);
+
+        const firstAvailableBed =
+            findAlternateBed(matchedBranch, null, selectedStartTime, endTime, getConflictPool("main"));
+
+        if(firstAvailableBed){
+            selectedBed = firstAvailableBed;
+            document.getElementById("modalBed").innerHTML =
+                buildBedOptionsHtml(matchedBranch, selectedBed);
+        }
+    }
+
     const contactLines = [request.mobile, request.email]
         .filter(Boolean)
         .join(" / ");
