@@ -4,6 +4,41 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-26 — Leave Request: branch-scoped visibility for Team Leaders
+
+**Requested by:** User — Team Leader accounts should be able to view all leave
+requests and approve/decline them, but only for staff in their own assigned
+branch (not every branch).
+
+**Found:** Team Leader review/approve access already existed
+([`leave-requests.js`](leave-requests.js) `isApprover` check includes
+`currentUser.teamLeader === true`), but the "All Requests" list was
+unfiltered — a Team Leader saw every request from every branch, same as
+Admin/Executive Assistant.
+
+**Fix applied** (`leave-requests.js`):
+1. New requests now stamp `requesterBranches` (from the requester's account)
+   onto the `leaveRequests` doc at submit time.
+2. New `getRequestBranches()` helper reads that stamped field, falling back
+   to a lookup against `CrownAuth.getUsers()` for older requests submitted
+   before this change.
+3. The "All Requests" Firestore listener now filters results through
+   `CrownAuth.getAllowedBranches(currentUser)` when the viewer is a Team
+   Leader (not Admin/Executive Assistant) — same branch-scoping pattern
+   already used in `staff-schedule.js`. Admin and Executive Assistant are
+   unaffected and continue to see every branch.
+
+**Manual updated:** [manual.html](manual.html) Chapter 27 (Leave Request) —
+noted that Team Leaders see only their own branch's requests while
+Admin/Executive Assistant see all branches.
+
+**Not changed:** Firestore rules for `leaveRequests` still don't check role
+(access control is client-side only, consistent with the rest of the app).
+
+**Status:** Deployed — `firebase deploy --only hosting`.
+
+---
+
 ## 2026-08-26 — Marketing: new Daily Report page
 
 **Requested by:** User — branches were filling in an end-of-day recap

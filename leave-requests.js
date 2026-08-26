@@ -218,6 +218,17 @@
         document.getElementById("leaveViewBackdrop").classList.remove("d-none");
     }
 
+    function getRequestBranches(request){
+        if(Array.isArray(request.requesterBranches) && request.requesterBranches.length > 0){
+            return request.requesterBranches;
+        }
+
+        const users = window.CrownAuth?.getUsers?.() || [];
+        const requester = users.find(function(u){ return u.account === request.requesterAccount; });
+
+        return requester?.branches || [];
+    }
+
     async function writeApprovedSchedule(request){
         const users = window.CrownAuth?.getUsers?.() || [];
         const requester = users.find(function(u){ return u.account === request.requesterAccount; });
@@ -263,6 +274,11 @@
             currentUser.role === "Executive Assistant" ||
             currentUser.teamLeader === true;
 
+        const isBranchScopedApprover =
+            currentUser.role !== "Admin" &&
+            currentUser.role !== "Executive Assistant" &&
+            currentUser.teamLeader === true;
+
         if(isApprover){
             document.getElementById("allLeaveCard").classList.remove("d-none");
         }
@@ -283,9 +299,18 @@
             firebase.firestore()
                 .collection(COLLECTION)
                 .onSnapshot(function(snapshot){
-                    allRequestsCache = snapshot.docs.map(function(doc){
+                    let requests = snapshot.docs.map(function(doc){
                         return Object.assign({ id: doc.id }, doc.data());
                     });
+
+                    if(isBranchScopedApprover){
+                        const allowedBranches = window.CrownAuth?.getAllowedBranches?.(currentUser) || [];
+                        requests = requests.filter(function(r){
+                            return getRequestBranches(r).some(function(b){ return allowedBranches.includes(b); });
+                        });
+                    }
+
+                    allRequestsCache = requests;
                     renderAllRequests();
                 }, function(error){
                     console.error("Unable to load all leave requests:", error);
@@ -369,6 +394,7 @@
                     requesterAccount: currentUser.account,
                     requesterName: currentUser.nickname || currentUser.account,
                     requesterEmail: crownToSyncEmail(currentUser.account),
+                    requesterBranches: currentUser.branches || [],
                     position: document.getElementById("leavePosition").value.trim(),
                     leaveType: leaveTypeInput.value,
                     leaveTypeOther: leaveTypeInput.value === "Others" ? document.getElementById("leaveTypeOtherInput").value.trim() : "",
