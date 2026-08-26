@@ -4,6 +4,26 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-26 — Staff Schedule: multiple Rest Day rows, "Add Therapist" renamed to "Add Row"
+
+**Requested by:** User — the Rest Day row had no way to add a second staff
+member on rest the same week, unlike Opening/Closing which already
+supported multiple Therapist rows.
+
+- [staff-schedule.js](staff-schedule.js): `restDay` changed from a single
+  `{mon..sun}` map to an array of them, mirroring the existing
+  `opening.therapists` / `closing.therapists` pattern — same add/remove-row
+  handlers now cover all three sections. `normalizeGrid` upgrades old
+  single-object `restDay` docs to a one-item array on load, so existing
+  saved schedules keep working.
+- [staff-schedule.html](staff-schedule.html): added a **+ Add Row** button
+  under the Rest Day table in the Create/Edit modal; the Opening and
+  Closing **+ Add Therapist** buttons are relabeled **+ Add Row** to match
+  (they add a generic staff row, not specifically a therapist).
+- [manual.html](manual.html): Staff Schedule section updated — Rest Day
+  now described as one-or-more rows, and both add-row buttons referred to
+  as **+ Add Row**.
+
 ## 2026-08-26 — Scheduling: manual Mobile/Email fields on appointments, SMS text rework
 
 **Requested by:** User — booking confirmations (Email/SMS) previously only

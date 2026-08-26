@@ -7,7 +7,7 @@
        branch, weekStartDate, label,
        opening: { receptionist: {mon..sun}, therapists: [{mon..sun}, ...] },
        closing: { receptionist: {mon..sun}, therapists: [{mon..sun}, ...] },
-       restDay: {mon..sun},
+       restDay: [{mon..sun}, ...],
        notes
      }
    Each day cell holds a staff account (or ""). The page shows only the
@@ -124,7 +124,7 @@
             weekStartDate: weekStart,
             opening: { receptionist: emptyDayMap(), therapists: [emptyDayMap()] },
             closing: { receptionist: emptyDayMap(), therapists: [emptyDayMap()] },
-            restDay: emptyDayMap(),
+            restDay: [emptyDayMap()],
             notes: ""
         };
     }
@@ -132,7 +132,8 @@
     function normalizeGrid(grid){
         if(!grid.opening){ grid.opening = { receptionist: emptyDayMap(), therapists: [emptyDayMap()] }; }
         if(!grid.closing){ grid.closing = { receptionist: emptyDayMap(), therapists: [emptyDayMap()] }; }
-        if(!grid.restDay){ grid.restDay = emptyDayMap(); }
+        if(grid.restDay && !Array.isArray(grid.restDay)){ grid.restDay = [grid.restDay]; }
+        if(!Array.isArray(grid.restDay) || grid.restDay.length === 0){ grid.restDay = [emptyDayMap()]; }
         if(!Array.isArray(grid.opening.therapists) || grid.opening.therapists.length === 0){ grid.opening.therapists = [emptyDayMap()]; }
         if(!Array.isArray(grid.closing.therapists) || grid.closing.therapists.length === 0){ grid.closing.therapists = [emptyDayMap()]; }
         return grid;
@@ -201,8 +202,14 @@
         return html;
     }
 
-    function buildRestTableCells(grid, branch, editable){
-        return dayCells(branch, grid.restDay, "restDay", editable);
+    function buildRestTableRows(grid, branch, editable){
+        return (grid.restDay || []).map(function(row, i){
+            const removeCell = editable
+                ? `<td class="schedule-remove-col">${grid.restDay.length > 1 ? `<button type="button" class="schedule-row-remove-btn" data-section="rest" data-index="${i}" title="Remove this row">&times;</button>` : ""}</td>`
+                : "";
+
+            return `<tr><td class="schedule-row-label"></td>${dayCells(branch, row, "restDay." + i, editable)}${removeCell}</tr>`;
+        }).join("");
     }
 
     function buildNotesTable(grid, editable){
@@ -221,10 +228,10 @@
         document.getElementById(ids.closing).innerHTML = buildSectionTable(grid.closing, "closing", branch, editable, weekStart);
 
         document.getElementById(ids.rest).innerHTML =
-            `<colgroup><col class="schedule-label-col">${DAY_KEYS.map(function(){ return "<col>"; }).join("")}</colgroup>` +
-            `<tr><th colspan="8" class="schedule-section-title">REST DAY</th></tr>` +
-            dayHeaderRow(weekStart, false) +
-            '<tr><td class="schedule-row-label"></td>' + buildRestTableCells(grid, branch, editable) + "</tr>";
+            `<colgroup><col class="schedule-label-col">${DAY_KEYS.map(function(){ return "<col>"; }).join("")}${editable ? '<col class="schedule-remove-col">' : ""}</colgroup>` +
+            `<tr><th colspan="${editable ? 9 : 8}" class="schedule-section-title">REST DAY</th></tr>` +
+            dayHeaderRow(weekStart, editable) +
+            buildRestTableRows(grid, branch, editable);
 
         document.getElementById(ids.notes).innerHTML = buildNotesTable(grid, editable);
     }
@@ -383,7 +390,7 @@
             const day = field.dataset.day;
 
             if(path[0] === "restDay"){
-                editState.grid.restDay[day] = field.value.trim();
+                editState.grid.restDay[Number(path[1])][day] = field.value.trim();
                 return;
             }
 
@@ -418,7 +425,8 @@
 
             if(removeBtn && event.target.closest("#scheduleEditBackdrop")){
                 captureEditFormIntoGrid();
-                editState.grid[removeBtn.dataset.section].therapists.splice(Number(removeBtn.dataset.index), 1);
+                const removeRows = removeBtn.dataset.section === "rest" ? editState.grid.restDay : editState.grid[removeBtn.dataset.section].therapists;
+                removeRows.splice(Number(removeBtn.dataset.index), 1);
                 renderEditModal();
                 return;
             }
@@ -427,7 +435,8 @@
 
             if(addBtn && event.target.closest("#scheduleEditBackdrop")){
                 captureEditFormIntoGrid();
-                editState.grid[addBtn.dataset.section].therapists.push(emptyDayMap());
+                const addRows = addBtn.dataset.section === "rest" ? editState.grid.restDay : editState.grid[addBtn.dataset.section].therapists;
+                addRows.push(emptyDayMap());
                 renderEditModal();
             }
         });
@@ -503,10 +512,12 @@
             });
         });
 
-        DAY_KEYS.forEach(function(day, i){
-            if(grid.restDay?.[day] === currentUser.account){
-                items.push({ day: DAY_LABELS[i], role: "Rest Day" });
-            }
+        (Array.isArray(grid.restDay) ? grid.restDay : (grid.restDay ? [grid.restDay] : [])).forEach(function(row){
+            DAY_KEYS.forEach(function(day, i){
+                if(row[day] === currentUser.account){
+                    items.push({ day: DAY_LABELS[i], role: "Rest Day" });
+                }
+            });
         });
 
         return items;
