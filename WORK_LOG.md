@@ -4,6 +4,38 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-26 — Marketing: new Daily Report page
+
+**Requested by:** User — branches were filling in an end-of-day recap
+(Employee, Working Hours, Daily Summary, Hot Leads, Management Attention
+Required) on a separate spreadsheet; wanted it moved into CrownOS under
+the Marketing menu, one saved report per day per branch.
+
+- [marketing-daily-report.html](marketing-daily-report.html) /
+  [marketing-daily-report.js](marketing-daily-report.js): new page. A
+  **+ Create Report** button opens a modal matching the spreadsheet's
+  fields (Employee, Date, Working Hours, Daily Summary counts with an
+  auto-computed Booking Conversion Rate, an optional Summary Notes field,
+  a repeatable Hot Leads table, and Remarks/Prepared by/Time Submitted),
+  with **Save** / **Cancel**. Saved reports land in a table — Date,
+  Inquiries, Bookings, Cancelled, Conversion Rate (%), a **View** under
+  Remarks (just that report's Remarks text), and a **View** under Action
+  (the full report). Follows the Branch selector and has its own Month
+  picker, same convention as Monthly Summary / Expenses Report.
+  Data lives in a new `marketingDailyReports` Firestore collection, one
+  doc per branch per day.
+- [sidebar.js](sidebar.js), [access-control.js](access-control.js),
+  [account-settings.js](account-settings.js): **Daily Report** added
+  under the Marketing section (Admin / Marketing Agent, branch-required),
+  and made individually grantable through Additional Access.
+- [firestore.rules](firestore.rules): added a `marketingDailyReports`
+  rule, same open-to-any-authenticated-user pattern as `marketingCampaigns`.
+- [marketing.css](marketing.css): small section-title spacing helper for
+  the new modal/view layout.
+- [manual.html](manual.html): Chapter 29 renamed to cover Ads Monitoring,
+  Monitoring Summary, and Daily Report; added a Daily Report walkthrough
+  and updated the page-role access matrix.
+
 ## 2026-08-26 — Scheduling: booking-request appointments default to the first available bed
 
 **Requested by:** User — opening "Add Appointment" from a booking request

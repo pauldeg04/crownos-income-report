@@ -268,6 +268,14 @@ service cloud.firestore {
       }
     }
 
+    /* Marketing / Daily Report (see marketing-daily-report.js) — one doc
+       per branch per day recap. Same open-to-any-authenticated-user,
+       gated-in-the-UI pattern as marketingCampaigns above. */
+    match /marketingDailyReports/{reportId} {
+      allow get, list: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
+    }
+
     /* Client-writable notification feed for Admin Hub broadcasts
        (Announcement publish, Memo send) — kept separate from the
        Cloud-Function-only /staffNotifications above so that collection's

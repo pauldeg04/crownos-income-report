@@ -233,6 +233,11 @@
         "marketing-ads-summary.html": [
             "Admin",
             "Marketing Agent"
+        ],
+
+        "marketing-daily-report.html": [
+            "Admin",
+            "Marketing Agent"
         ]
     };
 

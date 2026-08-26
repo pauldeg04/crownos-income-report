@@ -99,6 +99,7 @@
         "Incident Report": "!",
         "Ads Monitoring": "📣",
         "Monitoring Summary": "📈",
+        "Daily Report": "📋",
         "BIR Compliance Desk": "🧾"
     };
 
@@ -201,6 +202,13 @@
             href: "marketing-ads-summary.html",
             roles: ["Admin", "Marketing Agent"],
             sub: true
+        },
+
+        {
+            label: "Daily Report",
+            href: "marketing-daily-report.html",
+            roles: ["Admin", "Marketing Agent"],
+            branchRequired: true
         },
 
         { section: "Inventory" },
@@ -1475,6 +1483,7 @@
             "incident-report.html": "Incident Report",
             "marketing-ads-daily.html": "Ads Monitoring",
             "marketing-ads-summary.html": "Monitoring Summary",
+            "marketing-daily-report.html": "Daily Report",
             "bir-compliance.html": "BIR Compliance Desk"
         };
 
