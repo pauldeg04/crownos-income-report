@@ -4,6 +4,34 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-26 — Scheduling: automatic SMS reminder 2 hours before an appointment
+
+**Requested by:** User — wants clients to automatically get a reminder text
+some time before their appointment, instead of only the optional
+confirmation sent at booking time.
+
+- [functions/index.js](functions/index.js): new scheduled Cloud Function
+  `sendAppointmentReminders`, runs every 15 minutes. Reads today's and
+  tomorrow's `crownSchedule_<branch>_<date>` entries from the appData
+  mirror (read-only — never writes back to that client-owned blob, same
+  reasoning as everywhere else in this file) and, for every entry with a
+  mobile number whose `startTime` is 0–120 minutes away, sends: *"Hi
+  {client}! A gentle reminder that you booked an appointment at {branch}
+  Branch today at {time}. Please arrive earlier than your appointment.
+  See you."* — kept to the short branch name (e.g. "Calamba" not "Crown
+  Head Spa Calamba") to stay inside the 160-char single-segment SMS
+  limit (148 chars as sent). "Already sent" is tracked in a new
+  `appointmentReminders` Firestore collection (one doc per schedule entry
+  id), so a re-run inside the same window is a no-op — nothing is written
+  back onto the schedule entry itself.
+- Fires for **any** appointment with a mobile number on file, independent
+  of whether the SMS confirmation checkbox was checked at booking time —
+  open question from the user still unresolved on whether it should
+  instead only fire for opted-in appointments; revisit if that turns out
+  to be the wrong default.
+- [manual.html](manual.html): new "Automatic SMS reminder" note under
+  Chapter 13 (Scheduling), next to the existing confirmation-popup note.
+
 ## 2026-08-26 — Fix: "Issue Sales Invoice" silently dropped from saved sales
 
 **Reported by:** User — Receptionists ticking "Issue Sales Invoice" and

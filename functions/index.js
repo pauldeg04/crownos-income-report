@@ -48,6 +48,8 @@ const BOOKING_REQUESTS_COLLECTION = "bookingRequests";
 const UNAVAILABLE_BEDS_KEY = "crownUnavailableBeds";
 const USER_ACCOUNTS_KEY = "crownUserAccounts";
 const STAFF_NOTIFICATIONS_COLLECTION = "staffNotifications";
+const APPOINTMENT_REMINDERS_COLLECTION = "appointmentReminders";
+const REMINDER_LEAD_MINUTES = 120; // send the SMS reminder this many minutes before startTime
 
 /* Mirrors firebase-sync.js's toSyncEmail/toSyncPassword exactly — CrownOS
    usernames map to synthetic Firebase Auth emails, and a fixed suffix
@@ -936,6 +938,19 @@ function shortBranchName(branch){
     return String(branch || "").replace(/^Crown Head Spa\s*/i, "");
 }
 
+/* Same no-link reasoning as buildConfirmationSmsText — this is a same-day
+   nudge, not a booking summary, so it skips the service name and
+   companion line entirely. Uses shortBranchName (not the full "Crown
+   Head Spa {City}" name) to stay inside the 160-char single-segment
+   limit — the full name pushes this over to 163 chars. */
+function buildReminderSmsText({ clientName, branch, time }){
+    return toGsm7Safe(
+        `Hi ${clientName || "there"}! A gentle reminder that you booked an ` +
+        `appointment at ${shortBranchName(branch)} Branch today at ${time}. ` +
+        `Please arrive earlier than your appointment. See you.`
+    );
+}
+
 /* No link in this text — Smart silently drops SMS containing a URL from
    a sender name that isn't separately whitelisted for link content
    (confirmed via isolated test sends; a bare URL alone never arrived).
@@ -1023,6 +1038,144 @@ exports.sendAppointmentSmsConfirmation = onCall(
         }
 
         return { ok: true, result };
+    }
+);
+
+/* ---------- sendAppointmentReminders (scheduled) ----------
+
+   Sends an SMS ~REMINDER_LEAD_MINUTES before an appointment's startTime,
+   to whatever mobile number is on the schedule entry itself (set either
+   from a web booking request or typed directly into the appointment
+   modal — see scheduling.js/scheduling.html). Reads crownSchedule_
+   entries straight from the appData mirror the same read-only way as
+   getScheduleEntries() above; never writes back to that client-owned
+   blob (see appData.js's header comment for why). "Already sent" is
+   tracked in its own appointmentReminders collection instead, one doc
+   per schedule entry id, so a re-run inside the same 2-hour window is a
+   no-op. */
+exports.sendAppointmentReminders = onSchedule(
+    { schedule: "every 15 minutes", secrets: [SEMAPHORE_API_KEY] },
+    async () => {
+        const nowMs = Date.now();
+        const nowManila = new Date(nowMs + MANILA_UTC_OFFSET_MINUTES * 60 * 1000);
+
+        function manilaDateStr(date){
+            return date.getUTCFullYear() + "-" +
+                String(date.getUTCMonth() + 1).padStart(2, "0") + "-" +
+                String(date.getUTCDate()).padStart(2, "0");
+        }
+
+        /* An appointment inside the reminder window can fall on "today" or,
+           close to midnight Manila time, "tomorrow" — checking both dates
+           covers that boundary without any special-casing. */
+        const datesToCheck = [
+            manilaDateStr(nowManila),
+            manilaDateStr(new Date(nowManila.getTime() + 24 * 60 * 60 * 1000))
+        ];
+
+        const branches = await getBranches();
+
+        if(branches.length === 0){
+            return;
+        }
+
+        const candidates = [];
+
+        for(const branch of branches){
+            for(const dateStr of datesToCheck){
+                const raw = await readAppDataKey(db, SCHEDULE_PREFIX + branch.name + "_" + dateStr);
+                const entries = Array.isArray(raw) ? raw : [];
+
+                entries.forEach(function(entry){
+                    if(!entry || entry.isCompanionEntry || entry.status === "Cancelled"){
+                        return;
+                    }
+
+                    if(!entry.id || !entry.mobile || !TIME_PATTERN.test(entry.startTime || "")){
+                        return;
+                    }
+
+                    candidates.push({
+                        id: entry.id,
+                        mobile: entry.mobile,
+                        client: entry.client || "",
+                        branch: branch.name,
+                        date: dateStr,
+                        startTime: entry.startTime
+                    });
+                });
+            }
+        }
+
+        const due = candidates.filter(function(item){
+            const [year, month, day] = item.date.split("-").map(Number);
+            const [hour, minute] = item.startTime.split(":").map(Number);
+
+            const startUtcMs =
+                Date.UTC(year, month - 1, day, hour, minute) -
+                MANILA_UTC_OFFSET_MINUTES * 60 * 1000;
+
+            const minutesUntilStart = (startUtcMs - nowMs) / 60000;
+
+            return minutesUntilStart > 0 && minutesUntilStart <= REMINDER_LEAD_MINUTES;
+        });
+
+        if(due.length === 0){
+            return;
+        }
+
+        const reminderRefs = due.map(function(item){
+            return db.collection(APPOINTMENT_REMINDERS_COLLECTION).doc(item.id);
+        });
+
+        const reminderSnaps = await db.getAll(...reminderRefs);
+        const alreadySent = new Set(
+            reminderSnaps.filter(function(snap){ return snap.exists; })
+                .map(function(snap){ return snap.id; })
+        );
+
+        const toSend = due.filter(function(item){ return !alreadySent.has(item.id); });
+
+        for(const item of toSend){
+            const message = buildReminderSmsText({
+                clientName: item.client,
+                branch: item.branch,
+                time: formatDisplayTime(item.startTime)
+            });
+
+            try{
+                const response = await fetch("https://api.semaphore.co/api/v4/messages", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: new URLSearchParams({
+                        apikey: SEMAPHORE_API_KEY.value(),
+                        number: item.mobile,
+                        message: message
+                    })
+                });
+
+                const bodyText = await response.text();
+                let result = null;
+
+                try{
+                    result = JSON.parse(bodyText);
+                }catch(parseError){
+                    console.error("Reminder SMS: Semaphore returned a non-JSON response for", item.id, response.status, bodyText);
+                }
+
+                if(!response.ok || result?.message){
+                    console.error("Reminder SMS failed for", item.id, response.status, bodyText);
+                    continue; // left unmarked — the next run (within the window) retries it
+                }
+
+                await db.collection(APPOINTMENT_REMINDERS_COLLECTION).doc(item.id).set({
+                    sentAt: admin.firestore.FieldValue.serverTimestamp(),
+                    mobile: item.mobile
+                });
+            }catch(networkError){
+                console.error("Reminder SMS network error for", item.id, networkError);
+            }
+        }
     }
 );
 
