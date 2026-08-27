@@ -1897,7 +1897,7 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     <p>
       Confirming Liquidate <strong>automatically posts every transaction into
       the Expenses Report</strong> as Operation Expenses — Category
-      <strong>Branch Expenses</strong>. There is no need to retype them. The
+      <strong>Supplies &amp; Purchases</strong>. There is no need to retype them. The
       entries use the <strong>liquidation date</strong> rather than each
       expense's own date, because they are submitted as one batch.
     </p>
@@ -1919,7 +1919,7 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   <h3>Expenses Report</h3>
   <ul class="roleline"><li><span class="pill pill-role">Admin only</span></li></ul>
 
-  <p>The Summary Table has three parts:</p>
+  <p>The Summary Table has six parts:</p>
 
   <div class="table-wrap">
     <table>
@@ -1927,25 +1927,66 @@ Branch receives    →  it is added to the branch's Available Stock</div>
         <tr><th>Section</th><th>What it holds</th></tr>
       </thead>
       <tbody>
-        <tr><td><strong>Operation Expenses</strong></td><td>Day-to-day operating costs. Liquidated Petty Cash lands here.</td></tr>
-        <tr><td><strong>Salary</strong></td><td>Wage costs for the month.</td></tr>
-        <tr><td><strong>Utilities / Monthly Dues</strong></td><td>Electricity, water, internet, rent, and other recurring bills.</td></tr>
+        <tr><td><strong>Operation Expenses</strong></td><td>Day-to-day operating costs. Liquidated Petty Cash lands here, under category <strong>Supplies &amp; Purchases</strong>.</td></tr>
+        <tr><td><strong>Payroll</strong></td><td>Wage costs for the month.</td></tr>
+        <tr><td><strong>Utilities / Monthly Dues</strong></td><td>Electricity, water, internet, rent, and other recurring bills — see below, this is a recurring tracker rather than a plain ledger.</td></tr>
+        <tr><td><strong>Installments</strong></td><td>Recurring loan or installment payments — same tracker behavior as Utilities / Monthly Dues.</td></tr>
+        <tr><td><strong>Accounting / Government Dues</strong></td><td>Plain ledger, same as Operation Expenses.</td></tr>
+        <tr><td><strong>Marketing</strong></td><td>Plain ledger with S.I. No. and TIN reference fields.</td></tr>
       </tbody>
     </table>
   </div>
 
   <p>
-    Expense categories are <strong>Operation Supplies</strong>,
-    <strong>Maintenance</strong>, <strong>Management</strong>, <strong>Branch
-    Expenses</strong>, and <strong>Others</strong>.
+    Operation Expenses categories are <strong>Supplies &amp; Purchases</strong>,
+    <strong>Transportation and Fuel</strong>, <strong>Repairs &amp;
+    Maintenance</strong>, <strong>Postage &amp; Delivery</strong>,
+    <strong>Assets &amp; Capital Expenditures</strong>, and <strong>Others</strong>.
   </p>
 
   <p>
-    The Date field only asks for a month (shown as, e.g., <strong>Aug-25</strong>)
-    — no specific day. Operation Expenses, Utilities / Monthly Dues, and
-    Installments each also carry <strong>S.I. No.</strong> and <strong>TIN</strong>
-    columns; Marketing carries a <strong>Transaction ID</strong> column instead.
-    All three are optional reference fields, entered between Amount and Remarks.
+    On the plain-ledger tables (Operation Expenses, Payroll, Accounting /
+    Government Dues, Marketing), the Date field only asks for a month
+    (shown as, e.g., <strong>Aug-25</strong>) — no specific day. Operation
+    Expenses and Marketing also carry optional <strong>S.I. No.</strong>
+    and <strong>TIN</strong> reference fields, entered between Amount and
+    Remarks.
+  </p>
+
+  <h4>Utilities / Monthly Dues and Installments</h4>
+
+  <p>
+    These two tables don't work like the others. Instead of logging a new
+    line each month, you add a bill or loan <strong>once</strong> with
+    <span class="ui">+ Add to List</span>, and it keeps reappearing on
+    every month's table on its own — from its Start Date until it's
+    completed — with columns Particular, Due Date, Amount, Start Date,
+    End Date, Status, and Action.
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Field</th><th>What it means</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Due Date</strong></td><td>A day of the month (e.g. 15th) — the bill is due that day, every month it's active.</td></tr>
+        <tr><td><strong>Amount</strong></td><td><strong>Fixed</strong> — one value set when adding the item, locked in the table. <strong>Varies</strong> — left blank when adding, then typed directly into the table each month it appears.</td></tr>
+        <tr><td><strong>Start Date / Duration</strong></td><td>Set once when adding. Check <strong>Continues</strong> for a bill with no planned end, or enter a number of months — the End Date is computed and shown from then on.</td></tr>
+        <tr><td><strong>Status</strong></td><td><span class="pill" style="background:#fff3cd;color:#8a6d00;">Pending</span> (more than 5 days out), <span class="pill" style="background:#ffe1c2;color:#a35300;">Approaching Due Date</span> (within 5 days), <span class="pill" style="background:#f8d1d5;color:#a3121e;">Past Due</span> (due date has passed), <span class="pill" style="background:#d3f5df;color:#136c34;">Settled</span> (marked paid this month — overrides the others).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    <span class="ui">Settle</span> marks the item paid for the month
+    currently being viewed only — its Fixed amount is greyed out until
+    then, and it only counts toward the category and grand totals once
+    settled, so the totals always reflect what's actually been paid, not
+    what's merely due. Settling by mistake? Open <span class="ui">✎
+    Edit</span> on that item — a <span class="ui">Revert to
+    Unsettled</span> button appears whenever it's settled for the month
+    you're viewing, and undoes just that one month.
   </p>
 
   <h3>Cash Flow</h3>

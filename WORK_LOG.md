@@ -4,6 +4,69 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-27 — Expenses Report: category rework, Payroll rename, Marketing columns, and recurring Utilities/Installments tracker
+
+**Requested by:** User — wanted the Operation Expenses category list
+replaced, the Salary table renamed to Payroll, Marketing's Transaction
+ID column swapped for S.I. No. and TIN, and — the bigger ask — Utilities
+/ Monthly Dues and Installments turned from one-off ledger entries into
+a recurring tracker: add a bill once and have it reappear on its own
+every month until it's done, with a due-date status and a way to mark
+it paid.
+
+- [expenses-report.html](expenses-report.html): Operation Expenses
+  category dropdown replaced with **Supplies & Purchases**,
+  **Transportation and Fuel**, **Repairs & Maintenance**, **Postage &
+  Delivery**, **Assets & Capital Expenditures**, **Others** (previously
+  Operation Supplies / Maintenance / Management / Branch Expenses /
+  Others). Summary Table row **Salary** → **Payroll** (internal storage
+  key unchanged, so existing data still loads). New **Add to List**
+  modal for the two recurring tables, separate from the existing
+  Add/Edit Expense Entry modal: Particular, Due Date (day of the
+  month), Start Date, Amount type (**Fixed** — one locked value — or
+  **Varies** — entered per month directly in the table), and Duration
+  (**Continues** checkbox, or a number of months from which the End
+  Date is computed). The dead **Transaction ID** field was removed from
+  the shared modal entirely rather than left unused.
+- [expenses-report.js](expenses-report.js): Marketing's `extraFields`
+  swapped from `transactionId` to `siNo`/`tin`, matching Operation
+  Expenses. Utilities and Installments are now flagged `recurring: true`
+  and no longer go through the month-keyed ledger (`expenseData`) —
+  their items live in a new `recurringData` store keyed **per branch
+  only** (`crownRecurring_<utilities|installments>_<branch>`), so a
+  bill added once keeps appearing on every month's table from its Start
+  Date through its computed End Date (or forever, if Continuing),
+  independent of which month is currently selected. Status per item per
+  month is computed live against today's date: **Pending** (more than 5
+  days out), **Approaching Due Date** (within 5 days), **Past Due**
+  (due date has passed), or **Settled** (marked paid for that specific
+  month via the new **Settle** button — overrides the other three).
+  Only settled items count toward that month's category and grand
+  totals — a Pending/Approaching/Past Due item doesn't inflate the
+  total until it's actually been paid — and a Fixed amount is shown
+  greyed out until settled so paid items stand out at a glance. Editing
+  a settled item shows a **Revert to Unsettled** button in the modal
+  footer, which un-settles it for the month currently being viewed only
+  (other months' settled state is untouched). PDF export updated with a
+  matching recurring-items code path (new columns, status labels,
+  per-month amount resolution) so the exported report matches the
+  on-screen table.
+- [petty-cash.js](petty-cash.js): `PETTY_CASH_EXPENSE_CATEGORY`
+  changed from `"Branch Expenses"` to `"Supplies & Purchases"` — the
+  old category was removed from the Operation Expenses dropdown above,
+  so Liquidate would have kept auto-filing entries under a category
+  that no longer exists in the picklist. New liquidations file under
+  Supplies & Purchases; already-liquidated historical entries keep
+  whatever category they were written with.
+- [manual.html](manual.html): Chapter 17 (Petty Cash) and Chapter 18
+  (Expenses Report) updated for the new category list, the Payroll
+  rename, Marketing's S.I. No./TIN columns, and a new subsection
+  explaining the Utilities/Installments recurring tracker — Due Date,
+  Fixed vs. Varies, Start Date/Duration, the four status states, and
+  Settle/Revert.
+
+---
+
 ## 2026-08-26 — Warehouse: Edit (Admin only) quantity, and partial Send Stock fulfillment
 
 **Requested by:** User — wanted a way to correct a warehouse item's

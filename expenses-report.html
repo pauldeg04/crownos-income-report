@@ -84,7 +84,7 @@
                 </thead>
                 <tbody>
                     <tr><td>Operation Expenses</td><td id="summaryOperation">₱0.00</td></tr>
-                    <tr><td>Salary</td><td id="summarySalary">₱0.00</td></tr>
+                    <tr><td>Payroll</td><td id="summarySalary">₱0.00</td></tr>
                     <tr><td>Utilities / Monthly Dues</td><td id="summaryUtilities">₱0.00</td></tr>
                     <tr><td>Installments</td><td id="summaryInstallments">₱0.00</td></tr>
                     <tr><td>Accounting / Government Dues</td><td id="summaryGov">₱0.00</td></tr>
@@ -120,10 +120,11 @@
                     <label class="form-label fw-bold">Category</label>
                     <select id="expenseModalCategory" class="form-select">
                         <option value="">Select Category</option>
-                        <option value="Operation Supplies">Operation Supplies</option>
-                        <option value="Maintenance">Maintenance</option>
-                        <option value="Management">Management</option>
-                        <option value="Branch Expenses">Branch Expenses</option>
+                        <option value="Supplies & Purchases">Supplies & Purchases</option>
+                        <option value="Transportation and Fuel">Transportation and Fuel</option>
+                        <option value="Repairs & Maintenance">Repairs & Maintenance</option>
+                        <option value="Postage & Delivery">Postage & Delivery</option>
+                        <option value="Assets & Capital Expenditures">Assets & Capital Expenditures</option>
                         <option value="Others">Others</option>
                     </select>
                 </div>
@@ -151,11 +152,6 @@
                     <input type="text" id="expenseModalTin" class="form-control" placeholder="e.g. 123-456-789-000">
                 </div>
 
-                <div class="col-md-6 d-none" id="expenseModalTransactionIdWrapper">
-                    <label class="form-label fw-bold">Transaction ID</label>
-                    <input type="text" id="expenseModalTransactionId" class="form-control" placeholder="e.g. TXN-000123">
-                </div>
-
                 <div class="col-12">
                     <label class="form-label fw-bold">Remarks</label>
                     <input type="text" id="expenseModalRemarks" class="form-control" placeholder="Optional remarks">
@@ -169,6 +165,80 @@
             <div class="expense-modal-footer-right">
                 <button type="button" class="btn btn-outline-secondary" id="cancelExpenseModalBtn">Cancel</button>
                 <button type="button" class="btn btn-primary" id="saveExpenseEntryBtn">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add / Edit recurring item modal (Utilities/Monthly Dues, Installments) -->
+<div class="expense-modal-backdrop d-none" id="recurringModalBackdrop">
+    <div class="expense-modal">
+        <div class="expense-modal-header">
+            <h4 id="recurringModalTitle">Add to List</h4>
+            <button type="button" class="expense-modal-close" id="closeRecurringModalBtn">&times;</button>
+        </div>
+
+        <div class="expense-modal-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label fw-bold">Particular</label>
+                    <input type="text" id="recurringParticular" class="form-control" placeholder="e.g. Electricity Bill">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Due Date (day of the month)</label>
+                    <input type="number" id="recurringDueDay" class="form-control" min="1" max="31" placeholder="e.g. 15">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Start Date</label>
+                    <input type="date" id="recurringStartDate" class="form-control">
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold d-block">Amount</label>
+                    <div class="btn-group amount-type-toggle" role="group">
+                        <input type="radio" class="btn-check" name="recurringAmountType" id="recurringAmountFixed" value="fixed" checked>
+                        <label class="btn btn-outline-primary btn-sm" for="recurringAmountFixed">Fixed Amount</label>
+
+                        <input type="radio" class="btn-check" name="recurringAmountType" id="recurringAmountVaries" value="varies">
+                        <label class="btn btn-outline-primary btn-sm" for="recurringAmountVaries">Varies</label>
+                    </div>
+                </div>
+
+                <div class="col-md-6" id="recurringFixedAmountWrapper">
+                    <label class="form-label fw-bold">Fixed Amount</label>
+                    <div class="input-group">
+                        <span class="input-group-text">₱</span>
+                        <input type="number" id="recurringFixedAmount" class="form-control" placeholder="0.00" min="0" step="0.01">
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold d-block">Duration</label>
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="recurringContinues">
+                            <label class="form-check-label" for="recurringContinues">Continues (no fixed end date)</label>
+                        </div>
+                        <div class="input-group recurring-duration-input" id="recurringDurationWrapper">
+                            <input type="number" id="recurringDurationMonths" class="form-control" min="1" placeholder="Number of months">
+                            <span class="input-group-text">month(s)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="expense-modal-footer expense-modal-footer-split">
+            <div class="expense-modal-footer-left">
+                <button type="button" class="btn btn-outline-danger d-none" id="deleteRecurringItemBtn">Delete</button>
+                <button type="button" class="btn btn-outline-warning d-none" id="revertRecurringItemBtn">Revert to Unsettled</button>
+            </div>
+
+            <div class="expense-modal-footer-right">
+                <button type="button" class="btn btn-outline-secondary" id="cancelRecurringModalBtn">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveRecurringItemBtn">Save</button>
             </div>
         </div>
     </div>

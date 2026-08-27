@@ -1,10 +1,12 @@
 /* ==========================================================================
    Crown Head Spa — Expenses Report
-   Category ledgers with Add Particular / Edit via popup, plus a branded
-   jsPDF+autoTable export.
+   Category ledgers with Add Particular / Edit via popup, plus two recurring
+   trackers (Utilities/Monthly Dues, Installments) with due-date status and
+   a branded jsPDF+autoTable export.
    ========================================================================== */
 
 const EXPENSE_PREFIX = "crownExpenses_";
+const RECURRING_PREFIX = "crownRecurring_";
 const BRANCH_KEY = "crownSelectedBranch";
 
 function getSelectedBranch(){
@@ -21,7 +23,7 @@ const expenseTables = [
     },
     {
         key: "salary",
-        title: "Salary",
+        title: "Payroll",
         headerClass: "salary-header",
         columns: ["Date", "Particular", "Amount", "Remarks"],
         extraFields: []
@@ -30,15 +32,15 @@ const expenseTables = [
         key: "utilities",
         title: "Utilities / Monthly Dues",
         headerClass: "utilities-header",
-        columns: ["Date", "Particular", "Amount", "S.I. No.", "TIN", "Remarks"],
-        extraFields: ["siNo", "tin"]
+        recurring: true,
+        columns: ["Particular", "Due Date", "Amount", "Start Date", "End Date", "Status"]
     },
     {
         key: "installments",
         title: "Installments",
         headerClass: "installments-header",
-        columns: ["Date", "Particular", "Amount", "S.I. No.", "TIN", "Remarks"],
-        extraFields: ["siNo", "tin"]
+        recurring: true,
+        columns: ["Particular", "Due Date", "Amount", "Start Date", "End Date", "Status"]
     },
     {
         key: "gov",
@@ -51,19 +53,29 @@ const expenseTables = [
         key: "marketing",
         title: "Marketing",
         headerClass: "marketing-header",
-        columns: ["Date", "Particular", "Amount", "Transaction ID", "Remarks"],
-        extraFields: ["transactionId"]
+        columns: ["Date", "Particular", "Amount", "S.I. No.", "TIN", "Remarks"],
+        extraFields: ["siNo", "tin"]
     }
 ];
 
+const recurringTableKeys = expenseTables.filter(t => t.recurring).map(t => t.key);
+
 const EXTRA_FIELD_LABELS = {
     siNo: "S.I. No.",
-    tin: "TIN",
-    transactionId: "Transaction ID"
+    tin: "TIN"
+};
+
+const RECURRING_STATUS_META = {
+    pending: { label: "Pending", class: "status-pending" },
+    approaching: { label: "Approaching Due Date", class: "status-approaching" },
+    overdue: { label: "Past Due", class: "status-overdue" },
+    settled: { label: "Settled", class: "status-settled" }
 };
 
 let expenseData = {};
+let recurringData = {};
 let activeModal = { tableKey: null, entryId: null };
+let activeRecurringModal = { tableKey: null, itemId: null };
 
 document.addEventListener("DOMContentLoaded", function(){
     setCurrentMonth();
@@ -71,6 +83,7 @@ document.addEventListener("DOMContentLoaded", function(){
     renderTables();
     loadExpenses();
     wireModalEvents();
+    wireRecurringModalEvents();
 
     document.getElementById("exportExpensesPdfBtn")
         .addEventListener("click", exportExpensesPDF);
@@ -90,6 +103,11 @@ function getStorageKey(){
     return EXPENSE_PREFIX + branch + "_" + month;
 }
 
+function getRecurringStorageKey(tableKey){
+    let branch = getSelectedBranch() || "NoBranch";
+    return RECURRING_PREFIX + tableKey + "_" + branch;
+}
+
 function escapeHtml(value){
     return String(value ?? "")
         .replaceAll("&", "&amp;")
@@ -101,6 +119,10 @@ function escapeHtml(value){
 
 function createExpenseId(){
     return Date.now().toString() + Math.random().toString(16).slice(2);
+}
+
+function createRecurringId(){
+    return "r" + Date.now().toString() + Math.random().toString(16).slice(2);
 }
 
 function peso(amount){
@@ -144,6 +166,18 @@ function formatDateText(dateValue){
     return `${monthAbbr}-${year.slice(2)}`;
 }
 
+function ordinalSuffix(n){
+    let j = n % 10, k = n % 100;
+    if(j === 1 && k !== 11) return n + "st";
+    if(j === 2 && k !== 12) return n + "nd";
+    if(j === 3 && k !== 13) return n + "rd";
+    return n + "th";
+}
+
+function dueDateLabel(day){
+    return day ? ordinalSuffix(day) + " of the month" : "—";
+}
+
 function changeBranchMonth(){
     loadExpenses();
 }
@@ -156,33 +190,63 @@ function renderTables(){
         let card = document.createElement("div");
         card.className = "card shadow-sm border-0 mb-4 expense-card";
 
-        card.innerHTML = `
-            <div class="card-body">
-                <div class="expense-header ${table.headerClass} d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <h3 class="fw-bold mb-0">${table.title}</h3>
-                    <button type="button" class="btn btn-sm add-particular-btn" onclick="openExpenseModal('${table.key}', null)">+ Add Particular</button>
-                </div>
+        if(table.recurring){
+            card.innerHTML = `
+                <div class="card-body">
+                    <div class="expense-header ${table.headerClass} d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h3 class="fw-bold mb-0">${table.title}</h3>
+                        <button type="button" class="btn btn-sm add-particular-btn" onclick="openRecurringModal('${table.key}', null)">+ Add to List</button>
+                    </div>
 
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover expense-table">
-                        <thead class="table-light">
-                            <tr>
-                                ${table.columns.map(col => `<th>${col}</th>`).join("")}
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="${table.key}Body"></tbody>
-                    </table>
-                </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover expense-table">
+                            <thead class="table-light">
+                                <tr>
+                                    ${table.columns.map(col => `<th>${col}</th>`).join("")}
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="${table.key}Body"></tbody>
+                        </table>
+                    </div>
 
-                <div class="d-flex justify-content-end align-items-center mt-3 border-top pt-3">
-                    <div class="table-total">
-                        ${table.title} Total:
-                        <span id="${table.key}Total">₱0.00</span>
+                    <div class="d-flex justify-content-end align-items-center mt-3 border-top pt-3">
+                        <div class="table-total">
+                            ${table.title} Total:
+                            <span id="${table.key}Total">₱0.00</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            card.innerHTML = `
+                <div class="card-body">
+                    <div class="expense-header ${table.headerClass} d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h3 class="fw-bold mb-0">${table.title}</h3>
+                        <button type="button" class="btn btn-sm add-particular-btn" onclick="openExpenseModal('${table.key}', null)">+ Add Particular</button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover expense-table">
+                            <thead class="table-light">
+                                <tr>
+                                    ${table.columns.map(col => `<th>${col}</th>`).join("")}
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="${table.key}Body"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-end align-items-center mt-3 border-top pt-3">
+                        <div class="table-total">
+                            ${table.title} Total:
+                            <span id="${table.key}Total">₱0.00</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         container.appendChild(card);
     });
@@ -232,15 +296,25 @@ function renderTableBody(tableKey){
 }
 
 function renderAllTables(){
-    expenseTables.forEach(table => renderTableBody(table.key));
+    expenseTables.forEach(table => {
+        if(table.recurring){
+            renderRecurringTableBody(table.key);
+        } else {
+            renderTableBody(table.key);
+        }
+    });
     updateTotals();
 }
 
 function updateTotals(){
     let totals = {};
+    let monthKey = document.getElementById("month").value;
 
     expenseTables.forEach(table => {
-        let total = (expenseData[table.key] || []).reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
+        let total = table.recurring
+            ? recurringMonthTotal(table.key, monthKey)
+            : (expenseData[table.key] || []).reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
+
         totals[table.key] = total;
         document.getElementById(table.key + "Total").innerText = peso(total);
     });
@@ -263,7 +337,7 @@ function updateTotals(){
 }
 
 /* ==========================================================================
-   Add / Edit Expense Entry modal
+   Add / Edit Expense Entry modal (ledger tables)
    ========================================================================== */
 
 function wireModalEvents(){
@@ -297,7 +371,6 @@ function openExpenseModal(tableKey, entryId){
     document.getElementById("expenseModalCategoryWrapper").classList.toggle("d-none", !isOperation);
     document.getElementById("expenseModalSiNoWrapper").classList.toggle("d-none", !table.extraFields.includes("siNo"));
     document.getElementById("expenseModalTinWrapper").classList.toggle("d-none", !table.extraFields.includes("tin"));
-    document.getElementById("expenseModalTransactionIdWrapper").classList.toggle("d-none", !table.extraFields.includes("transactionId"));
 
     document.getElementById("expenseModalTitle").textContent =
         (entry ? "Edit " : "Add ") + table.title + " Entry";
@@ -308,7 +381,6 @@ function openExpenseModal(tableKey, entryId){
     document.getElementById("expenseModalAmount").value = entry?.amount || "";
     document.getElementById("expenseModalSiNo").value = entry?.siNo || "";
     document.getElementById("expenseModalTin").value = entry?.tin || "";
-    document.getElementById("expenseModalTransactionId").value = entry?.transactionId || "";
     document.getElementById("expenseModalRemarks").value = entry?.remarks || "";
 
     document.getElementById("deleteExpenseEntryBtn").classList.toggle("d-none", !entry);
@@ -342,7 +414,6 @@ function saveExpenseEntryFromModal(){
     let amount = parseFloat(document.getElementById("expenseModalAmount").value) || 0;
     let siNo = document.getElementById("expenseModalSiNo").value.trim();
     let tin = document.getElementById("expenseModalTin").value.trim();
-    let transactionId = document.getElementById("expenseModalTransactionId").value.trim();
     let remarks = document.getElementById("expenseModalRemarks").value.trim();
 
     if(!particular){
@@ -374,7 +445,6 @@ function saveExpenseEntryFromModal(){
 
     if(table.extraFields.includes("siNo")) entry.siNo = siNo;
     if(table.extraFields.includes("tin")) entry.tin = tin;
-    if(table.extraFields.includes("transactionId")) entry.transactionId = transactionId;
 
     if(!expenseData[tableKey]){
         expenseData[tableKey] = [];
@@ -411,6 +481,357 @@ function deleteExpenseEntryFromModal(){
 }
 
 /* ==========================================================================
+   Recurring items (Utilities / Monthly Dues, Installments)
+   Items live outside the month-keyed ledger — stored per branch — and stay
+   visible on every month's table from their Start Date until their
+   computed End Date (or forever, if "Continues" is checked).
+   ========================================================================== */
+
+function daysInMonth(year, month){
+    return new Date(year, month, 0).getDate();
+}
+
+function monthKeyFromDateStr(dateStr){
+    return dateStr ? dateStr.slice(0, 7) : "";
+}
+
+function addMonthsToMonthKey(monthKey, delta){
+    let [y, m] = monthKey.split("-").map(Number);
+    let total = (y * 12 + (m - 1)) + delta;
+    let ny = Math.floor(total / 12);
+    let nm = (total % 12) + 1;
+    return `${ny}-${String(nm).padStart(2, "0")}`;
+}
+
+function computeEndMonth(startDate, durationMonths){
+    let startMonth = monthKeyFromDateStr(startDate);
+    if(!startMonth || !durationMonths) return startMonth || null;
+    return addMonthsToMonthKey(startMonth, durationMonths - 1);
+}
+
+function isRecurringActiveInMonth(item, monthKey){
+    let startMonth = monthKeyFromDateStr(item.startDate);
+    if(!startMonth || !monthKey || monthKey < startMonth) return false;
+    if(item.continues) return true;
+    return !!item.endMonth && monthKey <= item.endMonth;
+}
+
+function dueInstanceDate(item, monthKey){
+    let [y, m] = monthKey.split("-").map(Number);
+    let day = Math.min(item.dueDay || 1, daysInMonth(y, m));
+    return new Date(y, m - 1, day);
+}
+
+function computeRecurringStatus(item, monthKey){
+    if(item.settledMonths && item.settledMonths[monthKey]) return "settled";
+
+    let due = dueInstanceDate(item, monthKey);
+    due.setHours(0, 0, 0, 0);
+
+    let today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let diffDays = Math.round((due - today) / 86400000);
+
+    if(diffDays < 0) return "overdue";
+    if(diffDays <= 5) return "approaching";
+    return "pending";
+}
+
+function recurringAmountForMonth(item, monthKey){
+    if(item.amountType === "varies"){
+        return Number((item.monthlyAmounts || {})[monthKey]) || 0;
+    }
+    return Number(item.fixedAmount) || 0;
+}
+
+/* Only settled items count toward the total for a month — an item still
+   Pending/Approaching/Past Due hasn't actually been paid out yet. */
+function recurringMonthTotal(tableKey, monthKey){
+    return (recurringData[tableKey] || [])
+        .filter(item => isRecurringActiveInMonth(item, monthKey) && computeRecurringStatus(item, monthKey) === "settled")
+        .reduce((sum, item) => sum + recurringAmountForMonth(item, monthKey), 0);
+}
+
+function renderRecurringTableBody(tableKey){
+    let table = expenseTables.find(t => t.key === tableKey);
+    let tbody = document.getElementById(tableKey + "Body");
+    let monthKey = document.getElementById("month").value;
+
+    let items = (recurringData[tableKey] || [])
+        .filter(item => isRecurringActiveInMonth(item, monthKey))
+        .sort((a, b) => (a.dueDay || 0) - (b.dueDay || 0));
+
+    if(items.length === 0){
+        tbody.innerHTML = `
+            <tr class="empty-row">
+                <td colspan="${table.columns.length + 1}">No entries yet. Click "+ Add to List" to add one.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = items.map(item => {
+        let status = computeRecurringStatus(item, monthKey);
+        let meta = RECURRING_STATUS_META[status];
+
+        let amountCell;
+        if(item.amountType === "varies"){
+            let value = (item.monthlyAmounts || {})[monthKey];
+            amountCell = `
+                <td>
+                    <input type="number" class="form-control form-control-sm varies-amount-input"
+                        min="0" step="0.01" value="${value === undefined ? "" : escapeHtml(value)}"
+                        onchange="updateVariesAmount('${tableKey}','${item.id}', this.value)">
+                </td>
+            `;
+        } else {
+            let mutedClass = status === "settled" ? "" : " amount-unsettled";
+            amountCell = `<td class="amount-cell${mutedClass}">${peso(item.fixedAmount)}</td>`;
+        }
+
+        let endDateText = item.continues
+            ? "Continues"
+            : (item.endMonth ? formatDateText(item.endMonth + "-01") : "—");
+
+        return `
+            <tr>
+                <td class="text-start">${escapeHtml(item.particular)}</td>
+                <td>${dueDateLabel(item.dueDay)}</td>
+                ${amountCell}
+                <td>${item.startDate ? formatDateText(item.startDate) : "—"}</td>
+                <td>${endDateText}</td>
+                <td><span class="status-badge ${meta.class}">${meta.label}</span></td>
+                <td>
+                    ${status === "settled" ? "" : `<button type="button" class="btn btn-sm btn-outline-success settle-btn" onclick="settleRecurringItem('${tableKey}','${item.id}')">Settle</button>`}
+                    <button type="button" class="btn btn-sm btn-outline-primary edit-btn" onclick="openRecurringModal('${tableKey}','${item.id}')">✎ Edit</button>
+                </td>
+            </tr>
+        `;
+    }).join("");
+}
+
+function updateVariesAmount(tableKey, itemId, value){
+    let item = (recurringData[tableKey] || []).find(i => i.id === itemId);
+    if(!item) return;
+
+    let monthKey = document.getElementById("month").value;
+    if(!item.monthlyAmounts) item.monthlyAmounts = {};
+    item.monthlyAmounts[monthKey] = parseFloat(value) || 0;
+
+    saveRecurringData(tableKey);
+    updateTotals();
+}
+
+function settleRecurringItem(tableKey, itemId){
+    let item = (recurringData[tableKey] || []).find(i => i.id === itemId);
+    if(!item) return;
+
+    let monthKey = document.getElementById("month").value;
+    if(!item.settledMonths) item.settledMonths = {};
+    item.settledMonths[monthKey] = true;
+
+    saveRecurringData(tableKey);
+    renderRecurringTableBody(tableKey);
+    updateTotals();
+}
+
+/* Un-settles an item for one specific month only — its other
+   occurrences (past or future) keep whatever settled state they have. */
+function revertRecurringItemSettlement(tableKey, itemId, monthKey){
+    let item = (recurringData[tableKey] || []).find(i => i.id === itemId);
+    if(!item || !item.settledMonths) return;
+
+    delete item.settledMonths[monthKey];
+
+    saveRecurringData(tableKey);
+    renderRecurringTableBody(tableKey);
+    updateTotals();
+}
+
+/* ---- Add / Edit recurring item modal ---------------------------------- */
+
+function wireRecurringModalEvents(){
+    document.getElementById("closeRecurringModalBtn").addEventListener("click", closeRecurringModal);
+    document.getElementById("cancelRecurringModalBtn").addEventListener("click", closeRecurringModal);
+    document.getElementById("saveRecurringItemBtn").addEventListener("click", saveRecurringItemFromModal);
+    document.getElementById("deleteRecurringItemBtn").addEventListener("click", deleteRecurringItemFromModal);
+    document.getElementById("revertRecurringItemBtn").addEventListener("click", revertRecurringItemFromModal);
+
+    document.getElementById("recurringModalBackdrop").addEventListener("click", function(event){
+        if(event.target === this){
+            closeRecurringModal();
+        }
+    });
+
+    document.getElementById("recurringAmountFixed").addEventListener("change", toggleRecurringAmountFields);
+    document.getElementById("recurringAmountVaries").addEventListener("change", toggleRecurringAmountFields);
+    document.getElementById("recurringContinues").addEventListener("change", toggleRecurringDurationField);
+}
+
+function toggleRecurringAmountFields(){
+    let isFixed = document.getElementById("recurringAmountFixed").checked;
+    document.getElementById("recurringFixedAmountWrapper").classList.toggle("d-none", !isFixed);
+}
+
+function toggleRecurringDurationField(){
+    let continues = document.getElementById("recurringContinues").checked;
+    document.getElementById("recurringDurationWrapper").classList.toggle("d-none", continues);
+    document.getElementById("recurringDurationMonths").disabled = continues;
+}
+
+function openRecurringModal(tableKey, itemId){
+    let branch = getSelectedBranch();
+    let month = document.getElementById("month").value;
+
+    if(!branch || !month){
+        alert("Please select branch and month first.");
+        return;
+    }
+
+    let table = expenseTables.find(t => t.key === tableKey);
+    let item = itemId ? (recurringData[tableKey] || []).find(i => i.id === itemId) : null;
+
+    activeRecurringModal = { tableKey, itemId: item ? itemId : null };
+
+    document.getElementById("recurringModalTitle").textContent =
+        (item ? "Edit " : "Add ") + table.title + " Item";
+
+    document.getElementById("recurringParticular").value = item?.particular || "";
+    document.getElementById("recurringDueDay").value = item?.dueDay || "";
+    document.getElementById("recurringStartDate").value = item?.startDate || "";
+
+    let isVaries = item?.amountType === "varies";
+    document.getElementById("recurringAmountFixed").checked = !isVaries;
+    document.getElementById("recurringAmountVaries").checked = isVaries;
+    document.getElementById("recurringFixedAmount").value = item?.fixedAmount || "";
+    toggleRecurringAmountFields();
+
+    document.getElementById("recurringContinues").checked = !!item?.continues;
+    document.getElementById("recurringDurationMonths").value = item?.durationMonths || "";
+    toggleRecurringDurationField();
+
+    document.getElementById("deleteRecurringItemBtn").classList.toggle("d-none", !item);
+
+    let isSettledThisMonth = !!(item && item.settledMonths && item.settledMonths[month]);
+    document.getElementById("revertRecurringItemBtn").classList.toggle("d-none", !isSettledThisMonth);
+
+    document.getElementById("recurringModalBackdrop").classList.remove("d-none");
+}
+
+function closeRecurringModal(){
+    document.getElementById("recurringModalBackdrop").classList.add("d-none");
+    activeRecurringModal = { tableKey: null, itemId: null };
+}
+
+function saveRecurringItemFromModal(){
+    let { tableKey, itemId } = activeRecurringModal;
+
+    if(!tableKey) return;
+
+    let branch = getSelectedBranch();
+    let month = document.getElementById("month").value;
+
+    if(!branch || !month){
+        alert("Please select branch and month first.");
+        return;
+    }
+
+    let particular = document.getElementById("recurringParticular").value.trim();
+    let dueDay = parseInt(document.getElementById("recurringDueDay").value, 10);
+    let startDate = document.getElementById("recurringStartDate").value;
+    let amountType = document.getElementById("recurringAmountVaries").checked ? "varies" : "fixed";
+    let fixedAmount = parseFloat(document.getElementById("recurringFixedAmount").value) || 0;
+    let continues = document.getElementById("recurringContinues").checked;
+    let durationMonths = parseInt(document.getElementById("recurringDurationMonths").value, 10);
+
+    if(!particular){
+        alert("Please enter a Particular.");
+        return;
+    }
+
+    if(!dueDay || dueDay < 1 || dueDay > 31){
+        alert("Please enter a valid Due Date (1-31).");
+        return;
+    }
+
+    if(!startDate){
+        alert("Please enter a Start Date.");
+        return;
+    }
+
+    if(amountType === "fixed" && fixedAmount <= 0){
+        alert("Please enter a valid Fixed Amount.");
+        return;
+    }
+
+    if(!continues && (!durationMonths || durationMonths < 1)){
+        alert("Please enter the duration in months, or check Continues.");
+        return;
+    }
+
+    let existing = itemId ? (recurringData[tableKey] || []).find(i => i.id === itemId) : null;
+
+    let item = {
+        id: itemId || createRecurringId(),
+        particular,
+        dueDay,
+        startDate,
+        amountType,
+        fixedAmount,
+        monthlyAmounts: existing?.monthlyAmounts || {},
+        continues,
+        durationMonths: continues ? null : durationMonths,
+        endMonth: continues ? null : computeEndMonth(startDate, durationMonths),
+        settledMonths: existing?.settledMonths || {}
+    };
+
+    if(!recurringData[tableKey]) recurringData[tableKey] = [];
+
+    if(itemId){
+        let index = recurringData[tableKey].findIndex(i => i.id === itemId);
+        if(index > -1){
+            recurringData[tableKey][index] = item;
+        }
+    } else {
+        recurringData[tableKey].push(item);
+    }
+
+    saveRecurringData(tableKey);
+    renderRecurringTableBody(tableKey);
+    updateTotals();
+    closeRecurringModal();
+}
+
+function deleteRecurringItemFromModal(){
+    let { tableKey, itemId } = activeRecurringModal;
+
+    if(!tableKey || !itemId) return;
+
+    if(!confirm("Delete this item from the list?")) return;
+
+    recurringData[tableKey] = (recurringData[tableKey] || []).filter(i => i.id !== itemId);
+
+    saveRecurringData(tableKey);
+    renderRecurringTableBody(tableKey);
+    updateTotals();
+    closeRecurringModal();
+}
+
+function revertRecurringItemFromModal(){
+    let { tableKey, itemId } = activeRecurringModal;
+
+    if(!tableKey || !itemId) return;
+
+    let monthKey = document.getElementById("month").value;
+
+    if(!confirm("Revert this item to unsettled for " + formatMonth(monthKey) + "?")) return;
+
+    revertRecurringItemSettlement(tableKey, itemId, monthKey);
+    closeRecurringModal();
+}
+
+/* ==========================================================================
    Storage
    ========================================================================== */
 
@@ -423,12 +844,43 @@ function saveExpenses(){
     localStorage.setItem(getStorageKey(), JSON.stringify(expenseData));
 }
 
+function saveRecurringData(tableKey){
+    let branch = getSelectedBranch();
+    if(!branch) return;
+
+    localStorage.setItem(getRecurringStorageKey(tableKey), JSON.stringify(recurringData[tableKey] || []));
+}
+
+function loadRecurringData(){
+    let branch = getSelectedBranch();
+    recurringData = {};
+
+    recurringTableKeys.forEach(tableKey => {
+        recurringData[tableKey] = [];
+
+        if(branch){
+            let saved = localStorage.getItem(getRecurringStorageKey(tableKey));
+
+            if(saved){
+                try{
+                    let parsed = JSON.parse(saved);
+                    if(Array.isArray(parsed)) recurringData[tableKey] = parsed;
+                }catch(error){
+                    console.error(error);
+                }
+            }
+        }
+    });
+}
+
 function loadExpenses(){
     let branch = getSelectedBranch();
     let month = document.getElementById("month").value;
 
     expenseData = {};
-    expenseTables.forEach(table => { expenseData[table.key] = []; });
+    expenseTables.forEach(table => {
+        if(!table.recurring) expenseData[table.key] = [];
+    });
 
     if(branch && month){
         let saved = localStorage.getItem(getStorageKey());
@@ -437,6 +889,8 @@ function loadExpenses(){
             let parsed = JSON.parse(saved);
 
             expenseTables.forEach(table => {
+                if(table.recurring) return;
+
                 let rows = Array.isArray(parsed[table.key]) ? parsed[table.key] : [];
 
                 expenseData[table.key] = rows.map(row => {
@@ -462,6 +916,7 @@ function loadExpenses(){
         }
     }
 
+    loadRecurringData();
     renderAllTables();
 }
 
@@ -546,8 +1001,15 @@ function exportExpensesPDF(){
         let isFirstSection = true;
 
         expenseTables.forEach(table => {
-            const rows = sortedEntries(table.key);
-            const total = rows.reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
+            const rows = table.recurring
+                ? (recurringData[table.key] || [])
+                    .filter(item => isRecurringActiveInMonth(item, monthValue))
+                    .sort((a, b) => (a.dueDay || 0) - (b.dueDay || 0))
+                : sortedEntries(table.key);
+
+            const total = table.recurring
+                ? rows.reduce((sum, item) => sum + recurringAmountForMonth(item, monthValue), 0)
+                : rows.reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
 
             if(!isFirstSection){
                 doc.addPage();
@@ -566,6 +1028,18 @@ function exportExpensesPDF(){
             const particularColIndex = table.columns.indexOf("Particular");
 
             const columnValue = (col, entry) => {
+                if(table.recurring){
+                    switch(col){
+                        case "Particular": return entry.particular || "—";
+                        case "Due Date": return dueDateLabel(entry.dueDay);
+                        case "Amount": return pesoPdf(recurringAmountForMonth(entry, monthValue));
+                        case "Start Date": return entry.startDate ? formatDateText(entry.startDate) : "—";
+                        case "End Date": return entry.continues ? "Continues" : (entry.endMonth ? formatDateText(entry.endMonth + "-01") : "—");
+                        case "Status": return RECURRING_STATUS_META[computeRecurringStatus(entry, monthValue)].label;
+                        default: return "—";
+                    }
+                }
+
                 switch(col){
                     case "Date": return entry.date ? formatDateText(entry.date) : "—";
                     case "Category": return entry.category || "—";
@@ -573,7 +1047,6 @@ function exportExpensesPDF(){
                     case "Amount": return pesoPdf(entry.amount);
                     case "S.I. No.": return entry.siNo || "—";
                     case "TIN": return entry.tin || "—";
-                    case "Transaction ID": return entry.transactionId || "—";
                     case "Remarks": return entry.remarks || "—";
                     default: return "—";
                 }
@@ -645,7 +1118,9 @@ function exportExpensesPDF(){
 
         const totals = {};
         expenseTables.forEach(table => {
-            totals[table.key] = (expenseData[table.key] || []).reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
+            totals[table.key] = table.recurring
+                ? recurringMonthTotal(table.key, monthValue)
+                : (expenseData[table.key] || []).reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
         });
 
         const grandTotal =
@@ -658,7 +1133,7 @@ function exportExpensesPDF(){
 
         const summaryRows = [
             ["Operation Expenses", pesoPdf(totals.operation)],
-            ["Salary", pesoPdf(totals.salary)],
+            ["Payroll", pesoPdf(totals.salary)],
             ["Utilities / Monthly Dues", pesoPdf(totals.utilities)],
             ["Installments", pesoPdf(totals.installments)],
             ["Accounting / Government Dues", pesoPdf(totals.gov)],

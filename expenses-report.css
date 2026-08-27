@@ -273,3 +273,70 @@
     display:flex;
     gap:8px;
 }
+
+/* ---- Recurring items (Utilities / Monthly Dues, Installments) --------- */
+
+.amount-type-toggle .btn-check:checked + label{
+    background:var(--navy);
+    border-color:var(--navy);
+    color:#fff;
+}
+
+.recurring-duration-input{
+    max-width:220px;
+}
+
+.varies-amount-input{
+    max-width:120px;
+    margin:0 auto;
+    text-align:right;
+    font-weight:700;
+}
+
+.status-badge{
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:10.5px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    white-space:nowrap;
+}
+
+.status-pending{
+    background:#fff3cd;
+    color:#8a6d00;
+}
+
+.status-approaching{
+    background:#ffe1c2;
+    color:#a35300;
+}
+
+.status-overdue{
+    background:#f8d1d5;
+    color:#a3121e;
+}
+
+.status-settled{
+    background:#d3f5df;
+    color:#136c34;
+}
+
+.settle-btn{
+    margin-right:6px;
+    font-weight:600;
+}
+
+/* Fixed amount not yet settled — greyed out so paid items stand out. */
+.amount-unsettled{
+    color:var(--muted) !important;
+    opacity:.6;
+    font-weight:500 !important;
+}
+
+.expense-modal-footer-left{
+    display:flex;
+    gap:8px;
+}

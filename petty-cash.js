@@ -16,7 +16,7 @@ const PETTY_CASH_BRANCH_KEY = "crownSelectedBranch";
    same storage shape expenses-report.js reads/writes), so the spend shows up
    there without being re-typed. */
 const PETTY_CASH_EXPENSE_PREFIX = "crownExpenses_";
-const PETTY_CASH_EXPENSE_CATEGORY = "Branch Expenses";
+const PETTY_CASH_EXPENSE_CATEGORY = "Supplies & Purchases";
 
 let pettyCashState = { activeFund: null, history: [] };
 let activePettyCashEntryId = null;
