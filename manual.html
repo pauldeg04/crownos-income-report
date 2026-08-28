@@ -2762,21 +2762,27 @@ Branch receives    →  it is added to the branch's Available Stock</div>
 
     <dt>Income Summary</dt>
     <dd>
-      A Sales Invoice Summary table (Date, Sales/Services, Client, Invoice
+      A Sales Invoice Summary (Date, Sales/Services, Client, Invoice
       Number, TIN Number, Amount) for the month picked in the dropdown at
-      the top. Rows are pulled automatically from the Daily Income
-      Report — any sale with <strong>Issue Invoice</strong> checked — and
-      refresh on their own as new invoiced sales sync in; these rows have
-      no Edit button since they mirror that source. The Sales/Services
-      column shows a category, not the specific service name: <strong>Head
-      Spa</strong>, <strong>Massage</strong>, <strong>Head Spa +
-      Massage</strong> (a Package item, or a sale with both), or
-      <strong>Others</strong> — read from each service's category in the
-      Service Master List. Use <span class="ui">+ Add Entry</span> only for
-      an invoice that was not captured in the Daily Income Report; those
-      rows do get an Edit button. A Total row and
-      <span class="ui">Export to PDF</span> cover whichever month is
-      selected.
+      the top, shown as two separate tables — <strong>Biñan (Head
+      Office)</strong> and <strong>Calamba</strong> — each with its own
+      subtotal, plus a Grand Total combining both. Rows are pulled
+      automatically from the Daily Income Report — any sale with
+      <strong>Issue Invoice</strong> checked, matched to a branch by its
+      name in Master Lists &gt; Branches — and refresh on their own as new
+      invoiced sales sync in; these rows have no Edit button since they
+      mirror that source. The Sales/Services column shows a category, not
+      the specific service name: <strong>Head Spa</strong>,
+      <strong>Massage</strong>, <strong>Head Spa + Massage</strong> (a
+      Package item, or a sale with both), or <strong>Others</strong> —
+      read from each service's category in the Service Master List. Use
+      <span class="ui">+ Add Entry</span> only for an invoice that was not
+      captured in the Daily Income Report — it also asks which branch it
+      belongs to — and those rows do get an Edit button.
+      <span class="ui">Export to PDF</span> produces a branded report for
+      whichever month is selected: a summary strip with each branch's
+      total and invoice count, then a table per branch with its own
+      subtotal and a grand total at the end.
     </dd>
 
     <dt>Purchases</dt>

@@ -514,10 +514,20 @@
 
   const INCOME_CATEGORY_OPTIONS = ['Head Spa', 'Massage', 'Head Spa + Massage', 'Others'];
 
+  // Daily Income Report branch names are whatever free text an Admin typed
+  // into Master Lists > Branches, not necessarily an exact match to the
+  // 'Biñan (Head Office)'/'Calamba' labels configured here — match loosely
+  // by keyword instead of requiring an exact string.
+  function normalizeBranch(name){
+    const n = String(name||'').trim().toLowerCase();
+    if (n.includes('binan') || n.includes('biñan')) return 'binan';
+    if (n.includes('calamba')) return 'calamba';
+    return 'other';
+  }
+
   // Reads the same crownDailySales_<branch>_<date> records invoice-report.js
   // reads, synced into localStorage by firebase-sync.js — no separate
-  // Firestore call needed, and no branch filter (this CrownOS instance is
-  // JS Wellness Corp's own system, so every invoiced sale belongs to it).
+  // Firestore call needed.
   function collectDailySalesIncome(year){
     const out = [];
     const categoryMap = getServiceCategoryMap();
@@ -529,12 +539,14 @@
       let record;
       try { record = JSON.parse(localStorage.getItem(key)); } catch(e){ continue; }
       if (!record || !Array.isArray(record.rows)) continue;
+      const branch = normalizeBranch(record.branch);
       record.rows.forEach((sale, idx) => {
         if (sale?.settled === false) return;
         if (sale?.issueInvoice !== true) return;
         out.push({
           id: 'auto-' + key + '-' + idx,
           source: 'auto',
+          branch,
           date: record.date || dateStr,
           salesServices: salesServicesLabel(sale, categoryMap),
           client: sale?.client || '—',
@@ -556,8 +568,37 @@
 
   let incomeMonthKey = (new Date().getFullYear() === YEAR) ? MONTH_BY_KEY[`${YEAR}-${String(new Date().getMonth()+1).padStart(2,'0')}`].key : MONTHS[0].key;
 
+  function incomeTableHtml(label, entries){
+    return `
+      <div class="card">
+        <div class="qtr-branch-head">${label}</div>
+        <div class="table-wrap"><table class="simple-table ledger-table"><thead><tr>
+          <th>Date</th><th>Sales / Services</th><th>Client</th><th>Invoice Number</th><th>TIN Number</th><th>Amount</th><th></th>
+        </tr></thead><tbody>
+          ${entries.map(e => `
+            <tr>
+              <td class="mono">${fmtDate(e.date)}</td>
+              <td>${e.salesServices || 'Others'}</td>
+              <td>${e.client || '—'}</td>
+              <td class="mono">${e.invoiceNumber || '—'}</td>
+              <td class="mono">${e.tin || '—'}</td>
+              <td class="mono num">${peso(e.amount)}</td>
+              <td>${e.source === 'manual' ? `<button class="btn btn-ghost btn-sm" data-edit="${e.id}">Edit</button>` : ''}</td>
+            </tr>
+          `).join('')}
+          <tr class="summary-total-row"><td colspan="5">Subtotal — ${label}</td><td class="mono num">${peso(incomeTotal(entries))}</td><td></td></tr>
+        </tbody></table></div>
+        ${entries.length ? '' : `<div class="empty-note">No invoiced sales for ${label} this month.</div>`}
+      </div>
+    `;
+  }
+
   function renderIncomeSummary(el){
-    const entries = allIncomeEntries().filter(e => (e.date||'').slice(0,7) === incomeMonthKey);
+    const monthEntries = allIncomeEntries().filter(e => (e.date||'').slice(0,7) === incomeMonthKey);
+    const binanEntries = monthEntries.filter(e => e.branch === 'binan');
+    const calambaEntries = monthEntries.filter(e => e.branch === 'calamba');
+    const otherEntries = monthEntries.filter(e => e.branch !== 'binan' && e.branch !== 'calamba');
+
     el.innerHTML = `
       <div class="card">
         <div class="card-head">
@@ -567,15 +608,17 @@
             <button class="btn btn-primary btn-sm" id="addIncomeBtn">+ Add Entry</button>
           </div>
         </div>
-        <div class="ledger-subnav" style="margin-top:-4px;">
+        <div class="ledger-subnav" style="margin-top:-4px;margin-bottom:0;">
           <select id="incomeMonthSelect" class="form-select form-select-sm"></select>
         </div>
-        <div class="table-wrap"><table class="simple-table ledger-table" id="incomeTable"><thead><tr>
-          <th>Date</th><th>Sales / Services</th><th>Client</th><th>Invoice Number</th><th>TIN Number</th><th>Amount</th><th></th>
-        </tr></thead><tbody id="incomeBody"></tbody>
-        <tfoot><tr class="summary-total-row"><td colspan="5">Total</td><td class="mono num">${peso(incomeTotal(entries))}</td><td></td></tr></tfoot>
-        </table></div>
-        ${entries.length ? '' : '<div class="empty-note">No invoiced sales found for this month.</div>'}
+      </div>
+      ${incomeTableHtml('Biñan (Head Office)', binanEntries)}
+      ${incomeTableHtml('Calamba', calambaEntries)}
+      ${otherEntries.length ? incomeTableHtml('Other Branches', otherEntries) : ''}
+      <div class="card">
+        <div class="totals-strip" style="border-top:none;margin-top:0;padding-top:0;">
+          <div class="t-item"><div class="l">Grand Total — ${MONTH_BY_KEY[incomeMonthKey].label}</div><div class="v mono">${peso(incomeTotal(monthEntries))}</div></div>
+        </div>
       </div>
     `;
     const monthSelect = el.querySelector('#incomeMonthSelect');
@@ -586,29 +629,16 @@
     });
     monthSelect.addEventListener('change', () => { incomeMonthKey = monthSelect.value; renderAll(); });
 
-    const tbody = el.querySelector('#incomeBody');
-    entries.forEach(e => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="mono">${fmtDate(e.date)}</td>
-        <td>${e.salesServices || 'Others'}</td>
-        <td>${e.client || '—'}</td>
-        <td class="mono">${e.invoiceNumber || '—'}</td>
-        <td class="mono">${e.tin || '—'}</td>
-        <td class="mono num">${peso(e.amount)}</td>
-        <td>${e.source === 'manual' ? `<button class="btn btn-ghost btn-sm" data-edit="${e.id}">Edit</button>` : ''}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-    tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openIncomeModal(state.incomeSummary.find(x => x.id === b.dataset.edit))));
+    el.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openIncomeModal(state.incomeSummary.find(x => x.id === b.dataset.edit))));
     el.querySelector('#addIncomeBtn').addEventListener('click', () => openIncomeModal(null));
-    el.querySelector('#exportIncomePdfBtn').addEventListener('click', () => exportIncomePDF(entries));
+    el.querySelector('#exportIncomePdfBtn').addEventListener('click', () => exportIncomePDF({binan: binanEntries, calamba: calambaEntries, other: otherEntries}));
   }
 
   function openIncomeModal(entry){
     const isNew = !entry;
     showModal(isNew ? 'Add sales invoice entry' : 'Edit sales invoice entry', `
       <div class="field"><label>Date</label><input class="fctl" id="inDate" type="date" value="${entry?entry.date:todayStr()}" min="${YEAR}-01-01" max="${YEAR}-12-31"></div>
+      <div class="field"><label>Branch</label><select class="fctl" id="inBranch">${BRANCHES.map(b => `<option value="${b.id}" ${entry&&entry.branch===b.id?'selected':''}>${b.name}</option>`).join('')}</select></div>
       <div class="field"><label>Sales / Services</label><select class="fctl" id="inSvc">${INCOME_CATEGORY_OPTIONS.map(c => `<option value="${c}" ${entry&&entry.salesServices===c?'selected':''}>${c}</option>`).join('')}</select></div>
       <div class="field"><label>Client</label><input class="fctl" id="inClient" value="${entry?entry.client:''}"></div>
       <div class="field"><label>Invoice Number</label><input class="fctl" id="inInv" value="${entry?entry.invoiceNumber:''}"></div>
@@ -623,6 +653,7 @@
       {label:'Save', cls:'btn-primary', action: () => {
         const data = {
           date: document.getElementById('inDate').value || todayStr(),
+          branch: document.getElementById('inBranch').value,
           salesServices: document.getElementById('inSvc').value,
           client: document.getElementById('inClient').value,
           invoiceNumber: document.getElementById('inInv').value,
@@ -641,67 +672,156 @@
   // as the existing Sales Invoice Summary PDF export (invoice-report.js).
   function pesoPdf(amount){ return 'PHP ' + (Number(amount)||0).toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
-  function exportIncomePDF(entries){
+  function exportIncomePDF(groups){
     if (!window.jspdf || !window.jspdf.jsPDF){
       alert('PDF library is unavailable. Please check your internet connection and reload the page.');
       return;
     }
-    entries = entries || allIncomeEntries();
+    const monthEntries = allIncomeEntries().filter(e => (e.date||'').slice(0,7) === incomeMonthKey);
+    groups = groups || {
+      binan: monthEntries.filter(e => e.branch === 'binan'),
+      calamba: monthEntries.filter(e => e.branch === 'calamba'),
+      other: monthEntries.filter(e => e.branch !== 'binan' && e.branch !== 'calamba')
+    };
+    const sections = [['Biñan (Head Office)', groups.binan||[]], ['Calamba', groups.calamba||[]]];
+    if ((groups.other||[]).length) sections.push(['Other Branches', groups.other]);
     const btn = document.getElementById('exportIncomePdfBtn');
     btn.disabled = true; btn.textContent = 'Generating PDF...';
     try {
       const jsPDF = window.jspdf.jsPDF;
       const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'a4', compress:true});
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const NAVY = [11,24,73], GOLD = [232,179,33], GOLD_SOFT = [255,244,207], CREAM = [244,243,236], MUTED = [110,116,132];
 
       function drawHeader(){
-        doc.setFillColor(11, 24, 73);
-        doc.rect(0, 0, pageWidth, 26, 'F');
+        doc.setFillColor(...NAVY);
+        doc.rect(0, 0, pageWidth, 30, 'F');
+        doc.setFillColor(...GOLD);
+        doc.rect(0, 30, pageWidth, 1.2, 'F');
+
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(16);
-        doc.text(state.settings.businessName.toUpperCase(), 14, 11);
-        doc.setFontSize(10);
-        doc.text(`Sales Invoice Summary — ${MONTH_BY_KEY[incomeMonthKey].label}`, 14, 18);
+        doc.setFontSize(15);
+        doc.text(state.settings.businessName.toUpperCase(), 14, 12);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.text(`${YEAR}`, pageWidth - 14, 13, {align:'right'});
+        doc.setTextColor(200, 206, 226);
+        doc.text(`TIN: ${state.settings.tin}`, 14, 18);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(255, 255, 255);
+        doc.text('Sales Invoice Summary', pageWidth - 14, 12, {align:'right'});
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(200, 206, 226);
+        doc.text(MONTH_BY_KEY[incomeMonthKey].label, pageWidth - 14, 18, {align:'right'});
       }
       drawHeader();
 
-      const grandTotal = entries.reduce((s,e) => s + (Number(e.amount)||0), 0);
-      const tableRows = entries.map(e => [fmtDate(e.date), e.salesServices||'Others', e.client||'—', e.invoiceNumber||'—', e.tin||'—', pesoPdf(e.amount)]);
+      // ---- KPI summary strip ----
+      const grandTotal = sections.reduce((s,[,entries]) => s + entries.reduce((s2,e) => s2 + (Number(e.amount)||0), 0), 0);
+      const cardData = sections.map(([label, entries]) => [label, entries.reduce((s,e)=>s+(Number(e.amount)||0),0), entries.length]);
+      const cardGap = 5, cardsY = 37, cardH = 20;
+      const cardW = (pageWidth - 28 - cardGap*cardData.length) / (cardData.length + 1);
+      let cx = 14;
+      cardData.forEach(([label, total, count]) => {
+        doc.setFillColor(...CREAM);
+        doc.roundedRect(cx, cardsY, cardW, cardH, 2, 2, 'F');
+        doc.setDrawColor(...GOLD);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(cx, cardsY, cardW, cardH, 2, 2, 'S');
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(7);
+        doc.setTextColor(...MUTED);
+        doc.text(label.toUpperCase(), cx + 4, cardsY + 6);
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(11.5);
+        doc.setTextColor(...NAVY);
+        doc.text(pesoPdf(total), cx + 4, cardsY + 13);
+        doc.setFont('helvetica','normal');
+        doc.setFontSize(7);
+        doc.setTextColor(...MUTED);
+        doc.text(`${count} invoice${count===1?'':'s'}`, cx + 4, cardsY + 17.5);
+        cx += cardW + cardGap;
+      });
+      doc.setFillColor(...NAVY);
+      doc.roundedRect(cx, cardsY, cardW, cardH, 2, 2, 'F');
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(7);
+      doc.setTextColor(210, 216, 236);
+      doc.text('GRAND TOTAL', cx + 4, cardsY + 6);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(12.5);
+      doc.setTextColor(255,255,255);
+      doc.text(pesoPdf(grandTotal), cx + 4, cardsY + 14);
 
-      doc.autoTable({
-        startY: 32,
-        head: [['Date','Sales / Services','Client','Invoice Number','TIN Number','Amount']],
-        body: tableRows,
-        foot: [['','','','','Total', pesoPdf(grandTotal)]],
-        theme: 'grid',
-        margin: {top:30, left:14, right:14, bottom:16},
-        styles: {font:'helvetica', fontSize:8.5, cellPadding:3, valign:'middle', overflow:'linebreak', textColor:[32,43,60], lineColor:[216,222,232], lineWidth:0.15},
-        headStyles: {fillColor:[11,24,73], textColor:[255,255,255], fontStyle:'bold', halign:'center'},
-        footStyles: {fillColor:[255,244,207], textColor:[11,24,73], fontStyle:'bold', halign:'right'},
-        alternateRowStyles: {fillColor:[250,249,244]},
-        columnStyles: {
-          0: {cellWidth:18}, 1: {cellWidth:32}, 2: {cellWidth:26},
-          3: {cellWidth:22, halign:'center'}, 4: {cellWidth:20, halign:'center'}, 5: {cellWidth:20, halign:'right'}
-        },
-        didDrawPage: function(data){
-          if (data.pageNumber > 1) drawHeader();
-          const pageCount = doc.internal.getNumberOfPages();
-          doc.setTextColor(120,126,138);
-          doc.setFontSize(7.5);
-          doc.text(`Generated ${new Date().toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'})}`, 14, doc.internal.pageSize.getHeight()-8);
-          doc.text(`Page ${data.pageNumber} of ${pageCount}`, pageWidth-14, doc.internal.pageSize.getHeight()-8, {align:'right'});
-        }
+      let cursorY = cardsY + cardH + 10;
+      const columnStyles = {
+        0: {cellWidth:20}, 1: {cellWidth:30}, 2: {cellWidth:32},
+        3: {cellWidth:26, halign:'center'}, 4: {cellWidth:34, halign:'center'}, 5: {cellWidth:26, halign:'right'}
+      };
+      sections.forEach(([label, entries]) => {
+        if (cursorY > pageHeight - 50){ doc.addPage(); cursorY = 38; }
+
+        // Section band
+        doc.setFillColor(...GOLD_SOFT);
+        doc.rect(14, cursorY, pageWidth - 28, 8, 'F');
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(10);
+        doc.setTextColor(...NAVY);
+        doc.text(label, 17, cursorY + 5.5);
+        doc.setFont('helvetica','normal');
+        doc.setFontSize(8);
+        doc.setTextColor(...MUTED);
+        doc.text(`${entries.length} invoice${entries.length===1?'':'s'}`, pageWidth - 17, cursorY + 5.5, {align:'right'});
+        cursorY += 11;
+
+        const subtotal = entries.reduce((s,e) => s + (Number(e.amount)||0), 0);
+        const tableRows = entries.length
+          ? entries.map(e => [fmtDate(e.date), e.salesServices||'Others', e.client||'—', e.invoiceNumber||'—', e.tin||'—', pesoPdf(e.amount)])
+          : [['—','No invoiced sales this month','—','—','—', pesoPdf(0)]];
+
+        doc.autoTable({
+          startY: cursorY,
+          head: [['Date','Sales / Services','Client','Invoice Number','TIN Number','Amount']],
+          body: tableRows,
+          foot: [['','','','','Subtotal', pesoPdf(subtotal)]],
+          theme: 'grid',
+          margin: {top:34, left:14, right:14, bottom:18},
+          styles: {font:'helvetica', fontSize:8.7, cellPadding:{top:3.5,bottom:3.5,left:3,right:3}, valign:'middle', overflow:'linebreak', textColor:[32,43,60], lineColor:[224,227,235], lineWidth:0.15},
+          headStyles: {fillColor:NAVY, textColor:[255,255,255], fontStyle:'bold', fontSize:8, halign:'left'},
+          footStyles: {fillColor:GOLD_SOFT, textColor:NAVY, fontStyle:'bold', halign:'right'},
+          alternateRowStyles: {fillColor:[250,249,246]},
+          columnStyles,
+          didDrawPage: function(data){
+            if (data.pageNumber > 1) drawHeader();
+            const pageCount = doc.internal.getNumberOfPages();
+            doc.setDrawColor(224,227,235);
+            doc.setLineWidth(0.2);
+            doc.line(14, pageHeight-14, pageWidth-14, pageHeight-14);
+            doc.setTextColor(...MUTED);
+            doc.setFont('helvetica','normal');
+            doc.setFontSize(7.5);
+            doc.text(`Generated ${new Date().toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'})}`, 14, pageHeight-9);
+            doc.text('CrownOS — BIR Compliance Desk', pageWidth/2, pageHeight-9, {align:'center'});
+            doc.text(`Page ${data.pageNumber} of ${pageCount}`, pageWidth-14, pageHeight-9, {align:'right'});
+          }
+        });
+        cursorY = doc.lastAutoTable.finalY + 12;
       });
 
-      if (!entries.length){
-        doc.setTextColor(91,102,119);
-        doc.setFontSize(11);
-        doc.text('No sales invoice entries yet.', 14, 40);
-      }
+      if (cursorY > pageHeight - 28){ doc.addPage(); cursorY = 38; }
+      doc.setFillColor(...NAVY);
+      doc.roundedRect(14, cursorY, pageWidth - 28, 14, 2, 2, 'F');
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(10);
+      doc.setTextColor(210, 216, 236);
+      doc.text('GRAND TOTAL — ALL BRANCHES', 20, cursorY + 6);
+      doc.setFontSize(13);
+      doc.setTextColor(255,255,255);
+      doc.text(pesoPdf(grandTotal), pageWidth - 20, cursorY + 9.5, {align:'right'});
 
       doc.save(`${state.settings.businessName} - Sales Invoice Summary - ${MONTH_BY_KEY[incomeMonthKey].label}.pdf`);
     } catch(err){

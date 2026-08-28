@@ -4,6 +4,46 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-28 — Income Summary: category column, month picker, per-branch split, and a presentable PDF
+
+**Requested by:** User — iterating on the Income Summary tab from the
+same day's BIR Compliance Desk rebuild. First wanted the Sales/Services
+column dropped, then asked instead whether it could show the sale's
+*category* (Head Spa / Massage / etc.) — so it stayed, re-scoped to that.
+Also asked for a month picker so only one month shows at a time, for the
+old "Auto" tag on synced rows to go, for Biñan and Calamba to be broken
+out separately instead of one mixed table, and finally for the PDF
+export to look more presentable.
+
+- [bir-compliance.js](bir-compliance.js):
+  - Added an `incomeMonthKey` picker (defaults to the current real month)
+    — both the auto-pulled and manual entries are filtered to it.
+  - Sales/Services column now shows a category read from each sold
+    item's entry in the Service Master List (`crownServiceMasterList`),
+    mapped per the user's rule: Head Spa → "Head Spa", Massage →
+    "Massage", a Package item (or a sale mixing both) → "Head Spa +
+    Massage", anything else → "Others". Manual entries pick the same
+    category from a dropdown.
+  - Dropped the "Auto" badge on synced rows — they're distinguished from
+    manual ones just by not having an Edit button now.
+  - `normalizeBranch()` loosely matches the Daily Income Report's branch
+    name (Master Lists &gt; Branches, free text) to Biñan/Calamba by
+    keyword, so both the auto-pulled and manual entries (which now ask
+    for a Branch on the Add Entry modal) can be split into two separate
+    tables with their own subtotals plus a combined Grand Total, instead
+    of one mixed list.
+  - `exportIncomePDF()` redesigned: a KPI summary strip (per-branch total
+    + invoice count, plus a highlighted Grand Total card) under the
+    header, a gold section band per branch above its table, wider/better
+    columns (fixed the TIN Number column wrapping awkwardly), and a
+    full-width Grand Total bar at the end — verified by decoding the
+    generated PDF's own bytes and reading it back, not just checking that
+    `doc.save()` ran without throwing.
+- [manual.html](manual.html): Chapter 30's Income Summary entry updated
+  to describe the per-branch tables and the redesigned PDF.
+
+---
+
 ## 2026-08-28 — BIR Compliance Desk rebuilt: Dashboard reminders, auto-synced Income Summary, and a live Purchases ledger
 
 **Requested by:** User — wanted the old BIR Compliance Desk workflow
