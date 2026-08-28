@@ -29,6 +29,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
     <script src="firebase-init.js"></script>
     <script src="pwa-register.js"></script>
     <script src="client-store.js"></script>
@@ -57,13 +59,6 @@
                 </div>
 
                 <div class="bir-header-actions">
-                    <div class="bir-period-select">
-                        <select id="periodSelect" class="form-select form-select-sm"></select>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnNewPeriod">+ Period</button>
-                    </div>
-
-                    <div class="bir-role-switch" id="roleSwitch"></div>
-
                     <input
                         type="text"
                         id="actingName"
@@ -85,6 +80,7 @@
 </div>
 
 <script src="sidebar.js"></script>
+<script src="bir-compliance-seed.js"></script>
 <script src="bir-compliance.js"></script>
 
 </body>

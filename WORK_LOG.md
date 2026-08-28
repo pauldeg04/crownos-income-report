@@ -4,6 +4,78 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-28 — BIR Compliance Desk rebuilt: Dashboard reminders, auto-synced Income Summary, and a live Purchases ledger
+
+**Requested by:** User — wanted the old BIR Compliance Desk workflow
+retired (no real data existed in it yet) in favor of three simpler tabs:
+a Dashboard with payment reminders, an Income Summary pulled from
+existing sales data instead of typed by hand, and a Purchases tab that
+replicates the company's own disbursement workbook
+(`CrownADMIN/2026 JS WELLNESS PURCHASED (CONSOLIDATED).xlsx`) as a live,
+editable ledger. Iterated afterward on file attachments, the Income
+Summary's data source, and its category column.
+
+- [bir-compliance.html](bir-compliance.html) /
+  [bir-compliance.js](bir-compliance.js) /
+  [bir-compliance.css](bir-compliance.css): full rewrite. Dropped the
+  old Tax Period / role-switch workflow (dashboard, monthly data entry,
+  documents, estimate, accountant review, owner approval, tax calendar,
+  filings, tax fund, comparison, reports, audit trail, assistant,
+  settings) entirely. New structure is three top-level tabs:
+  - **Dashboard** — an **Upcoming Payments** list and a month
+    **Reminder Calendar** sharing one `state.reminders` data source.
+    Adding a reminder from a calendar date asks for Particulars and a
+    recurrence (One-time / Monthly / Quarterly / Yearly);
+    `generateOccurrenceDates()` expands that into every matching date in
+    the year (clamped for short months). Each occurrence gets its own
+    independent status — **For Payment** (color shifts gold → amber →
+    red as the date approaches/passes, same urgency pattern as the
+    Expenses Report installments tracker), **Settled**, or
+    **Cancelled** — set via a detail modal opened by clicking a list row
+    or calendar chip, with a Delete for the whole reminder.
+  - **Income Summary** — a Sales Invoice Summary table (Date, Sales /
+    Services, Client, Invoice Number, TIN Number, Amount) for a picked
+    month, auto-populated from the Daily Income Report's invoiced sales
+    (`crownDailySales_*`, same source `invoice-report.js` reads, filtered
+    to `issueInvoice === true`) and refreshing on its own via the
+    `crownCloudUpdate` event. These rows aren't editable since they
+    mirror that source; **+ Add Entry** stays available for anything the
+    Daily Income Report didn't capture, and only those manual rows carry
+    an Edit button. The Sales/Services column shows a category — Head
+    Spa, Massage, Head Spa + Massage (a Package item, or a sale mixing
+    both), or Others — looked up per sale item against the Service
+    Master List's `category` field. Total row + branded PDF export
+    (jsPDF/autotable, reusing the exact header/table style
+    `invoice-report.js` already uses — added those CDN scripts to this
+    page).
+  - **Purchases** — a live replica of the disbursement workbook: Monthly
+    Ledger (Jan–Mar combined, Apr onward split Biñan/Calamba, matching
+    the source file), Quarterly Summary, and Year Summary sub-tabs.
+    VAT/Non-VAT/Input Tax are computed live (`splitVat()`: Invoice ÷
+    1.12 for the VAT base, ×0.12 for Input Tax, unless an entry is
+    marked Non-VAT) against a fixed 20 account-title legend taken from
+    the workbook. Seeded with the real January–June 2026 figures,
+    extracted from the xlsx with a one-off Python/openpyxl script rather
+    than typed by hand — including a fix for a data-entry typo in the
+    source file (`"1100l'"` → `1100`) that had been silently breaking
+    that sheet's totals. Each entry can carry an optional receipt/PDF
+    attachment (Firebase Storage, same pattern as other CrownOS
+    attachments).
+  - Firestore sync kept the same self-contained
+    `birCompliance/state` document pattern the previous version used
+    (deliberately not migrated to the shared `firebase-sync.js` `appData`
+    mechanism other pages use).
+- [bir-compliance-seed.js](bir-compliance-seed.js): new file — the
+  extracted Jan–Jun 2026 ledger data loaded as `window.BIR_LEDGER_SEED`
+  and used to bootstrap `defaultState()` on first load.
+- [manual.html](manual.html): Chapter 30 (BIR Compliance Desk) rewritten
+  to document the new three-tab layout in place of the retired workflow.
+- No changes to `sidebar.js` / `access-control.js` — same nav entry,
+  same Admin/Executive Assistant access, only the page's own content
+  changed.
+
+---
+
 ## 2026-08-28 — Payroll: staff email on account, proof-of-payment upload, email notification, staff acknowledgement, and a Pay → Send to Email → Archive workflow
 
 **Requested by:** User — wanted Generate Payroll to require an

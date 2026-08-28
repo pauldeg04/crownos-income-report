@@ -31,11 +31,6 @@
 
 /* ---------- Header actions row ---------- */
 .bir-header-actions{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-.bir-period-select{ display:flex; align-items:center; gap:6px; }
-.bir-period-select select{ min-width:170px; }
-.bir-role-switch{ display:flex; gap:3px; background:var(--surface-soft); border:1px solid var(--border-light); border-radius:8px; padding:3px; }
-.bir-role-switch button{ font-size:11px; font-weight:700; padding:5px 10px; border-radius:6px; border:none; background:none; color:var(--muted); cursor:pointer; }
-.bir-role-switch button.active{ background:var(--navy); color:#fff; }
 .bir-acting-name{ max-width:200px; }
 .sync-status{ font-size:11.5px; color:var(--soft-text); display:flex; align-items:center; gap:6px; white-space:nowrap; }
 .sync-status .dot{ width:7px; height:7px; border-radius:999px; background:var(--green); flex-shrink:0; }
@@ -167,6 +162,57 @@ table.simple-table tbody tr:hover{ background:var(--surface-soft); }
 
 @media(max-width:768px){
     .bir-header-actions{ width:100%; }
-    .bir-period-select select,
     .bir-acting-name{ max-width:none; flex:1; }
+}
+
+/* ---------- Ledger: month/branch sub-nav ---------- */
+.ledger-subnav{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+.ledger-subnav select{ min-width:170px; }
+.branch-pills{ display:flex; gap:3px; background:var(--surface-soft); border:1px solid var(--border-light); border-radius:8px; padding:3px; }
+.branch-pills button{ font-size:11.5px; font-weight:700; padding:6px 12px; border-radius:6px; border:none; background:none; color:var(--muted); cursor:pointer; white-space:nowrap; }
+.branch-pills button.active{ background:var(--navy); color:#fff; }
+
+/* ---------- Ledger table ---------- */
+.ledger-table{ min-width:920px; }
+.ledger-table input,.ledger-table select{ font-size:12.5px; padding:6px 8px; }
+.ledger-table td.readonly{ color:var(--soft-text); font-style:italic; }
+.ledger-table td,.ledger-table th{ white-space:nowrap; }
+.ledger-table td.num{ text-align:right; }
+.ledger-row-actions{ display:flex; gap:6px; }
+
+.summary-total-row td{ font-weight:800; border-top:2px solid var(--border); background:var(--surface-soft); }
+.qtr-branch-head{ font-size:12px; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:.04em; margin:18px 0 10px; }
+.qtr-branch-head:first-child{ margin-top:0; }
+
+/* ---------- Reminder status badges (Upcoming Payments + Calendar) ---------- */
+/* "For Payment" badges shift color as the date approaches/passes, mirroring
+   the installments urgency pattern in expenses-report.js — pending (gold) →
+   approaching (amber) → overdue (red) — while Settled/Cancelled are terminal. */
+.rem-badge{ font-size:10px; }
+.rem-pending{ background:var(--warning-bg); color:var(--gold-dark); }
+.rem-approaching{ background:#FBE0C2; color:#B85C00; }
+.rem-overdue{ background:var(--state-red-bg); color:var(--state-red); }
+.rem-settled{ background:var(--state-green-bg); color:var(--state-green-text); }
+.rem-cancelled{ background:var(--surface-muted); color:var(--muted); text-decoration:line-through; }
+.upcoming-row:hover td{ background:var(--surface-soft); }
+
+/* ---------- Reminder calendar ---------- */
+.cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.cal-weekday{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--soft-text); text-align:center; padding:4px 0 8px; }
+.cal-cell{ min-height:90px; border:1px solid var(--border-light); border-radius:6px; padding:6px; background:#fff; display:flex; flex-direction:column; gap:4px; }
+.cal-cell-empty{ background:transparent; border-color:transparent; }
+.cal-cell-today{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold); }
+.cal-cell-head{ display:flex; align-items:center; justify-content:space-between; }
+.cal-daynum{ font-size:11.5px; font-weight:700; color:var(--ink); }
+.cal-add-btn{ width:18px; height:18px; line-height:16px; border-radius:5px; border:1px solid var(--border); background:var(--surface-soft); color:var(--muted); font-size:12px; font-weight:800; cursor:pointer; padding:0; }
+.cal-add-btn:hover{ background:var(--navy); color:#fff; border-color:var(--navy); }
+.cal-chips{ display:flex; flex-direction:column; gap:2px; overflow-y:auto; }
+.cal-chip{ font-size:10px; font-weight:700; padding:2px 5px; border-radius:4px; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cal-chip.rem-pending{ background:var(--warning-bg); color:var(--gold-dark); }
+.cal-chip.rem-approaching{ background:#FBE0C2; color:#B85C00; }
+.cal-chip.rem-overdue{ background:var(--state-red-bg); color:var(--state-red); }
+.cal-chip.rem-settled{ background:var(--state-green-bg); color:var(--state-green-text); }
+.cal-chip.rem-cancelled{ background:var(--surface-muted); color:var(--muted); text-decoration:line-through; }
+@media(max-width:700px){
+    .cal-grid{ grid-template-columns:repeat(7,minmax(60px,1fr)); overflow-x:auto; }
 }

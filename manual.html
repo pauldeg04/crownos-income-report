@@ -2717,108 +2717,98 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   <div class="stop">
     <span class="callout-label">What this is not</span>
     <p>
-      The BIR Compliance Desk does not file anything with the BIR and does
-      not compute an official, final tax due. Every figure it shows is an
-      <strong>estimate for preparation only</strong>, always subject to your
-      accountant's review — this is stated on the Dashboard and Estimated
-      Tax screens themselves.
+      The BIR Compliance Desk does not file anything with the BIR. It is a
+      compliance-preparation and record-keeping tool — reminders, a sales
+      invoice log, and a disbursement ledger modeled on the company's own
+      accounting workbook — not an official tax computation, and not a
+      substitute for your accountant.
     </p>
   </div>
 
   <p>
     Company-wide, not per-branch — it does not follow the Branch selector
     in the top toolbar, and works the same regardless of which branch you
-    have selected. Its data is completely separate from the rest of
-    CrownOS: nothing here affects Daily Income Report, Cash Flow, or any
-    other page, and nothing from those pages feeds into it automatically.
+    have selected. Its own data (reminders, sales invoice entries you add
+    manually, and the disbursement ledger) lives in a Firestore document
+    separate from the rest of CrownOS. The one exception is the
+    <strong>Income Summary</strong> tab, which reads invoiced sales
+    directly from the Daily Income Report — see below.
   </p>
 
   <h3>Layout</h3>
 
   <p>
-    A header bar holds the <strong>Tax Period</strong> selector
-    (<span class="ui">+ Period</span> creates a new month), a workflow
-    <strong>role switch</strong> — Owner / Accountant / Admin — that
-    controls which action buttons are enabled elsewhere on the page (this
-    is separate from your CrownOS login role), a
-    <strong>Your name</strong> field recorded on every audit-trail entry
-    you make, and a sync-status indicator. Below that, a row of tabs
-    switches between the desk's own views:
+    A header bar holds a <strong>Your name</strong> field (kept with your
+    settings for reference) and a sync-status indicator. Below that, three
+    tabs switch between the desk's views:
   </p>
 
   <dl class="deflist">
     <dt>Dashboard</dt>
-    <dd>The estimated tax to prepare for the selected period, workflow
-      status, data completeness, next deadline, and missing documents —
-      plus a <span class="ui">Copy summary for Accountant</span> button
-      that copies a plain-text summary to the clipboard.</dd>
+    <dd>
+      An <strong>Upcoming Payments</strong> list and a <strong>Reminder
+      Calendar</strong>, sharing one set of reminders. Click any date's
+      <span class="ui">+</span> on the calendar to add a reminder —
+      Particulars and a recurrence (One-time, Monthly, Quarterly, or
+      Yearly). Each occurrence gets its own colored status badge:
+      <strong>For Payment</strong> shifts gold → amber → red as the date
+      approaches and passes, <strong>Settled</strong> is green,
+      <strong>Cancelled</strong> is grey with strikethrough. Click any row
+      in the list or chip on the calendar to open its details, where
+      <span class="ui">Settled</span>, <span class="ui">Cancel</span>, and
+      <span class="ui">Delete reminder</span> are available — Settled/Cancel
+      only affect that one occurrence, not the whole recurring reminder.
+    </dd>
 
-    <dt>Monthly Business Data</dt>
-    <dd>Tabbed entry for the period's Sales &amp; Branches, Purchases,
-      Operating Expenses, Payroll, Withholding, Previous Payments/Credits,
-      BMBE registration, and Other Items.</dd>
+    <dt>Income Summary</dt>
+    <dd>
+      A Sales Invoice Summary table (Date, Sales/Services, Client, Invoice
+      Number, TIN Number, Amount) for the month picked in the dropdown at
+      the top. Rows are pulled automatically from the Daily Income
+      Report — any sale with <strong>Issue Invoice</strong> checked — and
+      refresh on their own as new invoiced sales sync in; these rows have
+      no Edit button since they mirror that source. The Sales/Services
+      column shows a category, not the specific service name: <strong>Head
+      Spa</strong>, <strong>Massage</strong>, <strong>Head Spa +
+      Massage</strong> (a Package item, or a sale with both), or
+      <strong>Others</strong> — read from each service's category in the
+      Service Master List. Use <span class="ui">+ Add Entry</span> only for
+      an invoice that was not captured in the Daily Income Report; those
+      rows do get an Edit button. A Total row and
+      <span class="ui">Export to PDF</span> cover whichever month is
+      selected.
+    </dd>
 
-    <dt>Documents</dt>
-    <dd>A per-category checklist (Sales, Expenses, Payroll, Withholding,
-      Tax) with a status dropdown and file attachment per document.</dd>
-
-    <dt>Estimated Tax</dt>
-    <dd>The computed Percentage Tax, Income Tax, EWT, and Compensation
-      Withholding estimates, with an expandable computation breakdown.</dd>
-
-    <dt>Accountant Review</dt>
-    <dd>Set tax applicability and rates, log adjustments against the
-      original figures (nothing is overwritten — every change is kept),
-      and mark the estimate Accountant-Approved. Enabled when the workflow
-      role switch is set to Accountant or Admin.</dd>
-
-    <dt>Owner Approval</dt>
-    <dd>Approve for Filing, Return to Accountant, Request Clarification,
-      or Place on Hold. Enabled when the workflow role switch is set to
-      Owner or Admin.</dd>
-
-    <dt>Tax Calendar</dt>
-    <dd>BIR form deadlines (1601-C, 2551Q, 1702Q, and so on) — not tied to
-      a specific tax period.</dd>
-
-    <dt>Filings &amp; Payments</dt>
-    <dd>The actual filing/payment record once a return is filed — form,
-      reference number, payment date/amount, and proof-of-filing /
-      proof-of-payment attachments.</dd>
-
-    <dt>Tax Fund</dt>
-    <dd>Compares the estimated tax against how much has been set aside so
-      far, and flags a shortfall.</dd>
-
-    <dt>Period Comparison</dt>
-    <dd>Side-by-side figures for any two tax periods.</dd>
-
-    <dt>Reports</dt>
-    <dd>CSV exports (sales, expenses, withholding, missing documents, tax
-      calendar, filing history, audit trail) and a printable monthly BIR
-      summary.</dd>
-
-    <dt>Audit Trail</dt>
-    <dd>A read-only log of every recorded change, tagged with the acting
-      name and workflow role at the time.</dd>
-
-    <dt>BIR Assistant</dt>
-    <dd>Canned Tagalog Q&amp;A about the current period, generated from
-      the data already on this desk — it does not call out to any outside
-      service and never sets its own rate, deadline, or conclusion.</dd>
-
-    <dt>Settings</dt>
-    <dd>Business registration details, registered branches, and a full
-      JSON backup export separate from CrownOS's own Data Protection
-      backup.</dd>
+    <dt>Purchases</dt>
+    <dd>
+      A live version of the company's own disbursement workbook, with
+      three sub-tabs:
+      <dl class="deflist">
+        <dt>Monthly Ledger</dt>
+        <dd>Pick a month (January–March are one combined ledger; April
+          onward split Biñan / Calamba). Add, edit, or delete a
+          transaction — Date, Account Title (one of the 20 standard
+          categories), Particulars, TIN, Invoice Amount, an optional
+          Mark-as-Non-VAT checkbox, and an optional receipt/attachment
+          file. VAT, Non-VAT, and Input Tax are computed automatically
+          (Invoice ÷ 1.12 for the VAT base, ×0.12 for Input Tax, unless
+          marked Non-VAT). A Monthly Summary below breaks totals down by
+          all 20 account titles.</dd>
+        <dt>Quarterly Summary</dt>
+        <dd>Month-by-month totals for the selected quarter, a per-branch
+          20-category summary once branches exist, and a combined
+          (all-branch) summary.</dd>
+        <dt>Year Summary</dt>
+        <dd>One row per quarter plus a grand total for the year.</dd>
+      </dl>
+    </dd>
   </dl>
 
   <div class="note">
     <span class="callout-label">Uploaded files</span>
     <p>
-      BMBE certificates, document attachments, and filing/payment proofs
-      are stored in Firebase Storage, not inside the tax-period data
-      itself.
+      Purchases ledger attachments are stored in Firebase Storage, not
+      inside the tax-period data itself.
     </p>
   </div>
 </section>
