@@ -27,6 +27,8 @@ const PAYROLL_RATES_KEY = "crownPayrollRates";
 const PAYROLL_ADJUSTMENTS_KEY = "crownPayrollAdjustments";
 const PAYROLL_STATUS_KEY = "crownPayrollStatus";
 const PAYROLL_REFERENCE_KEY = "crownPayrollReferences";
+const PAYROLL_ATTACHMENT_KEY = "crownPayrollAttachments";
+const PAYROLL_ACK_KEY = "crownPayrollAcknowledgements";
 const PAYROLL_GROUP_ARCHIVE_KEY = "crownPayrollGroupArchive";
 const PAYROLL_ATTENDANCE_KEY = "crownAttendanceLog";
 const PAYROLL_DUTY_LOG_KEY = "crownDutyLog";
@@ -136,8 +138,26 @@ document.addEventListener("DOMContentLoaded", function(){
     document.getElementById("savePayslipAdjustmentBtn")
         .addEventListener("click", savePayslipAdjustment);
 
-    document.getElementById("payslipStatusBtn")
-        .addEventListener("click", togglePayslipStatus);
+    document.getElementById("payPayslipBtn")
+        .addEventListener("click", startPayFlow);
+
+    document.getElementById("payslipAttachmentInput")
+        .addEventListener("change", handlePayAttachmentChosen);
+
+    document.getElementById("cancelPayAttachmentBtn")
+        .addEventListener("click", cancelPayAttachment);
+
+    document.getElementById("submitPayAttachmentBtn")
+        .addEventListener("click", submitPayAttachment);
+
+    document.getElementById("sendEmailPayslipBtn")
+        .addEventListener("click", sendPayslipEmailNow);
+
+    document.getElementById("archivePayslipBtn")
+        .addEventListener("click", archivePayslip);
+
+    document.getElementById("acknowledgePayslipBtn")
+        .addEventListener("click", acknowledgePayslip);
 
     document.getElementById("exportPayslipPdfBtn")
         .addEventListener("click", exportPayslipPdf);
@@ -154,6 +174,9 @@ document.addEventListener("DOMContentLoaded", function(){
 
     document.getElementById("generatePayrollGroupBtn")
         .addEventListener("click", generatePayrollGroup);
+
+    document.getElementById("togglePayslipArchiveBtn")
+        .addEventListener("click", togglePayslipArchiveCollapse);
 
     document.getElementById("closePayrollGroupViewBtn")
         .addEventListener("click", closePayrollGroupView);
@@ -183,6 +206,7 @@ function initializeAdminView(){
     document.getElementById("periodInfo").classList.remove("d-none");
     document.getElementById("payrollSummaryCard").classList.remove("d-none");
     document.getElementById("payrollGroupArchiveCard").classList.remove("d-none");
+    document.getElementById("generatedPayrollCard").classList.remove("d-none");
     document.getElementById("payslipArchiveCard").classList.remove("d-none");
 
     initializeDates();
@@ -190,6 +214,7 @@ function initializeAdminView(){
     populateRateSetupDropdown();
     renderPayroll();
     renderPayrollGroupArchive();
+    renderGeneratedPayroll();
     renderPayslipArchive();
 
     document.getElementById("payrollStartDate")
@@ -242,11 +267,20 @@ function initializeAdminView(){
         }
 
         if(keys.includes(PAYROLL_STATUS_KEY)){
+            renderGeneratedPayroll();
             renderPayslipArchive();
         }
 
         if(keys.includes(PAYROLL_GROUP_ARCHIVE_KEY)){
             renderPayrollGroupArchive();
+        }
+
+        if(
+            currentPayslipContext &&
+            (keys.includes(PAYROLL_ATTACHMENT_KEY) || keys.includes(PAYROLL_ACK_KEY))
+        ){
+            renderPayslipAttachment();
+            renderPayslipAckSection();
         }
     });
 }
@@ -264,6 +298,14 @@ function initializeMyPayrollView(){
             keys.includes(PAYROLL_ADJUSTMENTS_KEY)
         ){
             renderMyPayroll();
+        }
+
+        if(
+            currentPayslipContext &&
+            (keys.includes(PAYROLL_ATTACHMENT_KEY) || keys.includes(PAYROLL_ACK_KEY))
+        ){
+            renderPayslipAttachment();
+            renderPayslipAckSection();
         }
     });
 }
@@ -967,13 +1009,25 @@ function saveStatuses(statuses){
     );
 }
 
+/* "Paid" is a legacy value from an earlier version of this flow (the
+   attachment-required, auto-email "Generate Payroll" toggle) — treated the
+   same as "Generated" so nothing written by it gets stranded. */
 function getStatus(userId, groupKey, period){
     const statuses =
         getStatuses();
 
-    return statuses[compositeKey(userId, groupKey, period)] === "Paid"
-        ? "Paid"
-        : "Pending";
+    const raw =
+        statuses[compositeKey(userId, groupKey, period)];
+
+    if(raw === "Archived"){
+        return "Archived";
+    }
+
+    if(raw === "Generated" || raw === "Paid"){
+        return "Generated";
+    }
+
+    return "Pending";
 }
 
 /* ---------- Payslip reference number ---------- */
@@ -1051,6 +1105,125 @@ function ensurePayslipReference(userId, groupKey, period){
     saveReferences(references);
 
     return reference;
+}
+
+/* ---------- Payslip attachment + acknowledgement ---------- */
+
+function getAttachments(){
+    try{
+        const raw =
+            localStorage.getItem(PAYROLL_ATTACHMENT_KEY);
+
+        const parsed =
+            raw ? JSON.parse(raw) : {};
+
+        return (parsed && typeof parsed === "object") ? parsed : {};
+    }catch(error){
+        console.error("Unable to load payroll attachments:", error);
+        return {};
+    }
+}
+
+function saveAttachments(attachments){
+    localStorage.setItem(
+        PAYROLL_ATTACHMENT_KEY,
+        JSON.stringify(attachments)
+    );
+}
+
+function getPayslipAttachment(userId, groupKey, period){
+    return getAttachments()[compositeKey(userId, groupKey, period)] || null;
+}
+
+function getAcknowledgements(){
+    try{
+        const raw =
+            localStorage.getItem(PAYROLL_ACK_KEY);
+
+        const parsed =
+            raw ? JSON.parse(raw) : {};
+
+        return (parsed && typeof parsed === "object") ? parsed : {};
+    }catch(error){
+        console.error("Unable to load payroll acknowledgements:", error);
+        return {};
+    }
+}
+
+function saveAcknowledgements(acknowledgements){
+    localStorage.setItem(
+        PAYROLL_ACK_KEY,
+        JSON.stringify(acknowledgements)
+    );
+}
+
+function getPayslipAcknowledgement(userId, groupKey, period){
+    return getAcknowledgements()[compositeKey(userId, groupKey, period)] || null;
+}
+
+/* Mirrors firebase-sync.js's toSyncEmail exactly (see functions/index.js's
+   own duplicate of this) — used only to build/match the Storage path each
+   staff member's own Firebase Auth token.email already carries, so the
+   Storage rule can compare against it without a second identity system. */
+function toSyncEmail(username){
+    const slug =
+        String(username || "")
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9._-]/g, "-");
+
+    return "u-" + slug + "@crownos-sync.com";
+}
+
+/* Uploads to Firebase Storage (shared, cross-device) instead of embedding
+   the file itself in the synced localStorage/Firestore blob — same
+   reasoning as bir-compliance.js's uploadFile. */
+function uploadPayrollAttachment(file, ownerAccount, cb, onError){
+    const safeName =
+        file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+    const path =
+        `payrollAttachments/${toSyncEmail(ownerAccount)}/${Date.now()}_${safeName}`;
+
+    const ref =
+        firebase.storage().ref().child(path);
+
+    const task =
+        ref.put(file);
+
+    task.on("state_changed", null, function(err){
+        alert("Upload failed: " + (err.message || err.code || "unknown error"));
+        onError?.();
+    }, function(){
+        ref.getDownloadURL().then(function(url){
+            cb({ name: file.name, size: file.size, path: path, url: url });
+        });
+    });
+}
+
+/* Returns the callable's promise so callers (sendPayslipEmailNow) can
+   react to success/failure themselves — e.g. to stamp emailSentAt and
+   grey the Send to Email button out only once the send actually
+   succeeded. */
+function sendPayslipEmailNotification(user, groupKey, period, result, attachment){
+    return firebase.functions().httpsCallable("sendPayslipEmailNotification")({
+        email: user.email,
+        staffName: getFullName(user),
+        period: period.label,
+        groupKey: groupKey === ADMIN_GROUP_KEY ? "Admin Staff (All Branches)" : groupKey,
+        breakdown: {
+            dailyRateTotal: result.dailyRateTotal,
+            mealAllowanceTotal: result.mealAllowanceTotal,
+            overtimeTotal: result.overtimeTotal,
+            commissionTotal: result.commissionTotal,
+            grossTotal: result.grossTotal,
+            additionalPay: result.adjustment.additionalPay,
+            deduction: result.adjustment.deduction,
+            netTotal: result.netTotal
+        },
+        attachmentUrl: attachment.url,
+        attachmentName: attachment.name
+    });
 }
 
 /* ---------- Payroll computation ---------- */
@@ -1538,61 +1711,69 @@ function deletePayrollGroupArchiveEntry(){
     closePayrollGroupView();
 }
 
-/* ---------- Payslip Archive (every individually generated payslip) ---------- */
+/* ---------- Generated Payroll (waiting list) + Payroll Archive ---------- */
 
-function renderPayslipArchive(){
+/* Shared by both tables below — they're the same shape (Staff Name /
+   Payroll Date / Status / View), just filtered to a different normalized
+   status (see getStatus()). */
+function buildPayslipStatusRows(wantedStatus){
     const statuses =
         getStatuses();
 
     const users =
         CrownAuth.getUsers();
 
+    return Object.keys(statuses)
+        .map(function(key){
+            const parts = key.split("::");
+
+            const user =
+                users.find(function(item){ return item.id === parts[0]; });
+
+            if(!user || !parts[2] || !parts[3]){
+                return null;
+            }
+
+            const period = {
+                start: parts[2],
+                end: parts[3],
+                label: formatDateLabel(parts[2]) + " – " + formatDateLabel(parts[3])
+            };
+
+            return {
+                user: user,
+                groupKey: parts[1],
+                period: period,
+                status: getStatus(user.id, parts[1], period)
+            };
+        })
+        .filter(function(row){
+            return row && row.status === wantedStatus;
+        })
+        .sort(function(a, b){
+            return b.period.start.localeCompare(a.period.start);
+        });
+}
+
+function renderPayslipStatusTable(tbodyId, emptyStateId, wantedStatus){
     const rows =
-        Object.keys(statuses)
-            .map(function(key){
-                const parts = key.split("::");
-
-                const user =
-                    users.find(function(item){ return item.id === parts[0]; });
-
-                if(!user || !parts[2] || !parts[3]){
-                    return null;
-                }
-
-                return {
-                    user: user,
-                    groupKey: parts[1],
-                    start: parts[2],
-                    end: parts[3],
-                    status: statuses[key] === "Paid" ? "Paid" : "Pending"
-                };
-            })
-            .filter(Boolean)
-            .sort(function(a, b){
-                return b.start.localeCompare(a.start);
-            });
+        buildPayslipStatusRows(wantedStatus);
 
     const tbody =
-        document.getElementById("payslipArchiveBody");
+        document.getElementById(tbodyId);
 
     tbody.innerHTML = "";
 
-    document.getElementById("payslipArchiveEmptyState")
+    document.getElementById(emptyStateId)
         .classList.toggle("d-none", rows.length > 0);
 
     rows.forEach(function(row){
-        const period = {
-            start: row.start,
-            end: row.end,
-            label: formatDateLabel(row.start) + " – " + formatDateLabel(row.end)
-        };
-
         const tr =
             document.createElement("tr");
 
         tr.innerHTML = `
             <td>${escapeHtml(getFullName(row.user))}</td>
-            <td>${period.label}</td>
+            <td>${row.period.label}</td>
             <td>
                 <span class="payroll-status-badge payroll-status-${row.status.toLowerCase()}">
                     ${row.status}
@@ -1607,11 +1788,30 @@ function renderPayslipArchive(){
 
         tr.querySelector(".view-payslip-btn")
             .addEventListener("click", function(){
-                openPayslipModal(row.user, row.groupKey, period);
+                openPayslipModal(row.user, row.groupKey, row.period);
             });
 
         tbody.appendChild(tr);
     });
+}
+
+function renderGeneratedPayroll(){
+    renderPayslipStatusTable("generatedPayrollBody", "generatedPayrollEmptyState", "Generated");
+}
+
+function renderPayslipArchive(){
+    renderPayslipStatusTable("payslipArchiveBody", "payslipArchiveEmptyState", "Archived");
+}
+
+function togglePayslipArchiveCollapse(){
+    const collapse =
+        document.getElementById("payslipArchiveCollapse");
+
+    const expanded =
+        collapse.classList.toggle("d-none") === false;
+
+    document.getElementById("togglePayslipArchiveBtn").textContent =
+        expanded ? "Hide" : "Show";
 }
 
 /* ---------- My Payroll (Receptionist / Therapist, own records only) ---------- */
@@ -1651,11 +1851,16 @@ function renderMyPayroll(){
                 const parts =
                     key.slice(prefix.length).split("::");
 
+                const period = {
+                    start: parts[1],
+                    end: parts[2]
+                };
+
                 return {
                     groupKey: parts[0],
                     start: parts[1],
                     end: parts[2],
-                    status: statuses[key] === "Paid" ? "Paid" : "Pending"
+                    status: getStatus(user.id, parts[0], period)
                 };
             })
             .filter(function(record){
@@ -1821,15 +2026,20 @@ function openPayslipModal(user, groupKey, period){
 
     renderPayslipSummary(result);
     renderPayslipReference();
-    renderPayslipStatusButton();
+    renderPayslipAttachment();
+    renderPayslipAckSection();
+    hidePayAttachmentPreview();
+    renderPayslipActionButtons();
     applyPayslipModalMode();
 
     document.getElementById("payslipBackdrop").classList.remove("d-none");
 }
 
-/* Admin/EA get the editable Adjustment row + the Generate/status button;
-   Receptionist/Therapist viewing their own payslip get a plain
-   read-only adjustment line and a status badge instead. */
+/* Admin/EA get the editable Adjustment row + the status-driven action
+   buttons (Pay / Send to Email / Archive — see renderPayslipActionButtons);
+   Receptionist/Therapist viewing their own payslip get a plain read-only
+   adjustment line, a status badge, and the Acknowledge Payslip row
+   instead. */
 function applyPayslipModalMode(){
     const editable =
         canManagePayroll();
@@ -1840,10 +2050,10 @@ function applyPayslipModalMode(){
     document.getElementById("payslipAdjustmentReadout")
         .classList.toggle("d-none", editable);
 
-    document.getElementById("payslipStatusBtn")
-        .classList.toggle("d-none", !editable);
-
     document.getElementById("payslipStatusReadout")
+        .classList.toggle("d-none", editable);
+
+    document.getElementById("payslipAckRow")
         .classList.toggle("d-none", editable);
 }
 
@@ -1873,7 +2083,12 @@ function renderPayslipSummary(result){
         peso(result.netTotal);
 }
 
-function renderPayslipStatusButton(){
+/* Which of Pay / Send to Email / Archive shows in the Admin/EA footer is
+   driven entirely by the current status (Pending/Generated/Archived) —
+   there's no separate "mode" to track per table the modal was opened
+   from. Staff (non-manager) never see these three; they get the
+   read-only status badge instead. */
+function renderPayslipActionButtons(){
     if(!currentPayslipContext){
         return;
     }
@@ -1885,16 +2100,32 @@ function renderPayslipStatusButton(){
             currentPayslipContext.period
         );
 
-    const button =
-        document.getElementById("payslipStatusBtn");
+    const editable =
+        canManagePayroll();
 
-    if(status === "Paid"){
-        button.textContent = "Mark as Pending";
-        button.className = "btn btn-outline-secondary";
-    }else{
-        button.textContent = "Generate Payroll";
-        button.className = "btn btn-success";
-    }
+    document.getElementById("payPayslipBtn")
+        .classList.toggle("d-none", !editable || status !== "Pending");
+
+    document.getElementById("archivePayslipBtn")
+        .classList.toggle("d-none", !editable || status !== "Generated");
+
+    const sendEmailBtn =
+        document.getElementById("sendEmailPayslipBtn");
+
+    sendEmailBtn.classList.toggle("d-none", !editable || status !== "Generated");
+
+    const attachment =
+        getPayslipAttachment(
+            currentPayslipContext.userId,
+            currentPayslipContext.groupKey,
+            currentPayslipContext.period
+        );
+
+    const alreadySent =
+        Boolean(attachment?.emailSentAt);
+
+    sendEmailBtn.disabled = alreadySent;
+    sendEmailBtn.textContent = alreadySent ? "Email Sent" : "Send to Email";
 
     const readout =
         document.getElementById("payslipStatusReadout");
@@ -2383,7 +2614,188 @@ function drawApprovalSignatureBlock(doc, pageWidth){
     doc.text("Signature over Printed Name", rightX, lineY + 5);
 }
 
-function togglePayslipStatus(){
+/* Holds the File the user picked for Pay, between the file input's
+   "change" event and either Cancel or Submit — the upload itself only
+   happens on Submit (see submitPayAttachment). Also tracks the object
+   URL used for the preview <img> so it can be revoked. */
+let pendingPayAttachmentFile = null;
+let pendingPayAttachmentPreviewUrl = null;
+
+function startPayFlow(){
+    if(!currentPayslipContext){
+        return;
+    }
+
+    const rateWarningVisible =
+        !document.getElementById("payslipRateWarning")?.classList.contains("d-none");
+
+    if(rateWarningVisible){
+        const proceed =
+            window.confirm(
+                "Secondary Daily Rate (Receptionist) is not set for this staff — their Receptionist-duty days in this period will be paid ₱0 base pay. Pay anyway?"
+            );
+
+        if(!proceed){
+            return;
+        }
+    }
+
+    const input =
+        document.getElementById("payslipAttachmentInput");
+
+    input.value = "";
+    input.click();
+}
+
+function handlePayAttachmentChosen(){
+    const input =
+        document.getElementById("payslipAttachmentInput");
+
+    const file =
+        input.files && input.files[0];
+
+    if(!file){
+        return;
+    }
+
+    pendingPayAttachmentFile = file;
+    pendingPayAttachmentPreviewUrl = URL.createObjectURL(file);
+
+    document.getElementById("payslipPayPreviewImg").src =
+        pendingPayAttachmentPreviewUrl;
+
+    document.getElementById("payslipPayPreviewRow").classList.remove("d-none");
+    document.getElementById("payPayslipBtn").classList.add("d-none");
+}
+
+function hidePayAttachmentPreview(){
+    if(pendingPayAttachmentPreviewUrl){
+        URL.revokeObjectURL(pendingPayAttachmentPreviewUrl);
+    }
+
+    pendingPayAttachmentFile = null;
+    pendingPayAttachmentPreviewUrl = null;
+
+    document.getElementById("payslipPayPreviewImg").src = "";
+    document.getElementById("payslipPayPreviewRow").classList.add("d-none");
+}
+
+function cancelPayAttachment(){
+    hidePayAttachmentPreview();
+    document.getElementById("payslipAttachmentInput").value = "";
+    renderPayslipActionButtons();
+}
+
+function submitPayAttachment(){
+    if(!currentPayslipContext || !pendingPayAttachmentFile){
+        return;
+    }
+
+    const context =
+        currentPayslipContext;
+
+    const file =
+        pendingPayAttachmentFile;
+
+    const user =
+        CrownAuth.getUsers().find(function(item){
+            return item.id === context.userId;
+        });
+
+    if(!user){
+        return;
+    }
+
+    document.getElementById("submitPayAttachmentBtn").disabled = true;
+
+    uploadPayrollAttachment(file, user.account, function(attachment){
+        const attachments =
+            getAttachments();
+
+        attachments[compositeKey(context.userId, context.groupKey, context.period)] = {
+            name: attachment.name,
+            url: attachment.url,
+            path: attachment.path,
+            uploadedAt: new Date().toISOString(),
+            emailSentAt: ""
+        };
+
+        saveAttachments(attachments);
+
+        const statuses =
+            getStatuses();
+
+        statuses[compositeKey(context.userId, context.groupKey, context.period)] = "Generated";
+        saveStatuses(statuses);
+
+        ensurePayslipReference(context.userId, context.groupKey, context.period);
+
+        document.getElementById("submitPayAttachmentBtn").disabled = false;
+        hidePayAttachmentPreview();
+        refreshPayslipTables();
+    }, function(){
+        document.getElementById("submitPayAttachmentBtn").disabled = false;
+    });
+}
+
+function sendPayslipEmailNow(){
+    if(!currentPayslipContext){
+        return;
+    }
+
+    const context =
+        currentPayslipContext;
+
+    const attachment =
+        getPayslipAttachment(context.userId, context.groupKey, context.period);
+
+    if(!attachment || attachment.emailSentAt){
+        return;
+    }
+
+    const user =
+        CrownAuth.getUsers().find(function(item){
+            return item.id === context.userId;
+        });
+
+    if(!user){
+        return;
+    }
+
+    if(!user.email){
+        alert("No email address is on file for this staff — add one in Account Settings first.");
+        return;
+    }
+
+    const result =
+        computeStaffPayroll(user, context.groupKey, context.period);
+
+    const button =
+        document.getElementById("sendEmailPayslipBtn");
+
+    button.disabled = true;
+
+    sendPayslipEmailNotification(user, context.groupKey, context.period, result, attachment).then(function(){
+        const attachments =
+            getAttachments();
+
+        const key =
+            compositeKey(context.userId, context.groupKey, context.period);
+
+        if(attachments[key]){
+            attachments[key].emailSentAt = new Date().toISOString();
+            saveAttachments(attachments);
+        }
+
+        renderPayslipActionButtons();
+    }).catch(function(error){
+        console.error("Failed to send payslip email notification:", error);
+        alert("Could not send the email. Please try again.");
+        button.disabled = false;
+    });
+}
+
+function archivePayslip(){
     if(!currentPayslipContext){
         return;
     }
@@ -2398,39 +2810,19 @@ function togglePayslipStatus(){
     const statuses =
         getStatuses();
 
-    const willBePaid =
-        statuses[key] !== "Paid";
-
-    const rateWarningVisible =
-        !document.getElementById("payslipRateWarning")?.classList.contains("d-none");
-
-    if(willBePaid && rateWarningVisible){
-        const proceed =
-            window.confirm(
-                "Secondary Daily Rate (Receptionist) is not set for this staff — their Receptionist-duty days in this period will be paid ₱0 base pay. Generate payroll anyway?"
-            );
-
-        if(!proceed){
-            return;
-        }
-    }
-
-    statuses[key] =
-        willBePaid ? "Paid" : "Pending";
-
+    statuses[key] = "Archived";
     saveStatuses(statuses);
 
-    if(willBePaid){
-        ensurePayslipReference(
-            currentPayslipContext.userId,
-            currentPayslipContext.groupKey,
-            currentPayslipContext.period
-        );
-    }
+    closePayslipModal();
+    refreshPayslipTables();
+}
 
-    renderPayslipReference();
-    renderPayslipStatusButton();
+/* Re-renders everything that reflects payslip status/attachment across
+   the underlying tables (not the modal — callers close it or re-render
+   it themselves as appropriate). */
+function refreshPayslipTables(){
     renderPayroll();
+    renderGeneratedPayroll();
 
     if(canManagePayroll()){
         renderPayslipArchive();
@@ -2445,6 +2837,13 @@ function togglePayslipStatus(){
                 document.getElementById("payrollGroupViewTotalSalary")
             );
         }
+    }
+
+    if(currentPayslipContext){
+        renderPayslipReference();
+        renderPayslipAttachment();
+        renderPayslipAckSection();
+        renderPayslipActionButtons();
     }
 }
 
@@ -2462,4 +2861,94 @@ function renderPayslipReference(){
 
     document.getElementById("payslipReference").textContent =
         reference || "Not yet generated";
+}
+
+function renderPayslipAttachment(){
+    if(!currentPayslipContext){
+        return;
+    }
+
+    const attachment =
+        getPayslipAttachment(
+            currentPayslipContext.userId,
+            currentPayslipContext.groupKey,
+            currentPayslipContext.period
+        );
+
+    const row =
+        document.getElementById("payslipAttachmentRow");
+
+    const link =
+        document.getElementById("payslipAttachmentLink");
+
+    const preview =
+        document.getElementById("payslipAttachmentPreviewImg");
+
+    row.classList.toggle("d-none", !attachment);
+
+    if(attachment){
+        link.href = attachment.url;
+        link.textContent = attachment.name;
+        preview.src = attachment.url;
+    }else{
+        preview.src = "";
+    }
+}
+
+/* Acknowledge Payslip is staff-only (applyPayslipModalMode gates the row
+   itself); re-run whenever the modal opens or a status/ack change happens
+   so the button vs. read-only readout stays in sync. */
+function renderPayslipAckSection(){
+    if(!currentPayslipContext){
+        return;
+    }
+
+    const acknowledgement =
+        getPayslipAcknowledgement(
+            currentPayslipContext.userId,
+            currentPayslipContext.groupKey,
+            currentPayslipContext.period
+        );
+
+    const button =
+        document.getElementById("acknowledgePayslipBtn");
+
+    const readout =
+        document.getElementById("payslipAckReadout");
+
+    button.classList.toggle("d-none", Boolean(acknowledgement));
+    readout.classList.toggle("d-none", !acknowledgement);
+
+    if(acknowledgement){
+        readout.textContent =
+            `Acknowledged by ${acknowledgement.ackByName} on ${new Date(acknowledgement.ackAt).toLocaleString("en-PH")}`;
+    }
+}
+
+function acknowledgePayslip(){
+    if(!currentPayslipContext){
+        return;
+    }
+
+    const key =
+        compositeKey(
+            currentPayslipContext.userId,
+            currentPayslipContext.groupKey,
+            currentPayslipContext.period
+        );
+
+    const acknowledgements =
+        getAcknowledgements();
+
+    if(acknowledgements[key]){
+        return;
+    }
+
+    acknowledgements[key] = {
+        ackByName: getFullName(CrownAuth.getCurrentUser()),
+        ackAt: new Date().toISOString()
+    };
+
+    saveAcknowledgements(acknowledgements);
+    renderPayslipAckSection();
 }

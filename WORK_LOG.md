@@ -4,6 +4,60 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-28 — Payroll: staff email on account, proof-of-payment upload, email notification, staff acknowledgement, and a Pay → Send to Email → Archive workflow
+
+**Requested by:** User — wanted Generate Payroll to require an
+attachment and email the staff member their payslip, which needed an
+email field added to user accounts; staff should see the attachment on
+their own payslip and be able to acknowledge it. After trying the first
+pass, the user asked for a clearer 3-stage workflow instead of a single
+status toggle, with the tables renamed and reorganized.
+
+- [account-settings.html](account-settings.html) /
+  [account-settings.js](account-settings.js): new required **Email
+  Address** field on the user account create/edit modal, validated and
+  saved as `user.email` — this is where that staff member's payslip is
+  sent from Payroll.
+- [functions/index.js](functions/index.js): new callable
+  `sendPayslipEmailNotification` (Admin/EA-only, modeled on the existing
+  `sendAppointmentEmailConfirmation`), emails the payslip breakdown plus
+  the proof-of-payment attachment via nodemailer (`attachments: [{
+  filename, path: downloadUrl }]`). Deployed.
+- [storage.rules](storage.rules): new `payrollAttachments/{ownerSyncEmail}/{fileName}`
+  rule — Admin/Executive Assistant can read/write any payslip
+  attachment, a staff member can only read their own (matched on the
+  synthetic sync email Firebase Auth already carries, same identity
+  convention used elsewhere in this app). Deployed.
+- [payroll.html](payroll.html) / [payroll.js](payroll.js) /
+  [payroll.css](payroll.css): reworked the payslip status model from a
+  single Pending/Paid toggle into three stages —
+  **Pending → Generated → Archived** (`getStatus()` treats a legacy
+  `"Paid"` value as `"Generated"` for backward compatibility). The old
+  **Payroll Group Archive** card is renamed **Generated Payroll Group**
+  (behavior unchanged). A new **Generated Payroll** card sits between it
+  and the renamed **Payroll Archive** card (was Payslip Archive, now
+  collapsed by default with a Show/Hide toggle, and lists only Archived
+  payslips).
+  - Payslip modal buttons are now status-driven: **Pending** shows
+    **Pay** only — clicking it asks for a proof-of-payment image, shows
+    a Cancel/Submit preview before anything uploads, and Submit uploads
+    to Storage and flips the status to Generated. **Generated** shows
+    **Send to Email** (manual, one-time — greys out to "Email Sent"
+    once it succeeds, persisted so it stays greyed out on reopen) and
+    **Archive** (moves it into Payroll Archive), plus an attachment
+    image preview. **Archived** only leaves Export to PDF and Close.
+  - Staff's own read-only payslip view shows the same attachment
+    preview once it exists, and an **Acknowledge Payslip** button that
+    records their name + timestamp (`crownPayrollAcknowledgements`,
+    rides the existing generic `appData` localStorage sync — no new
+    Firestore rule needed).
+- [manual.html](manual.html): Chapter 10 (Payroll) rewritten to
+  document the Pay → Send to Email → Archive flow and the renamed
+  tables; Chapter 20 (Account Settings) documents the new Email Address
+  field.
+
+---
+
 ## 2026-08-27 — Expenses Report: category rework, Payroll rename, Marketing columns, and recurring Utilities/Installments tracker
 
 **Requested by:** User — wanted the Operation Expenses category list

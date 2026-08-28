@@ -1313,13 +1313,51 @@ Meal Allowance     none for these roles</div>
     The payslip shows each day in the period: Date, Time In, Time Out, Daily
     Rate, Meal Allowance, Overtime, and Commission. Below that sit
     <strong>Additional Pay</strong> and <strong>Deduction</strong> where they
-    apply. Status is either <strong>Pending</strong> or <strong>Paid</strong>.
+    apply. Status is one of <strong>Pending</strong>, <strong>Generated</strong>,
+    or <strong>Archived</strong>.
   </p>
 
+  <h3>Releasing a payslip: Pay → Send to Email → Archive</h3>
+
   <p>
-    There are three archives: <strong>Payroll Group Archive</strong> (closed
-    payroll runs), <strong>Payslip Archive</strong> (per person), and <strong>My
-    Payroll</strong>, where each staff member views their own payslip.
+    Every staff member's email address (set in <a href="#ch-accounts">User
+    Accounts</a>) is where their payslip gets sent — make sure it's on file
+    before releasing payroll.
+  </p>
+
+  <ol>
+    <li>
+      Open the staff member's payslip and click <span class="ui">Pay</span>.
+      This asks for an image of the <strong>proof of payment</strong> — pick
+      it, review the preview, then <span class="ui">Submit</span> (or
+      <span class="ui">Cancel</span> to back out without changing anything).
+      Submitting moves the status to <strong>Generated</strong> and the
+      payslip into the <strong>Generated Payroll</strong> table.
+    </li>
+    <li>
+      From <strong>Generated Payroll</strong>, open the payslip again and
+      click <span class="ui">Send to Email</span> to email the staff member a
+      copy of the payslip and the proof of payment. The button greys out
+      to <em>Email Sent</em> once it succeeds, so it can't be sent twice.
+    </li>
+    <li>
+      Click <span class="ui">Archive</span> when done with that payslip — it
+      moves out of Generated Payroll into <strong>Payroll Archive</strong>
+      (collapsed by default; click <span class="ui">Show</span> to expand
+      it). An archived payslip only offers Export to PDF and Close — it's a
+      closed record.
+    </li>
+  </ol>
+
+  <p>
+    There are three lists besides the live Payroll Group table:
+    <strong>Generated Payroll Group</strong> (closed payroll runs — same as
+    before, just renamed), <strong>Generated Payroll</strong> (payslips
+    waiting to be emailed and archived), <strong>Payroll Archive</strong>
+    (fully released payslips), and <strong>My Payroll</strong>, where each
+    staff member views their own payslip — including the proof of payment
+    once it's Generated or Archived, and an <span class="ui">Acknowledge
+    Payslip</span> button to confirm they've received it.
   </p>
 
   <div class="warn">
@@ -2092,6 +2130,9 @@ Branch receives    →  it is added to the branch's Available Stock</div>
 
     <dt>Personal Information</dt>
     <dd>First Name, Last Name, Middle Name, and Nickname. The Nickname is what appears in the List of Therapist.</dd>
+
+    <dt>Email Address *</dt>
+    <dd>Where this staff member's payslip is sent from <a href="#ch-payroll">Payroll</a> (see Chapter 10) — required for every account.</dd>
 
     <dt>Type of User *</dt>
     <dd>Admin, Executive Assistant, Receptionist, Therapist, Marketing Agent, or Branch Device.</dd>

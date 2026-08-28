@@ -388,6 +388,7 @@
             extraAccess: Array.isArray(user.extraAccess)
                 ? user.extraAccess
                 : [],
+            teamLeader: user.teamLeader === true,
             status: user.status
         };
 

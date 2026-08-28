@@ -240,6 +240,13 @@
     gap:8px;
 }
 
+.payroll-modal-footer-left{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
 /* ---- Payslip ---- */
 
 .payslip-info-grid{
@@ -375,4 +382,101 @@
 .payslip-summary-net strong{
     color:var(--navy);
     font-size:17px;
+}
+
+.payslip-attachment-row{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:14px;
+    padding:12px 14px;
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-md);
+    font-size:13px;
+}
+
+.payslip-attachment-row span{
+    color:var(--muted);
+    font-weight:600;
+}
+
+.payslip-attachment-row a{
+    font-weight:700;
+    color:var(--navy);
+}
+
+.payslip-attachment-row img,
+.payslip-pay-preview img{
+    display:none;
+    width:100%;
+    max-width:240px;
+    max-height:240px;
+    object-fit:contain;
+    border-radius:var(--radius-md);
+    border:1px solid var(--border-light);
+    background:#fff;
+    flex-basis:100%;
+}
+
+.payslip-attachment-row img[src],
+.payslip-pay-preview img[src]{
+    display:block;
+}
+
+.payslip-pay-preview{
+    display:flex;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:14px;
+    padding:12px 14px;
+    background:var(--gold-soft);
+    border:1px solid var(--accent-border);
+    border-radius:var(--radius-md);
+    font-size:13px;
+}
+
+.payslip-pay-preview span{
+    color:var(--gold-dark);
+    font-weight:700;
+    flex-basis:100%;
+}
+
+.payslip-pay-preview-actions{
+    display:flex;
+    gap:8px;
+    flex-basis:100%;
+}
+
+.payroll-status-generated{
+    color:var(--state-green-text);
+    background:var(--state-green-bg);
+    border:1px solid var(--state-green-border);
+}
+
+.payroll-status-archived{
+    color:var(--muted);
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+}
+
+.payslip-ack-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-top:12px;
+}
+
+.payslip-ack-readout{
+    display:inline-flex;
+    align-items:center;
+    padding:6px 12px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:800;
+    color:var(--state-green-text);
+    background:var(--state-green-bg);
+    border:1px solid var(--state-green-border);
 }

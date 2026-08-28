@@ -987,6 +987,160 @@ exports.sendAppointmentEmailConfirmation = onCall(
     }
 );
 
+/* ---------- sendPayslipEmailNotification (callable) ----------
+
+   Called from payroll.js right after Admin/EA clicks "Generate Payroll"
+   and uploads the required attachment (see togglePayslipStatus /
+   handlePayslipAttachmentSelected) — emails that staff member a copy of
+   their payslip breakdown plus the attachment itself. */
+
+function buildPayslipEmailText({ staffName, period, groupKey, breakdown }){
+    return (
+        `Hi ${staffName || "there"},\n\n` +
+        `Your payslip for ${period} (${groupKey}) has been generated.\n\n` +
+        `Total Daily Rate: ${peso(breakdown.dailyRateTotal)}\n` +
+        `Total Meal Allowance: ${peso(breakdown.mealAllowanceTotal)}\n` +
+        `Total Overtime: ${peso(breakdown.overtimeTotal)}\n` +
+        `Total Commission: ${peso(breakdown.commissionTotal)}\n` +
+        `Gross Total: ${peso(breakdown.grossTotal)}\n` +
+        `Additional Pay: ${peso(breakdown.additionalPay)}\n` +
+        `Less Deduction: ${peso(breakdown.deduction)}\n` +
+        `Net Pay: ${peso(breakdown.netTotal)}\n\n` +
+        `The attached document is your official payslip copy — please keep it for your records.\n\n` +
+        `Crown Head Spa\nwww.crownheadspa.com`
+    );
+}
+
+function peso(amount){
+    return "₱" + (Number(amount) || 0).toLocaleString("en-PH", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function buildPayslipEmailHtml({ staffName, period, groupKey, breakdown }){
+    const row = function(label, value, emphasize){
+        return `
+            <tr>
+                <td style="padding:10px 0;border-bottom:1px solid #e4ddc9;font-family:Arial,Helvetica,sans-serif;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:#6b645a;">${label}</td>
+                <td style="padding:10px 0;border-bottom:1px solid #e4ddc9;font-family:Arial,Helvetica,sans-serif;font-size:${emphasize ? "17px" : "15px"};color:#1c1a16;text-align:right;font-weight:${emphasize ? "800" : "600"};">${escapeHtml(peso(value))}</td>
+            </tr>`;
+    };
+
+    return `
+<!doctype html>
+<html>
+<head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#efeae0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#efeae0;padding:32px 16px;">
+<tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#f7f5f0;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(20,17,10,0.12);">
+
+<tr>
+    <td style="background-color:#0E1B3D;background-image:linear-gradient(180deg, #0E1B3D 0%, #16245C 100%);padding:28px 32px;text-align:center;">
+        <img src="https://crownheadspa.com/images/crown-mark.png" width="44" height="44" alt="Crown Head Spa" style="display:block;margin:0 auto 10px;">
+        <div style="font-family:'Cinzel Decorative',Georgia,'Times New Roman',serif;font-size:20px;letter-spacing:.06em;color:#d4af37;font-weight:700;">CROWN HEAD SPA</div>
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.18em;color:#e0c877;text-transform:uppercase;margin-top:4px;">Payslip Notification</div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding:32px;">
+        <p style="margin:0 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;">Hi ${escapeHtml(staffName) || "there"},</p>
+        <p style="margin:0 0 24px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;">Your payslip for <strong>${escapeHtml(period)}</strong> (${escapeHtml(groupKey)}) has been generated. A copy of your official payslip is attached to this email.</p>
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border:1px solid #e4ddc9;border-radius:12px;padding:18px 20px;">
+            ${row("Total Daily Rate", breakdown.dailyRateTotal)}
+            ${row("Total Meal Allowance", breakdown.mealAllowanceTotal)}
+            ${row("Total Overtime", breakdown.overtimeTotal)}
+            ${row("Total Commission", breakdown.commissionTotal)}
+            ${row("Gross Total", breakdown.grossTotal)}
+            ${row("Additional Pay", breakdown.additionalPay)}
+            ${row("Less Deduction", breakdown.deduction)}
+            ${row("Net Pay", breakdown.netTotal, true)}
+        </table>
+
+        <p style="margin:24px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#6b645a;">Please keep the attached document for your records.</p>
+    </td>
+</tr>
+
+<tr>
+    <td style="background-color:#e4ddc9;padding:18px 32px;text-align:center;">
+        <div style="margin-top:4px;">
+            <a href="https://crownheadspa.com" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#a9790a;text-decoration:none;font-weight:700;letter-spacing:.02em;">www.crownheadspa.com</a>
+        </div>
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#9c7d1c;margin-top:8px;">&copy; 2026 Crown Head Spa. All rights reserved.</div>
+    </td>
+</tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
+exports.sendPayslipEmailNotification = onCall(
+    { secrets: [EMAIL_PASSWORD] },
+    async (request) => {
+        if(
+            !request.auth ||
+            !request.auth.token ||
+            !["Admin", "Executive Assistant"].includes(request.auth.token.role)
+        ){
+            throw new HttpsError("permission-denied", "Only Admin/Executive Assistant can send payslip email notifications.");
+        }
+
+        const data = request.data || {};
+        const email = String(data.email || "").trim();
+
+        if(!email){
+            throw new HttpsError("invalid-argument", "email is required.");
+        }
+
+        const attachmentUrl = String(data.attachmentUrl || "").trim();
+        const attachmentName = String(data.attachmentName || "payslip").trim();
+
+        if(!attachmentUrl){
+            throw new HttpsError("invalid-argument", "attachmentUrl is required.");
+        }
+
+        const details = {
+            staffName: String(data.staffName || "").trim(),
+            period: String(data.period || "").trim(),
+            groupKey: String(data.groupKey || "").trim(),
+            breakdown: {
+                dailyRateTotal: Number(data.breakdown?.dailyRateTotal) || 0,
+                mealAllowanceTotal: Number(data.breakdown?.mealAllowanceTotal) || 0,
+                overtimeTotal: Number(data.breakdown?.overtimeTotal) || 0,
+                commissionTotal: Number(data.breakdown?.commissionTotal) || 0,
+                grossTotal: Number(data.breakdown?.grossTotal) || 0,
+                additionalPay: Number(data.breakdown?.additionalPay) || 0,
+                deduction: Number(data.breakdown?.deduction) || 0,
+                netTotal: Number(data.breakdown?.netTotal) || 0
+            }
+        };
+
+        const mailer = buildMailer();
+
+        await mailer.sendMail({
+            from: `"Crown Head Spa" <${BOOKING_EMAIL_FROM}>`,
+            to: email,
+            subject: `Your Crown Head Spa payslip — ${details.period}`,
+            text: buildPayslipEmailText(details),
+            html: buildPayslipEmailHtml(details),
+            attachments: [
+                { filename: attachmentName, path: attachmentUrl }
+            ]
+        });
+
+        return { ok: true };
+    }
+);
+
 /* Strips diacritics (e.g. "Biñan" -> "Binan") so the SMS body stays in
    plain GSM-7 characters — a single accented letter forces the whole
    message into Unicode (UCS-2) encoding, which Smart appears to silently

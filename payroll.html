@@ -25,6 +25,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-functions-compat.js"></script>
     <script src="firebase-init.js"></script>
     <script src="pwa-register.js"></script>
     <script src="client-store.js"></script>
@@ -125,7 +127,7 @@
     <div class="card shadow-sm border-0 mb-4 d-none" id="payrollGroupArchiveCard">
         <div class="card-body">
 
-            <h3 class="fw-bold mb-1">Payroll Group Archive</h3>
+            <h3 class="fw-bold mb-1">Generated Payroll Group</h3>
             <small class="text-muted d-block mb-3">
                 Payroll groups generated from above. Tap View to export a PDF or delete the record.
             </small>
@@ -151,12 +153,12 @@
         </div>
     </div>
 
-    <div class="card shadow-sm border-0 mb-4 d-none" id="payslipArchiveCard">
+    <div class="card shadow-sm border-0 mb-4 d-none" id="generatedPayrollCard">
         <div class="card-body">
 
-            <h3 class="fw-bold mb-1">Payslip Archive</h3>
+            <h3 class="fw-bold mb-1">Generated Payroll</h3>
             <small class="text-muted d-block mb-3">
-                Every individually generated payslip, across all staff.
+                Payslips waiting to be emailed and archived. Tap View to send the email or archive it.
             </small>
 
             <div class="table-responsive">
@@ -169,12 +171,51 @@
                             <th>Action</th>
                         </tr>
                     </thead>
-                    <tbody id="payslipArchiveBody"></tbody>
+                    <tbody id="generatedPayrollBody"></tbody>
                 </table>
             </div>
 
-            <div class="empty-state d-none" id="payslipArchiveEmptyState">
-                No payslips generated yet.
+            <div class="empty-state d-none" id="generatedPayrollEmptyState">
+                No payroll waiting to be sent yet.
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4 d-none" id="payslipArchiveCard">
+        <div class="card-body">
+
+            <div class="d-flex justify-content-between align-items-start gap-2">
+                <div>
+                    <h3 class="fw-bold mb-1">Payroll Archive</h3>
+                    <small class="text-muted d-block mb-3">
+                        Every payslip that has been archived, across all staff.
+                    </small>
+                </div>
+
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="togglePayslipArchiveBtn">
+                    Show
+                </button>
+            </div>
+
+            <div class="d-none" id="payslipArchiveCollapse">
+                <div class="table-responsive">
+                    <table class="table payroll-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Staff Name</th>
+                                <th>Payroll Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payslipArchiveBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="empty-state d-none" id="payslipArchiveEmptyState">
+                    No payslips archived yet.
+                </div>
             </div>
 
         </div>
@@ -406,14 +447,55 @@
                 <div><span>Less Deduction</span><strong id="payslipDeductionTotal">₱0.00</strong></div>
                 <div class="payslip-summary-net"><span>Net Pay</span><strong id="payslipNetTotal">₱0.00</strong></div>
             </div>
+
+            <div class="payslip-attachment-row d-none" id="payslipAttachmentRow">
+                <span>Proof of Payment</span>
+                <a href="#" target="_blank" rel="noopener" id="payslipAttachmentLink">—</a>
+                <img id="payslipAttachmentPreviewImg" alt="Proof of payment preview">
+            </div>
+
+            <div class="payslip-pay-preview d-none" id="payslipPayPreviewRow">
+                <span>New Proof of Payment</span>
+                <img id="payslipPayPreviewImg" alt="Selected proof of payment">
+
+                <div class="payslip-pay-preview-actions">
+                    <button type="button" class="btn btn-outline-secondary" id="cancelPayAttachmentBtn">
+                        Cancel
+                    </button>
+
+                    <button type="button" class="btn btn-success" id="submitPayAttachmentBtn">
+                        Submit
+                    </button>
+                </div>
+            </div>
+
+            <div class="payslip-ack-row d-none" id="payslipAckRow">
+                <button type="button" class="btn btn-outline-primary" id="acknowledgePayslipBtn">
+                    Acknowledge Payslip
+                </button>
+
+                <span class="payslip-ack-readout d-none" id="payslipAckReadout"></span>
+            </div>
         </div>
 
-        <div class="payroll-modal-footer payroll-modal-footer-split">
-            <button type="button" class="btn" id="payslipStatusBtn">
-                Generate Payroll
-            </button>
+        <input type="file" id="payslipAttachmentInput" accept="image/*" class="d-none">
 
-            <span class="payroll-status-badge d-none" id="payslipStatusReadout">—</span>
+        <div class="payroll-modal-footer payroll-modal-footer-split">
+            <div class="payroll-modal-footer-left">
+                <button type="button" class="btn btn-success d-none" id="payPayslipBtn">
+                    Pay
+                </button>
+
+                <button type="button" class="btn btn-outline-primary d-none" id="sendEmailPayslipBtn">
+                    Send to Email
+                </button>
+
+                <button type="button" class="btn btn-outline-secondary d-none" id="archivePayslipBtn">
+                    Archive
+                </button>
+
+                <span class="payroll-status-badge d-none" id="payslipStatusReadout">—</span>
+            </div>
 
             <div class="payroll-modal-footer-right">
                 <button type="button" class="btn btn-outline-primary" id="exportPayslipPdfBtn">

@@ -421,6 +421,9 @@ function openCreateUserModal(){
     document.getElementById("userNicknameInput").value =
         "";
 
+    document.getElementById("userEmailInput").value =
+        "";
+
     document.getElementById("userRoleInput").value =
         "";
 
@@ -500,6 +503,9 @@ function openEditUserModal(userId){
 
     document.getElementById("userNicknameInput").value =
         user.nickname || "";
+
+    document.getElementById("userEmailInput").value =
+        user.email || "";
 
     document.getElementById("userRoleInput").value =
         user.role || "";
@@ -971,6 +977,12 @@ async function saveUserAccount(){
             .value
             .trim();
 
+    const email =
+        document
+            .getElementById("userEmailInput")
+            .value
+            .trim();
+
     const role =
         document
             .getElementById("userRoleInput")
@@ -1029,6 +1041,11 @@ async function saveUserAccount(){
 
     if(!firstName || !lastName){
         alert("Please enter the First Name and Last Name.");
+        return;
+    }
+
+    if(!email || !/^\S+@\S+\.\S+$/.test(email)){
+        alert("Please enter a valid Email Address — this is where their payroll is sent.");
         return;
     }
 
@@ -1169,6 +1186,7 @@ async function saveUserAccount(){
         user.middleName = middleName;
         user.lastName = lastName;
         user.nickname = nickname;
+        user.email = email;
         user.role = role;
         user.branches = branches;
         user.status = status;
@@ -1242,6 +1260,7 @@ async function saveUserAccount(){
             middleName: middleName,
             lastName: lastName,
             nickname: nickname,
+            email: email,
             role: role,
             branches: branches,
             therapistName:

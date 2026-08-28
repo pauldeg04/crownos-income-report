@@ -17,5 +17,20 @@ service firebase.storage {
       allow read, write: if request.auth != null &&
         request.auth.token.role in ['Admin', 'Executive Assistant'];
     }
+
+    // Payslip attachments uploaded from payroll.js when Admin/EA click
+    // "Generate Payroll" — see uploadPayrollAttachment() in payroll.js.
+    // Stored one folder per owning staff member's synthetic sync email
+    // (toSyncEmail(account), same identity Firebase Auth already carries
+    // as request.auth.token.email — see firebase-sync.js), so that staff
+    // member can read their own payslip's attachment, in addition to
+    // Admin/Executive Assistant who manage payroll for everyone.
+    match /payrollAttachments/{ownerSyncEmail}/{fileName} {
+      allow read: if request.auth != null &&
+        (request.auth.token.role in ['Admin', 'Executive Assistant'] ||
+         request.auth.token.email == ownerSyncEmail);
+      allow write: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
+    }
   }
 }
