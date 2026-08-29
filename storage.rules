@@ -40,5 +40,15 @@ service firebase.storage {
       allow read, write: if request.auth != null &&
         request.auth.token.role == 'Admin';
     }
+
+    // Petty Cash proof-of-payment attachments uploaded from petty-cash.js —
+    // see uploadPettyCashAttachment(). This rule was missing since that
+    // feature shipped (commit 63e8183), which under Storage's deny-by-default
+    // behavior meant every upload attempt was silently rejected. Roles match
+    // petty-cash.html's own access-control.js entry.
+    match /pettyCashAttachments/{branch}/{fileName} {
+      allow read, write: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant', 'Receptionist'];
+    }
   }
 }

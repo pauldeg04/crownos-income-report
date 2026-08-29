@@ -4,6 +4,32 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-29 — Fix: Petty Cash attachment uploads had no Storage rule (broken since launch)
+
+**Flagged by:** Follow-up task spawned while adding the Operation Expenses
+attachment rule to `storage.rules` — noticed Petty Cash's own
+proof-of-payment attachment feature had no matching rule at all.
+
+**Confirmed via git history:** commit `63e8183` ("Petty Cash: optional
+proof-of-payment attachment") added `uploadPettyCashAttachment()` to
+[petty-cash.js](petty-cash.js), uploading to
+`pettyCashAttachments/<branch>/<timestamp>_<filename>`, but never touched
+[storage.rules](storage.rules) — that file has had rules only for
+`birCompliance/` and `payrollAttachments/` since it was created. Firebase
+Storage denies any unmatched path by default, so every Petty Cash
+attachment upload has been silently failing (permission-denied) since that
+feature shipped.
+
+**Fix:** added a `match /pettyCashAttachments/{branch}/{fileName}` rule,
+`allow read, write` for `Admin`, `Executive Assistant`, and `Receptionist`
+— the same three roles `access-control.js` already grants for
+`petty-cash.html` itself.
+
+**Deployed:** `firebase deploy --only storage` → live rules updated at
+project `crownos-5f03d`.
+
+---
+
 ## 2026-08-29 — Expenses Report: Operation Expenses attachment
 
 **Requested by:** User — wanted a way to attach a receipt/proof of purchase
