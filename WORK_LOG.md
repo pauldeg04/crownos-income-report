@@ -4,6 +4,36 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-29 — Expenses Report: Particular modal Date field reverted to full date
+
+**Reported by:** User — noticed the Add/Edit Particular modal on the
+plain-ledger tables (Operation Expenses, Payroll, Accounting / Government
+Dues, Marketing) only asked for Month and Year, and asked to bring back
+the full date input.
+
+- [expenses-report.html](expenses-report.html): `#expenseModalDate` changed
+  from `type="month"` back to `type="date"`. The page-level Month filter
+  (`#month`, used to scope which month's ledger is loaded/saved) is
+  unrelated and untouched.
+- No `expenses-report.js` changes needed — `saveExpenseEntryFromModal()`
+  already just reads the field's raw value with no month-only assumption,
+  and `formatDateText()` (fixed earlier today, see the Cash Flow entry
+  below) already renders a full date correctly whenever one is present.
+- [manual.html](manual.html): updated the plain-ledger Date-field paragraph
+  to say a full date is asked for and shown (e.g. "Aug 15, 2026"), removing
+  the now-inaccurate "month-only unless synced" explanation.
+- **Known quirk:** rows saved earlier under the old month-only format
+  (`"YYYY-MM"`) will show a blank Date field when reopened in Edit, since a
+  `type="date"` input can't parse a month-only value — the underlying data
+  isn't damaged, the user just needs to pick the correct date again if they
+  edit one of those older rows.
+
+**Status:** Code changed locally, not yet deployed — run
+`firebase deploy --only hosting` from `Income Report/` when ready to push
+live.
+
+---
+
 ## 2026-08-29 — Cash Flow: expense classification on Out entries + Expenses Report sync
 
 **Requested by:** User — wanted Out entries in Cash Flow to capture the same
