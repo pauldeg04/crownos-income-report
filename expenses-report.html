@@ -25,6 +25,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
     <script src="firebase-init.js"></script>
     <script src="pwa-register.js"></script>
     <script src="client-store.js"></script>
@@ -162,6 +163,18 @@
                 <div class="col-12">
                     <label class="form-label fw-bold">Remarks</label>
                     <input type="text" id="expenseModalRemarks" class="form-control" placeholder="Optional remarks">
+                </div>
+
+                <div class="col-12 d-none" id="expenseModalAttachmentWrapper">
+                    <label class="form-label fw-bold">Attachment (optional)</label>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="expenseAttachmentPickBtn">Choose File</button>
+                        <span class="text-muted small" id="expenseAttachmentName">No file chosen</span>
+                        <a href="#" target="_blank" rel="noopener" class="d-none" id="expenseAttachmentLink">View current</a>
+                        <button type="button" class="btn btn-sm btn-outline-danger d-none" id="expenseAttachmentRemoveBtn">Remove</button>
+                    </div>
+                    <input type="file" id="expenseAttachmentInput" accept="image/*,.pdf" class="d-none">
+                    <img id="expenseAttachmentPreview" class="d-none expense-attachment-preview" alt="Attachment preview">
                 </div>
             </div>
         </div>

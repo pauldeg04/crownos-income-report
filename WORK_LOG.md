@@ -4,6 +4,54 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-29 — Expenses Report: Operation Expenses attachment
+
+**Requested by:** User — wanted a way to attach a receipt/proof of purchase
+to Operation Expenses entries.
+
+- [expenses-report.html](expenses-report.html): added `firebase-storage-compat.js`
+  to the page (was missing — Petty Cash and Payroll already load it, this
+  page never needed to before). Added an "Attachment (optional)" picker
+  (Choose File / View current / Remove, plus an image preview) to the
+  shared Add/Edit Particular modal, hidden by default.
+- [expenses-report.js](expenses-report.js): added `attachment: true` to the
+  `operation` table definition in `expenseTables` (the only category that
+  gets this field — the modal wrapper, and the whole feature, key off that
+  flag rather than hardcoding the table key, so it's a one-line change to
+  extend to another category later). Mirrors Petty Cash's existing
+  attachment pattern almost exactly (`resetAttachmentPicker` /
+  `handle...Chosen` / `remove...` / `upload...Attachment` in
+  [petty-cash.js](petty-cash.js)): the file itself never touches
+  localStorage, only goes to Firebase Storage under
+  `expenseAttachments/<branch>/<timestamp>_<filename>`, and only its
+  `{name, size, path, url}` metadata is stored on the entry. A 📎 link next
+  to the Particular cell opens the file. Editing an entry without touching
+  the attachment preserves it; Remove clears it; a newly chosen file
+  replaces it on Save.
+- [expenses-report.css](expenses-report.css): added `.expense-attachment-preview`
+  (same sizing as Petty Cash's `.petty-cash-attachment-preview`).
+- [storage.rules](storage.rules): added a rule for
+  `expenseAttachments/{branch}/{fileName}`, Admin-only read/write (matches
+  `expenses-report.html`'s own access-control.js restriction).
+- [manual.html](manual.html): documented the new field under Expenses
+  Report → Operation Expenses.
+- **Side note, not fixed here:** while adding the storage rule above,
+  noticed `pettyCashAttachments/` (used by petty-cash.js's own attachment
+  upload) has no matching rule in storage.rules at all — flagged separately
+  as its own follow-up task rather than bundled into this change.
+- Verified in an isolated harness running the real modal markup +
+  `expenses-report.js` (mocked `firebase.storage()`, since the live app's
+  Firebase login couldn't be scripted from this environment): attachment
+  field shows only for Operation Expenses, hidden for the other tables,
+  upload-then-save stores the metadata and renders the 📎 link, an
+  untouched edit preserves the attachment, and Remove clears it.
+
+**Status:** Code changed locally, not yet deployed — run
+`firebase deploy --only hosting` (and `--only storage:rules` for the new
+rule) from `Income Report/` when ready to push live.
+
+---
+
 ## 2026-08-29 — Expenses Report: Particular modal Date field reverted to full date
 
 **Reported by:** User — noticed the Add/Edit Particular modal on the

@@ -20,6 +20,7 @@ const expenseTables = [
         headerClass: "operation-header",
         columns: ["Date", "Account Title", "Particular", "Amount", "S.I. No.", "TIN", "Remarks"],
         extraFields: ["siNo", "tin"],
+        attachment: true,
         accountTitleOptions: [
             "Communication",
             "Supplies",
@@ -96,6 +97,17 @@ let expenseData = {};
 let recurringData = {};
 let activeModal = { tableKey: null, entryId: null };
 let activeRecurringModal = { tableKey: null, itemId: null };
+let pendingExpenseAttachmentFile = null;
+let pendingExpenseAttachmentRemoved = false;
+
+/* Same pattern as petty-cash.js's attachmentLinkHtml — a 📎 link next to
+   the Particular, only ever set for tables with attachment:true (currently
+   just Operation Expenses). */
+function expenseAttachmentLinkHtml(entry){
+    if(!entry.attachment?.url) return "";
+
+    return ` <a href="${escapeHtml(entry.attachment.url)}" target="_blank" rel="noopener" class="expense-attachment-link" title="View attachment">📎</a>`;
+}
 
 document.addEventListener("DOMContentLoaded", function(){
     setCurrentMonth();
@@ -357,7 +369,7 @@ function renderTableBody(tableKey){
 
         cells.push(`<td>${escapeHtml(entry.accountTitle || table.accountTitleFixed) || "—"}</td>`);
 
-        cells.push(`<td class="text-start">${escapeHtml(entry.particular)}</td>`);
+        cells.push(`<td class="text-start">${escapeHtml(entry.particular)}${expenseAttachmentLinkHtml(entry)}</td>`);
         cells.push(`<td class="amount-cell">${peso(entry.amount)}</td>`);
 
         table.extraFields.forEach(field => {
@@ -512,6 +524,17 @@ function wireModalEvents(){
             closeExpenseModal();
         }
     });
+
+    document.getElementById("expenseAttachmentPickBtn")
+        .addEventListener("click", function(){
+            document.getElementById("expenseAttachmentInput").click();
+        });
+
+    document.getElementById("expenseAttachmentInput")
+        .addEventListener("change", handleExpenseAttachmentChosen);
+
+    document.getElementById("expenseAttachmentRemoveBtn")
+        .addEventListener("click", removeExpenseAttachment);
 }
 
 function openExpenseModal(tableKey, entryId){
@@ -532,6 +555,7 @@ function openExpenseModal(tableKey, entryId){
     document.getElementById("expenseModalCategoryWrapper").classList.toggle("d-none", !hasAccountTitleSelect);
     document.getElementById("expenseModalSiNoWrapper").classList.toggle("d-none", !table.extraFields.includes("siNo"));
     document.getElementById("expenseModalTinWrapper").classList.toggle("d-none", !table.extraFields.includes("tin"));
+    document.getElementById("expenseModalAttachmentWrapper").classList.toggle("d-none", !table.attachment);
 
     document.getElementById("expenseModalTitle").textContent =
         (entry ? "Edit " : "Add ") + table.title + " Entry";
@@ -550,6 +574,8 @@ function openExpenseModal(tableKey, entryId){
     document.getElementById("expenseModalTin").value = entry?.tin || "";
     document.getElementById("expenseModalRemarks").value = entry?.remarks || "";
 
+    resetExpenseAttachmentPicker(entry?.attachment || null);
+
     document.getElementById("deleteExpenseEntryBtn").classList.toggle("d-none", !entry);
 
     document.getElementById("expenseModalBackdrop").classList.remove("d-none");
@@ -558,6 +584,80 @@ function openExpenseModal(tableKey, entryId){
 function closeExpenseModal(){
     document.getElementById("expenseModalBackdrop").classList.add("d-none");
     activeModal = { tableKey: null, entryId: null };
+}
+
+/* ---------- Attachment (Operation Expenses only, optional) ------------- */
+/* Same pattern as petty-cash.js's attachment picker — the file itself
+   never touches localStorage, only its Firebase Storage download URL and
+   metadata do. */
+
+function resetExpenseAttachmentPicker(existingAttachment){
+    pendingExpenseAttachmentFile = null;
+    pendingExpenseAttachmentRemoved = false;
+
+    document.getElementById("expenseAttachmentInput").value = "";
+    document.getElementById("expenseAttachmentPreview").classList.add("d-none");
+    document.getElementById("expenseAttachmentPreview").removeAttribute("src");
+
+    document.getElementById("expenseAttachmentName").textContent =
+        existingAttachment ? existingAttachment.name : "No file chosen";
+
+    document.getElementById("expenseAttachmentLink").href = existingAttachment?.url || "#";
+    document.getElementById("expenseAttachmentLink").classList.toggle("d-none", !existingAttachment);
+    document.getElementById("expenseAttachmentRemoveBtn").classList.toggle("d-none", !existingAttachment);
+}
+
+function handleExpenseAttachmentChosen(){
+    const input = document.getElementById("expenseAttachmentInput");
+    const file = input.files?.[0];
+
+    if(!file) return;
+
+    pendingExpenseAttachmentFile = file;
+    pendingExpenseAttachmentRemoved = false;
+
+    document.getElementById("expenseAttachmentName").textContent = file.name;
+    document.getElementById("expenseAttachmentLink").classList.add("d-none");
+    document.getElementById("expenseAttachmentRemoveBtn").classList.remove("d-none");
+
+    const preview = document.getElementById("expenseAttachmentPreview");
+
+    if(file.type.startsWith("image/")){
+        preview.src = URL.createObjectURL(file);
+        preview.classList.remove("d-none");
+    }else{
+        preview.classList.add("d-none");
+        preview.removeAttribute("src");
+    }
+}
+
+function removeExpenseAttachment(){
+    pendingExpenseAttachmentFile = null;
+    pendingExpenseAttachmentRemoved = true;
+
+    document.getElementById("expenseAttachmentInput").value = "";
+    document.getElementById("expenseAttachmentName").textContent = "No file chosen";
+    document.getElementById("expenseAttachmentLink").classList.add("d-none");
+    document.getElementById("expenseAttachmentRemoveBtn").classList.add("d-none");
+    document.getElementById("expenseAttachmentPreview").classList.add("d-none");
+    document.getElementById("expenseAttachmentPreview").removeAttribute("src");
+}
+
+function uploadExpenseAttachment(file, branch, cb, onError){
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const safeBranch = String(branch || "NoBranch").replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `expenseAttachments/${safeBranch}/${Date.now()}_${safeName}`;
+    const ref = firebase.storage().ref().child(path);
+    const task = ref.put(file);
+
+    task.on("state_changed", null, function(err){
+        alert("Upload failed: " + (err.message || err.code || "unknown error"));
+        onError?.();
+    }, function(){
+        ref.getDownloadURL().then(function(url){
+            cb({ name: file.name, size: file.size, path: path, url: url });
+        });
+    });
 }
 
 function saveExpenseEntryFromModal(){
@@ -612,23 +712,42 @@ function saveExpenseEntryFromModal(){
     if(table.extraFields.includes("siNo")) entry.siNo = siNo;
     if(table.extraFields.includes("tin")) entry.tin = tin;
 
-    if(!expenseData[tableKey]){
-        expenseData[tableKey] = [];
-    }
+    if(table.attachment){
+        let existingEntry = entryId ? (expenseData[tableKey] || []).find(e => e.id === entryId) : null;
 
-    if(entryId){
-        let index = expenseData[tableKey].findIndex(e => e.id === entryId);
-        if(index > -1){
-            expenseData[tableKey][index] = entry;
+        if(existingEntry?.attachment && !pendingExpenseAttachmentRemoved && !pendingExpenseAttachmentFile){
+            entry.attachment = existingEntry.attachment;
         }
-    } else {
-        expenseData[tableKey].push(entry);
     }
 
-    saveExpenses();
-    renderTableBody(tableKey);
-    updateTotals();
-    closeExpenseModal();
+    function finishSavingEntry(){
+        if(!expenseData[tableKey]){
+            expenseData[tableKey] = [];
+        }
+
+        if(entryId){
+            let index = expenseData[tableKey].findIndex(e => e.id === entryId);
+            if(index > -1){
+                expenseData[tableKey][index] = entry;
+            }
+        } else {
+            expenseData[tableKey].push(entry);
+        }
+
+        saveExpenses();
+        renderTableBody(tableKey);
+        updateTotals();
+        closeExpenseModal();
+    }
+
+    if(table.attachment && pendingExpenseAttachmentFile){
+        uploadExpenseAttachment(pendingExpenseAttachmentFile, branch, function(attachment){
+            entry.attachment = attachment;
+            finishSavingEntry();
+        });
+    } else {
+        finishSavingEntry();
+    }
 }
 
 function deleteExpenseEntryFromModal(){
@@ -1093,6 +1212,10 @@ function loadExpenses(){
                     table.extraFields.forEach(field => {
                         entry[field] = row[field] || "";
                     });
+
+                    if(table.attachment && row.attachment){
+                        entry.attachment = row.attachment;
+                    }
 
                     return entry;
                 });
