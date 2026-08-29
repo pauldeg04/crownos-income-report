@@ -16,14 +16,22 @@ const PETTY_CASH_BRANCH_KEY = "crownSelectedBranch";
    same storage shape expenses-report.js reads/writes), so the spend shows up
    there without being re-typed. */
 const PETTY_CASH_EXPENSE_PREFIX = "crownExpenses_";
-const PETTY_CASH_EXPENSE_CATEGORY = "Supplies & Purchases";
+const PETTY_CASH_EXPENSE_CATEGORY = "Purchase";
 
 let pettyCashState = { activeFund: null, history: [] };
 let activePettyCashEntryId = null;
 let historyDetailFundId = null;
+let pendingPettyCashAttachmentFile = null;
+let pendingPettyCashAttachmentRemoved = false;
 
 function getSelectedPettyCashBranch(){
     return localStorage.getItem(PETTY_CASH_BRANCH_KEY) || "";
+}
+
+function attachmentLinkHtml(entry){
+    if(!entry.attachment?.url) return "";
+
+    return ` <a href="${escapeHtml(entry.attachment.url)}" target="_blank" rel="noopener" class="petty-cash-attachment-link" title="View proof of payment">📎</a>`;
 }
 
 document.addEventListener("DOMContentLoaded", function(){
@@ -142,7 +150,7 @@ function renderPettyCash(){
         tbody.innerHTML = rows.map(entry => `
             <tr>
                 <td class="date-text">${formatDateText(entry.date)}</td>
-                <td class="particular-cell">${escapeHtml(entry.particular) || "—"}</td>
+                <td class="particular-cell">${escapeHtml(entry.particular) || "—"}${attachmentLinkHtml(entry)}</td>
                 <td class="remarks-cell">${escapeHtml(entry.remarks) || "—"}</td>
                 <td class="qty-cell">${Number(entry.qty) || 0}</td>
                 <td class="amount-cell">${peso(entry.unitCost)}</td>
@@ -200,6 +208,17 @@ function wirePettyCashEvents(){
     ["pettyCashModalQty", "pettyCashModalUnitCost"].forEach(function(id){
         document.getElementById(id).addEventListener("input", updatePettyCashModalTotal);
     });
+
+    document.getElementById("pettyCashAttachmentPickBtn")
+        .addEventListener("click", function(){
+            document.getElementById("pettyCashAttachmentInput").click();
+        });
+
+    document.getElementById("pettyCashAttachmentInput")
+        .addEventListener("change", handlePettyCashAttachmentChosen);
+
+    document.getElementById("pettyCashAttachmentRemoveBtn")
+        .addEventListener("click", removePettyCashAttachment);
 
     document.getElementById("liquidatePettyCashBtn")
         .addEventListener("click", openLiquidateModal);
@@ -312,6 +331,7 @@ function openPettyCashEntryModal(entryId){
     document.getElementById("pettyCashModalUnitCost").value = entry?.unitCost ?? "";
 
     updatePettyCashModalTotal();
+    resetAttachmentPicker(entry?.attachment || null);
 
     document.getElementById("deletePettyCashEntryBtn").classList.toggle("d-none", !entry);
     document.getElementById("pettyCashModalBackdrop").classList.remove("d-none");
@@ -320,6 +340,79 @@ function openPettyCashEntryModal(entryId){
 function closePettyCashEntryModal(){
     document.getElementById("pettyCashModalBackdrop").classList.add("d-none");
     activePettyCashEntryId = null;
+}
+
+/* ---------- Proof of payment attachment (optional) ---------- */
+
+function resetAttachmentPicker(existingAttachment){
+    pendingPettyCashAttachmentFile = null;
+    pendingPettyCashAttachmentRemoved = false;
+
+    document.getElementById("pettyCashAttachmentInput").value = "";
+    document.getElementById("pettyCashAttachmentPreview").classList.add("d-none");
+    document.getElementById("pettyCashAttachmentPreview").removeAttribute("src");
+
+    document.getElementById("pettyCashAttachmentName").textContent =
+        existingAttachment ? existingAttachment.name : "No file chosen";
+
+    document.getElementById("pettyCashAttachmentLink").href = existingAttachment?.url || "#";
+    document.getElementById("pettyCashAttachmentLink").classList.toggle("d-none", !existingAttachment);
+    document.getElementById("pettyCashAttachmentRemoveBtn").classList.toggle("d-none", !existingAttachment);
+}
+
+function handlePettyCashAttachmentChosen(){
+    const input = document.getElementById("pettyCashAttachmentInput");
+    const file = input.files?.[0];
+
+    if(!file) return;
+
+    pendingPettyCashAttachmentFile = file;
+    pendingPettyCashAttachmentRemoved = false;
+
+    document.getElementById("pettyCashAttachmentName").textContent = file.name;
+    document.getElementById("pettyCashAttachmentLink").classList.add("d-none");
+    document.getElementById("pettyCashAttachmentRemoveBtn").classList.remove("d-none");
+
+    const preview = document.getElementById("pettyCashAttachmentPreview");
+
+    if(file.type.startsWith("image/")){
+        preview.src = URL.createObjectURL(file);
+        preview.classList.remove("d-none");
+    }else{
+        preview.classList.add("d-none");
+        preview.removeAttribute("src");
+    }
+}
+
+function removePettyCashAttachment(){
+    pendingPettyCashAttachmentFile = null;
+    pendingPettyCashAttachmentRemoved = true;
+
+    document.getElementById("pettyCashAttachmentInput").value = "";
+    document.getElementById("pettyCashAttachmentName").textContent = "No file chosen";
+    document.getElementById("pettyCashAttachmentLink").classList.add("d-none");
+    document.getElementById("pettyCashAttachmentRemoveBtn").classList.add("d-none");
+    document.getElementById("pettyCashAttachmentPreview").classList.add("d-none");
+    document.getElementById("pettyCashAttachmentPreview").removeAttribute("src");
+}
+
+/* Firebase Storage upload, same pattern as payroll.js's
+   uploadPayrollAttachment — the file itself never touches localStorage. */
+function uploadPettyCashAttachment(file, branch, cb, onError){
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const safeBranch = String(branch || "NoBranch").replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `pettyCashAttachments/${safeBranch}/${Date.now()}_${safeName}`;
+    const ref = firebase.storage().ref().child(path);
+    const task = ref.put(file);
+
+    task.on("state_changed", null, function(err){
+        alert("Upload failed: " + (err.message || err.code || "unknown error"));
+        onError?.();
+    }, function(){
+        ref.getDownloadURL().then(function(url){
+            cb({ name: file.name, size: file.size, path: path, url: url });
+        });
+    });
 }
 
 function savePettyCashEntryFromModal(){
@@ -353,6 +446,10 @@ function savePettyCashEntryFromModal(){
         return;
     }
 
+    const existingEntry = activePettyCashEntryId
+        ? fund.entries.find(e => e.id === activePettyCashEntryId)
+        : null;
+
     const entry = {
         id: activePettyCashEntryId || createPettyCashId(),
         date,
@@ -363,16 +460,31 @@ function savePettyCashEntryFromModal(){
         totalCost: qty * unitCost
     };
 
-    if(activePettyCashEntryId){
-        const index = fund.entries.findIndex(e => e.id === activePettyCashEntryId);
-        if(index > -1) fund.entries[index] = entry;
-    }else{
-        fund.entries.push(entry);
+    if(existingEntry?.attachment && !pendingPettyCashAttachmentRemoved && !pendingPettyCashAttachmentFile){
+        entry.attachment = existingEntry.attachment;
     }
 
-    savePettyCashState();
-    renderPettyCash();
-    closePettyCashEntryModal();
+    function finishSavingEntry(){
+        if(activePettyCashEntryId){
+            const index = fund.entries.findIndex(e => e.id === activePettyCashEntryId);
+            if(index > -1) fund.entries[index] = entry;
+        }else{
+            fund.entries.push(entry);
+        }
+
+        savePettyCashState();
+        renderPettyCash();
+        closePettyCashEntryModal();
+    }
+
+    if(pendingPettyCashAttachmentFile){
+        uploadPettyCashAttachment(pendingPettyCashAttachmentFile, getSelectedPettyCashBranch(), function(attachment){
+            entry.attachment = attachment;
+            finishSavingEntry();
+        });
+    }else{
+        finishSavingEntry();
+    }
 }
 
 function deletePettyCashEntryFromModal(){
@@ -463,7 +575,7 @@ function postPettyCashEntriesToExpenses(fund){
         expenseData.operation.push({
             id: createPettyCashId(),
             date: fund.liquidatedDate,
-            category: PETTY_CASH_EXPENSE_CATEGORY,
+            accountTitle: PETTY_CASH_EXPENSE_CATEGORY,
             particular: entry.particular,
             amount: Number(entry.totalCost) || 0,
             remarks: entry.remarks
@@ -555,7 +667,7 @@ function openHistoryDetailView(fundId){
         tbody.innerHTML = rows.map(entry => `
             <tr>
                 <td class="date-text">${formatDateText(entry.date)}</td>
-                <td class="particular-cell">${escapeHtml(entry.particular) || "—"}</td>
+                <td class="particular-cell">${escapeHtml(entry.particular) || "—"}${attachmentLinkHtml(entry)}</td>
                 <td class="remarks-cell">${escapeHtml(entry.remarks) || "—"}</td>
                 <td class="qty-cell">${Number(entry.qty) || 0}</td>
                 <td class="amount-cell">${peso(entry.unitCost)}</td>

@@ -40,63 +40,76 @@
 
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h2 class="fw-bold text-primary mb-0">Crown Head Spa - Expenses Report</h2>
+                        </div>
 
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <h2 class="fw-bold text-primary mb-0">Crown Head Spa - Expenses Report</h2>
+                        <a href="home.html" class="btn-dashboard text-decoration-none">
+                            ← Back to Dashboard
+                        </a>
+                    </div>
+
+                    <div class="row g-3 mb-2">
+                        <!-- Branch is now shown in the header toolbar, so this
+                             readout duplicated it — hidden, not deleted, since
+                             expenses-report.js still writes to #branchReadout. -->
+                        <div class="col-md-4 d-none">
+                            <label class="form-label fw-bold">Branch</label>
+                            <div class="branch-readout" id="branchReadout">—</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Month</label>
+                            <input type="month" id="month" class="form-control" onchange="changeBranchMonth()">
+                        </div>
+                    </div>
                 </div>
 
-                <a href="home.html" class="btn-dashboard text-decoration-none">
-                    ← Back to Dashboard
-                </a>
+                <div class="col-lg-4">
+                    <div class="upcoming-payments-box">
+                        <h4 class="fw-bold mb-2">For Payment This Week</h4>
+                        <div id="upcomingPaymentsList"></div>
+                    </div>
+                </div>
             </div>
-
-            <div class="row g-3 mb-2">
-                <!-- Branch is now shown in the header toolbar, so this
-                     readout duplicated it — hidden, not deleted, since
-                     expenses-report.js still writes to #branchReadout. -->
-                <div class="col-md-4 d-none">
-                    <label class="form-label fw-bold">Branch</label>
-                    <div class="branch-readout" id="branchReadout">—</div>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">Month</label>
-                    <input type="month" id="month" class="form-control" onchange="changeBranchMonth()">
-                </div>
-            </div>
-
         </div>
     </div>
+
+    <div class="tabs" role="tablist" id="expenseViewTabs"></div>
 
     <div id="tablesContainer"></div>
 
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-            <h3 class="fw-bold">Summary Table</h3>
+    <div class="tab-panel d-none" data-tab-panel="summary">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <h3 class="fw-bold">Summary Table</h3>
 
-            <table class="table table-bordered summary-table">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Expense Category</th>
-                        <th>Total Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>Operation Expenses</td><td id="summaryOperation">₱0.00</td></tr>
-                    <tr><td>Payroll</td><td id="summarySalary">₱0.00</td></tr>
-                    <tr><td>Utilities / Monthly Dues</td><td id="summaryUtilities">₱0.00</td></tr>
-                    <tr><td>Installments</td><td id="summaryInstallments">₱0.00</td></tr>
-                    <tr><td>Accounting / Government Dues</td><td id="summaryGov">₱0.00</td></tr>
-                    <tr><td>Marketing</td><td id="summaryMarketing">₱0.00</td></tr>
-                    <tr class="grand-row"><td>Total Expenses</td><td id="summaryGrand">₱0.00</td></tr>
-                </tbody>
-            </table>
+                <table class="table table-bordered summary-table">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Expense Category</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Operation Expenses</td><td id="summaryOperation">₱0.00</td></tr>
+                        <tr><td>Payroll</td><td id="summarySalary">₱0.00</td></tr>
+                        <tr><td>Utilities / Monthly Dues</td><td id="summaryUtilities">₱0.00</td></tr>
+                        <tr><td>Installments</td><td id="summaryInstallments">₱0.00</td></tr>
+                        <tr><td>Accounting / Government Dues</td><td id="summaryGov">₱0.00</td></tr>
+                        <tr><td>Marketing</td><td id="summaryMarketing">₱0.00</td></tr>
+                        <tr class="grand-row"><td>Total Expenses</td><td id="summaryGrand">₱0.00</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
 
-    <div class="text-center mb-4">
-        <button type="button" class="btn btn-navy btn-lg export-pdf-btn" id="exportExpensesPdfBtn">Export to PDF</button>
+        <div class="text-center mb-4">
+            <button type="button" class="btn btn-navy btn-lg export-pdf-btn" id="exportExpensesPdfBtn">Export to PDF</button>
+        </div>
     </div>
 
 </div>
@@ -117,15 +130,9 @@
                 </div>
 
                 <div class="col-md-6 d-none" id="expenseModalCategoryWrapper">
-                    <label class="form-label fw-bold">Category</label>
+                    <label class="form-label fw-bold">Account Title</label>
                     <select id="expenseModalCategory" class="form-select">
-                        <option value="">Select Category</option>
-                        <option value="Supplies & Purchases">Supplies & Purchases</option>
-                        <option value="Transportation and Fuel">Transportation and Fuel</option>
-                        <option value="Repairs & Maintenance">Repairs & Maintenance</option>
-                        <option value="Postage & Delivery">Postage & Delivery</option>
-                        <option value="Assets & Capital Expenditures">Assets & Capital Expenditures</option>
-                        <option value="Others">Others</option>
+                        <option value="">Select Account Title</option>
                     </select>
                 </div>
 
@@ -183,6 +190,13 @@
                 <div class="col-12">
                     <label class="form-label fw-bold">Particular</label>
                     <input type="text" id="recurringParticular" class="form-control" placeholder="e.g. Electricity Bill">
+                </div>
+
+                <div class="col-md-6 d-none" id="recurringAccountTitleWrapper">
+                    <label class="form-label fw-bold">Account Title</label>
+                    <select id="recurringAccountTitle" class="form-select">
+                        <option value="">Select Account Title</option>
+                    </select>
                 </div>
 
                 <div class="col-md-6">

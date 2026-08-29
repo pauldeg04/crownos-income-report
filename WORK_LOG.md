@@ -4,6 +4,135 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-29 — Expenses Report: For Payment This Week widget
+
+**Requested by:** User — wanted a quick-glance view of upcoming payments
+for the week, placed in the header box next to the page title and Month
+picker so it's visible without opening any tab.
+
+- [expenses-report.html](expenses-report.html) /
+  [expenses-report.js](expenses-report.js) /
+  [expenses-report.css](expenses-report.css): added a "For Payment This
+  Week" box in the header's right column. It scans Utilities / Monthly
+  Dues and Installments (the only sections with real due dates) for
+  anything due in the current real-world calendar week (Sun–Sat, based on
+  today's date — independent of whichever report month is selected) that
+  isn't settled yet, and lists it with its status badge (Pending /
+  Approaching Due Date / Past Due) and amount. Refreshes automatically
+  alongside the existing totals via `updateTotals()`.
+- [manual.html](manual.html): Chapter 18 updated to mention the widget.
+
+---
+
+## 2026-08-29 — Payroll group archive, Petty Cash attachment, and tabbed report pages
+
+**Requested by:** User — six updates in one batch: (1) an Archive action
+on Generated Payroll Group so old runs can be tidied out of the active
+list without deleting them; (2) an optional proof-of-payment attachment
+on Petty Cash entries; (3)–(6) convert Expenses Report, Cash Flow,
+Loyalty Card Sales, and Product Sales from long stacked vertical tables
+into a tabbed layout like BIR Compliance Desk already has, for easier
+navigation — with Loyalty Card Sales and Product Sales additionally
+folding their standalone Previous Month Fund card into an editable field
+inside the Summary tab.
+
+- [payroll.html](payroll.html) / [payroll.js](payroll.js): added an
+  Archive button to the payroll group View modal, a new "Generated
+  Payroll Group Archive" section (new `crownPayrollGroupArchived`
+  storage key), and Restore to move a record back to the active list.
+  Delete and the Exported-status flip on PDF export now check which list
+  the group is actually in.
+- [petty-cash.html](petty-cash.html) / [petty-cash.js](petty-cash.js) /
+  [petty-cash.css](petty-cash.css): added an optional file attachment
+  (image or PDF) to the Add/Edit entry modal — same Firebase Storage
+  upload pattern as Payroll's payslip attachments (`{name, url, path}`
+  metadata only, file itself never touches localStorage). A 📎 link shows
+  on rows that have one; saving without one still works.
+- [expenses-report.html](expenses-report.html) /
+  [expenses-report.js](expenses-report.js) /
+  [expenses-report.css](expenses-report.css): the six category sections
+  are now tabs, plus a seventh Summary tab holding the totals table and
+  the Export to PDF button — export itself is unchanged, still producing
+  every category plus the summary in one PDF regardless of the active
+  tab. Panels stay permanently in the DOM and are shown/hidden by tab
+  click, so none of the existing render/update logic needed to change.
+- [cashflow.html](cashflow.html) / [cashflow.css](cashflow.css): Cash
+  Flow Activities and Money Counter converted into two tabs, same
+  show/hide approach.
+- [loyalty-card-summary.html](loyalty-card-summary.html) /
+  [loyalty-card-summary.js](loyalty-card-summary.js),
+  [product-sales-summary.html](product-sales-summary.html) /
+  [product-sales-summary.js](product-sales-summary.js),
+  [sales-summary-report.css](sales-summary-report.css): each converted
+  into three tabs (Sales, Expenses, Summary). The standalone Previous
+  Month Fund card is gone — its input now lives directly inside the
+  Summary tab's table, and `updateSummary()` no longer overwrites it
+  since it's a live field the user edits, not a computed display.
+- [manual.html](manual.html): Chapter 10 (Payroll), Chapter 18 (Expenses
+  Report / Cash Flow), and Chapter 19 (Loyalty Card Sales / Product Sales
+  Summary) updated to describe all of the above.
+
+---
+
+## 2026-08-29 — Default landing page, default branch, and BIR Compliance Desk default tab
+
+**Requested by:** User — opening the site was landing on the Daily
+Income Report (`index.html`, Firebase Hosting's default document)
+instead of the Dashboard; wanted Biñan set as the default branch on
+login (falling back to the account's own assigned branch if it doesn't
+have Biñan access); and wanted BIR Compliance Desk to open on its
+Dashboard tab instead of Purchases.
+
+- [firebase.json](firebase.json): added a hosting redirect from `/` to
+  `/home.html` — needs `firebase deploy` to actually take effect on the
+  live site.
+- [login.js](login.js): `finishLogin()` now sets the branch to "Crown
+  Head Spa Biñan" if the account has access to it, otherwise falls back
+  to the first branch the account is actually assigned to. Applies to
+  both the regular login form and the duty (Therapist/Receptionist)
+  quick-login, since both funnel through the same function.
+- [bir-compliance.js](bir-compliance.js): `currentView` default changed
+  from `'purchases'` to `'dashboard'`.
+- [manual.html](manual.html): Chapter 2 (Signing In) updated to describe
+  the new default branch/landing behavior.
+
+---
+
+## 2026-08-29 — Expenses Report account titles aligned with BIR Compliance Desk's chart of accounts
+
+**Requested by:** User — wanted Expenses Report's per-category
+"Category" field renamed to "Account Title" and matched to the BIR
+Compliance Desk's existing 20-item chart of accounts, so purchase data
+captured here maps cleanly to BIR reporting. Different sections got
+different treatment: Payroll, Utilities / Monthly Dues, and Accounting /
+Government Dues each got their own scoped dropdown; Installments and
+Marketing are stamped with a fixed title automatically (no user choice);
+Operation Expenses got the full 13-item list.
+
+- [bir-compliance.js](bir-compliance.js): corrected account title #20
+  from `'Purchases'` to `'Purchase'` to match the user's exact wording.
+- [expenses-report.js](expenses-report.js): renamed the `category` field
+  to `accountTitle` across all six category tables — the `expenseTables`
+  config gained `accountTitleOptions`/`accountTitleFixed` per table,
+  generalized the shared ledger modal and the recurring-item modal to
+  populate the right dropdown (or none) per table, updated table
+  rendering and the PDF export's column renderer, and added a load-time
+  migration (`entry.accountTitle = row.accountTitle || row.category ||
+  ""`) so existing saved entries keep displaying correctly.
+- [expenses-report.html](expenses-report.html): renamed the "Category"
+  field/label to "Account Title" and switched its options to be
+  populated dynamically from JS instead of a hardcoded list; added the
+  same field to the recurring-item modal (Utilities / Installments).
+- [petty-cash.js](petty-cash.js): liquidation was posting entries with
+  the old `category: "Supplies & Purchases"` field/value, which no
+  longer matched any Account Title option after the change above —
+  updated to `accountTitle: "Purchase"`.
+- [manual.html](manual.html): Chapter 17 (Petty Cash) and Chapter 18
+  (Expenses Report) updated to describe the Account Title system per
+  section.
+
+---
+
 ## 2026-08-28 — Income Summary: category column, month picker, per-branch split, and a presentable PDF
 
 **Requested by:** User — iterating on the Income Summary tab from the

@@ -33,8 +33,42 @@ document.addEventListener("DOMContentLoaded", function(){
     document.getElementById("exportPdfBtn")
         .addEventListener("click", exportPDF);
 
+    showProductTab(PRODUCT_VIEW_TABS[0][0]);
+
     refreshReport();
 });
+
+const PRODUCT_VIEW_TABS = [
+    ["sales", "Product Sales"],
+    ["expenses", "Product Sales Expenses"],
+    ["summary", "Summary"]
+];
+let currentProductTab = PRODUCT_VIEW_TABS[0][0];
+
+function renderProductViewTabs(){
+    let nav = document.getElementById("productViewTabs");
+    nav.innerHTML = "";
+
+    PRODUCT_VIEW_TABS.forEach(([id, label]) => {
+        let b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        b.setAttribute("aria-selected", String(currentProductTab === id));
+        b.textContent = label;
+        b.addEventListener("click", () => showProductTab(id));
+        nav.appendChild(b);
+    });
+}
+
+function showProductTab(id){
+    currentProductTab = id;
+
+    document.querySelectorAll("[data-tab-panel]").forEach(panel => {
+        panel.classList.toggle("d-none", panel.dataset.tabPanel !== id);
+    });
+
+    renderProductViewTabs();
+}
 
 function setCurrentMonth(){
     const monthInput = document.getElementById("month");
@@ -414,7 +448,6 @@ function updateSummary(){
 
     const net = currentPrevFund + currentSalesTotal - expenseTotal;
 
-    document.getElementById("summaryPrevFund").textContent = peso(currentPrevFund);
     document.getElementById("summarySales").textContent = peso(currentSalesTotal);
     document.getElementById("summaryExpenses").textContent = peso(expenseTotal);
     document.getElementById("summaryNet").textContent = peso(net);

@@ -10,6 +10,14 @@
     overflow:hidden;
 }
 
+/* ---------- View tabs (mirrors bir-compliance.css) ---------- */
+.tabs{ display:flex; gap:2px; background:var(--surface-soft); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:2px; overflow-x:auto; margin-bottom:16px; }
+.tabs button,
+.tabs [role="tab"]{ font:inherit; font-size:12.5px; font-weight:700; color:var(--muted); background:none; border:none; padding:7px 12px; border-radius:6px; cursor:pointer; white-space:nowrap; }
+.tabs [role="tab"][aria-selected="true"]{ background:#fff; color:var(--navy); box-shadow:var(--shadow-soft); }
+
+.summary-fund-input{ max-width:180px; }
+
 /* Unified section header — navy band with a gold accent, used for both
    the read-only sales table and the editable expense ledger. */
 .expense-header{

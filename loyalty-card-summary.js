@@ -32,8 +32,42 @@ document.addEventListener("DOMContentLoaded", function(){
     document.getElementById("exportPdfBtn")
         .addEventListener("click", exportPDF);
 
+    showLoyaltyTab(LOYALTY_VIEW_TABS[0][0]);
+
     refreshReport();
 });
+
+const LOYALTY_VIEW_TABS = [
+    ["sales", "Loyalty Card Sales"],
+    ["expenses", "Loyalty Card Expenses"],
+    ["summary", "Summary"]
+];
+let currentLoyaltyTab = LOYALTY_VIEW_TABS[0][0];
+
+function renderLoyaltyViewTabs(){
+    let nav = document.getElementById("loyaltyViewTabs");
+    nav.innerHTML = "";
+
+    LOYALTY_VIEW_TABS.forEach(([id, label]) => {
+        let b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        b.setAttribute("aria-selected", String(currentLoyaltyTab === id));
+        b.textContent = label;
+        b.addEventListener("click", () => showLoyaltyTab(id));
+        nav.appendChild(b);
+    });
+}
+
+function showLoyaltyTab(id){
+    currentLoyaltyTab = id;
+
+    document.querySelectorAll("[data-tab-panel]").forEach(panel => {
+        panel.classList.toggle("d-none", panel.dataset.tabPanel !== id);
+    });
+
+    renderLoyaltyViewTabs();
+}
 
 function setCurrentMonth(){
     const monthInput = document.getElementById("month");
@@ -394,7 +428,6 @@ function updateSummary(){
 
     const net = currentPrevFund + currentSalesTotal - expenseTotal;
 
-    document.getElementById("summaryPrevFund").textContent = peso(currentPrevFund);
     document.getElementById("summarySales").textContent = peso(currentSalesTotal);
     document.getElementById("summaryExpenses").textContent = peso(expenseTotal);
     document.getElementById("summaryNet").textContent = peso(net);

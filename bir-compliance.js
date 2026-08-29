@@ -26,7 +26,7 @@
     {id:17, name:'Miscellaneous'},
     {id:18, name:'Postage'},
     {id:19, name:'Fixed Asset'},
-    {id:20, name:'Purchases'}
+    {id:20, name:'Purchase'}
   ];
   const ACCOUNT_TITLE_LABEL = Object.fromEntries(ACCOUNT_TITLES.map(t => [t.id, t.name]));
 
@@ -297,7 +297,7 @@
   // TOP-LEVEL TABS: Dashboard / Income Summary / Purchases
   // ============================================================
   const TOP_TABS = [['dashboard','Dashboard'], ['income','Income Summary'], ['purchases','Purchases']];
-  let currentView = 'purchases';
+  let currentView = 'dashboard';
 
   function renderViewTabs(){
     const nav = document.getElementById('viewTabs');

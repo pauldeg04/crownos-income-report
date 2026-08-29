@@ -24,6 +24,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
     <script src="firebase-init.js"></script>
     <script src="pwa-register.js"></script>
     <script src="client-store.js"></script>
@@ -209,6 +210,18 @@
                 <div class="col-md-4">
                     <label class="form-label fw-bold">Total Cost</label>
                     <div class="petty-cash-total-readout" id="pettyCashModalTotalReadout">₱0.00</div>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold">Proof of Payment (optional)</label>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="pettyCashAttachmentPickBtn">Choose File</button>
+                        <span class="text-muted small" id="pettyCashAttachmentName">No file chosen</span>
+                        <a href="#" target="_blank" rel="noopener" class="d-none" id="pettyCashAttachmentLink">View current</a>
+                        <button type="button" class="btn btn-sm btn-outline-danger d-none" id="pettyCashAttachmentRemoveBtn">Remove</button>
+                    </div>
+                    <input type="file" id="pettyCashAttachmentInput" accept="image/*,.pdf" class="d-none">
+                    <img id="pettyCashAttachmentPreview" class="d-none petty-cash-attachment-preview" alt="Attachment preview">
                 </div>
             </div>
         </div>

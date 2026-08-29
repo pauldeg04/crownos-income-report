@@ -153,6 +153,35 @@
         </div>
     </div>
 
+    <div class="card shadow-sm border-0 mb-4 d-none" id="payrollGroupArchivedCard">
+        <div class="card-body">
+
+            <h3 class="fw-bold mb-1">Generated Payroll Group Archive</h3>
+            <small class="text-muted d-block mb-3">
+                Payroll groups archived from the list above. Tap View to see details or Restore to bring it back.
+            </small>
+
+            <div class="table-responsive">
+                <table class="table payroll-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Payroll Group</th>
+                            <th>Payroll Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payrollGroupArchivedBody"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state d-none" id="payrollGroupArchivedEmptyState">
+                No archived payroll groups yet.
+            </div>
+
+        </div>
+    </div>
+
     <div class="card shadow-sm border-0 mb-4 d-none" id="generatedPayrollCard">
         <div class="card-body">
 
@@ -367,6 +396,14 @@
             </button>
 
             <div class="payroll-modal-footer-right">
+                <button type="button" class="btn btn-outline-warning d-none" id="archivePayrollGroupBtn">
+                    Archive
+                </button>
+
+                <button type="button" class="btn btn-outline-warning d-none" id="restorePayrollGroupBtn">
+                    Restore
+                </button>
+
                 <button type="button" class="btn btn-outline-primary" id="exportPayrollSummaryPdfBtn">
                     🖨 Export to PDF
                 </button>

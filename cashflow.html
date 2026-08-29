@@ -108,71 +108,77 @@
         </div>
     </div>
 
-    <div class="card shadow-sm border-0 mb-4 cashflow-card">
-        <div class="card-body">
+    <div class="tabs" role="tablist" id="cashflowViewTabs"></div>
 
-            <div class="cashflow-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h3 class="fw-bold mb-0">Cash Flow Activities</h3>
+    <div class="tab-panel" data-tab-panel="cashflow">
+        <div class="card shadow-sm border-0 mb-4 cashflow-card">
+            <div class="card-body">
+
+                <div class="cashflow-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h3 class="fw-bold mb-0">Cash Flow Activities</h3>
+                </div>
+
+                <div class="cashflow-summary-banner">
+                    <span>Total Cash Flow</span>
+                    <strong id="cashflowGrandTotal">₱0.00</strong>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover cashflow-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Activity</th>
+                                <th>Cash</th>
+                                <th>Gcash</th>
+                                <th>BDO</th>
+                                <th>RCBC</th>
+                                <th>Remarks</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cashflowTotalsBody"></tbody>
+                        <tbody id="cashflowBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-end mt-3 cashflow-add-entry-row">
+                    <button type="button" class="btn btn-sm add-particular-btn" id="addCashflowEntryBtn">Add Entry</button>
+                </div>
+
             </div>
-
-            <div class="cashflow-summary-banner">
-                <span>Total Cash Flow</span>
-                <strong id="cashflowGrandTotal">₱0.00</strong>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover cashflow-table">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Date</th>
-                            <th>Activity</th>
-                            <th>Cash</th>
-                            <th>Gcash</th>
-                            <th>BDO</th>
-                            <th>RCBC</th>
-                            <th>Remarks</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="cashflowTotalsBody"></tbody>
-                    <tbody id="cashflowBody"></tbody>
-                </table>
-            </div>
-
-            <div class="d-flex justify-content-end mt-3 cashflow-add-entry-row">
-                <button type="button" class="btn btn-sm add-particular-btn" id="addCashflowEntryBtn">Add Entry</button>
-            </div>
-
         </div>
     </div>
 
-    <div class="card shadow-sm border-0 mb-4 cashflow-card">
-        <div class="card-body">
+    <div class="tab-panel d-none" data-tab-panel="moneyCounter">
+        <div class="card shadow-sm border-0 mb-4 cashflow-card">
+            <div class="card-body">
 
-            <div class="cashflow-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h3 class="fw-bold mb-0">Money Counter</h3>
-                <button type="button" class="btn btn-sm add-particular-btn" id="resetMoneyCounterBtn">Reset</button>
+                <div class="cashflow-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h3 class="fw-bold mb-0">Money Counter</h3>
+                    <button type="button" class="btn btn-sm add-particular-btn" id="resetMoneyCounterBtn">Reset</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover cashflow-table" id="moneyCounterTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Money Counter</th>
+                                <th style="width:140px;">Count</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="moneyCounterBody"></tbody>
+                        <tfoot>
+                            <tr class="totals-row">
+                                <td colspan="2" class="text-end">Grand Total</td>
+                                <td class="amount-cell" id="moneyCounterGrandTotal">₱0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
             </div>
-
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover cashflow-table" id="moneyCounterTable">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Money Counter</th>
-                            <th style="width:140px;">Count</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="moneyCounterBody"></tbody>
-                    <tfoot>
-                        <tr class="totals-row">
-                            <td colspan="2" class="text-end">Grand Total</td>
-                            <td class="amount-cell" id="moneyCounterGrandTotal">₱0.00</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-
         </div>
     </div>
 
@@ -328,6 +334,40 @@
     });
 
     render();
+})();
+</script>
+<script>
+(function(){
+    var CASHFLOW_VIEW_TABS = [["cashflow", "Cashflow"], ["moneyCounter", "Money Counter"]];
+    var currentCashflowTab = CASHFLOW_VIEW_TABS[0][0];
+
+    function renderCashflowViewTabs(){
+        var nav = document.getElementById("cashflowViewTabs");
+        nav.innerHTML = "";
+
+        CASHFLOW_VIEW_TABS.forEach(function(entry){
+            var id = entry[0], label = entry[1];
+            var b = document.createElement("button");
+            b.type = "button";
+            b.setAttribute("role", "tab");
+            b.setAttribute("aria-selected", String(currentCashflowTab === id));
+            b.textContent = label;
+            b.addEventListener("click", function(){ showCashflowTab(id); });
+            nav.appendChild(b);
+        });
+    }
+
+    function showCashflowTab(id){
+        currentCashflowTab = id;
+
+        document.querySelectorAll("[data-tab-panel]").forEach(function(panel){
+            panel.classList.toggle("d-none", panel.dataset.tabPanel !== id);
+        });
+
+        renderCashflowViewTabs();
+    }
+
+    showCashflowTab(CASHFLOW_VIEW_TABS[0][0]);
 })();
 </script>
 </body>

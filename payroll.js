@@ -30,6 +30,7 @@ const PAYROLL_REFERENCE_KEY = "crownPayrollReferences";
 const PAYROLL_ATTACHMENT_KEY = "crownPayrollAttachments";
 const PAYROLL_ACK_KEY = "crownPayrollAcknowledgements";
 const PAYROLL_GROUP_ARCHIVE_KEY = "crownPayrollGroupArchive";
+const PAYROLL_GROUP_ARCHIVED_KEY = "crownPayrollGroupArchived";
 const PAYROLL_ATTENDANCE_KEY = "crownAttendanceLog";
 const PAYROLL_DUTY_LOG_KEY = "crownDutyLog";
 const PAYROLL_SALES_PREFIX = "crownDailySales_";
@@ -187,6 +188,12 @@ document.addEventListener("DOMContentLoaded", function(){
     document.getElementById("deletePayrollGroupBtn")
         .addEventListener("click", deletePayrollGroupArchiveEntry);
 
+    document.getElementById("archivePayrollGroupBtn")
+        .addEventListener("click", archivePayrollGroupEntry);
+
+    document.getElementById("restorePayrollGroupBtn")
+        .addEventListener("click", restorePayrollGroupEntry);
+
     document.getElementById("payrollGroupViewBackdrop")
         .addEventListener("click", function(event){
             if(event.target === this){
@@ -206,6 +213,7 @@ function initializeAdminView(){
     document.getElementById("periodInfo").classList.remove("d-none");
     document.getElementById("payrollSummaryCard").classList.remove("d-none");
     document.getElementById("payrollGroupArchiveCard").classList.remove("d-none");
+    document.getElementById("payrollGroupArchivedCard").classList.remove("d-none");
     document.getElementById("generatedPayrollCard").classList.remove("d-none");
     document.getElementById("payslipArchiveCard").classList.remove("d-none");
 
@@ -214,6 +222,7 @@ function initializeAdminView(){
     populateRateSetupDropdown();
     renderPayroll();
     renderPayrollGroupArchive();
+    renderPayrollGroupArchived();
     renderGeneratedPayroll();
     renderPayslipArchive();
 
@@ -273,6 +282,10 @@ function initializeAdminView(){
 
         if(keys.includes(PAYROLL_GROUP_ARCHIVE_KEY)){
             renderPayrollGroupArchive();
+        }
+
+        if(keys.includes(PAYROLL_GROUP_ARCHIVED_KEY)){
+            renderPayrollGroupArchived();
         }
 
         if(
@@ -1649,7 +1662,7 @@ function renderPayrollGroupArchive(){
 /* Recomputed live (not a frozen snapshot) so the numbers always reflect
    the current rates/attendance/adjustments — consistent with how every
    other payroll view in this file works. */
-function openPayrollGroupView(groupKey, period){
+function openPayrollGroupView(groupKey, period, fromArchived){
     const groupLabel =
         groupKey === ADMIN_GROUP_KEY ? "Admin Staff" : groupKey;
 
@@ -1664,7 +1677,8 @@ function openPayrollGroupView(groupKey, period){
         groupKey: groupKey,
         period: period,
         groupLabel: groupLabel,
-        staff: staff
+        staff: staff,
+        archived: !!fromArchived
     };
 
     document.getElementById("payrollGroupViewTitle").textContent =
@@ -1681,6 +1695,9 @@ function openPayrollGroupView(groupKey, period){
         period,
         document.getElementById("payrollGroupViewTotalSalary")
     );
+
+    document.getElementById("archivePayrollGroupBtn").classList.toggle("d-none", !!fromArchived);
+    document.getElementById("restorePayrollGroupBtn").classList.toggle("d-none", !fromArchived);
 
     document.getElementById("payrollGroupViewBackdrop").classList.remove("d-none");
 }
@@ -1699,16 +1716,180 @@ function deletePayrollGroupArchiveEntry(){
         return;
     }
 
+    const key =
+        groupArchiveKey(currentPayrollGroupViewContext.groupKey, currentPayrollGroupViewContext.period);
+
+    if(currentPayrollGroupViewContext.archived){
+        const archived = getArchivedGroupArchive();
+        delete archived[key];
+        saveArchivedGroupArchive(archived);
+        renderPayrollGroupArchived();
+    }else{
+        const archive = getGroupArchive();
+        delete archive[key];
+        saveGroupArchive(archive);
+        renderPayrollGroupArchive();
+    }
+
+    closePayrollGroupView();
+}
+
+/* Moves a generated payroll group out of the active "Generated Payroll
+   Group" list into the separate "Generated Payroll Group Archive" list —
+   a distinct action from Delete above, which removes the record entirely. */
+function archivePayrollGroupEntry(){
+    if(!currentPayrollGroupViewContext || currentPayrollGroupViewContext.archived){
+        return;
+    }
+
+    const key =
+        groupArchiveKey(currentPayrollGroupViewContext.groupKey, currentPayrollGroupViewContext.period);
+
     const archive =
         getGroupArchive();
 
-    delete archive[
-        groupArchiveKey(currentPayrollGroupViewContext.groupKey, currentPayrollGroupViewContext.period)
-    ];
+    const record = archive[key];
 
+    if(!record){
+        return;
+    }
+
+    delete archive[key];
     saveGroupArchive(archive);
+
+    const archived =
+        getArchivedGroupArchive();
+
+    archived[key] = Object.assign({}, record, { archivedAt: Date.now() });
+    saveArchivedGroupArchive(archived);
+
     renderPayrollGroupArchive();
+    renderPayrollGroupArchived();
     closePayrollGroupView();
+}
+
+/* Moves an archived group back into the active "Generated Payroll Group"
+   list — the reverse of archivePayrollGroupEntry() above. */
+function restorePayrollGroupEntry(){
+    if(!currentPayrollGroupViewContext || !currentPayrollGroupViewContext.archived){
+        return;
+    }
+
+    const key =
+        groupArchiveKey(currentPayrollGroupViewContext.groupKey, currentPayrollGroupViewContext.period);
+
+    const archived =
+        getArchivedGroupArchive();
+
+    const record = archived[key];
+
+    if(!record){
+        return;
+    }
+
+    delete archived[key];
+    saveArchivedGroupArchive(archived);
+
+    const archive =
+        getGroupArchive();
+
+    archive[key] = { status: record.status, createdAt: record.createdAt };
+    saveGroupArchive(archive);
+
+    renderPayrollGroupArchive();
+    renderPayrollGroupArchived();
+    closePayrollGroupView();
+}
+
+function getArchivedGroupArchive(){
+    try{
+        const raw =
+            localStorage.getItem(PAYROLL_GROUP_ARCHIVED_KEY);
+
+        const parsed =
+            raw ? JSON.parse(raw) : {};
+
+        return (parsed && typeof parsed === "object") ? parsed : {};
+    }catch(error){
+        console.error("Unable to load payroll group archived list:", error);
+        return {};
+    }
+}
+
+function saveArchivedGroupArchive(archived){
+    localStorage.setItem(
+        PAYROLL_GROUP_ARCHIVED_KEY,
+        JSON.stringify(archived)
+    );
+}
+
+function renderPayrollGroupArchived(){
+    const archived =
+        getArchivedGroupArchive();
+
+    const rows =
+        Object.keys(archived)
+            .map(function(key){
+                const parts = key.split("::");
+
+                return {
+                    groupKey: parts[0],
+                    start: parts[1],
+                    end: parts[2],
+                    status: archived[key].status === "Exported" ? "Exported" : "Not Exported",
+                    createdAt: archived[key].createdAt || 0
+                };
+            })
+            .sort(function(a, b){
+                return b.createdAt - a.createdAt;
+            });
+
+    const tbody =
+        document.getElementById("payrollGroupArchivedBody");
+
+    tbody.innerHTML = "";
+
+    document.getElementById("payrollGroupArchivedEmptyState")
+        .classList.toggle("d-none", rows.length > 0);
+
+    rows.forEach(function(row){
+        const groupLabel =
+            row.groupKey === ADMIN_GROUP_KEY ? "Admin Staff" : row.groupKey;
+
+        const period = {
+            start: row.start,
+            end: row.end,
+            label: formatDateLabel(row.start) + " – " + formatDateLabel(row.end)
+        };
+
+        const statusLabel =
+            row.status === "Exported" ? "Exported to PDF" : "Not yet Exported to PDF";
+
+        const tr =
+            document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${escapeHtml(groupLabel)}</td>
+            <td>${period.label}</td>
+            <td>
+                <span class="payroll-status-badge payroll-status-${row.status === "Exported" ? "paid" : "pending"}">
+                    ${statusLabel}
+                </span>
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-primary view-group-btn">
+                    View
+                </button>
+            </td>
+        `;
+
+        tr.querySelector(".view-group-btn")
+            .addEventListener("click", function(){
+                openPayrollGroupView(row.groupKey, period, true);
+            });
+
+        tbody.appendChild(tr);
+    });
 }
 
 /* ---------- Generated Payroll (waiting list) + Payroll Archive ---------- */
@@ -2278,16 +2459,23 @@ function exportPayrollSummaryPdf(){
             `Crown Head Spa - Payroll Summary - ${context.groupLabel} - ${context.period.label}.pdf`
         );
 
-        const archive =
-            getGroupArchive();
-
         const key =
             groupArchiveKey(context.groupKey, context.period);
 
-        if(archive[key]){
-            archive[key].status = "Exported";
-            saveGroupArchive(archive);
-            renderPayrollGroupArchive();
+        if(context.archived){
+            const archived = getArchivedGroupArchive();
+            if(archived[key]){
+                archived[key].status = "Exported";
+                saveArchivedGroupArchive(archived);
+                renderPayrollGroupArchived();
+            }
+        }else{
+            const archive = getGroupArchive();
+            if(archive[key]){
+                archive[key].status = "Exported";
+                saveGroupArchive(archive);
+                renderPayrollGroupArchive();
+            }
         }
     }finally{
         button.disabled = false;

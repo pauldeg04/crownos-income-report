@@ -404,7 +404,10 @@
     <li>Open CrownOS. The <strong>Welcome Back</strong> login screen appears first.</li>
     <li>Enter your <strong>Account</strong> — the username or email your Admin issued you.</li>
     <li>Enter your <strong>Password</strong> and press <span class="ui">Login</span>.</li>
-    <li>Once inside, choose your <strong>Branch</strong> from the toolbar at the top.</li>
+    <li>You land on the Dashboard with a <strong>Branch</strong> already
+      selected — Crown Head Spa Biñan by default, or your own assigned
+      branch if your account doesn't have access to Biñan. Switch branches
+      anytime from the toolbar at the top.</li>
   </ol>
 
   <p>
@@ -1350,7 +1353,7 @@ Meal Allowance     none for these roles</div>
   </ol>
 
   <p>
-    There are three lists besides the live Payroll Group table:
+    There are four lists besides the live Payroll Group table:
     <strong>Generated Payroll Group</strong> (closed payroll runs — same as
     before, just renamed), <strong>Generated Payroll</strong> (payslips
     waiting to be emailed and archived), <strong>Payroll Archive</strong>
@@ -1358,6 +1361,18 @@ Meal Allowance     none for these roles</div>
     staff member views their own payslip — including the proof of payment
     once it's Generated or Archived, and an <span class="ui">Acknowledge
     Payslip</span> button to confirm they've received it.
+  </p>
+
+  <p>
+    Open a row in <strong>Generated Payroll Group</strong> and click
+    <span class="ui">View</span> to see its staff breakdown. From there,
+    <span class="ui">Archive</span> moves that group out of the list into a
+    separate <strong>Generated Payroll Group Archive</strong> section — use
+    it to tidy up old runs without deleting them. An archived group's View
+    window offers <span class="ui">Restore</span> instead, which moves it
+    back. <span class="ui">Delete</span> is still there in both places, and
+    still permanently removes the record (it doesn't change any staff
+    member's Paid/Pending status).
   </p>
 
   <div class="warn">
@@ -1925,7 +1940,7 @@ Branch receives    →  it is added to the branch's Available Stock</div>
 
   <ol class="steps">
     <li><strong>Replenish</strong> — enter the release date and amount. This opens a new tracking table. (The button is hidden while a fund is still open.)</li>
-    <li><strong>Add Entry</strong> — one line per expense: Date, Particular, Remarks, QTY, and Unit Cost. Total Cost is computed for you, and <strong>Remaining</strong> updates immediately.</li>
+    <li><strong>Add Entry</strong> — one line per expense: Date, Particular, Remarks, QTY, and Unit Cost. Total Cost is computed for you, and <strong>Remaining</strong> updates immediately. A <strong>Proof of Payment</strong> attachment (photo or PDF receipt) is optional — attach one if you have it, or leave it and save anyway.</li>
     <li><strong>Liquidate</strong> — when the fund is spent or it is time to turn it in. You see a Released, Spent, and Remaining summary, with a space for remarks.</li>
     <li><strong>History</strong> — every closed fund is filed here with its full transaction detail.</li>
   </ol>
@@ -1934,8 +1949,8 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     <span class="callout-label">What Liquidate does</span>
     <p>
       Confirming Liquidate <strong>automatically posts every transaction into
-      the Expenses Report</strong> as Operation Expenses — Category
-      <strong>Supplies &amp; Purchases</strong>. There is no need to retype them. The
+      the Expenses Report</strong> as Operation Expenses — Account Title
+      <strong>Purchase</strong>. There is no need to retype them. The
       entries use the <strong>liquidation date</strong> rather than each
       expense's own date, because they are submitted as one batch.
     </p>
@@ -1957,7 +1972,23 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   <h3>Expenses Report</h3>
   <ul class="roleline"><li><span class="pill pill-role">Admin only</span></li></ul>
 
-  <p>The Summary Table has six parts:</p>
+  <p>
+    A <strong>For Payment This Week</strong> box sits in the header, next
+    to the Month picker — it lists any Utilities / Monthly Dues or
+    Installments item due in the current calendar week that isn't settled
+    yet, with its status and amount, so upcoming bills are visible without
+    opening either tab.
+  </p>
+
+  <p>
+    The report itself is organized as tabs, like the BIR Compliance
+    Desk — click a tab to switch, only one section shows at a time. The
+    six category ledgers below are tabs, plus a seventh
+    <strong>Summary</strong> tab holding the totals table and the
+    <span class="ui">Export to PDF</span> button — export still produces
+    every category plus the summary in one PDF no matter which tab is
+    open when you click it.
+  </p>
 
   <div class="table-wrap">
     <table>
@@ -1965,7 +1996,7 @@ Branch receives    →  it is added to the branch's Available Stock</div>
         <tr><th>Section</th><th>What it holds</th></tr>
       </thead>
       <tbody>
-        <tr><td><strong>Operation Expenses</strong></td><td>Day-to-day operating costs. Liquidated Petty Cash lands here, under category <strong>Supplies &amp; Purchases</strong>.</td></tr>
+        <tr><td><strong>Operation Expenses</strong></td><td>Day-to-day operating costs. Liquidated Petty Cash lands here, under Account Title <strong>Purchase</strong>.</td></tr>
         <tr><td><strong>Payroll</strong></td><td>Wage costs for the month.</td></tr>
         <tr><td><strong>Utilities / Monthly Dues</strong></td><td>Electricity, water, internet, rent, and other recurring bills — see below, this is a recurring tracker rather than a plain ledger.</td></tr>
         <tr><td><strong>Installments</strong></td><td>Recurring loan or installment payments — same tracker behavior as Utilities / Monthly Dues.</td></tr>
@@ -1976,11 +2007,26 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   </div>
 
   <p>
-    Operation Expenses categories are <strong>Supplies &amp; Purchases</strong>,
-    <strong>Transportation and Fuel</strong>, <strong>Repairs &amp;
-    Maintenance</strong>, <strong>Postage &amp; Delivery</strong>,
-    <strong>Assets &amp; Capital Expenditures</strong>, and <strong>Others</strong>.
+    Most sections ask for an <strong>Account Title</strong> — the same
+    BIR-aligned chart of accounts used on the
+    <a href="#ch-bir-compliance">BIR Compliance Desk</a>:
   </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Section</th><th>Account Title options</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Operation Expenses</strong></td><td>Communication, Supplies, Fuel and Oil, Transportation and Travel, Representation, Repairs and Maintenance, Professional Fees, Insurance, Donation, Miscellaneous, Postage, Fixed Asset, Purchase — a dropdown, pick one.</td></tr>
+        <tr><td><strong>Payroll</strong></td><td>Salaries and Allowances or Staff Benefits and Incentives — a dropdown.</td></tr>
+        <tr><td><strong>Utilities / Monthly Dues</strong></td><td>Light and Water, Rental Expense, or Communication — a dropdown.</td></tr>
+        <tr><td><strong>Accounting / Government Dues</strong></td><td>SSS, PHIC and HDMF Premiums or Taxes and Licenses — a dropdown.</td></tr>
+        <tr><td><strong>Installments</strong></td><td>Always <strong>Repairs and Maintenance</strong> — set automatically, no dropdown.</td></tr>
+        <tr><td><strong>Marketing</strong></td><td>Always <strong>Advertising</strong> — set automatically, no dropdown.</td></tr>
+      </tbody>
+    </table>
+  </div>
 
   <p>
     On the plain-ledger tables (Operation Expenses, Payroll, Accounting /
@@ -2031,6 +2077,11 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   <ul class="roleline"><li><span class="pill pill-role">Admin only — never grantable</span></li></ul>
 
   <p>
+    Cash Flow Activities and Money Counter are two tabs on this page —
+    click between them; only one shows at a time.
+  </p>
+
+  <p>
     This tracks the actual movement of money across each holding:
     <strong>Cash</strong>, <strong>Gcash</strong>, <strong>BDO</strong>, and
     <strong>RCBC</strong>. Each entry carries a Date, Activity, an amount per
@@ -2066,8 +2117,12 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   <p>
     A monthly report covering Loyalty Card sales alone: Date, Clients, Loyalty
     Card Sale, and Total. It has its own <strong>Loyalty Card Expenses</strong>
-    (Date, Particular, Amount, Remarks) and a <strong>Previous Month
-    Fund</strong> so you can see what carried over.
+    (Date, Particular, Amount, Remarks). The page is organized as three
+    tabs — Loyalty Card Sales, Loyalty Card Expenses, and Summary.
+    <strong>Previous Month Fund</strong> is an editable amount right inside
+    the Summary tab's table (no separate section for it) — type the
+    carried-over amount there and it folds into the Net total. Export to
+    PDF also lives in the Summary tab.
   </p>
 
   <h3>Product Sales Summary</h3>
@@ -2075,9 +2130,11 @@ Branch receives    →  it is added to the branch's Available Stock</div>
 
   <p>
     The same layout, but for retail products: Date, Clients, Product, Qty, Unit
-    Cost, and Total — with <strong>Product Sales Expenses</strong>,
-    <strong>Previous Month Fund</strong>, and a Summary. This is where you check
-    whether the retail side is profitable on its own, separately from services.
+    Cost, and Total — with <strong>Product Sales Expenses</strong> and a
+    Summary, in the same three-tab arrangement (and the same editable
+    Previous Month Fund inside Summary) as Loyalty Card Sales above. This
+    is where you check whether the retail side is profitable on its own,
+    separately from services.
   </p>
 </section>
 
@@ -2794,12 +2851,13 @@ Branch receives    →  it is added to the branch's Available Stock</div>
         <dd>Pick a month (January–March are one combined ledger; April
           onward split Biñan / Calamba). Add, edit, or delete a
           transaction — Date, Account Title (one of the 20 standard
-          categories), Particulars, TIN, Invoice Amount, an optional
-          Mark-as-Non-VAT checkbox, and an optional receipt/attachment
-          file. VAT, Non-VAT, and Input Tax are computed automatically
-          (Invoice ÷ 1.12 for the VAT base, ×0.12 for Input Tax, unless
-          marked Non-VAT). A Monthly Summary below breaks totals down by
-          all 20 account titles.</dd>
+          categories — the same chart of accounts used on
+          <a href="#ch-reports">Expenses Report</a>), Particulars, TIN,
+          Invoice Amount, an optional Mark-as-Non-VAT checkbox, and an
+          optional receipt/attachment file. VAT, Non-VAT, and Input Tax
+          are computed automatically (Invoice ÷ 1.12 for the VAT base,
+          ×0.12 for Input Tax, unless marked Non-VAT). A Monthly Summary
+          below breaks totals down by all 20 account titles.</dd>
         <dt>Quarterly Summary</dt>
         <dd>Month-by-month totals for the selected quarter, a per-branch
           20-category summary once branches exist, and a combined

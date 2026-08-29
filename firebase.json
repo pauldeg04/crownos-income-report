@@ -29,6 +29,13 @@
             "CrownOS_Full_Backup*.json"
         ],
         "cleanUrls": false,
+        "redirects": [
+            {
+                "source": "/",
+                "destination": "/home.html",
+                "type": 302
+            }
+        ],
         "headers": [
             {
                 "source": "**/*.@(js|css)",

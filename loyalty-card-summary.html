@@ -69,107 +69,105 @@
         </div>
     </div>
 
-    <div class="card shadow-sm border-0 mb-4 expense-card">
-        <div class="card-body">
-            <div class="expense-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h3 class="fw-bold mb-0">Loyalty Card Sales</h3>
-            </div>
+    <div class="tabs" role="tablist" id="loyaltyViewTabs"></div>
 
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover expense-table">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Date</th>
-                            <th>Clients</th>
-                            <th>Loyalty Card Sale</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="loyaltySalesBody"></tbody>
-                </table>
-            </div>
-
-            <div class="d-flex justify-content-end align-items-center mt-3 border-top pt-3">
-                <div class="table-total">
-                    Loyalty Card Sales Total:
-                    <span id="loyaltySalesTotal">₱0.00</span>
+    <div class="tab-panel" data-tab-panel="sales">
+        <div class="card shadow-sm border-0 mb-4 expense-card">
+            <div class="card-body">
+                <div class="expense-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h3 class="fw-bold mb-0">Loyalty Card Sales</h3>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="card shadow-sm border-0 mb-4 expense-card">
-        <div class="card-body">
-            <div class="expense-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h3 class="fw-bold mb-0">Loyalty Card Expenses</h3>
-                <button type="button" class="btn btn-sm add-particular-btn" onclick="openExpenseModal(null)">+ Add Particular</button>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover expense-table">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Date</th>
-                            <th>Particular</th>
-                            <th>Amount</th>
-                            <th>Remarks</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="loyaltyExpenseBody"></tbody>
-                </table>
-            </div>
-
-            <div class="d-flex justify-content-end align-items-center mt-3 border-top pt-3">
-                <div class="table-total">
-                    Loyalty Card Expenses Total:
-                    <span id="loyaltyExpenseTotal">₱0.00</span>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover expense-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Clients</th>
+                                <th>Loyalty Card Sale</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="loyaltySalesBody"></tbody>
+                    </table>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="card shadow-sm border-0 mb-4 expense-card">
-        <div class="card-body">
-            <div class="expense-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h3 class="fw-bold mb-0">Previous Month Fund</h3>
-            </div>
-
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">Amount</label>
-                    <div class="input-group">
-                        <span class="input-group-text">₱</span>
-                        <input type="number" id="prevMonthFundInput" class="form-control" placeholder="0.00" min="0" step="0.01">
+                <div class="d-flex justify-content-end align-items-center mt-3 border-top pt-3">
+                    <div class="table-total">
+                        Loyalty Card Sales Total:
+                        <span id="loyaltySalesTotal">₱0.00</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
-            <h3 class="fw-bold">Summary</h3>
+    <div class="tab-panel d-none" data-tab-panel="expenses">
+        <div class="card shadow-sm border-0 mb-4 expense-card">
+            <div class="card-body">
+                <div class="expense-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h3 class="fw-bold mb-0">Loyalty Card Expenses</h3>
+                    <button type="button" class="btn btn-sm add-particular-btn" onclick="openExpenseModal(null)">+ Add Particular</button>
+                </div>
 
-            <table class="table table-bordered summary-table">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Category</th>
-                        <th>Total Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>Previous Month Fund</td><td id="summaryPrevFund">₱0.00</td></tr>
-                    <tr><td>Loyalty Card Sales</td><td id="summarySales">₱0.00</td></tr>
-                    <tr><td>Less: Loyalty Card Expenses</td><td id="summaryExpenses">₱0.00</td></tr>
-                    <tr class="grand-row" id="summaryNetRow"><td>Loyalty Card Sales Less Expenses</td><td id="summaryNet">₱0.00</td></tr>
-                </tbody>
-            </table>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover expense-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Particular</th>
+                                <th>Amount</th>
+                                <th>Remarks</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="loyaltyExpenseBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-end align-items-center mt-3 border-top pt-3">
+                    <div class="table-total">
+                        Loyalty Card Expenses Total:
+                        <span id="loyaltyExpenseTotal">₱0.00</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="text-center mb-4">
-        <button type="button" class="btn btn-navy btn-lg export-pdf-btn" id="exportPdfBtn">Export to PDF</button>
+    <div class="tab-panel d-none" data-tab-panel="summary">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <h3 class="fw-bold">Summary</h3>
+
+                <table class="table table-bordered summary-table">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Category</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Previous Month Fund</td>
+                            <td>
+                                <div class="input-group input-group-sm summary-fund-input">
+                                    <span class="input-group-text">₱</span>
+                                    <input type="number" id="prevMonthFundInput" class="form-control" placeholder="0.00" min="0" step="0.01">
+                                </div>
+                            </td>
+                        </tr>
+                        <tr><td>Loyalty Card Sales</td><td id="summarySales">₱0.00</td></tr>
+                        <tr><td>Less: Loyalty Card Expenses</td><td id="summaryExpenses">₱0.00</td></tr>
+                        <tr class="grand-row" id="summaryNetRow"><td>Loyalty Card Sales Less Expenses</td><td id="summaryNet">₱0.00</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="text-center mb-4">
+            <button type="button" class="btn btn-navy btn-lg export-pdf-btn" id="exportPdfBtn">Export to PDF</button>
+        </div>
     </div>
 
 </div>

@@ -18,43 +18,63 @@ const expenseTables = [
         key: "operation",
         title: "Operation Expenses",
         headerClass: "operation-header",
-        columns: ["Date", "Category", "Particular", "Amount", "S.I. No.", "TIN", "Remarks"],
-        extraFields: ["siNo", "tin"]
+        columns: ["Date", "Account Title", "Particular", "Amount", "S.I. No.", "TIN", "Remarks"],
+        extraFields: ["siNo", "tin"],
+        accountTitleOptions: [
+            "Communication",
+            "Supplies",
+            "Fuel and Oil",
+            "Transportation and Travel",
+            "Representation",
+            "Repairs and Maintenance",
+            "Professional Fees",
+            "Insurance",
+            "Donation",
+            "Miscellaneous",
+            "Postage",
+            "Fixed Asset",
+            "Purchase"
+        ]
     },
     {
         key: "salary",
         title: "Payroll",
         headerClass: "salary-header",
-        columns: ["Date", "Particular", "Amount", "Remarks"],
-        extraFields: []
+        columns: ["Date", "Account Title", "Particular", "Amount", "Remarks"],
+        extraFields: [],
+        accountTitleOptions: ["Salaries and Allowances", "Staff Benefits and Incentives"]
     },
     {
         key: "utilities",
         title: "Utilities / Monthly Dues",
         headerClass: "utilities-header",
         recurring: true,
-        columns: ["Particular", "Due Date", "Amount", "Start Date", "End Date", "Status"]
+        columns: ["Particular", "Account Title", "Due Date", "Amount", "Start Date", "End Date", "Status"],
+        accountTitleOptions: ["Light and Water", "Rental Expense", "Communication"]
     },
     {
         key: "installments",
         title: "Installments",
         headerClass: "installments-header",
         recurring: true,
-        columns: ["Particular", "Due Date", "Amount", "Start Date", "End Date", "Status"]
+        columns: ["Particular", "Account Title", "Due Date", "Amount", "Start Date", "End Date", "Status"],
+        accountTitleFixed: "Repairs and Maintenance"
     },
     {
         key: "gov",
         title: "Accounting / Government Dues",
         headerClass: "gov-header",
-        columns: ["Date", "Particular", "Amount", "Remarks"],
-        extraFields: []
+        columns: ["Date", "Account Title", "Particular", "Amount", "Remarks"],
+        extraFields: [],
+        accountTitleOptions: ["SSS, PHIC and HDMF Premiums", "Taxes and Licenses"]
     },
     {
         key: "marketing",
         title: "Marketing",
         headerClass: "marketing-header",
-        columns: ["Date", "Particular", "Amount", "S.I. No.", "TIN", "Remarks"],
-        extraFields: ["siNo", "tin"]
+        columns: ["Date", "Account Title", "Particular", "Amount", "S.I. No.", "TIN", "Remarks"],
+        extraFields: ["siNo", "tin"],
+        accountTitleFixed: "Advertising"
     }
 ];
 
@@ -84,6 +104,7 @@ document.addEventListener("DOMContentLoaded", function(){
     loadExpenses();
     wireModalEvents();
     wireRecurringModalEvents();
+    showExpenseTab(EXPENSE_VIEW_TABS[0][0]);
 
     document.getElementById("exportExpensesPdfBtn")
         .addEventListener("click", exportExpensesPDF);
@@ -187,6 +208,10 @@ function renderTables(){
     container.innerHTML = "";
 
     expenseTables.forEach(table => {
+        let panel = document.createElement("div");
+        panel.className = "tab-panel";
+        panel.dataset.tabPanel = table.key;
+
         let card = document.createElement("div");
         card.className = "card shadow-sm border-0 mb-4 expense-card";
 
@@ -248,8 +273,40 @@ function renderTables(){
             `;
         }
 
-        container.appendChild(card);
+        panel.appendChild(card);
+        container.appendChild(panel);
     });
+}
+
+const EXPENSE_VIEW_TABS = [
+    ...expenseTables.map(table => [table.key, table.title]),
+    ["summary", "Summary"]
+];
+let currentExpenseTab = EXPENSE_VIEW_TABS[0][0];
+
+function renderExpenseViewTabs(){
+    let nav = document.getElementById("expenseViewTabs");
+    nav.innerHTML = "";
+
+    EXPENSE_VIEW_TABS.forEach(([id, label]) => {
+        let b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("role", "tab");
+        b.setAttribute("aria-selected", String(currentExpenseTab === id));
+        b.textContent = label;
+        b.addEventListener("click", () => showExpenseTab(id));
+        nav.appendChild(b);
+    });
+}
+
+function showExpenseTab(id){
+    currentExpenseTab = id;
+
+    document.querySelectorAll("[data-tab-panel]").forEach(panel => {
+        panel.classList.toggle("d-none", panel.dataset.tabPanel !== id);
+    });
+
+    renderExpenseViewTabs();
 }
 
 function sortedEntries(tableKey){
@@ -273,9 +330,7 @@ function renderTableBody(tableKey){
     tbody.innerHTML = rows.map(entry => {
         let cells = [`<td class="text-start"><div class="date-text">${entry.date ? formatDateText(entry.date) : "—"}</div></td>`];
 
-        if(tableKey === "operation"){
-            cells.push(`<td>${escapeHtml(entry.category) || "—"}</td>`);
-        }
+        cells.push(`<td>${escapeHtml(entry.accountTitle || table.accountTitleFixed) || "—"}</td>`);
 
         cells.push(`<td class="text-start">${escapeHtml(entry.particular)}</td>`);
         cells.push(`<td class="amount-cell">${peso(entry.amount)}</td>`);
@@ -334,6 +389,87 @@ function updateTotals(){
     document.getElementById("summaryGov").innerText = peso(totals.gov);
     document.getElementById("summaryMarketing").innerText = peso(totals.marketing);
     document.getElementById("summaryGrand").innerText = peso(grandTotal);
+
+    renderUpcomingPaymentsWidget();
+}
+
+/* ==========================================================================
+   "For Payment This Week" header widget — surfaces recurring items
+   (Utilities/Monthly Dues, Installments) whose due-date instance falls
+   inside the current real-world calendar week (Sun-Sat) and isn't
+   settled yet. Independent of whichever report month is selected above,
+   since it's meant as an always-current "what's coming up" glance.
+   ========================================================================== */
+
+function renderUpcomingPaymentsWidget(){
+    let list = document.getElementById("upcomingPaymentsList");
+    if(!list) return;
+
+    let today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+
+    let endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    let thisMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    let nextMonthKey = addMonthsToMonthKey(thisMonthKey, 1);
+
+    let upcoming = [];
+
+    recurringTableKeys.forEach(tableKey => {
+        let table = expenseTables.find(t => t.key === tableKey);
+
+        (recurringData[tableKey] || []).forEach(item => {
+            [thisMonthKey, nextMonthKey].forEach(monthKey => {
+                if(!isRecurringActiveInMonth(item, monthKey)) return;
+
+                let due = dueInstanceDate(item, monthKey);
+                due.setHours(0, 0, 0, 0);
+
+                if(due < startOfWeek || due > endOfWeek) return;
+
+                let status = computeRecurringStatus(item, monthKey);
+                if(status === "settled") return;
+
+                upcoming.push({
+                    tableTitle: table.title,
+                    particular: item.particular,
+                    due,
+                    status,
+                    amount: recurringAmountForMonth(item, monthKey)
+                });
+            });
+        });
+    });
+
+    upcoming.sort((a, b) => a.due - b.due);
+
+    if(upcoming.length === 0){
+        list.innerHTML = `<div class="upcoming-payments-empty">No payments due this week.</div>`;
+        return;
+    }
+
+    list.innerHTML = upcoming.map(row => {
+        let meta = RECURRING_STATUS_META[row.status];
+        let dueLabel = row.due.toLocaleDateString("en-PH", { month: "short", day: "numeric" });
+
+        return `
+            <div class="upcoming-payment-row">
+                <div class="upcoming-payment-main">
+                    <span class="upcoming-payment-particular">${escapeHtml(row.particular)}</span>
+                    <span class="upcoming-payment-sub">${escapeHtml(row.tableTitle)} · Due ${dueLabel}</span>
+                </div>
+                <div class="upcoming-payment-meta">
+                    <span class="status-badge ${meta.class}">${meta.label}</span>
+                    <span class="upcoming-payment-amount">${peso(row.amount)}</span>
+                </div>
+            </div>
+        `;
+    }).join("");
 }
 
 /* ==========================================================================
@@ -363,12 +499,12 @@ function openExpenseModal(tableKey, entryId){
     }
 
     let table = expenseTables.find(t => t.key === tableKey);
-    let isOperation = tableKey === "operation";
+    let hasAccountTitleSelect = !!table.accountTitleOptions;
     let entry = entryId ? (expenseData[tableKey] || []).find(e => e.id === entryId) : null;
 
     activeModal = { tableKey, entryId: entry ? entryId : null };
 
-    document.getElementById("expenseModalCategoryWrapper").classList.toggle("d-none", !isOperation);
+    document.getElementById("expenseModalCategoryWrapper").classList.toggle("d-none", !hasAccountTitleSelect);
     document.getElementById("expenseModalSiNoWrapper").classList.toggle("d-none", !table.extraFields.includes("siNo"));
     document.getElementById("expenseModalTinWrapper").classList.toggle("d-none", !table.extraFields.includes("tin"));
 
@@ -376,7 +512,13 @@ function openExpenseModal(tableKey, entryId){
         (entry ? "Edit " : "Add ") + table.title + " Entry";
 
     document.getElementById("expenseModalDate").value = entry?.date || "";
-    document.getElementById("expenseModalCategory").value = entry?.category || "";
+
+    let categorySelect = document.getElementById("expenseModalCategory");
+    if(hasAccountTitleSelect){
+        categorySelect.innerHTML = `<option value="">Select Account Title</option>` +
+            table.accountTitleOptions.map(option => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("");
+    }
+    categorySelect.value = entry?.accountTitle || "";
     document.getElementById("expenseModalParticular").value = entry?.particular || "";
     document.getElementById("expenseModalAmount").value = entry?.amount || "";
     document.getElementById("expenseModalSiNo").value = entry?.siNo || "";
@@ -407,9 +549,11 @@ function saveExpenseEntryFromModal(){
     }
 
     let table = expenseTables.find(t => t.key === tableKey);
-    let isOperation = tableKey === "operation";
+    let hasAccountTitleSelect = !!table.accountTitleOptions;
     let date = document.getElementById("expenseModalDate").value;
-    let category = document.getElementById("expenseModalCategory").value;
+    let accountTitle = hasAccountTitleSelect
+        ? document.getElementById("expenseModalCategory").value
+        : (table.accountTitleFixed || "");
     let particular = document.getElementById("expenseModalParticular").value.trim();
     let amount = parseFloat(document.getElementById("expenseModalAmount").value) || 0;
     let siNo = document.getElementById("expenseModalSiNo").value.trim();
@@ -426,22 +570,19 @@ function saveExpenseEntryFromModal(){
         return;
     }
 
-    if(isOperation && !category){
-        alert("Please select a Category.");
+    if(hasAccountTitleSelect && !accountTitle){
+        alert("Please select an Account Title.");
         return;
     }
 
     let entry = {
         id: entryId || createExpenseId(),
         date,
+        accountTitle,
         particular,
         amount,
         remarks
     };
-
-    if(isOperation){
-        entry.category = category;
-    }
 
     if(table.extraFields.includes("siNo")) entry.siNo = siNo;
     if(table.extraFields.includes("tin")) entry.tin = tin;
@@ -597,6 +738,7 @@ function renderRecurringTableBody(tableKey){
         return `
             <tr>
                 <td class="text-start">${escapeHtml(item.particular)}</td>
+                <td>${escapeHtml(item.accountTitle || table.accountTitleFixed) || "—"}</td>
                 <td>${dueDateLabel(item.dueDay)}</td>
                 ${amountCell}
                 <td>${item.startDate ? formatDateText(item.startDate) : "—"}</td>
@@ -690,6 +832,7 @@ function openRecurringModal(tableKey, itemId){
     }
 
     let table = expenseTables.find(t => t.key === tableKey);
+    let hasAccountTitleSelect = !!table.accountTitleOptions;
     let item = itemId ? (recurringData[tableKey] || []).find(i => i.id === itemId) : null;
 
     activeRecurringModal = { tableKey, itemId: item ? itemId : null };
@@ -698,6 +841,14 @@ function openRecurringModal(tableKey, itemId){
         (item ? "Edit " : "Add ") + table.title + " Item";
 
     document.getElementById("recurringParticular").value = item?.particular || "";
+
+    document.getElementById("recurringAccountTitleWrapper").classList.toggle("d-none", !hasAccountTitleSelect);
+    let recurringAccountTitleSelect = document.getElementById("recurringAccountTitle");
+    if(hasAccountTitleSelect){
+        recurringAccountTitleSelect.innerHTML = `<option value="">Select Account Title</option>` +
+            table.accountTitleOptions.map(option => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("");
+    }
+    recurringAccountTitleSelect.value = item?.accountTitle || "";
     document.getElementById("recurringDueDay").value = item?.dueDay || "";
     document.getElementById("recurringStartDate").value = item?.startDate || "";
 
@@ -737,6 +888,11 @@ function saveRecurringItemFromModal(){
         return;
     }
 
+    let table = expenseTables.find(t => t.key === tableKey);
+    let hasAccountTitleSelect = !!table.accountTitleOptions;
+    let accountTitle = hasAccountTitleSelect
+        ? document.getElementById("recurringAccountTitle").value
+        : (table.accountTitleFixed || "");
     let particular = document.getElementById("recurringParticular").value.trim();
     let dueDay = parseInt(document.getElementById("recurringDueDay").value, 10);
     let startDate = document.getElementById("recurringStartDate").value;
@@ -747,6 +903,11 @@ function saveRecurringItemFromModal(){
 
     if(!particular){
         alert("Please enter a Particular.");
+        return;
+    }
+
+    if(hasAccountTitleSelect && !accountTitle){
+        alert("Please select an Account Title.");
         return;
     }
 
@@ -775,6 +936,7 @@ function saveRecurringItemFromModal(){
     let item = {
         id: itemId || createRecurringId(),
         particular,
+        accountTitle,
         dueDay,
         startDate,
         amountType,
@@ -897,14 +1059,11 @@ function loadExpenses(){
                     let entry = {
                         id: row.id || createExpenseId(),
                         date: row.date || "",
+                        accountTitle: row.accountTitle || row.category || "",
                         particular: row.particular || "",
                         amount: Number(row.amount) || 0,
                         remarks: row.remarks || ""
                     };
-
-                    if(table.key === "operation"){
-                        entry.category = row.category || "";
-                    }
 
                     table.extraFields.forEach(field => {
                         entry[field] = row[field] || "";
@@ -1031,6 +1190,7 @@ function exportExpensesPDF(){
                 if(table.recurring){
                     switch(col){
                         case "Particular": return entry.particular || "—";
+                        case "Account Title": return entry.accountTitle || table.accountTitleFixed || "—";
                         case "Due Date": return dueDateLabel(entry.dueDay);
                         case "Amount": return pesoPdf(recurringAmountForMonth(entry, monthValue));
                         case "Start Date": return entry.startDate ? formatDateText(entry.startDate) : "—";
@@ -1042,7 +1202,7 @@ function exportExpensesPDF(){
 
                 switch(col){
                     case "Date": return entry.date ? formatDateText(entry.date) : "—";
-                    case "Category": return entry.category || "—";
+                    case "Account Title": return entry.accountTitle || table.accountTitleFixed || "—";
                     case "Particular": return entry.particular || "—";
                     case "Amount": return pesoPdf(entry.amount);
                     case "S.I. No.": return entry.siNo || "—";

@@ -321,11 +321,18 @@ async function backToLoginFromConflict(){
     button.disabled = false;
 }
 
+const DEFAULT_LOGIN_BRANCH = "Crown Head Spa Biñan";
+
 async function finishLogin(user){
     const allowedBranches =
         CrownAuth.getAllowedBranches(user);
 
-    if(allowedBranches.length === 1){
+    if(allowedBranches.includes(DEFAULT_LOGIN_BRANCH)){
+        localStorage.setItem(
+            "crownSelectedBranch",
+            DEFAULT_LOGIN_BRANCH
+        );
+    }else if(allowedBranches.length > 0){
         localStorage.setItem(
             "crownSelectedBranch",
             allowedBranches[0]
