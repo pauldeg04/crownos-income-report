@@ -455,19 +455,20 @@ function updateTotals(){
 
 /* ==========================================================================
    "For Payment (Next 5 Days)" header widget — surfaces recurring items
-   (Utilities/Monthly Dues, Installments) whose due-date instance falls
-   within 5 days either side of today (due soon, or recently past due) and
-   isn't settled yet. Independent of whichever report month is selected
-   above, since it's meant as an always-current "what's coming up" glance,
-   based on today's real date.
+   (Utilities/Monthly Dues, Installments) that are either due within the
+   next 5 days ("approaching") or already past due ("overdue"), and aren't
+   settled yet. "Pending" (more than 5 days out) stays hidden. Independent
+   of whichever report month is selected above, since it's meant as an
+   always-current "what's coming up" glance, based on today's real date.
 
-   The ±5 day window is a deliberate, bounded lookback — a Past Due item
-   doesn't linger here forever just because it was never marked Settled
-   (it still shows "Past Due" indefinitely on the Utilities/Installments
-   table itself; this box only surfaces it while it's recent). Checking the
-   previous, current, and next month's due-date instance (rather than a
-   calendar-week window) correctly catches items whose 5-day window crosses
-   a month boundary in either direction. */
+   Past Due items are intentionally unbounded on the lookback side — once
+   something is overdue it keeps showing here until it's actually marked
+   Settled, no matter how many days late (confirmed with the user: an
+   earlier version capped this at 5 days both ways, which hid a 10+-day-late
+   item they still wanted visible). Only the "approaching" side is capped
+   to 5 days out. Checking the previous, current, and next month's
+   due-date instance (rather than a calendar-week window) correctly catches
+   items whose due date just rolled over a month boundary either way. */
 
 function renderUpcomingPaymentsWidget(){
     let list = document.getElementById("upcomingPaymentsList");
@@ -490,13 +491,10 @@ function renderUpcomingPaymentsWidget(){
                 if(!isRecurringActiveInMonth(item, monthKey)) return;
 
                 let status = computeRecurringStatus(item, monthKey);
-                if(status === "settled") return;
+                if(status !== "overdue" && status !== "approaching") return;
 
                 let due = dueInstanceDate(item, monthKey);
                 due.setHours(0, 0, 0, 0);
-
-                let diffDays = Math.round((due - today) / 86400000);
-                if(diffDays < -5 || diffDays > 5) return;
 
                 upcoming.push({
                     tableTitle: table.title,

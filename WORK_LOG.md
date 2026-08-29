@@ -4,6 +4,39 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-29 — "For Payment (Next 5 Days)": Past Due should never disappear
+
+**Follow-up to the entry directly below.** After deploying the ±5-day
+window fix, user tested with a real item more than 10 days past due and
+found it had disappeared from the widget — working exactly as the ±5-day
+window was designed (it deliberately capped Past Due visibility at 5 days
+late), but not what the user actually wanted once they saw it in practice.
+Confirmed: Past Due items should keep showing regardless of how many days
+late, for as long as they're unsettled — the 5-day limit should only ever
+apply to the upcoming ("approaching") side.
+
+- [expenses-report.js](expenses-report.js): `renderUpcomingPaymentsWidget()`
+  no longer computes a raw day-difference with a ±5 bound. It filters
+  directly on `computeRecurringStatus()`'s own status instead — include
+  `"overdue"` (any number of days late, unbounded) and `"approaching"`
+  (within 5 days out, per that function's own threshold), exclude
+  `"pending"` (more than 5 days out) and `"settled"`. Still checks the
+  previous/current/next month's due-date instance so a due date that just
+  rolled over a month boundary is still caught correctly.
+- [manual.html](manual.html): clarified that the 5-day limit only applies
+  to upcoming items — Past Due items stay listed however long they remain
+  unsettled.
+
+**Verified in an isolated harness:** an item 10 days past due now correctly
+shows as "Past Due" (previously hidden by the removed floor); an item 17
+days in the future (clearly "pending") correctly stays hidden.
+
+**Status:** Code changed locally, not yet deployed — run
+`firebase deploy --only hosting` from `Income Report/` when ready to push
+live.
+
+---
+
 ## 2026-08-29 — Rework "For Payment This Week" into "For Payment (Next 5 Days)"
 
 **Reported by:** User — Utilities / Monthly Dues items due soon weren't
