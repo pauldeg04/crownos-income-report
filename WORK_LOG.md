@@ -4,6 +4,58 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-29 — Rework "For Payment This Week" into "For Payment (Next 5 Days)"
+
+**Reported by:** User — Utilities / Monthly Dues items due soon weren't
+showing in the widget, reproduced both on Local Server and on the Biñan
+branch. Clarified the actual expectation: an item should surface whenever
+it's due within the next 5 days, not only within the current Sun–Sat
+calendar week.
+
+**Two separate issues found and fixed:**
+
+1. **Stale data on branch switch** — [expenses-report.js](expenses-report.js)
+   had no listener for `crownGlobalFiltersChanged` (global toolbar branch
+   switcher) or `crownCloudUpdate` (another device's data syncing in) — the
+   same bug class already fixed for Cash Flow on 2026-08-06, and already
+   handled in Petty Cash. Switching branches from the toolbar while already
+   on this page left `expenseData`/`recurringData` (which the widget reads)
+   pointed at the OLD branch until a full manual reload. Fixed by adding
+   both listeners to `DOMContentLoaded`, calling `loadExpenses()` (reloads
+   both, then re-renders everything including the widget) — `crownCloudUpdate`
+   only when the changed keys include this page's own storage keys.
+2. **Wrong date window (the actual reported bug)** — `renderUpcomingPaymentsWidget()`
+   only matched items whose due-date instance fell inside the current
+   real-world Sun–Sat calendar week. An item due in, say, 4 days that fell
+   past Saturday wouldn't show until the new week started — exactly the
+   symptom reported, and unrelated to branch state. Reworked the filter to
+   a ±5 day window centered on today (checking the previous, current, and
+   next month's due-date instance, so the window correctly crosses month
+   boundaries) instead of a calendar-week boundary. A deliberate lower bound
+   of -5 days keeps a long-unsettled Past Due item from cluttering the
+   widget forever — it still shows "Past Due" indefinitely on the
+   Utilities/Installments table itself, just not here once it's more than
+   5 days old. Renamed the widget "For Payment This Week" → "For Payment
+   (Next 5 Days)" (`expenses-report.html`, `manual.html`) since the old name
+   no longer matched its behavior.
+
+**Verified in an isolated harness** running the real modal markup +
+`expenses-report.js`: (a) branch-switch scenario — added a Utilities item
+under "Branch A", switched to "Branch B" via `localStorage` + a dispatched
+`crownGlobalFiltersChanged` event (widget correctly cleared, no
+cross-branch leakage), switched back to "Branch A" (item reappeared);
+(b) date-window scenario — an item due 4 days out across a month boundary
+(Aug→Sep) now correctly shows as "Approaching"; an item 3 days overdue
+shows as "Past Due"; an item 10 days overdue correctly stays hidden
+(previously, before the -5 floor was added, it would have shown forever
+and duplicated alongside its own next occurrence).
+
+**Status:** Code changed locally, not yet deployed — run
+`firebase deploy --only hosting` from `Income Report/` when ready to push
+live.
+
+---
+
 ## 2026-08-29 — Fix: Petty Cash attachment uploads had no Storage rule (broken since launch)
 
 **Flagged by:** Follow-up task spawned while adding the Operation Expenses

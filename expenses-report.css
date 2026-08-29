@@ -340,7 +340,7 @@
     color:#136c34;
 }
 
-/* ---------- "For Payment This Week" header widget ---------- */
+/* ---------- "For Payment (Next 5 Days)" header widget ---------- */
 .upcoming-payments-box{
     background:var(--surface-soft);
     border:1px solid var(--border-light);

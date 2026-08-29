@@ -120,6 +120,29 @@ document.addEventListener("DOMContentLoaded", function(){
 
     document.getElementById("exportExpensesPdfBtn")
         .addEventListener("click", exportExpensesPDF);
+
+    /* Without this, switching branches from the global toolbar's branch
+       switcher while already on this page leaves expenseData/recurringData
+       (and the "For Payment (Next 5 Days)" widget, which reads recurringData)
+       pointed at the OLD branch until a manual page reload — same bug class
+       already fixed for Cash Flow on 2026-08-06, and for Petty Cash. */
+    window.addEventListener("crownGlobalFiltersChanged", function(){
+        document.getElementById("branchReadout").textContent = getSelectedBranch();
+        loadExpenses();
+    });
+
+    /* Without this, a recurring item or ledger entry synced in from another
+       device only shows up here after a manual page reload — the cloud
+       pull updates localStorage in the background, but nothing tells this
+       already-open page to re-read it. Mirrors petty-cash.js. */
+    window.addEventListener("crownCloudUpdate", function(event){
+        const keys = event.detail?.keys || [];
+        const relevantKeys = [getStorageKey(), ...recurringTableKeys.map(getRecurringStorageKey)];
+
+        if(keys.some(key => relevantKeys.includes(key))){
+            loadExpenses();
+        }
+    });
 });
 
 function setCurrentMonth(){
@@ -431,12 +454,20 @@ function updateTotals(){
 }
 
 /* ==========================================================================
-   "For Payment This Week" header widget — surfaces recurring items
+   "For Payment (Next 5 Days)" header widget — surfaces recurring items
    (Utilities/Monthly Dues, Installments) whose due-date instance falls
-   inside the current real-world calendar week (Sun-Sat) and isn't
-   settled yet. Independent of whichever report month is selected above,
-   since it's meant as an always-current "what's coming up" glance.
-   ========================================================================== */
+   within 5 days either side of today (due soon, or recently past due) and
+   isn't settled yet. Independent of whichever report month is selected
+   above, since it's meant as an always-current "what's coming up" glance,
+   based on today's real date.
+
+   The ±5 day window is a deliberate, bounded lookback — a Past Due item
+   doesn't linger here forever just because it was never marked Settled
+   (it still shows "Past Due" indefinitely on the Utilities/Installments
+   table itself; this box only surfaces it while it's recent). Checking the
+   previous, current, and next month's due-date instance (rather than a
+   calendar-week window) correctly catches items whose 5-day window crosses
+   a month boundary in either direction. */
 
 function renderUpcomingPaymentsWidget(){
     let list = document.getElementById("upcomingPaymentsList");
@@ -445,14 +476,8 @@ function renderUpcomingPaymentsWidget(){
     let today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-
-    let endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
-
     let thisMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+    let prevMonthKey = addMonthsToMonthKey(thisMonthKey, -1);
     let nextMonthKey = addMonthsToMonthKey(thisMonthKey, 1);
 
     let upcoming = [];
@@ -461,16 +486,17 @@ function renderUpcomingPaymentsWidget(){
         let table = expenseTables.find(t => t.key === tableKey);
 
         (recurringData[tableKey] || []).forEach(item => {
-            [thisMonthKey, nextMonthKey].forEach(monthKey => {
+            [prevMonthKey, thisMonthKey, nextMonthKey].forEach(monthKey => {
                 if(!isRecurringActiveInMonth(item, monthKey)) return;
+
+                let status = computeRecurringStatus(item, monthKey);
+                if(status === "settled") return;
 
                 let due = dueInstanceDate(item, monthKey);
                 due.setHours(0, 0, 0, 0);
 
-                if(due < startOfWeek || due > endOfWeek) return;
-
-                let status = computeRecurringStatus(item, monthKey);
-                if(status === "settled") return;
+                let diffDays = Math.round((due - today) / 86400000);
+                if(diffDays < -5 || diffDays > 5) return;
 
                 upcoming.push({
                     tableTitle: table.title,
@@ -486,7 +512,7 @@ function renderUpcomingPaymentsWidget(){
     upcoming.sort((a, b) => a.due - b.due);
 
     if(upcoming.length === 0){
-        list.innerHTML = `<div class="upcoming-payments-empty">No payments due this week.</div>`;
+        list.innerHTML = `<div class="upcoming-payments-empty">No payments due in the next 5 days.</div>`;
         return;
     }
 
