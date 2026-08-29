@@ -4,6 +4,64 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-29 — Cash Flow: expense classification on Out entries + Expenses Report sync
+
+**Requested by:** User — wanted Out entries in Cash Flow to capture the same
+expense classification info as Expenses Report (Type/Account Title/
+Particular/S.I./TIN), and an option to push a matching row straight into
+Expenses Report instead of re-entering it there by hand.
+
+- [cashflow.html](cashflow.html) / [cashflow.js](cashflow.js): the Add/Edit
+  Cash Flow modal now shows an **Additional Information** block (Type,
+  Account Title, Particular, optional S.I. No., optional TIN) whenever
+  Activity is **Out**, placed right before Remarks. Type mirrors the six
+  Expenses Report categories; Account Title's options depend on the chosen
+  Type, and auto-fill + lock when a Type only has one option (Installments →
+  Repairs and Maintenance, Marketing → Advertising). This info is saved on
+  the entry but intentionally not shown in the Cash Flow table — only via
+  **✎ Edit** — per the user's instruction.
+- For Type Operation Expenses, Payroll, Accounting / Government Dues, or
+  Marketing, an **Add to Expenses Report** checkbox appears (unchecked by
+  default, "as is" for every other case). Checking it writes a row directly
+  into that category's `crownExpenses_<branch>_<month>` ledger using the
+  Additional Information fields. A sync ref (`{branch, month, tableKey,
+  entryId}`) is stored on the Cash Flow entry so later edits update the same
+  row in place, changing Type moves it to the new table (removing it from
+  the old one, no duplication), unchecking the box removes it, and deleting
+  the Cash Flow entry removes it too.
+- Utilities / Monthly Dues and Installments are excluded from the sync
+  checkbox (per user's explicit choice when asked) — those two Expenses
+  Report sections are recurring due-date trackers, not a plain ledger, so a
+  Cash Flow entry can't map cleanly onto one; they still appear as Type
+  options for classification purposes only.
+- Verified in an isolated harness running the real modal markup + `cashflow.js`
+  (the live app's Firebase login couldn't be scripted from this environment):
+  field visibility per Activity/Type, Account Title population and
+  auto-lock, save-creates-row, uncheck-removes-row, Type-change-moves-row,
+  delete-removes-row, and required-field validation on Type/Account
+  Title/Particular.
+
+**Follow-up same day — Expenses Report Date column showing the same
+month for every row:** user noticed all rows displayed e.g. "Aug-26"
+regardless of entry. Root cause: [expenses-report.js](expenses-report.js)'s
+`formatDateText()` always collapsed any date down to month-year, and since
+the whole report is already scoped to one selected month, every row in view
+necessarily shared that label — a pre-existing quirk, not caused by the sync
+feature above. Since Cash Flow's new sync (and pre-existing Petty Cash
+liquidation) both post a real `YYYY-MM-DD` date, not just a month, fixed
+`formatDateText()` to render the full date (e.g. "Aug 15, 2026") when the
+value carries day precision, falling back to the old "MMM-YY" format for
+genuinely month-only entries. Added a separate `formatMonthLabel()` for
+recurring items' **End Date** column specifically, since that value is a
+synthetic month boundary (`endMonth + "-01"`) rather than a real date, and
+showing a fabricated day there would be misleading.
+
+**Status:** Code changed locally, not yet deployed — run
+`firebase deploy --only hosting` from `Income Report/` when ready to push
+live.
+
+---
+
 ## 2026-08-29 — Expenses Report: For Payment This Week widget
 
 **Requested by:** User — wanted a quick-glance view of upcoming payments

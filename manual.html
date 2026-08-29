@@ -2030,11 +2030,16 @@ Branch receives    →  it is added to the branch's Available Stock</div>
 
   <p>
     On the plain-ledger tables (Operation Expenses, Payroll, Accounting /
-    Government Dues, Marketing), the Date field only asks for a month
-    (shown as, e.g., <strong>Aug-25</strong>) — no specific day. Operation
-    Expenses and Marketing also carry optional <strong>S.I. No.</strong>
-    and <strong>TIN</strong> reference fields, entered between Amount and
-    Remarks.
+    Government Dues, Marketing), the Date field normally only asks for a
+    month (shown as, e.g., <strong>Aug-25</strong>) — no specific day. A row
+    created elsewhere with a real day attached — liquidated Petty Cash, or
+    an entry pushed in via Cash Flow's <span class="ui">Add to Expenses
+    Report</span> checkbox (see <a href="#ch-reports">Cash
+    Flow</a>) — shows that full date instead (e.g.,
+    <strong>Aug 15, 2026</strong>) rather than collapsing it to the month.
+    Operation Expenses and Marketing also carry optional
+    <strong>S.I. No.</strong> and <strong>TIN</strong> reference fields,
+    entered between Amount and Remarks.
   </p>
 
   <h4>Utilities / Monthly Dues and Installments</h4>
@@ -2087,6 +2092,33 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     <strong>RCBC</strong>. Each entry carries a Date, Activity, an amount per
     holding, and Remarks. An entry can be <strong>in</strong>,
     <strong>out</strong>, or a <strong>transfer</strong> between two holdings.
+  </p>
+
+  <p>
+    An <strong>out</strong> entry additionally asks for
+    <strong>Additional Information</strong> — Type, Account Title,
+    Particular, and optional S.I. No. / TIN — right before Remarks. Type is
+    one of the six Expenses Report categories (Operation Expenses, Payroll,
+    Utilities / Monthly Dues, Installments, Accounting / Government Dues,
+    Marketing); Account Title then only offers the options valid for that
+    Type, and auto-fills and locks when a Type has just one (Installments,
+    Marketing). This information doesn't show in the Cash Flow table itself
+    — open <span class="ui">✎ Edit</span> on the entry to see it.
+  </p>
+
+  <p>
+    For Type Operation Expenses, Payroll, Accounting / Government Dues, or
+    Marketing, an <strong>Add to Expenses Report</strong> checkbox appears
+    (unchecked by default). Checking it also creates a matching row in that
+    category's Expenses Report ledger, for the same branch and month, using
+    the Additional Information fields above — no need to re-enter it there
+    separately. Editing the Cash Flow entry afterward keeps that row in
+    sync (including moving it if you change the Type); unchecking the box
+    or deleting the Cash Flow entry removes it from Expenses Report. Type
+    Utilities / Monthly Dues and Installments don't offer this checkbox —
+    those two Expenses Report sections track recurring bills by due date
+    rather than a plain ledger row, so they still need to be added manually
+    there.
   </p>
 
   <p>

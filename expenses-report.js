@@ -172,13 +172,38 @@ function formatMonth(monthValue){
     });
 }
 
-/* Entries only carry a month now (the modal's Date field is type="month"),
-   though petty-cash liquidation still posts a full "YYYY-MM-DD" — slicing
-   to the first 7 chars handles both. */
+/* Entries only carry a month by default (the modal's Date field is
+   type="month"), formatted as "MMM-YY" — but petty-cash liquidation and
+   the Cash Flow "Add to Expenses Report" sync both post a full
+   "YYYY-MM-DD", which carries real day-level information worth showing
+   rather than collapsing down to the month. */
 function formatDateText(dateValue){
     if(!dateValue) return "";
 
+    if(dateValue.length > 7){
+        return new Date(dateValue + "T00:00:00").toLocaleDateString("en-PH", {
+            month: "short",
+            day: "numeric",
+            year: "numeric"
+        });
+    }
+
     let [year, month] = dateValue.slice(0, 7).split("-");
+    if(!year || !month) return "";
+
+    let monthAbbr = new Date(Number(year), Number(month) - 1, 1)
+        .toLocaleDateString("en-PH", { month: "short" });
+
+    return `${monthAbbr}-${year.slice(2)}`;
+}
+
+/* End Date is a computed month boundary (always the 1st, just to reuse a
+   date object), not a real day-precision date — always render it as
+   "MMM-YY" regardless of length, unlike formatDateText above. */
+function formatMonthLabel(monthKey){
+    if(!monthKey) return "";
+
+    let [year, month] = monthKey.split("-");
     if(!year || !month) return "";
 
     let monthAbbr = new Date(Number(year), Number(month) - 1, 1)
@@ -733,7 +758,7 @@ function renderRecurringTableBody(tableKey){
 
         let endDateText = item.continues
             ? "Continues"
-            : (item.endMonth ? formatDateText(item.endMonth + "-01") : "—");
+            : (item.endMonth ? formatMonthLabel(item.endMonth) : "—");
 
         return `
             <tr>
@@ -1194,7 +1219,7 @@ function exportExpensesPDF(){
                         case "Due Date": return dueDateLabel(entry.dueDay);
                         case "Amount": return pesoPdf(recurringAmountForMonth(entry, monthValue));
                         case "Start Date": return entry.startDate ? formatDateText(entry.startDate) : "—";
-                        case "End Date": return entry.continues ? "Continues" : (entry.endMonth ? formatDateText(entry.endMonth + "-01") : "—");
+                        case "End Date": return entry.continues ? "Continues" : (entry.endMonth ? formatMonthLabel(entry.endMonth) : "—");
                         case "Status": return RECURRING_STATUS_META[computeRecurringStatus(entry, monthValue)].label;
                         default: return "—";
                     }

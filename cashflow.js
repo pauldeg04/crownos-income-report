@@ -36,6 +36,27 @@ const CASHFLOW_OUT_OPTIONS = [
     { value: "rcbc", label: "RCBC out" }
 ];
 
+/* Mirrors the Expense Report's table keys/titles/account-title lists
+   (expenses-report.js) so an Out entry's "Additional Information" can be
+   pushed straight into the matching Expense Report ledger. Utilities/Monthly
+   Dues and Installments are excluded from the "Add to Expenses Report" sync
+   since those tables use a recurring due-date model, not a plain ledger row. */
+const CASHFLOW_EXPENSE_TYPES = [
+    { value: "operation", label: "Operation Expenses", accountTitles: [
+        "Communication", "Supplies", "Fuel and Oil", "Transportation and Travel",
+        "Representation", "Repairs and Maintenance", "Professional Fees",
+        "Insurance", "Donation", "Miscellaneous", "Postage", "Fixed Asset", "Purchase"
+    ] },
+    { value: "salary", label: "Payroll", accountTitles: ["Salaries and Allowances", "Staff Benefits and Incentives"] },
+    { value: "utilities", label: "Utilities / Monthly Dues", accountTitles: ["Light and Water", "Rental Expense", "Communication"] },
+    { value: "installments", label: "Installments", accountTitleFixed: "Repairs and Maintenance" },
+    { value: "gov", label: "Accounting / Government Dues", accountTitles: ["SSS, PHIC and HDMF Premiums", "Taxes and Licenses"] },
+    { value: "marketing", label: "Marketing", accountTitleFixed: "Advertising" }
+];
+
+const CASHFLOW_EXPENSE_SYNC_EXCLUDED = ["utilities", "installments"];
+const CASHFLOW_EXPENSE_PREFIX = "crownExpenses_";
+
 let cashflowEntries = [];
 let activeCashflowEntryId = null;
 
@@ -342,7 +363,74 @@ function wireCashflowModalEvents(){
     document.getElementById("cashflowModalType")
         .addEventListener("change", function(){
             applyCashflowTypeUI(this.value);
+            refreshCashflowOutUI();
         });
+
+    applyCashflowExpenseTypeOptions();
+
+    document.getElementById("cashflowModalExpenseType")
+        .addEventListener("change", function(){
+            applyCashflowExpenseAccountTitleOptions(this.value);
+            refreshCashflowOutUI();
+        });
+}
+
+function applyCashflowExpenseTypeOptions(){
+    let select = document.getElementById("cashflowModalExpenseType");
+
+    select.innerHTML =
+        '<option value="">Select Type</option>' +
+        CASHFLOW_EXPENSE_TYPES.map(type => `<option value="${type.value}">${escapeHtml(type.label)}</option>`).join("");
+}
+
+/* Populates the Account Title dropdown from the selected Type. A Type with
+   only one possible Account Title (Installments, Marketing) auto-fills and
+   locks the field instead of asking the user to pick from a list of one. */
+function applyCashflowExpenseAccountTitleOptions(typeValue, preserveTitle){
+    let def = CASHFLOW_EXPENSE_TYPES.find(type => type.value === typeValue);
+    let select = document.getElementById("cashflowModalExpenseAccountTitle");
+
+    if(!def){
+        select.innerHTML = '<option value="">Select Account Title</option>';
+        select.disabled = false;
+        return;
+    }
+
+    if(def.accountTitleFixed){
+        select.innerHTML = `<option value="${escapeHtml(def.accountTitleFixed)}">${escapeHtml(def.accountTitleFixed)}</option>`;
+        select.value = def.accountTitleFixed;
+        select.disabled = true;
+        return;
+    }
+
+    select.disabled = false;
+    select.innerHTML =
+        '<option value="">Select Account Title</option>' +
+        def.accountTitles.map(title => `<option value="${escapeHtml(title)}">${escapeHtml(title)}</option>`).join("");
+
+    if(preserveTitle && def.accountTitles.includes(preserveTitle)){
+        select.value = preserveTitle;
+    }
+}
+
+/* Shows/hides the "Additional Information" block (Out only) and the
+   "Add to Expenses Report" checkbox (Out only, and only for Types that
+   have a plain-ledger match in the Expense Report). */
+function refreshCashflowOutUI(){
+    let activityType = document.getElementById("cashflowModalType").value;
+    let expenseType = document.getElementById("cashflowModalExpenseType").value;
+    let isOut = activityType === "out";
+
+    document.getElementById("cashflowModalOutInfoWrapper").classList.toggle("d-none", !isOut);
+
+    let excluded = CASHFLOW_EXPENSE_SYNC_EXCLUDED.includes(expenseType);
+    let showAddToExpenses = isOut && !!expenseType && !excluded;
+
+    document.getElementById("cashflowModalAddToExpensesWrapper").classList.toggle("d-none", !showAddToExpenses);
+
+    if(!showAddToExpenses){
+        document.getElementById("cashflowModalAddToExpenses").checked = false;
+    }
 }
 
 /* Shows/hides the Account vs. From/To fields and repopulates the Account
@@ -400,7 +488,15 @@ function openCashflowModal(entryId){
     document.getElementById("cashflowModalAmount").value = entry?.amount || "";
     document.getElementById("cashflowModalRemarks").value = entry?.remarks || "";
 
+    document.getElementById("cashflowModalExpenseType").value = entry?.expenseType || "";
+    applyCashflowExpenseAccountTitleOptions(entry?.expenseType || "", entry?.expenseAccountTitle || "");
+    document.getElementById("cashflowModalExpenseParticular").value = entry?.expenseParticular || "";
+    document.getElementById("cashflowModalExpenseSiNo").value = entry?.siNo || "";
+    document.getElementById("cashflowModalExpenseTin").value = entry?.tin || "";
+    document.getElementById("cashflowModalAddToExpenses").checked = !!entry?.addToExpenses;
+
     applyCashflowTypeUI(entry?.entryType || "", entry?.account || "");
+    refreshCashflowOutUI();
 
     document.getElementById("deleteCashflowEntryBtn").classList.toggle("d-none", !entry);
 
@@ -428,6 +524,14 @@ function saveCashflowEntryFromModal(){
     let toAccount = document.getElementById("cashflowModalToAccount").value;
     let amount = parseFloat(document.getElementById("cashflowModalAmount").value) || 0;
     let remarks = document.getElementById("cashflowModalRemarks").value.trim();
+
+    let isOut = entryType === "out";
+    let expenseType = isOut ? document.getElementById("cashflowModalExpenseType").value : "";
+    let expenseAccountTitle = isOut ? document.getElementById("cashflowModalExpenseAccountTitle").value : "";
+    let expenseParticular = isOut ? document.getElementById("cashflowModalExpenseParticular").value.trim() : "";
+    let siNo = isOut ? document.getElementById("cashflowModalExpenseSiNo").value.trim() : "";
+    let tin = isOut ? document.getElementById("cashflowModalExpenseTin").value.trim() : "";
+    let addToExpenses = isOut && document.getElementById("cashflowModalAddToExpenses").checked;
 
     if(!date){
         alert("Please enter a Date.");
@@ -461,6 +565,27 @@ function saveCashflowEntryFromModal(){
         }
     }
 
+    if(isOut){
+        if(!expenseType){
+            alert("Please select a Type.");
+            return;
+        }
+
+        if(!expenseAccountTitle){
+            alert("Please select an Account Title.");
+            return;
+        }
+
+        if(!expenseParticular){
+            alert("Please enter a Particular.");
+            return;
+        }
+    }
+
+    let previousEntry = activeCashflowEntryId
+        ? cashflowEntries.find(e => e.id === activeCashflowEntryId)
+        : null;
+
     let entry = {
         id: activeCashflowEntryId || createCashflowId(),
         date,
@@ -473,7 +598,13 @@ function saveCashflowEntryFromModal(){
         gcash: 0,
         bdo: 0,
         rcbc: 0,
-        remarks
+        remarks,
+        expenseType,
+        expenseAccountTitle,
+        expenseParticular,
+        siNo,
+        tin,
+        addToExpenses
     };
 
     if(entryType === "in" && account !== "others"){
@@ -488,6 +619,8 @@ function saveCashflowEntryFromModal(){
         entry[fromAccount] = -amount;
         entry[toAccount] = amount;
     }
+
+    entry.expenseSyncRef = syncCashflowEntryToExpenses(entry, previousEntry, branch, month);
 
     if(activeCashflowEntryId){
         let index = cashflowEntries.findIndex(e => e.id === activeCashflowEntryId);
@@ -508,11 +641,105 @@ function deleteCashflowEntryFromModal(){
 
     if(!confirm("Delete this cash flow entry?")) return;
 
+    let entry = cashflowEntries.find(e => e.id === activeCashflowEntryId);
+    if(entry?.expenseSyncRef){
+        removeCashflowExpenseSyncRecord(entry.expenseSyncRef);
+    }
+
     cashflowEntries = cashflowEntries.filter(e => e.id !== activeCashflowEntryId);
 
     saveCashflowEntries();
     renderCashflow();
     closeCashflowModal();
+}
+
+/* ==========================================================================
+   Expense Report sync — "Add to Expenses Report" checkbox (Out entries only)
+   Writes directly to the Expense Report's own localStorage key rather than
+   going through expenses-report.js, since that script isn't loaded on this
+   page. Cash Flow's date is already "YYYY-MM-DD", and the Expense Report
+   only ever reads the first 7 characters of it, so no conversion is needed.
+   ========================================================================== */
+
+function getCashflowExpenseStorageKey(branch, month){
+    return CASHFLOW_EXPENSE_PREFIX + (branch || "NoBranch") + "_" + (month || "NoMonth");
+}
+
+function loadCashflowExpenseData(branch, month){
+    try{
+        let raw = localStorage.getItem(getCashflowExpenseStorageKey(branch, month));
+        let parsed = raw ? JSON.parse(raw) : {};
+        return (parsed && typeof parsed === "object") ? parsed : {};
+    }catch(e){
+        return {};
+    }
+}
+
+function saveCashflowExpenseData(branch, month, data){
+    localStorage.setItem(getCashflowExpenseStorageKey(branch, month), JSON.stringify(data));
+}
+
+function removeCashflowExpenseSyncRecord(ref){
+    if(!ref) return;
+
+    let data = loadCashflowExpenseData(ref.branch, ref.month);
+    if(!Array.isArray(data[ref.tableKey])) return;
+
+    data[ref.tableKey] = data[ref.tableKey].filter(row => row.id !== ref.entryId);
+    saveCashflowExpenseData(ref.branch, ref.month, data);
+}
+
+/* Creates, updates, or removes the Expense Report ledger row tied to this
+   Cash Flow entry, based on the current addToExpenses checkbox state (and
+   the entry's Type, in case it changed since the last save). Returns the
+   ref to store on the Cash Flow entry (or null if nothing is synced). */
+function syncCashflowEntryToExpenses(entry, previousEntry, branch, month){
+    let prevRef = previousEntry?.expenseSyncRef || null;
+    let excluded = CASHFLOW_EXPENSE_SYNC_EXCLUDED.includes(entry.expenseType);
+    let shouldSync = entry.entryType === "out" && entry.addToExpenses && !excluded;
+
+    if(!shouldSync){
+        if(prevRef) removeCashflowExpenseSyncRecord(prevRef);
+        return null;
+    }
+
+    let sameTarget = prevRef
+        && prevRef.branch === branch
+        && prevRef.month === month
+        && prevRef.tableKey === entry.expenseType;
+
+    let record = {
+        id: sameTarget ? prevRef.entryId : createCashflowId(),
+        date: entry.date,
+        accountTitle: entry.expenseAccountTitle,
+        particular: entry.expenseParticular,
+        amount: entry.amount,
+        siNo: entry.siNo || "",
+        tin: entry.tin || "",
+        remarks: entry.remarks || ""
+    };
+
+    if(!sameTarget && prevRef){
+        removeCashflowExpenseSyncRecord(prevRef);
+    }
+
+    let data = loadCashflowExpenseData(branch, month);
+    if(!Array.isArray(data[entry.expenseType])) data[entry.expenseType] = [];
+
+    if(sameTarget){
+        let index = data[entry.expenseType].findIndex(row => row.id === prevRef.entryId);
+        if(index > -1){
+            data[entry.expenseType][index] = record;
+        } else {
+            data[entry.expenseType].push(record);
+        }
+    } else {
+        data[entry.expenseType].push(record);
+    }
+
+    saveCashflowExpenseData(branch, month, data);
+
+    return { branch, month, tableKey: entry.expenseType, entryId: record.id };
 }
 
 /* ==========================================================================
@@ -554,7 +781,14 @@ function loadCashflowEntries(){
                     bdo: Number(row.bdo) || 0,
                     rcbc: Number(row.rcbc) || 0,
                     remarks: row.remarks || "",
-                    label: row.label || ""
+                    label: row.label || "",
+                    expenseType: row.expenseType || "",
+                    expenseAccountTitle: row.expenseAccountTitle || "",
+                    expenseParticular: row.expenseParticular || "",
+                    siNo: row.siNo || "",
+                    tin: row.tin || "",
+                    addToExpenses: !!row.addToExpenses,
+                    expenseSyncRef: row.expenseSyncRef || null
                 }));
             }
         }
