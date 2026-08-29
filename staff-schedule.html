@@ -67,6 +67,7 @@
                 </div>
 
                 <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary" id="scheduleTodayBtn">View Today's Schedule</button>
                     <button type="button" class="btn btn-primary d-none" id="scheduleCreateBtn">Create Schedule</button>
                 </div>
             </div>
@@ -114,6 +115,24 @@
                 <div class="empty-state d-none" id="scheduleUpcomingEmpty">No upcoming schedules yet.</div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- View Today's Schedule modal — quick mobile-friendly list for Team Leaders to screenshot and share -->
+    <div class="schedule-modal-backdrop d-none" id="scheduleTodayBackdrop">
+        <div class="schedule-edit-modal schedule-today-modal">
+            <div class="schedule-modal-header">
+                <h4 id="scheduleTodayModalTitle">Today's Schedule</h4>
+                <button type="button" class="schedule-modal-close" id="scheduleTodayCloseBtn">&times;</button>
+            </div>
+            <div class="schedule-modal-body">
+                <div id="scheduleTodayBody"></div>
+                <div class="empty-state d-none" id="scheduleTodayEmpty">No schedule generated for this week yet.</div>
+                <p class="schedule-today-note">Schedule may still change depending on client bookings. Please be ready for any adjustments.</p>
+            </div>
+            <div class="schedule-modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="scheduleTodayCloseFooterBtn">Close</button>
+            </div>
         </div>
     </div>
 

@@ -316,6 +316,101 @@
         document.getElementById("scheduleViewBackdrop").classList.remove("d-none");
     }
 
+    /* ---- View Today's Schedule modal ---- */
+
+    /* Monday-first day key for "today", independent of the Sunday-first
+       index Date.getDay() returns. */
+    function todayDayKey(){
+        const jsDay = new Date().getDay();
+        return DAY_KEYS[jsDay === 0 ? 6 : jsDay - 1];
+    }
+
+    /* Every staff account on duty today (opening/closing/rest), collapsed
+       into a flat "Role — Name" list — the weekly grid is too wide to
+       screenshot cleanly on a phone, so Team Leaders get just today's
+       slice in a single-column list they can capture and post to the
+       staff group chat. */
+    function collectTodayItems(grid, day){
+        const items = [];
+
+        ["opening", "closing"].forEach(function(sectionKey){
+            const section = grid[sectionKey];
+
+            if(!section){
+                return;
+            }
+
+            const label = sectionKey === "opening" ? "Opening" : "Closing";
+
+            if(section.receptionist?.[day]){
+                items.push({ role: label + " — Receptionist", name: staffLabel(section.receptionist[day]) });
+            }
+
+            (section.therapists || []).forEach(function(row, i){
+                if(row[day]){
+                    const therapistLabel = section.therapists.length > 1 ? "Therapist " + (i + 1) : "Therapist";
+                    items.push({ role: label + " — " + therapistLabel, name: staffLabel(row[day]) });
+                }
+            });
+        });
+
+        (Array.isArray(grid.restDay) ? grid.restDay : (grid.restDay ? [grid.restDay] : [])).forEach(function(row){
+            if(row[day]){
+                items.push({ role: "Rest Day", name: staffLabel(row[day]) });
+            }
+        });
+
+        return items;
+    }
+
+    function openTodayModal(){
+        const branch = document.getElementById("scheduleBranchSelect").value;
+        const weekStart = mondayOf(todayValue());
+        const grid = branchGridsCache.find(function(g){ return g.weekStartDate === weekStart; });
+
+        const today = new Date();
+        const dateLabel = today.toLocaleDateString("en-PH", { weekday: "long", month: "short", day: "numeric" });
+        document.getElementById("scheduleTodayModalTitle").textContent =
+            (branch ? branch + " — " : "") + "Today's Schedule (" + dateLabel + ")";
+
+        const body = document.getElementById("scheduleTodayBody");
+        const empty = document.getElementById("scheduleTodayEmpty");
+
+        if(!grid){
+            body.innerHTML = "";
+            empty.classList.remove("d-none");
+            document.getElementById("scheduleTodayBackdrop").classList.remove("d-none");
+            return;
+        }
+
+        normalizeGrid(grid);
+        const items = collectTodayItems(grid, todayDayKey());
+
+        let html = "";
+
+        if(items.length > 0){
+            html += '<div class="schedule-today-section-heading">On Duty Today</div>';
+            html += items.map(function(item){
+                return `
+                    <div class="schedule-today-item">
+                        <span class="schedule-today-item-role">${escapeHtml(item.role)}</span>
+                        <span class="schedule-today-item-name">${escapeHtml(item.name)}</span>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        if(items.length === 0){
+            body.innerHTML = "";
+            empty.classList.remove("d-none");
+        }else{
+            body.innerHTML = html;
+            empty.classList.add("d-none");
+        }
+
+        document.getElementById("scheduleTodayBackdrop").classList.remove("d-none");
+    }
+
     /* ---- Create / Edit modal ---- */
 
     /* Weeks selectable from Create Schedule: the current week plus the
@@ -784,6 +879,18 @@
         ].forEach(function(btn){
             btn.addEventListener("click", function(){
                 document.getElementById("scheduleViewBackdrop").classList.add("d-none");
+            });
+        });
+
+        /* Today's Schedule modal */
+        document.getElementById("scheduleTodayBtn").addEventListener("click", openTodayModal);
+
+        [
+            document.getElementById("scheduleTodayCloseBtn"),
+            document.getElementById("scheduleTodayCloseFooterBtn")
+        ].forEach(function(btn){
+            btn.addEventListener("click", function(){
+                document.getElementById("scheduleTodayBackdrop").classList.add("d-none");
             });
         });
 

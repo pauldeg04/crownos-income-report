@@ -399,3 +399,54 @@
     background:var(--surface-soft);
     color:var(--muted);
 }
+
+/* ---- View Today's Schedule modal ---- */
+
+.schedule-today-modal{
+    max-width:480px;
+}
+
+.schedule-today-section-heading{
+    color:var(--gold-dark);
+    font-weight:800;
+    font-size:13px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    margin:16px 0 8px;
+}
+
+.schedule-today-section-heading:first-child{
+    margin-top:0;
+}
+
+.schedule-today-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    padding:12px 14px;
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-md);
+    margin-bottom:8px;
+    font-size:15px;
+}
+
+.schedule-today-item-role{
+    font-weight:700;
+    color:var(--navy);
+}
+
+.schedule-today-item-name{
+    font-weight:800;
+    color:var(--ink);
+    text-align:right;
+}
+
+.schedule-today-note{
+    margin:16px 0 0;
+    color:var(--muted);
+    font-style:italic;
+    font-size:15px;
+    text-align:center;
+}

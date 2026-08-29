@@ -4,6 +4,40 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-30 — Staff Schedule: "View Today's Schedule" for Team Leaders
+
+**Requested by:** User — Team Leaders mostly use CrownOS on their phone,
+and needed a quick way to screenshot who's on duty today and post it to
+the staff group chat, without having to screenshot (and crop) the full
+weekly grid.
+
+- [staff-schedule.html](staff-schedule.html): added a "View Today's
+  Schedule" button next to "Create Schedule", and a new read-only modal
+  (`scheduleTodayBackdrop`).
+- [staff-schedule.js](staff-schedule.js): `openTodayModal()` /
+  `collectTodayItems()` pull just today's day-key out of the current
+  week's grid (opening/closing Receptionist and Therapist rows, Rest Day)
+  and render it as a flat "Role — Name" list, deliberately single-column
+  instead of the 7-day table so it reads cleanly in a phone screenshot.
+  Notes are intentionally left out of this view — it's read-only, and
+  Notes are already edited from the existing Edit Schedule modal.
+- [staff-schedule.css](staff-schedule.css): new `.schedule-today-*`
+  classes for the list, plus an italic note under the list ("Schedule may
+  still change depending on client bookings. Please be ready for any
+  adjustments.") sized to match the list's own text.
+- [manual.html](manual.html): documented the new button under Chapter 26
+  (Staff Schedule).
+
+Visible to the same accounts that can already see the full grid (Admin,
+Executive Assistant, Team Leader) — Receptionist and Therapist accounts
+are unaffected.
+
+**Status:** Code changed locally, not yet deployed — run
+`firebase deploy --only hosting` from `Income Report/` when ready to push
+live.
+
+---
+
 ## 2026-08-29 — "For Payment (Next 5 Days)": Past Due should never disappear
 
 **Follow-up to the entry directly below.** After deploying the ±5-day
