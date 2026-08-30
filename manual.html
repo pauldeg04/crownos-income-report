@@ -1320,6 +1320,38 @@ Meal Allowance     none for these roles</div>
     or <strong>Archived</strong>.
   </p>
 
+  <div class="note">
+    <span class="callout-label">Admin Staff Group uses a different payslip format</span>
+    <p>
+      Opening a payslip from the <strong>Admin Staff</strong> group shows a
+      printable sheet instead of the plain table above — a company header,
+      a <strong>Daily Time Record</strong> table, and three side-by-side
+      columns: <strong>Earnings</strong> (Daily Rate, Meal Allowance,
+      Overtime, Commission, Gross Pay), <strong>Deductions</strong> (SSS,
+      PhilHealth, and Pag-IBIG Contribution, Withholding Tax, SSS Loan,
+      HDMF Loan, Cash Advance), and <strong>Adjustments</strong> (the same
+      Additional Pay / Deduction as any other group). Net Pay is the Gross
+      Pay plus Additional Pay, minus the Deduction and everything entered
+      under Deductions.
+    </p>
+    <p>
+      Deductions are entered per payroll period — there's no default per
+      staff member, so fill them in each time before releasing that
+      period's payroll. They save together with Additional Pay / Deduction
+      when <span class="ui">Save Adjustment</span> is clicked, and only
+      Admin/EA can edit them; staff viewing their own payslip see the
+      values read-only.
+    </p>
+    <p>
+      <span class="ui">Export to PDF</span> for this group produces a
+      one-page landscape sheet with Earnings and Adjustments moved to the
+      left side (next to the header) and Deductions on the right, and
+      leaves out the Daily Time Record table — it's a summary document,
+      not the full daily breakdown. Every other payroll group's PDF export
+      is unchanged.
+    </p>
+  </div>
+
   <h3>Releasing a payslip: Pay → Send to Email → Archive</h3>
 
   <p>

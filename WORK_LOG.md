@@ -4,6 +4,44 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-30 — Admin Staff Group: new GoodSign-style payslip format
+
+**Requested by:** User — wanted the Admin Staff Group's payslip in
+[payroll.html](payroll.html) to follow the same printable format already
+used for GoodSign's own payroll (a separate CrownOS-adjacent project, see
+`GoodSign Project/payroll.html`), instead of the plain table shared with
+every branch group.
+
+- [payroll.html](payroll.html), [payroll.css](payroll.css),
+  [payroll.js](payroll.js): opening a payslip from the **Admin Staff**
+  group now renders a printable sheet — company header, a Daily Time
+  Record table, and Earnings / Deductions / Adjustments columns feeding a
+  Gross/Deduction/Net Pay summary and a signature footer — in place of the
+  flat table + summary every other payroll group still uses. Branch group
+  payslips are untouched.
+- Added a **Deductions** column (SSS, PhilHealth, Pag-IBIG Contribution,
+  Withholding Tax, SSS Loan, HDMF Loan, Cash Advance) between Earnings and
+  Adjustments, matching GoodSign's fields. Entered per payroll period (no
+  per-staff default), editable by Admin/EA only, saved together with
+  Additional Pay/Deduction via the existing **Save Adjustment** button, and
+  now actually subtracted from Net Pay — stored under a new
+  `crownPayrollDeductions` localStorage/cloud-sync key, keyed the same way
+  as `crownPayrollAdjustments`.
+- **Export to PDF** for this group switched from the old jsPDF `autoTable`
+  layout to an `html2canvas` snapshot of the sheet (same technique
+  GoodSign's own export uses), scaled to fit one landscape A4 page. The
+  exported PDF drops the Daily Time Record table and moves Earnings/
+  Adjustments to the left column (next to the header) so the page reads
+  balanced with Deductions on the right — both are export-only DOM
+  changes, reverted immediately after capture, so the on-screen modal is
+  never affected.
+- [manual.html](manual.html): documented the Admin Staff Group's payslip
+  format and PDF export differences under Chapter 10 — Payroll.
+
+**Status:** Not yet deployed — pending push + `firebase deploy`.
+
+---
+
 ## 2026-08-30 — Therapist Dashboard form updates lost after closing (mobile)
 
 **Reported by:** User — "kapag nag uupdate ng Forms ang mga user account na

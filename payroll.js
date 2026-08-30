@@ -25,6 +25,7 @@
 
 const PAYROLL_RATES_KEY = "crownPayrollRates";
 const PAYROLL_ADJUSTMENTS_KEY = "crownPayrollAdjustments";
+const PAYROLL_DEDUCTIONS_KEY = "crownPayrollDeductions";
 const PAYROLL_STATUS_KEY = "crownPayrollStatus";
 const PAYROLL_REFERENCE_KEY = "crownPayrollReferences";
 const PAYROLL_ATTACHMENT_KEY = "crownPayrollAttachments";
@@ -269,6 +270,7 @@ function initializeAdminView(){
             keys.some(function(key){ return key.startsWith(PAYROLL_SALES_PREFIX); }) ||
             keys.includes(PAYROLL_RATES_KEY) ||
             keys.includes(PAYROLL_ADJUSTMENTS_KEY) ||
+            keys.includes(PAYROLL_DEDUCTIONS_KEY) ||
             keys.includes(PAYROLL_STATUS_KEY) ||
             keys.includes(PAYROLL_DUTY_LOG_KEY)
         ){
@@ -308,7 +310,8 @@ function initializeMyPayrollView(){
 
         if(
             keys.includes(PAYROLL_STATUS_KEY) ||
-            keys.includes(PAYROLL_ADJUSTMENTS_KEY)
+            keys.includes(PAYROLL_ADJUSTMENTS_KEY) ||
+            keys.includes(PAYROLL_DEDUCTIONS_KEY)
         ){
             renderMyPayroll();
         }
@@ -1000,6 +1003,46 @@ function getAdjustment(userId, groupKey, period){
     };
 }
 
+/* Admin Staff Group only — government contributions + loans/cash advance,
+   same fields as GoodSign's payslip Deductions column. Editable per
+   payslip period (no per-staff default), keyed like getAdjustment. */
+function getDeductions(){
+    try{
+        const raw =
+            localStorage.getItem(PAYROLL_DEDUCTIONS_KEY);
+
+        const parsed =
+            raw ? JSON.parse(raw) : {};
+
+        return (parsed && typeof parsed === "object") ? parsed : {};
+    }catch(error){
+        console.error("Unable to load payroll deductions:", error);
+        return {};
+    }
+}
+
+function saveDeductions(deductions){
+    localStorage.setItem(
+        PAYROLL_DEDUCTIONS_KEY,
+        JSON.stringify(deductions)
+    );
+}
+
+function getDeduction(userId, groupKey, period){
+    const saved =
+        getDeductions()[compositeKey(userId, groupKey, period)];
+
+    return {
+        sssContri: Number(saved?.sssContri) || 0,
+        philhealthContri: Number(saved?.philhealthContri) || 0,
+        pagibigContri: Number(saved?.pagibigContri) || 0,
+        taxWithholding: Number(saved?.taxWithholding) || 0,
+        sssLoan: Number(saved?.sssLoan) || 0,
+        hdmfLoan: Number(saved?.hdmfLoan) || 0,
+        cashAdvance: Number(saved?.cashAdvance) || 0
+    };
+}
+
 function getStatuses(){
     try{
         const raw =
@@ -1400,10 +1443,22 @@ function computeStaffPayroll(user, groupKey, period){
     const adjustment =
         getAdjustment(user.id, groupKey, period);
 
+    const deduction =
+        getDeduction(user.id, groupKey, period);
+
+    const deductionsTotal =
+        deduction.sssContri +
+        deduction.philhealthContri +
+        deduction.pagibigContri +
+        deduction.taxWithholding +
+        deduction.sssLoan +
+        deduction.hdmfLoan +
+        deduction.cashAdvance;
+
     const netTotal =
         Math.max(
             0,
-            grossTotal + adjustment.additionalPay - adjustment.deduction
+            grossTotal + adjustment.additionalPay - adjustment.deduction - deductionsTotal
         );
 
     return {
@@ -1416,6 +1471,8 @@ function computeStaffPayroll(user, groupKey, period){
         commissionTotal: commissionTotal,
         grossTotal: grossTotal,
         adjustment: adjustment,
+        deduction: deduction,
+        deductionsTotal: deductionsTotal,
         netTotal: netTotal
     };
 }
@@ -2205,6 +2262,14 @@ function openPayslipModal(user, groupKey, period){
             ? readoutLines.join("<br>")
             : "No adjustment for this period.";
 
+    const isAdminGroup =
+        groupKey === ADMIN_GROUP_KEY;
+
+    document.getElementById("payslipStandardHead").classList.toggle("d-none", isAdminGroup);
+    document.getElementById("payslipStandardTableWrap").classList.toggle("d-none", isAdminGroup);
+    document.getElementById("payslipStandardSummaryWrap").classList.toggle("d-none", isAdminGroup);
+    document.getElementById("payslipAdminSheetWrap").classList.toggle("d-none", !isAdminGroup);
+
     renderPayslipSummary(result);
     renderPayslipReference();
     renderPayslipAttachment();
@@ -2214,6 +2279,120 @@ function openPayslipModal(user, groupKey, period){
     applyPayslipModalMode();
 
     document.getElementById("payslipBackdrop").classList.remove("d-none");
+}
+
+/* Admin Staff Group only — renders the GoodSign-style printable sheet
+   (company header, DTR table, Earnings/Adjustments columns, Net Pay
+   summary, signature footer) in place of the standard flat table +
+   summary used for branch groups. Re-run alongside renderPayslipSummary
+   so it stays in sync with adjustment edits. */
+function renderAdminPayslipSheet(result){
+    if(!currentPayslipContext){
+        return;
+    }
+
+    document.getElementById("psAdmName").textContent =
+        getFullName(result.user);
+
+    document.getElementById("psAdmRole").textContent =
+        result.user.role;
+
+    document.getElementById("psAdmPeriod").textContent =
+        currentPayslipContext.period.label;
+
+    document.getElementById("psAdmRef").textContent =
+        getPayslipReference(
+            currentPayslipContext.userId,
+            currentPayslipContext.groupKey,
+            currentPayslipContext.period
+        ) || "Not yet generated";
+
+    document.getElementById("psAdmDtrBody").innerHTML =
+        result.days.map(function(day){
+            return `
+                <tr>
+                    <td>${formatDateLabel(day.date)}</td>
+                    <td>${formatTimeLabel(day.timeIn)}</td>
+                    <td>${formatTimeLabel(day.timeOut)}</td>
+                    <td>${day.hours ? day.hours.toFixed(2) : "—"}</td>
+                </tr>
+            `;
+        }).join("");
+
+    document.getElementById("psAdmEarningsTable").innerHTML = `
+        <tr><td class="ps-line-label">Daily Rate</td><td class="ps-line-amount">${peso(result.dailyRateTotal)}</td></tr>
+        <tr><td class="ps-line-label">Meal Allowance</td><td class="ps-line-amount">${peso(result.mealAllowanceTotal)}</td></tr>
+        <tr><td class="ps-line-label">Overtime</td><td class="ps-line-amount">${peso(result.overtimeTotal)}</td></tr>
+        <tr><td class="ps-line-label">Commission</td><td class="ps-line-amount">${peso(result.commissionTotal)}</td></tr>
+        <tr class="ps-line-subtotal"><td class="ps-line-label">Gross Pay</td><td class="ps-line-amount">${peso(result.grossTotal)}</td></tr>
+    `;
+
+    renderAdminDeductionsTable(result);
+
+    document.getElementById("psAdmAdjustmentsTable").innerHTML = `
+        <tr><td class="ps-line-label">Additional Pay${result.adjustment.additionalPayNote ? ` (${escapeHtml(result.adjustment.additionalPayNote)})` : ""}</td><td class="ps-line-amount">${result.adjustment.additionalPay > 0 ? "+" + peso(result.adjustment.additionalPay) : peso(0)}</td></tr>
+        <tr><td class="ps-line-label">Deduction${result.adjustment.deductionNote ? ` (${escapeHtml(result.adjustment.deductionNote)})` : ""}</td><td class="ps-line-amount">${result.adjustment.deduction > 0 ? "−" + peso(result.adjustment.deduction) : peso(0)}</td></tr>
+    `;
+
+    document.getElementById("psAdmGross").textContent =
+        peso(result.grossTotal);
+
+    document.getElementById("psAdmDeduction").textContent =
+        peso(result.adjustment.deduction + result.deductionsTotal);
+
+    document.getElementById("psAdmNet").textContent =
+        peso(result.netTotal);
+}
+
+/* Government Contribution + Other Deduction line items — editable by
+   Admin/EA (canManagePayroll), read-only for staff viewing their own
+   payslip. Saved together with the Additional Pay/Deduction adjustment
+   via the same "Save Adjustment" action (see savePayslipAdjustment). */
+function renderAdminDeductionsTable(result){
+    const editable =
+        canManagePayroll();
+
+    const disabledAttr =
+        editable ? "" : "disabled";
+
+    const deduction =
+        result.deduction;
+
+    document.getElementById("psAdmDeductionsTable").innerHTML = `
+        <tr><td colspan="2" class="ps-line-label"><strong>Government Contribution</strong></td></tr>
+        <tr>
+            <td class="ps-line-label">SSS Contribution</td>
+            <td class="ps-line-input"><input type="number" min="0" step="0.01" id="psDedSssContri" value="${deduction.sssContri || ""}" placeholder="0.00" ${disabledAttr}></td>
+        </tr>
+        <tr>
+            <td class="ps-line-label">PhilHealth Contribution</td>
+            <td class="ps-line-input"><input type="number" min="0" step="0.01" id="psDedPhilhealthContri" value="${deduction.philhealthContri || ""}" placeholder="0.00" ${disabledAttr}></td>
+        </tr>
+        <tr>
+            <td class="ps-line-label">Pag-IBIG Contribution</td>
+            <td class="ps-line-input"><input type="number" min="0" step="0.01" id="psDedPagibigContri" value="${deduction.pagibigContri || ""}" placeholder="0.00" ${disabledAttr}></td>
+        </tr>
+        <tr>
+            <td class="ps-line-label">Withholding Tax</td>
+            <td class="ps-line-input"><input type="number" min="0" step="0.01" id="psDedTaxWithholding" value="${deduction.taxWithholding || ""}" placeholder="0.00" ${disabledAttr}></td>
+        </tr>
+        <tr class="ps-line-subtotal"><td class="ps-line-label">Total Contribution</td><td class="ps-line-amount">${peso(deduction.sssContri + deduction.philhealthContri + deduction.pagibigContri + deduction.taxWithholding)}</td></tr>
+        <tr><td colspan="2" class="ps-line-label"><strong>Other Deduction</strong></td></tr>
+        <tr>
+            <td class="ps-line-label">SSS Loan</td>
+            <td class="ps-line-input"><input type="number" min="0" step="0.01" id="psDedSssLoan" value="${deduction.sssLoan || ""}" placeholder="0.00" ${disabledAttr}></td>
+        </tr>
+        <tr>
+            <td class="ps-line-label">HDMF Loan</td>
+            <td class="ps-line-input"><input type="number" min="0" step="0.01" id="psDedHdmfLoan" value="${deduction.hdmfLoan || ""}" placeholder="0.00" ${disabledAttr}></td>
+        </tr>
+        <tr>
+            <td class="ps-line-label">Cash Advance</td>
+            <td class="ps-line-input"><input type="number" min="0" step="0.01" id="psDedCashAdvance" value="${deduction.cashAdvance || ""}" placeholder="0.00" ${disabledAttr}></td>
+        </tr>
+        <tr class="ps-line-subtotal"><td class="ps-line-label">Total Other Deduction</td><td class="ps-line-amount">${peso(deduction.sssLoan + deduction.hdmfLoan + deduction.cashAdvance)}</td></tr>
+        <tr class="ps-line-subtotal"><td class="ps-line-label"><strong>Total Deduction</strong></td><td class="ps-line-amount"><strong>${peso(result.deductionsTotal)}</strong></td></tr>
+    `;
 }
 
 /* Admin/EA get the editable Adjustment row + the status-driven action
@@ -2262,6 +2441,10 @@ function renderPayslipSummary(result){
 
     document.getElementById("payslipNetTotal").textContent =
         peso(result.netTotal);
+
+    if(currentPayslipContext && currentPayslipContext.groupKey === ADMIN_GROUP_KEY){
+        renderAdminPayslipSheet(result);
+    }
 }
 
 /* Which of Pay / Send to Email / Archive shows in the Admin/EA footer is
@@ -2360,6 +2543,36 @@ function savePayslipAdjustment(){
     }
 
     saveAdjustments(adjustments);
+
+    if(currentPayslipContext.groupKey === ADMIN_GROUP_KEY){
+        const deductionValue = function(id){
+            return Number(document.getElementById(id).value) || 0;
+        };
+
+        const newDeduction = {
+            sssContri: deductionValue("psDedSssContri"),
+            philhealthContri: deductionValue("psDedPhilhealthContri"),
+            pagibigContri: deductionValue("psDedPagibigContri"),
+            taxWithholding: deductionValue("psDedTaxWithholding"),
+            sssLoan: deductionValue("psDedSssLoan"),
+            hdmfLoan: deductionValue("psDedHdmfLoan"),
+            cashAdvance: deductionValue("psDedCashAdvance")
+        };
+
+        const deductions =
+            getDeductions();
+
+        const hasAnyDeduction =
+            Object.values(newDeduction).some(function(value){ return value > 0; });
+
+        if(hasAnyDeduction){
+            deductions[key] = newDeduction;
+        }else{
+            delete deductions[key];
+        }
+
+        saveDeductions(deductions);
+    }
 
     const user =
         CrownAuth.getUsers().find(function(item){
@@ -2483,6 +2696,134 @@ function exportPayrollSummaryPdf(){
     }
 }
 
+/* Admin Staff Group PDF export — captures the on-screen GoodSign-style
+   sheet (#psAdmSheet) as an image via html2canvas and drops it into an
+   A4 landscape PDF, the same technique GoodSign's own payroll uses so
+   the exported PDF matches the sheet pixel-for-pixel. */
+async function exportAdminPayslipPdf(user){
+    if(!window.html2canvas){
+        alert("PDF snapshot library is unavailable. Please check your internet connection and reload the page.");
+        return;
+    }
+
+    const button =
+        document.getElementById("exportPayslipPdfBtn");
+
+    button.disabled = true;
+    button.textContent = "Generating PDF...";
+
+    const sheet =
+        document.getElementById("psAdmSheet");
+
+    /* Export is a summary-only document — the Daily Time Record detail
+       stays in-app (still visible/editable in the modal), not on the
+       printed/exported payslip. */
+    const dtrSection =
+        document.getElementById("psAdmDtrSection");
+
+    const dtrOriginalDisplay =
+        dtrSection.style.display;
+
+    dtrSection.style.display = "none";
+
+    /* With the DTR hidden, the on-screen split (Earnings/Deductions/
+       Adjustments all in the right column) leaves the export lopsided —
+       move Earnings and Adjustments into the left column just for the
+       capture, then put them back exactly where they came from. */
+    const leftCol =
+        sheet.querySelector(".ps-left-col");
+
+    const rightCol =
+        sheet.querySelector(".ps-right-col");
+
+    const earningsCol =
+        document.getElementById("psAdmEarningsTable").closest(".ps-col");
+
+    const adjustmentsCol =
+        document.getElementById("psAdmAdjustmentsTable").closest(".ps-col");
+
+    const earningsRestoreBefore =
+        earningsCol.nextSibling;
+
+    const adjustmentsRestoreBefore =
+        adjustmentsCol.nextSibling;
+
+    leftCol.appendChild(earningsCol);
+    leftCol.appendChild(adjustmentsCol);
+
+    /* html2canvas can render an <input>'s typed value blank or clipped —
+       swap every Deductions input for a plain-text span before the
+       capture, then restore them afterward regardless of outcome. */
+    const swappedInputs =
+        Array.from(sheet.querySelectorAll("input")).map(function(input){
+            const span =
+                document.createElement("span");
+
+            span.className = "ps-static-value";
+            span.textContent = input.value ? peso(Number(input.value) || 0) : "—";
+            input.insertAdjacentElement("afterend", span);
+            input.style.display = "none";
+
+            return { input: input, span: span };
+        });
+
+    try{
+        const canvas =
+            await html2canvas(sheet, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+
+        const jsPDF =
+            window.jspdf.jsPDF;
+
+        const pdf =
+            new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
+
+        /* Fit the whole sheet on one landscape A4 page — scale to
+           whichever dimension (width or height) is the tighter fit
+           inside a small margin, then center it on the page. */
+        const pageWidth = 297;
+        const pageHeight = 210;
+        const margin = 8;
+
+        const availableWidth = pageWidth - margin * 2;
+        const availableHeight = pageHeight - margin * 2;
+
+        const scale =
+            Math.min(
+                availableWidth / canvas.width,
+                availableHeight / canvas.height
+            );
+
+        const imgWidth = canvas.width * scale;
+        const imgHeight = canvas.height * scale;
+        const offsetX = (pageWidth - imgWidth) / 2;
+        const offsetY = (pageHeight - imgHeight) / 2;
+
+        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+
+        pdf.addImage(imgData, "JPEG", offsetX, offsetY, imgWidth, imgHeight);
+
+        pdf.save(
+            `Crown Head Spa - Admin Staff Payslip - ${user.account} - ${currentPayslipContext.period.start} to ${currentPayslipContext.period.end}.pdf`
+        );
+    }catch(error){
+        console.error(error);
+        alert("Unable to generate the payslip PDF.");
+    }finally{
+        swappedInputs.forEach(function(pair){
+            pair.input.style.display = "";
+            pair.span.remove();
+        });
+
+        rightCol.insertBefore(earningsCol, earningsRestoreBefore);
+        rightCol.insertBefore(adjustmentsCol, adjustmentsRestoreBefore);
+
+        dtrSection.style.display = dtrOriginalDisplay;
+
+        button.disabled = false;
+        button.textContent = "🖨 Export to PDF";
+    }
+}
+
 function exportPayslipPdf(){
     if(!currentPayslipContext){
         return;
@@ -2502,6 +2843,11 @@ function exportPayslipPdf(){
         return;
     }
 
+    if(currentPayslipContext.groupKey === ADMIN_GROUP_KEY){
+        exportAdminPayslipPdf(user);
+        return;
+    }
+
     const result =
         computeStaffPayroll(
             user,
@@ -2510,9 +2856,7 @@ function exportPayslipPdf(){
         );
 
     const branchLabel =
-        currentPayslipContext.groupKey === ADMIN_GROUP_KEY
-            ? "Admin Staff (All Branches)"
-            : currentPayslipContext.groupKey;
+        currentPayslipContext.groupKey;
 
     const isTherapist =
         user.role === "Therapist";

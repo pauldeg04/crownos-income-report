@@ -480,3 +480,233 @@
     background:var(--state-green-bg);
     border:1px solid var(--state-green-border);
 }
+
+/* ---- Admin Staff Group payslip sheet (matches the GoodSign payroll
+   format: printable two-column sheet with company header, DTR table,
+   Earnings/Adjustments columns, and a signature footer). ---- */
+
+.ps-sheet-wrap{
+    background:#5b6168;
+    border-radius:var(--radius-lg);
+    padding:20px;
+    overflow-x:auto;
+    margin-bottom:16px;
+}
+
+.ps-sheet{
+    background:#fff;
+    color:#111;
+    width:100%;
+    max-width:1120px;
+    margin:0 auto;
+    padding:22px 24px;
+    font-family:Arial, Helvetica, sans-serif;
+    font-size:12.5px;
+    line-height:1.45;
+    box-shadow:0 6px 24px rgba(0,0,0,.35);
+}
+
+.ps-sheet-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0 28px;
+    align-items:start;
+}
+
+.ps-left-col{
+    border-right:1px solid #ccc;
+    padding-right:28px;
+}
+
+@media (max-width:700px){
+    .ps-sheet-grid{grid-template-columns:1fr;}
+    .ps-left-col{border-right:none;padding-right:0;}
+}
+
+.ps-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:4px;
+}
+
+.ps-header-company{
+    font-weight:800;
+    font-size:15px;
+    letter-spacing:.3px;
+    color:var(--navy);
+}
+
+.ps-header-sub{
+    font-size:11.5px;
+    font-weight:700;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+}
+
+.ps-dtr-ref{
+    font-weight:700;
+    font-size:12px;
+    padding-bottom:10px;
+    margin-bottom:12px;
+    border-bottom:2px solid #111;
+}
+
+.ps-info-grid{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:4px 20px;
+    margin-bottom:16px;
+    font-size:12.5px;
+}
+
+.ps-info-grid strong{
+    color:#333;
+    display:inline-block;
+    width:110px;
+}
+
+@media (max-width:560px){
+    .ps-info-grid{grid-template-columns:1fr;}
+}
+
+.ps-dtr-section{margin-bottom:16px;}
+
+.ps-table-wrap{
+    overflow-x:auto;
+    border:1px solid #999;
+    margin-top:8px;
+}
+
+.ps-dtr-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:11.5px;
+}
+
+.ps-dtr-table th{
+    background:#111;
+    color:#fff;
+    text-transform:uppercase;
+    font-size:10px;
+    line-height:1.2;
+    padding:6px 5px;
+    text-align:center;
+    border:1px solid #333;
+}
+
+.ps-dtr-table td{
+    border:1px solid #ccc;
+    padding:4px 5px;
+    text-align:center;
+}
+
+.ps-dtr-table td:first-child{text-align:left;white-space:nowrap;}
+
+.ps-col{margin-bottom:16px;}
+
+.ps-col-title{
+    font-weight:800;
+    font-size:12px;
+    text-transform:uppercase;
+    background:#111;
+    color:#fff;
+    padding:6px 8px;
+}
+
+.ps-line-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:11.5px;
+}
+
+.ps-line-table td{
+    border:1px solid #ccc;
+    padding:4px 6px;
+    vertical-align:middle;
+}
+
+.ps-line-table td.ps-line-label{width:65%;}
+
+.ps-line-table td.ps-line-input input{
+    width:100%;
+    border:1px solid #ccc;
+    border-radius:4px;
+    padding:3px 4px;
+    font-size:11px;
+    text-align:right;
+}
+
+.ps-line-table td.ps-line-input input:disabled{
+    background:#f2f2f2;
+    color:#999;
+}
+
+.ps-line-table td.ps-line-amount{
+    width:35%;
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+}
+
+.ps-line-table tr.ps-line-subtotal td{
+    background:#f2f2f2;
+    font-weight:700;
+}
+
+/* Export-only: replaces each input with its plain value (see the swap in
+   exportAdminPayslipPdf) so html2canvas never has to rasterize a form
+   control — an input's typed value can render blank/clipped in the
+   snapshot otherwise. */
+.ps-static-value{
+    display:block;
+    width:100%;
+    font-size:11px;
+    text-align:right;
+    color:#111;
+}
+
+.ps-summary{
+    border-top:2px solid #111;
+    padding-top:10px;
+    max-width:340px;
+    margin-left:auto;
+}
+
+.ps-summary-row{
+    display:flex;
+    justify-content:space-between;
+    padding:4px 0;
+    font-size:13px;
+}
+
+.ps-net-row{
+    border-top:1px solid #999;
+    margin-top:6px;
+    padding-top:10px;
+    font-size:16px;
+}
+
+.ps-net-row strong{
+    color:var(--navy);
+    font-size:19px;
+}
+
+.ps-footer{
+    margin-top:18px;
+    padding-top:14px;
+    border-top:1px solid #ccc;
+}
+
+.ps-signature-line{
+    font-size:12px;
+    margin-bottom:12px;
+}
+
+.ps-disclaimer{
+    font-size:10px;
+    color:#666;
+    font-style:italic;
+    line-height:1.4;
+    margin-bottom:0;
+}

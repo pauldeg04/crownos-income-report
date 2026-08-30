@@ -21,6 +21,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -425,33 +426,105 @@
         </div>
 
         <div class="payroll-modal-body">
-            <div class="payslip-info-grid">
-                <div><span>Name</span><strong id="payslipName">—</strong></div>
-                <div><span>Role / Position</span><strong id="payslipRole">—</strong></div>
-                <div><span>Branch</span><strong id="payslipBranch">—</strong></div>
-                <div><span>Pay Period</span><strong id="payslipPeriod">—</strong></div>
-                <div><span>Reference Number</span><strong id="payslipReference">Not yet generated</strong></div>
+            <div id="payslipStandardHead">
+                <div class="payslip-info-grid">
+                    <div><span>Name</span><strong id="payslipName">—</strong></div>
+                    <div><span>Role / Position</span><strong id="payslipRole">—</strong></div>
+                    <div><span>Branch</span><strong id="payslipBranch">—</strong></div>
+                    <div><span>Pay Period</span><strong id="payslipPeriod">—</strong></div>
+                    <div><span>Reference Number</span><strong id="payslipReference">Not yet generated</strong></div>
+                </div>
+
+                <div class="payslip-rate-warning d-none" id="payslipRateWarning">
+                    <span id="payslipRateWarningText"></span>
+                </div>
             </div>
 
-            <div class="payslip-rate-warning d-none" id="payslipRateWarning">
-                <span id="payslipRateWarningText"></span>
+            <div id="payslipStandardTableWrap">
+                <div class="table-responsive">
+                    <table class="table payslip-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                                <th>Daily Rate</th>
+                                <th>Meal Allowance</th>
+                                <th>Overtime</th>
+                                <th>Commission</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payslipBody"></tbody>
+                    </table>
+                </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="table payslip-table align-middle">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Time In</th>
-                            <th>Time Out</th>
-                            <th>Daily Rate</th>
-                            <th>Meal Allowance</th>
-                            <th>Overtime</th>
-                            <th>Commission</th>
-                        </tr>
-                    </thead>
-                    <tbody id="payslipBody"></tbody>
-                </table>
+            <!-- Admin Staff Group payslip sheet — GoodSign-style format:
+                 company header, DTR table, Earnings/Adjustments columns,
+                 Net Pay summary, signature footer. -->
+            <div class="d-none" id="payslipAdminSheetWrap">
+                <div class="ps-sheet-wrap">
+                    <div class="ps-sheet" id="psAdmSheet">
+                        <div class="ps-sheet-grid">
+                            <div class="ps-left-col">
+                                <div class="ps-header">
+                                    <div>
+                                        <div class="ps-header-company">CROWN HEAD SPA</div>
+                                        <div class="ps-header-sub">Admin Staff Payslip</div>
+                                    </div>
+                                </div>
+                                <div class="ps-dtr-ref">REFERENCE NO.: <span id="psAdmRef">—</span></div>
+
+                                <div class="ps-info-grid">
+                                    <div><strong>Name:</strong> <span id="psAdmName"></span></div>
+                                    <div><strong>Position:</strong> <span id="psAdmRole"></span></div>
+                                    <div><strong>Coverage:</strong> <span>Admin Staff (All Branches)</span></div>
+                                    <div><strong>Payroll Period:</strong> <span id="psAdmPeriod"></span></div>
+                                </div>
+
+                                <div class="ps-dtr-section" id="psAdmDtrSection">
+                                    <div class="ps-col-title">Daily Time Record</div>
+                                    <div class="ps-table-wrap">
+                                        <table class="ps-table ps-dtr-table">
+                                            <thead>
+                                                <tr><th>Date</th><th>In</th><th>Out</th><th>Hrs</th></tr>
+                                            </thead>
+                                            <tbody id="psAdmDtrBody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ps-right-col">
+                                <div class="ps-col">
+                                    <div class="ps-col-title">Earnings</div>
+                                    <table class="ps-line-table" id="psAdmEarningsTable"></table>
+                                </div>
+
+                                <div class="ps-col">
+                                    <div class="ps-col-title">Deductions</div>
+                                    <table class="ps-line-table" id="psAdmDeductionsTable"></table>
+                                </div>
+
+                                <div class="ps-col">
+                                    <div class="ps-col-title">Adjustments</div>
+                                    <table class="ps-line-table" id="psAdmAdjustmentsTable"></table>
+                                </div>
+
+                                <div class="ps-summary">
+                                    <div class="ps-summary-row"><span>Gross Pay</span><strong id="psAdmGross">—</strong></div>
+                                    <div class="ps-summary-row"><span>Total Deduction</span><strong id="psAdmDeduction">—</strong></div>
+                                    <div class="ps-summary-row ps-net-row"><span>Net Pay</span><strong id="psAdmNet">—</strong></div>
+                                </div>
+
+                                <div class="ps-footer">
+                                    <div class="ps-signature-line">EMPLOYEE'S SIGNATURE: ___________________________</div>
+                                    <p class="ps-disclaimer">Please check the above computation for any error. Any clarification or correction should be brought to the Admin Dept. within 5 days from receipt of this payslip. Otherwise, the above shall be deemed correct. This document contains personal information and should not be shared without the consent of the employee.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="payslip-adjustment-row" id="payslipAdjustmentRow">
@@ -474,15 +547,17 @@
 
             <div class="payslip-adjustment-readout d-none" id="payslipAdjustmentReadout"></div>
 
-            <div class="payslip-summary">
-                <div><span>Total Daily Rate</span><strong id="payslipDailyRateTotal">₱0.00</strong></div>
-                <div><span>Total Meal Allowance</span><strong id="payslipMealAllowanceTotal">₱0.00</strong></div>
-                <div><span>Total Overtime</span><strong id="payslipOvertimeTotal">₱0.00</strong></div>
-                <div><span>Total Commission</span><strong id="payslipCommissionTotal">₱0.00</strong></div>
-                <div class="payslip-summary-subtotal"><span>Gross Total</span><strong id="payslipGrossTotal">₱0.00</strong></div>
-                <div><span>Additional Pay</span><strong id="payslipAdditionalPayTotal">₱0.00</strong></div>
-                <div><span>Less Deduction</span><strong id="payslipDeductionTotal">₱0.00</strong></div>
-                <div class="payslip-summary-net"><span>Net Pay</span><strong id="payslipNetTotal">₱0.00</strong></div>
+            <div id="payslipStandardSummaryWrap">
+                <div class="payslip-summary">
+                    <div><span>Total Daily Rate</span><strong id="payslipDailyRateTotal">₱0.00</strong></div>
+                    <div><span>Total Meal Allowance</span><strong id="payslipMealAllowanceTotal">₱0.00</strong></div>
+                    <div><span>Total Overtime</span><strong id="payslipOvertimeTotal">₱0.00</strong></div>
+                    <div><span>Total Commission</span><strong id="payslipCommissionTotal">₱0.00</strong></div>
+                    <div class="payslip-summary-subtotal"><span>Gross Total</span><strong id="payslipGrossTotal">₱0.00</strong></div>
+                    <div><span>Additional Pay</span><strong id="payslipAdditionalPayTotal">₱0.00</strong></div>
+                    <div><span>Less Deduction</span><strong id="payslipDeductionTotal">₱0.00</strong></div>
+                    <div class="payslip-summary-net"><span>Net Pay</span><strong id="payslipNetTotal">₱0.00</strong></div>
+                </div>
             </div>
 
             <div class="payslip-attachment-row d-none" id="payslipAttachmentRow">
