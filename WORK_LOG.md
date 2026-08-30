@@ -24,9 +24,7 @@ already used by the Purchases tab.
   Summary is now documented as three sub-tabs instead of one flat
   description.
 
-**Status:** Code changed locally, not yet deployed — run
-`firebase deploy --only hosting` from `Income Report/` when ready to push
-live.
+**Status:** Deployed to production (`crownos-5f03d.web.app`).
 
 ---
 
