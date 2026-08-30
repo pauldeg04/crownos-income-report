@@ -47,5 +47,19 @@ self.addEventListener("activate", function(event){
 });
 
 self.addEventListener("fetch", function(event){
+    // Only pass through same-origin GET requests. Firebase Storage uploads
+    // (bir-compliance.js's uploadFile(), and every other uploadXAttachment()
+    // in the app) are cross-origin, multi-step requests to
+    // firebasestorage.googleapis.com — intercepting and re-issuing those via
+    // respondWith(fetch(...)) is what was breaking them (surfaced as
+    // "Firebase Storage: An unknown error occurred... (storage/unknown)"),
+    // most visibly on mobile Safari/the installed PWA. Letting the browser
+    // handle non-GET/cross-origin requests directly, untouched, fixes it —
+    // this handler existing at all is only needed for installability
+    // checks, not for actually serving anything.
+    const url = new URL(event.request.url);
+    if(event.request.method !== "GET" || url.origin !== self.location.origin){
+        return;
+    }
     event.respondWith(fetch(event.request));
 });

@@ -4,6 +4,37 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-30 — Service worker was breaking Firebase Storage uploads (mobile)
+
+**Reported by:** User — attaching a file to a new BIR Forms entry on
+mobile failed with `Upload failed: Firebase Storage: An unknown error
+occurred... (storage/unknown)`.
+
+**Root cause found:** [`sw.js`](sw.js)'s `fetch` event handler intercepted
+*every* network request the page made — `event.respondWith(fetch(event.request))`
+with no origin/method check — including the cross-origin, multi-step
+requests Firebase Storage's SDK makes to `firebasestorage.googleapis.com`
+to upload a file. Re-issuing those through a service worker like this is a
+known way to break Storage uploads, most visibly on mobile Safari/the
+installed PWA. This affects every `uploadFile()`/`uploadXAttachment()` call
+in the app (Purchases ledger receipts, BIR Forms, payroll, expenses, petty
+cash), not just the new BIR Forms tab — it likely just hadn't been
+noticed yet from a phone before now.
+
+**Fix applied:** the fetch handler now only intercepts same-origin `GET`
+requests and returns early (lets the browser handle it directly) for
+everything else, so cross-origin Storage upload requests pass through
+untouched.
+
+**Note:** service workers persist across page loads until an old one is
+fully replaced — if uploads still fail right after this deploys, close all
+CrownOS tabs (or fully quit the installed PWA) and reopen once to let the
+new `sw.js` take over.
+
+**Status:** Deployed to production (`crownos-5f03d.web.app`).
+
+---
+
 ## 2026-08-30 — BIR Compliance Desk: new "BIR Forms" filing tracker tab
 
 **Requested by:** User — wanted a new top-level tab on the BIR Compliance
