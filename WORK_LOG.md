@@ -4,6 +4,47 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-30 — BIR Compliance Desk: new "BIR Forms" filing tracker tab
+
+**Requested by:** User — wanted a new top-level tab on the BIR Compliance
+Desk to track BIR filing status (separate from the disbursement ledger),
+with Monthly / Quarterly / Annual sub-tabs plus a Yearly Summary overview.
+
+- [bir-compliance.js](bir-compliance.js): added a 4th top-level tab, **BIR
+  Forms**, backed by a new `state.birForms.entries` array (Firestore-synced
+  and backfilled like `reminders`/`incomeSummary`).
+  - **Monthly** (`1601-C`, `0619-E`), **Quarterly** (`2551-Q`, `1601-EQ`,
+    `1702-Q`), and **Annual** (`1702-ANNUAL`, `1604-C`, `1604-E`, `2316`)
+    each get their own table — Coverage, Forms, Reference, Proof of
+    Payment, Accomplished Forms, Remarks, Action. `+ Add Entry` opens a
+    modal asking for Coverage (dropdown, scoped to the period — month/
+    quarter/year), Forms (dropdown, scoped to the period), and up to three
+    file+date-submitted attachments (Reference, Proof of Payment,
+    Accomplished Forms) uploaded via the existing `uploadFile()` helper
+    (Firebase Storage, under `birForms/<period>/<slot>`). Each row has
+    View (read-only modal) and Edit (editable, with Delete) actions.
+  - **Yearly Summary** renders one merged grid (`renderBirFormsYearlyTab`)
+    — months down the side, all nine forms across the top, with the
+    quarterly/annual form columns spanned via `<td rowspan>` across their
+    covered months, matching the paper matrix the user provided as a
+    reference. Each filled cell shows Reference/Payment/Accomplished
+    Forms as DONE (clickable — opens `openBirPrintPreview()`, an A4-sized
+    print-ready view of that attachment with a Print button) or PENDING.
+    A Year picker sits above the grid (`BIR_MATRIX_YEARS`, currently just
+    the app's single `YEAR` constant — the rest of CrownOS is likewise
+    single-year, so this is a display-only placeholder until that's
+    extended).
+- [bir-compliance.css](bir-compliance.css): new styles for the file-cell
+  attachment display (`.bir-file-cell`), and the Yearly Summary matrix
+  (`.bir-matrix`, `.bir-matrix-cell`, `.bir-matrix-line`).
+- [manual.html](manual.html): Chapter 30 (BIR Compliance Desk) — documented
+  the new BIR Forms tab and its four sub-tabs; the desk is now described
+  as four tabs instead of three.
+
+**Status:** Deployed to production (`crownos-5f03d.web.app`).
+
+---
+
 ## 2026-08-30 — BIR Compliance Desk: Monthly / Quarterly / Yearly sub-tabs for Income Summary
 
 **Requested by:** User — wanted the Income Summary tab broken into

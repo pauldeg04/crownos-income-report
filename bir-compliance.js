@@ -83,7 +83,8 @@
       },
       ledger: { months: buildSeedMonths() },
       reminders: [],
-      incomeSummary: []
+      incomeSummary: [],
+      birForms: { entries: [] }
     };
   }
 
@@ -116,6 +117,7 @@
       if (!state.ledger || !state.ledger.months) state.ledger = defaultState().ledger;
       if (!Array.isArray(state.reminders)) state.reminders = [];
       if (!Array.isArray(state.incomeSummary)) state.incomeSummary = [];
+      if (!state.birForms || !Array.isArray(state.birForms.entries)) state.birForms = { entries: [] };
       // Backfill any month missing from state (e.g. app updated with new months) without touching existing data.
       MONTHS.forEach(m => {
         if (!state.ledger.months[m.key]){
@@ -296,7 +298,7 @@
   // ============================================================
   // TOP-LEVEL TABS: Dashboard / Income Summary / Purchases
   // ============================================================
-  const TOP_TABS = [['dashboard','Dashboard'], ['income','Income Summary'], ['purchases','Purchases']];
+  const TOP_TABS = [['dashboard','Dashboard'], ['income','Income Summary'], ['purchases','Purchases'], ['birforms','BIR Forms']];
   let currentView = 'dashboard';
 
   function renderViewTabs(){
@@ -318,7 +320,7 @@
     document.getElementById('viewTitle').textContent = TOP_TABS.find(([id])=>id===currentView)[1];
     const content = document.getElementById('content');
     content.innerHTML = '';
-    ({dashboard: renderDashboard, income: renderIncomeSummary, purchases: renderPurchases})[currentView](content);
+    ({dashboard: renderDashboard, income: renderIncomeSummary, purchases: renderPurchases, birforms: renderBirForms})[currentView](content);
   }
 
   // ---------- Dashboard: Upcoming Payments + Reminder Calendar ----------
@@ -1095,6 +1097,270 @@
         </tbody></table></div>
       </div>
     `;
+  }
+
+  // ============================================================
+  // BIR FORMS — filing tracker (Monthly / Quarterly / Annual / Yearly Summary)
+  // ============================================================
+  const MONTH_ABBR = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const BIR_FORM_OPTIONS = {
+    monthly: ['1601-C', '0619-E'],
+    quarterly: ['2551-Q', '1601-EQ', '1702-Q'],
+    annual: ['1702-ANNUAL', '1604-C', '1604-E', '2316']
+  };
+  const BIR_PERIOD_LABEL = {monthly:'Monthly', quarterly:'Quarterly', annual:'Annual'};
+  let birFormsSubTab = 'monthly';
+
+  function birFormsEntries(period){
+    return (state.birForms.entries||[]).filter(e => e.period === period);
+  }
+
+  function birCoverageLabel(period, coverage){
+    if (period === 'monthly') return MONTH_BY_KEY[coverage] ? `${MONTH_ABBR[MONTH_BY_KEY[coverage].num-1]} ${YEAR}` : coverage;
+    if (period === 'quarterly') return `Q${coverage} ${YEAR}`;
+    return String(coverage);
+  }
+
+  function birCoverageSortKey(period, coverage){
+    if (period === 'monthly') return coverage;
+    if (period === 'quarterly') return `${YEAR}-Q${coverage}`;
+    return String(coverage);
+  }
+
+  function renderBirForms(el){
+    const tabs = [['monthly','Monthly'], ['quarterly','Quarterly'], ['annual','Annual'], ['yearly','Yearly Summary']];
+    el.innerHTML = `<div class="tabs" role="tablist">${tabs.map(([k,l]) => `<button role="tab" data-subtab="${k}" aria-selected="${birFormsSubTab===k}">${l}</button>`).join('')}</div><div id="birFormsBody"></div>`;
+    el.querySelectorAll('[role="tab"]').forEach(b => b.addEventListener('click', () => { birFormsSubTab = b.dataset.subtab; renderAll(); }));
+    const body = document.getElementById('birFormsBody');
+    ({
+      monthly: (e) => renderBirFormsPeriodTab(e, 'monthly'),
+      quarterly: (e) => renderBirFormsPeriodTab(e, 'quarterly'),
+      annual: (e) => renderBirFormsPeriodTab(e, 'annual'),
+      yearly: renderBirFormsYearlyTab
+    })[birFormsSubTab](body);
+  }
+
+  function birAttachmentCellHtml(slot){
+    if (!slot || !slot.attachment) return '—';
+    return `<div class="bir-file-cell"><a href="${slot.attachment.url}" target="_blank" rel="noopener">📎 ${slot.attachment.name}</a>${slot.dateSubmitted ? `<div class="bir-file-date">Date Submitted: ${fmtDate(slot.dateSubmitted)}</div>` : ''}</div>`;
+  }
+
+  function renderBirFormsPeriodTab(el, period){
+    const entries = birFormsEntries(period).slice().sort((a,b) => birCoverageSortKey(period,a.coverage).localeCompare(birCoverageSortKey(period,b.coverage)));
+    el.innerHTML = `
+      <div class="card">
+        <div class="card-head"><h3>${BIR_PERIOD_LABEL[period]} Filings</h3><span class="badge b-neutral">${entries.length} ${entries.length===1?'entry':'entries'}</span></div>
+        <div class="table-wrap"><table class="simple-table ledger-table"><thead><tr>
+          <th>Coverage</th><th>Forms</th><th>Reference</th><th>Proof of Payment</th><th>Accomplished Forms</th><th>Remarks</th><th></th>
+        </tr></thead><tbody id="birFormsRows"></tbody></table></div>
+        ${entries.length ? '' : `<div class="empty-note">No ${BIR_PERIOD_LABEL[period].toLowerCase()} filing records yet.</div>`}
+        <div style="margin-top:14px;"><button class="btn btn-primary btn-sm" id="birAddEntryBtn">+ Add Entry</button></div>
+      </div>
+    `;
+    const tbody = el.querySelector('#birFormsRows');
+    entries.forEach(e => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${birCoverageLabel(period, e.coverage)}</td>
+        <td><span class="badge b-brand">${e.form}</span></td>
+        <td>${birAttachmentCellHtml(e.reference)}</td>
+        <td>${birAttachmentCellHtml(e.proofOfPayment)}</td>
+        <td>${birAttachmentCellHtml(e.accomplishedForms)}</td>
+        <td>${e.remarks ? e.remarks : '—'}</td>
+        <td><div class="ledger-row-actions"><button class="btn btn-ghost btn-sm" data-view="${e.id}">View</button><button class="btn btn-ghost btn-sm" data-edit="${e.id}">Edit</button></div></td>
+      `;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => openBirFormViewModal(entries.find(x => x.id === b.dataset.view))));
+    tbody.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openBirFormModal(period, entries.find(x => x.id === b.dataset.edit))));
+    el.querySelector('#birAddEntryBtn').addEventListener('click', () => openBirFormModal(period, null));
+  }
+
+  function birCoverageOptionsHtml(period, selected){
+    if (period === 'monthly') return MONTHS.map(m => `<option value="${m.key}" ${selected===m.key?'selected':''}>${MONTH_ABBR[m.num-1]}</option>`).join('');
+    if (period === 'quarterly') return [1,2,3,4].map(q => `<option value="${q}" ${Number(selected)===q?'selected':''}>Q${q} ${YEAR}</option>`).join('');
+    return `<option value="${YEAR}" selected>${YEAR}</option>`;
+  }
+
+  function birFormOptionsHtml(period, selected){
+    return BIR_FORM_OPTIONS[period].map(f => `<option value="${f}" ${selected===f?'selected':''}>${f}</option>`).join('');
+  }
+
+  function birFileFieldHtml(key, label, slot){
+    const attachment = slot && slot.attachment;
+    return `
+      <div class="field"><label>${label}</label>
+        <input class="fctl" id="bir_${key}_file" type="file" accept="image/*,.pdf">
+        <div id="bir_${key}_current" style="font-size:12px;margin-top:4px;">${attachment ? `📎 <a href="${attachment.url}" target="_blank" rel="noopener" style="color:var(--green);">${attachment.name}</a>` : ''}</div>
+      </div>
+      <div class="field"><label>Date Submitted</label><input class="fctl" id="bir_${key}_date" type="date" value="${slot && slot.dateSubmitted ? slot.dateSubmitted : ''}"></div>
+    `;
+  }
+
+  function openBirFormModal(period, entry){
+    const isNew = !entry;
+    const coverage = entry ? entry.coverage : (period === 'monthly' ? MONTHS[0].key : period === 'quarterly' ? 1 : YEAR);
+    showModal(isNew ? `Add ${BIR_PERIOD_LABEL[period]} filing` : `Edit ${BIR_PERIOD_LABEL[period]} filing`, `
+      <div class="field"><label>Coverage</label><select class="fctl" id="birCoverage">${birCoverageOptionsHtml(period, coverage)}</select></div>
+      <div class="field"><label>Forms</label><select class="fctl" id="birForm">${birFormOptionsHtml(period, entry?entry.form:BIR_FORM_OPTIONS[period][0])}</select></div>
+      ${birFileFieldHtml('ref', 'Reference', entry?entry.reference:null)}
+      ${birFileFieldHtml('pop', 'Proof of Payment', entry?entry.proofOfPayment:null)}
+      ${birFileFieldHtml('acc', 'Accomplished Forms', entry?entry.accomplishedForms:null)}
+      <div class="field"><label>Remarks</label><textarea class="fctl" id="birRemarks">${entry&&entry.remarks?entry.remarks:''}</textarea></div>
+    `, [
+      ...(isNew?[]:[{label:'Delete', cls:'btn-danger', action: () => {
+        state.birForms.entries = state.birForms.entries.filter(x => x.id !== entry.id);
+        save(); closeModal(); renderAll();
+      }}]),
+      {label:'Cancel', cls:'btn-ghost', action: closeModal},
+      {label:'Save', cls:'btn-primary', action: () => {
+        const coverageRaw = document.getElementById('birCoverage').value;
+        const data = {
+          period,
+          coverage: period === 'annual' ? YEAR : (period === 'quarterly' ? Number(coverageRaw) : coverageRaw),
+          form: document.getElementById('birForm').value,
+          remarks: document.getElementById('birRemarks').value,
+          reference: entry ? entry.reference : null,
+          proofOfPayment: entry ? entry.proofOfPayment : null,
+          accomplishedForms: entry ? entry.accomplishedForms : null
+        };
+        const slots = [['ref','reference'], ['pop','proofOfPayment'], ['acc','accomplishedForms']];
+        let pending = 0;
+        slots.forEach(([key, field]) => {
+          const dateVal = document.getElementById(`bir_${key}_date`).value;
+          const file = document.getElementById(`bir_${key}_file`).files[0];
+          const existing = data[field];
+          if (file){
+            pending++;
+            uploadFile(file, `birForms/${period}/${key}`, (fileObj) => {
+              data[field] = {attachment: fileObj, dateSubmitted: dateVal || (existing?existing.dateSubmitted:'')};
+              pending--; if (pending === 0) commit();
+            });
+          } else {
+            data[field] = existing ? Object.assign({}, existing, {dateSubmitted: dateVal || existing.dateSubmitted}) : (dateVal ? {attachment:null, dateSubmitted:dateVal} : null);
+          }
+        });
+        function commit(){
+          if (isNew) state.birForms.entries.push(Object.assign({id:uid()}, data));
+          else Object.assign(entry, data);
+          save(); closeModal(); renderAll();
+        }
+        if (pending === 0) commit();
+      }}
+    ]);
+  }
+
+  function openBirFormViewModal(entry){
+    if (!entry) return;
+    showModal(`${entry.form} — ${birCoverageLabel(entry.period, entry.coverage)}`, `
+      <div class="field"><label>Coverage</label><div>${birCoverageLabel(entry.period, entry.coverage)}</div></div>
+      <div class="field"><label>Forms</label><div>${entry.form}</div></div>
+      <div class="field"><label>Reference</label>${birAttachmentCellHtml(entry.reference)}</div>
+      <div class="field"><label>Proof of Payment</label>${birAttachmentCellHtml(entry.proofOfPayment)}</div>
+      <div class="field"><label>Accomplished Forms</label>${birAttachmentCellHtml(entry.accomplishedForms)}</div>
+      <div class="field"><label>Remarks</label><div>${entry.remarks || '—'}</div></div>
+    `, [
+      {label:'Close', cls:'btn-ghost', action: closeModal}
+    ]);
+  }
+
+  // ---------- Yearly Summary: overview matrix ----------
+  // One grid: months down the side, every form across the top — a quarterly
+  // form's cell spans its 3 months and an annual form's cell spans all 12,
+  // matching the source workbook's layout.
+  const BIR_MATRIX_COLUMNS = [
+    {form:'1601-C', period:'monthly'},
+    {form:'0619-E', period:'monthly'},
+    {form:'2551-Q', period:'quarterly'},
+    {form:'1601-EQ', period:'quarterly'},
+    {form:'1702-Q', period:'quarterly'},
+    {form:'1702-ANNUAL', period:'annual'},
+    {form:'1604-C', period:'annual'},
+    {form:'1604-E', period:'annual'},
+    {form:'2316', period:'annual'}
+  ];
+
+  function findBirEntry(period, coverage, form){
+    return (state.birForms.entries||[]).find(e => e.period === period && String(e.coverage) === String(coverage) && e.form === form);
+  }
+
+  function birMatrixCellHtml(entry){
+    if (!entry) return '';
+    const rows = [['Reference', entry.reference], ['Proof of Payment', entry.proofOfPayment], ['Accomplished Forms', entry.accomplishedForms]];
+    return `<div class="bir-matrix-cell">${rows.map(([label, slot]) => {
+      const done = slot && slot.attachment;
+      return done
+        ? `<button type="button" class="bir-matrix-line done" data-print="${slot.attachment.url}" data-print-name="${slot.attachment.name}">${label} — DONE</button>`
+        : `<div class="bir-matrix-line pending">${label} — PENDING</div>`;
+    }).join('')}</div>`;
+  }
+
+  // Every BIR Forms entry is implicitly YEAR (2026) — same single-year
+  // architecture the rest of CrownOS uses (dashboard/purchases/income are
+  // all pinned to the YEAR constant). The picker is kept here so the matrix
+  // is ready to filter the moment a future year's coverage options exist.
+  let birMatrixYear = YEAR;
+  const BIR_MATRIX_YEARS = [YEAR];
+
+  function renderBirFormsYearlyTab(el){
+    const headerHtml = `<tr><th>Coverage</th>${BIR_MATRIX_COLUMNS.map(c => `<th>${c.form}</th>`).join('')}</tr>`;
+    const rowsHtml = MONTHS.map((m, idx) => {
+      const cellsHtml = BIR_MATRIX_COLUMNS.map(c => {
+        if (c.period === 'monthly'){
+          return `<td>${birMatrixCellHtml(m.year === birMatrixYear ? findBirEntry('monthly', m.key, c.form) : null)}</td>`;
+        }
+        if (c.period === 'quarterly'){
+          if ((m.num - 1) % 3 !== 0) return ''; // only the quarter's first month renders the cell
+          return `<td rowspan="3">${birMatrixCellHtml(m.year === birMatrixYear ? findBirEntry('quarterly', m.quarter, c.form) : null)}</td>`;
+        }
+        if (idx !== 0) return ''; // annual: only January renders the cell
+        return `<td rowspan="12">${birMatrixCellHtml(findBirEntry('annual', birMatrixYear, c.form))}</td>`;
+      }).join('');
+      return `<tr><td class="bir-matrix-month">${MONTH_ABBR[idx]}</td>${cellsHtml}</tr>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="ledger-subnav">
+        <select id="birYearSelect" class="form-select form-select-sm"></select>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>${state.settings.businessName} — ${birMatrixYear} BIR Filing Overview</h3></div>
+        <div class="table-wrap"><table class="simple-table bir-matrix"><thead>${headerHtml}</thead><tbody>${rowsHtml}</tbody></table></div>
+      </div>
+    `;
+    const yearSelect = el.querySelector('#birYearSelect');
+    BIR_MATRIX_YEARS.forEach(y => {
+      const o = document.createElement('option'); o.value = y; o.textContent = y;
+      if (y === birMatrixYear) o.selected = true;
+      yearSelect.appendChild(o);
+    });
+    yearSelect.addEventListener('change', () => { birMatrixYear = Number(yearSelect.value); renderAll(); });
+    el.querySelectorAll('[data-print]').forEach(b => b.addEventListener('click', () => openBirPrintPreview(b.dataset.print, b.dataset.printName)));
+  }
+
+  // Opens the attachment in an A4-sized, print-ready layout — used by the
+  // Yearly Summary matrix so a finished filing's proof can be reviewed/printed
+  // without leaving the app in an image-viewer/PDF tab instead.
+  function openBirPrintPreview(url, name){
+    const w = window.open('', '_blank');
+    if (!w){ alert('Please allow pop-ups to preview/print this file.'); return; }
+    const isPdf = /\.pdf($|\?)/i.test(url) || /\.pdf($|\?)/i.test(name||'');
+    const safeName = (name||'Attachment').replace(/[<>&]/g, '');
+    w.document.write(`<!DOCTYPE html><html><head><title>${safeName}</title>
+      <style>
+        @page{ size:A4; margin:0; }
+        html,body{ margin:0; padding:0; background:#525659; }
+        .a4-page{ width:210mm; min-height:297mm; margin:12px auto; background:#fff; box-shadow:0 0 12px rgba(0,0,0,.3); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+        .a4-page img{ max-width:100%; max-height:297mm; object-fit:contain; }
+        .a4-page iframe{ width:100%; height:297mm; border:none; }
+        .toolbar{ position:sticky; top:0; background:#2b2f33; padding:8px 16px; display:flex; justify-content:flex-end; gap:8px; z-index:10; }
+        .toolbar button{ font:inherit; font-size:13px; font-weight:700; padding:7px 14px; border-radius:6px; border:none; cursor:pointer; background:#fff; color:#111; }
+        @media print{ .toolbar{ display:none; } body{ background:#fff; } .a4-page{ margin:0; box-shadow:none; } }
+      </style></head><body>
+        <div class="toolbar"><button onclick="window.print()">Print</button></div>
+        <div class="a4-page">${isPdf ? `<iframe src="${url}"></iframe>` : `<img src="${url}" alt="${safeName}">`}</div>
+      </body></html>`);
+    w.document.close();
   }
 
   // ---------- Access & init ----------

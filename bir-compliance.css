@@ -216,3 +216,21 @@ table.simple-table tbody tr:hover{ background:var(--surface-soft); }
 @media(max-width:700px){
     .cal-grid{ grid-template-columns:repeat(7,minmax(60px,1fr)); overflow-x:auto; }
 }
+
+/* ---------- BIR Forms tracker ---------- */
+.bir-file-cell a{ font-size:12.5px; font-weight:700; color:var(--green); }
+.bir-file-date{ font-size:11px; color:var(--soft-text); margin-top:2px; }
+
+/* ---------- BIR Forms: Yearly Summary overview matrix ---------- */
+/* A bordered grid (months x forms), quarterly/annual form columns spanning
+   their covered months via <td rowspan>, matching the source workbook. */
+table.bir-matrix{ min-width:1100px; table-layout:fixed; }
+table.bir-matrix th,
+table.bir-matrix td{ border:1px solid var(--border); text-align:center; vertical-align:middle; padding:6px; }
+table.bir-matrix th{ background:var(--surface-soft); }
+table.bir-matrix .bir-matrix-month{ font-weight:800; color:var(--navy); background:var(--surface-soft); width:60px; }
+.bir-matrix-cell{ display:flex; flex-direction:column; gap:4px; }
+.bir-matrix-line{ font:inherit; font-size:10.5px; font-weight:700; border:none; border-radius:5px; padding:4px 6px; text-align:center; white-space:normal; }
+.bir-matrix-line.pending{ background:var(--surface-muted); color:var(--muted); }
+.bir-matrix-line.done{ background:var(--state-green-bg); color:var(--state-green-text); cursor:pointer; }
+.bir-matrix-line.done:hover{ filter:brightness(0.96); }

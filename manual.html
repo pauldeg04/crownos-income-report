@@ -2846,7 +2846,7 @@ Branch receives    →  it is added to the branch's Available Stock</div>
 
   <p>
     A header bar holds a <strong>Your name</strong> field (kept with your
-    settings for reference) and a sync-status indicator. Below that, three
+    settings for reference) and a sync-status indicator. Below that, four
     tabs switch between the desk's views:
   </p>
 
@@ -2927,13 +2927,50 @@ Branch receives    →  it is added to the branch's Available Stock</div>
         <dd>One row per quarter plus a grand total for the year.</dd>
       </dl>
     </dd>
+
+    <dt>BIR Forms</dt>
+    <dd>
+      A filing tracker — separate from the ledger above — with four
+      sub-tabs:
+      <dl class="deflist">
+        <dt>Monthly</dt>
+        <dd>A table for <strong>1601-C</strong> and <strong>0619-E</strong>
+          filings. <span class="ui">+ Add Entry</span> asks for a Coverage
+          month (JAN–DEC), the Form, and up to three attachments —
+          <strong>Reference</strong>, <strong>Proof of Payment</strong>, and
+          <strong>Accomplished Forms</strong> — each with its own Date
+          Submitted, plus a free-text Remarks field. Each row's Action
+          column has <span class="ui">View</span> (read-only) and
+          <span class="ui">Edit</span> (which also offers
+          <span class="ui">Delete</span>).</dd>
+        <dt>Quarterly</dt>
+        <dd>Same layout, for <strong>2551-Q</strong>,
+          <strong>1601-EQ</strong>, and <strong>1702-Q</strong>. Coverage is
+          picked by quarter (Q1–Q4) instead of month.</dd>
+        <dt>Annual</dt>
+        <dd>Same layout, for <strong>1702-ANNUAL</strong>,
+          <strong>1604-C</strong>, <strong>1604-E</strong>, and
+          <strong>2316</strong>. Coverage is the filing year.</dd>
+        <dt>Yearly Summary</dt>
+        <dd>A single overview grid — months down the side, all nine forms
+          across the top, with the quarterly forms' columns spanning their
+          three months and the annual forms' columns spanning the whole
+          year. Each filled cell lists Reference / Proof of Payment /
+          Accomplished Forms as <strong>DONE</strong> (click to open that
+          file in an A4 print-ready preview, with a
+          <span class="ui">Print</span> button) or <strong>PENDING</strong>.
+          A Year picker sits above the grid; only the current filing year is
+          available for now, since the rest of CrownOS is likewise built
+          around a single active year.</dd>
+      </dl>
+    </dd>
   </dl>
 
   <div class="note">
     <span class="callout-label">Uploaded files</span>
     <p>
-      Purchases ledger attachments are stored in Firebase Storage, not
-      inside the tax-period data itself.
+      Purchases ledger and BIR Forms attachments are stored in Firebase
+      Storage, not inside the tax-period data itself.
     </p>
   </div>
 </section>
