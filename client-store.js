@@ -200,8 +200,14 @@
        saveRaw() instead when applying a change that came FROM the cloud;
        pushing that back would just be a pointless round trip. */
     async function saveAll(clients){
-        await saveRaw(JSON.stringify(clients));
+        /* Queue the cloud push BEFORE awaiting the local write, not after.
+           A therapist saving a form on mobile and closing the tab/app right
+           away can otherwise close it in the gap between the local write
+           finishing and this call queuing the push — the edit lands in
+           IndexedDB but firebase-sync.js's pagehide/beforeunload flush has
+           nothing queued yet to flush, so it's silently never synced. */
         window.CrownCloud?.notifyClientListChanged?.();
+        await saveRaw(JSON.stringify(clients));
     }
 
     window.CrownClientStore = {

@@ -4,6 +4,41 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-30 — Therapist Dashboard form updates lost after closing (mobile)
+
+**Reported by:** User — "kapag nag uupdate ng Forms ang mga user account na
+therapist gamit ang mobile phone nila, nabubuksan naman nila at
+nakakapag update. pero kapag naclose na nila, nawawala yung update."
+(Therapists can open and edit the client visit form from the Dashboard
+on mobile, but the update disappears once they close the app.)
+
+**Feature:** the client visit form (Consent / Head Spa / Body Massage /
+Combo) opened from the appointment card on the Dashboard (`home.html`),
+rendered by `client-forms.js`, accessible to the `Therapist` role.
+
+**Root cause found:** [`client-store.js`](client-store.js)'s `saveAll()`
+only called `notifyClientListChanged()` (which queues the Firestore push
+in `firebase-sync.js`) *after* awaiting the local IndexedDB write. Since
+`saveClientForm()` in `client-forms.js` never awaits `saveAll()` and
+closes the modal immediately, a therapist who taps Save and quickly
+closes the tab/PWA — a very natural fast mobile flow — could close the
+app in the gap before the push was even queued. `firebase-sync.js`'s
+`pagehide`/`beforeunload`/`visibilitychange` flush handlers already exist
+for exactly this kind of close-before-debounce-fires scenario, but they
+had nothing queued yet to flush, so the edit stayed local-only and was
+never synced to the cloud — invisible from any other device/session, and
+gone for good once that device's local storage cleared or the app was
+reopened after a remote pull overwrote it.
+
+**Fix applied:** `saveAll()` now calls `notifyClientListChanged()` before
+awaiting the local write, so the push is queued in the same tick the save
+starts — closing the race window, and letting the existing close-flush
+handlers do their job.
+
+**Status:** Deployed to production (`crownos-5f03d.web.app`).
+
+---
+
 ## 2026-08-30 — Service worker was breaking Firebase Storage uploads (mobile)
 
 **Reported by:** User — attaching a file to a new BIR Forms entry on
