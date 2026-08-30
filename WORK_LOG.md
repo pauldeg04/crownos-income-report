@@ -4,6 +4,32 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-08-30 — BIR Compliance Desk: Monthly / Quarterly / Yearly sub-tabs for Income Summary
+
+**Requested by:** User — wanted the Income Summary tab broken into
+Monthly, Quarterly, and Yearly Summary sub-tabs, matching the layout
+already used by the Purchases tab.
+
+- [bir-compliance.js](bir-compliance.js): `renderIncomeSummary()` is now
+  a thin tab container (Monthly Summary / Quarterly Summary / Year
+  Summary), same pattern as `renderPurchases()`. The existing monthly
+  view moved unchanged into `renderIncomeMonthlyTab()`. Added
+  `renderIncomeQuarterlyTab()` (pick a quarter, see each month's income
+  split Biñan / Calamba / Other Branches with a quarter total) and
+  `renderIncomeYearTab()` (one row per quarter, same branch split, plus a
+  grand total for the year), both built on a new `groupIncomeByBranch()`
+  helper over the existing `allIncomeEntries()` data — no new data model,
+  no Firestore changes.
+- [manual.html](manual.html): Chapter 30 (BIR Compliance Desk) — Income
+  Summary is now documented as three sub-tabs instead of one flat
+  description.
+
+**Status:** Code changed locally, not yet deployed — run
+`firebase deploy --only hosting` from `Income Report/` when ready to push
+live.
+
+---
+
 ## 2026-08-30 — Staff Schedule: "View Today's Schedule" for Team Leaders
 
 **Requested by:** User — Team Leaders mostly use CrownOS on their phone,

@@ -593,7 +593,72 @@
     `;
   }
 
+  // ---------- Income Summary: Monthly / Quarterly / Yearly sub-tabs ----------
+  let incomeSubTab = 'monthly';
+  let incomeQuarter = 1;
+
   function renderIncomeSummary(el){
+    const tabs = [['monthly','Monthly Summary'], ['quarterly','Quarterly Summary'], ['yearly','Year Summary']];
+    el.innerHTML = `<div class="tabs" role="tablist">${tabs.map(([k,l]) => `<button role="tab" data-subtab="${k}" aria-selected="${incomeSubTab===k}">${l}</button>`).join('')}</div><div id="incomeBody"></div>`;
+    el.querySelectorAll('[role="tab"]').forEach(b => b.addEventListener('click', () => { incomeSubTab = b.dataset.subtab; renderAll(); }));
+    const body = document.getElementById('incomeBody');
+    ({monthly: renderIncomeMonthlyTab, quarterly: renderIncomeQuarterlyTab, yearly: renderIncomeYearTab})[incomeSubTab](body);
+  }
+
+  // Groups a list of income entries into per-branch totals (Biñan / Calamba / Other Branches).
+  function groupIncomeByBranch(entries){
+    const g = {binan:0, calamba:0, other:0};
+    entries.forEach(e => {
+      const b = (e.branch === 'binan' || e.branch === 'calamba') ? e.branch : 'other';
+      g[b] += Number(e.amount)||0;
+    });
+    g.total = g.binan + g.calamba + g.other;
+    return g;
+  }
+
+  function renderIncomeQuarterlyTab(el){
+    const entriesAll = allIncomeEntries();
+    const q = QUARTERS.find(x => x.num === incomeQuarter);
+    const monthRows = q.months.map(m => ({m, g: groupIncomeByBranch(entriesAll.filter(e => (e.date||'').slice(0,7) === m.key))}));
+    const qTotal = monthRows.reduce((acc,{g}) => { acc.binan+=g.binan; acc.calamba+=g.calamba; acc.other+=g.other; acc.total+=g.total; return acc; }, {binan:0,calamba:0,other:0,total:0});
+
+    el.innerHTML = `
+      <div class="ledger-subnav">
+        <select id="incQSelect" class="form-select form-select-sm"></select>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Q${q.num} ${YEAR} — Sales Invoice Income by Month</h3></div>
+        <div class="table-wrap"><table class="simple-table"><thead><tr><th>Month</th><th>Biñan (Head Office)</th><th>Calamba</th><th>Other Branches</th><th>Total</th></tr></thead><tbody>
+          ${monthRows.map(({m,g}) => `<tr><td>${m.label}</td><td class="mono num">${peso(g.binan)}</td><td class="mono num">${peso(g.calamba)}</td><td class="mono num">${peso(g.other)}</td><td class="mono num">${peso(g.total)}</td></tr>`).join('')}
+          <tr class="summary-total-row"><td>Total</td><td class="mono num">${peso(qTotal.binan)}</td><td class="mono num">${peso(qTotal.calamba)}</td><td class="mono num">${peso(qTotal.other)}</td><td class="mono num">${peso(qTotal.total)}</td></tr>
+        </tbody></table></div>
+      </div>
+    `;
+    const sel = el.querySelector('#incQSelect');
+    [1,2,3,4].forEach(n => {
+      const o = document.createElement('option'); o.value = n; o.textContent = `Q${n} ${YEAR}`;
+      if (n === incomeQuarter) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', () => { incomeQuarter = Number(sel.value); renderAll(); });
+  }
+
+  function renderIncomeYearTab(el){
+    const entriesAll = allIncomeEntries();
+    const rows = QUARTERS.map(q => ({ q: q.num, g: groupIncomeByBranch(entriesAll.filter(e => q.months.some(m => m.key === (e.date||'').slice(0,7)))) }));
+    const grand = rows.reduce((acc,{g}) => { acc.binan+=g.binan; acc.calamba+=g.calamba; acc.other+=g.other; acc.total+=g.total; return acc; }, {binan:0,calamba:0,other:0,total:0});
+    el.innerHTML = `
+      <div class="card">
+        <div class="card-head"><h3>${state.settings.businessName} — Summary of ${YEAR} Sales Invoice Income</h3></div>
+        <div class="table-wrap"><table class="simple-table"><thead><tr><th>Quarter</th><th>Biñan (Head Office)</th><th>Calamba</th><th>Other Branches</th><th>Total</th></tr></thead><tbody>
+          ${rows.map(({q,g}) => `<tr><td>Q${q}</td><td class="mono num">${peso(g.binan)}</td><td class="mono num">${peso(g.calamba)}</td><td class="mono num">${peso(g.other)}</td><td class="mono num">${peso(g.total)}</td></tr>`).join('')}
+          <tr class="summary-total-row"><td>Total</td><td class="mono num">${peso(grand.binan)}</td><td class="mono num">${peso(grand.calamba)}</td><td class="mono num">${peso(grand.other)}</td><td class="mono num">${peso(grand.total)}</td></tr>
+        </tbody></table></div>
+      </div>
+    `;
+  }
+
+  function renderIncomeMonthlyTab(el){
     const monthEntries = allIncomeEntries().filter(e => (e.date||'').slice(0,7) === incomeMonthKey);
     const binanEntries = monthEntries.filter(e => e.branch === 'binan');
     const calambaEntries = monthEntries.filter(e => e.branch === 'calamba');
