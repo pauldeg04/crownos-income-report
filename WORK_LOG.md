@@ -38,7 +38,7 @@ every branch group.
 - [manual.html](manual.html): documented the Admin Staff Group's payslip
   format and PDF export differences under Chapter 10 — Payroll.
 
-**Status:** Not yet deployed — pending push + `firebase deploy`.
+**Status:** Deployed to production (`crownos-5f03d.web.app`).
 
 ---
 
