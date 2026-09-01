@@ -465,7 +465,7 @@ function renderDailyKpi(salesCounts, productsCount, vipCardCount, sourceCounts, 
 
   setValue("kpiHeadSpa", salesCounts["Head Spa"]);
   setValue("kpiMassage", salesCounts["Massage"]);
-  setValue("kpiPackage", salesCounts["Package"]);
+  setValue("kpiCombo", salesCounts["Combo"]);
   setValue("kpiAddOn", salesCounts["Add-on"]);
   setValue("kpiKiddie", salesCounts["Kiddie"]);
   setValue("kpiProducts", productsCount);
@@ -6571,7 +6571,7 @@ function updateSummary(){
   const kpiSalesCounts = {
     "Head Spa": 0,
     "Massage": 0,
-    "Package": 0,
+    "Combo": 0,
     "Add-on": 0,
     "Kiddie": 0
   };

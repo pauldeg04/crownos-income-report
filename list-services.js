@@ -154,10 +154,19 @@ function migrateExistingServices(){
                 };
             }
 
+            /* "Package" was renamed to "Combo" — existing services still
+               carrying the old value are migrated in place below. */
+            if(service.category === "Package"){
+                changed = true;
+            }
+
             const migrated = {
                 id: service.id || createId(),
                 name: service.name || "",
-                category: service.category || "Other",
+                category:
+                    service.category === "Package"
+                        ? "Combo"
+                        : (service.category || "Other"),
                 duration: Number(service.duration) || 0,
                 bedOccupancy:
                     Number(service.bedOccupancy) ||

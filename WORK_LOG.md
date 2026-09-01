@@ -4,6 +4,33 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-01 — "Package" service category renamed to "Combo"
+
+**Requested by:** User — the **Package** category in List of Services
+should be called **Combo** instead.
+
+- [list-services.html](list-services.html): the Category dropdown's
+  `Package` option is now `Combo` (value and label both changed).
+- [list-services.js](list-services.js): `migrateExistingServices()` now
+  also migrates any existing service still carrying `category: "Package"`
+  to `"Combo"` in place (and re-saves, so it syncs to Firestore) — no
+  services are left stranded under the old name.
+- [script.js](script.js): the Daily Income KPI panel's `Package` row/count
+  (`kpiPackage` → renamed `kpiCombo`) now reads/labels `Combo`.
+- [index.html](index.html): KPI label updated to "Combo".
+- [client-forms.js](client-forms.js): the auto form-type guesser
+  (`guessFormTypesForService`) now checks for the `Combo` category instead
+  of `Package` when suggesting the Combo consent form.
+- [manual.html](manual.html): category references updated to "Combo" in
+  the three places it was documented (Daily KPI, Service Master List
+  fields, Invoice Report category column).
+- [bir-compliance.js](bir-compliance.js): comment reference updated only
+  (no logic change — it reads category generically).
+
+**Status:** Deployed to production (`crownos-5f03d.web.app`).
+
+---
+
 ## 2026-09-01 — Family bundle services auto-add locked companions
 
 **Requested by:** User — special-case rule for three bundle services:

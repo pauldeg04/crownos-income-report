@@ -385,7 +385,7 @@ function getServiceCategoryMap(){
 }
 
 /* Suggests which form(s) belong with a visit, based on the service
-   category ("Head Spa" / "Massage" / "Package" / …) of the items sold.
+   category ("Head Spa" / "Massage" / "Combo" / …) of the items sold.
    Consent always accompanies whichever main form applies. Falls back to
    just Consent when nothing matches — staff can still add any other form
    manually via the "+ Add other form" picker. */
@@ -406,7 +406,7 @@ function guessFormTypesForService(itemsString){
             }
         });
 
-    if(categories.has("Package")){
+    if(categories.has("Combo")){
         return ["consent", "combo"];
     }
 

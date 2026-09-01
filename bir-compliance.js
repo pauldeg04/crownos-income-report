@@ -482,7 +482,7 @@
   }
   // Service master list lives under its own localStorage key (also synced by
   // firebase-sync.js like everything else) — maps a service's exact name to
-  // its category (e.g. "Head Spa", "Massage", "Package"), same lookup
+  // its category (e.g. "Head Spa", "Massage", "Combo"), same lookup
   // getServiceCategoryMap() builds in script.js.
   const SERVICE_MASTER_KEY = 'crownServiceMasterList';
   function getServiceCategoryMap(){
