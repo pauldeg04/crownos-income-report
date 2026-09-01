@@ -325,9 +325,10 @@ exports.getBookableBranches = onCall(async () => {
 /* Lets the public site build its "Select a treatment" list from the same
    crownServiceMasterList staff edit in CrownOS (List of Services), instead
    of a hardcoded copy that silently goes stale whenever a name or duration
-   changes there. Only the name/duration are exposed — never pricing or
-   commission fields, which live on the same record. Inactive services and
-   services not marked "Available for Online Booking" are left out entirely. */
+   changes there. Only the name/duration/category are exposed — never
+   pricing or commission fields, which live on the same record. Inactive
+   services and services not marked "Available for Online Booking" are
+   left out entirely. */
 exports.getBookableServices = onCall(async () => {
     const raw = await readAppDataKey(db, SERVICE_MASTER_KEY);
     const list = Array.isArray(raw) ? raw : [];
@@ -344,9 +345,20 @@ exports.getBookableServices = onCall(async () => {
             );
         })
         .map(function(service){
+            /* "Package" was renamed to "Combo" in List of Services —
+               normalized here too since a record only gets rewritten in
+               Firestore once someone opens that page in CrownOS (see
+               migrateExistingServices() in list-services.js), and this
+               function reads Firestore directly. */
+            const category =
+                service.category === "Package"
+                    ? "Combo"
+                    : (service.category || "");
+
             return {
                 name: service.name,
-                duration: Number(service.duration)
+                duration: Number(service.duration),
+                category: category
             };
         })
         .sort(function(a, b){ return a.name.localeCompare(b.name); });

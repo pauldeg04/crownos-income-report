@@ -4,6 +4,28 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-01 — getBookableServices now exposes each service's category
+
+**Requested by:** User — wants the public booking page's Service dropdown
+to show each treatment's category next to it, e.g. "Crown Reset (25
+mins) - Head Spa", "The Reset Duo (85 mins) - Combo".
+
+- [functions/index.js](functions/index.js): `getBookableServices` now
+  also returns `category` per service (still withholding pricing/
+  commission). Normalizes a leftover `"Package"` category to `"Combo"` in
+  the response itself, since a service's stored Firestore record only
+  gets rewritten to the new name once someone opens List of Services in
+  CrownOS (`migrateExistingServices()`) — this function reads Firestore
+  directly, so it can't wait on that.
+- Public-facing change (rendering the category in the dropdown) lives in
+  the separate Website repo/deploy — `book.html` and `js/main.js` there —
+  see that project's own work log.
+
+**Status:** Deployed to production (`crownos-5f03d.web.app`, Cloud
+Functions).
+
+---
+
 ## 2026-09-01 — "Package" service category renamed to "Combo"
 
 **Requested by:** User — the **Package** category in List of Services
