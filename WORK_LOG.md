@@ -22,7 +22,10 @@ have SSS/Pag-IBIG/PhilHealth numbers on file for their payslip.
   both cutoffs regardless of attendance.
 - "Meal Allowance" is relabeled **"Allowance"** and "Overtime Meal Allowance" is hidden for a
   Fixed Rate account (still stored under the same `mealAllowance`/`otMealAllowance` keys — no
-  data migration needed).
+  data migration needed). Allowance is paid as a flat half of the configured amount each
+  cutoff, same as Daily Rate — first shipped as still attendance-driven (`mealAllowanceAmount`
+  summed per day), which meant it silently showed ₱0.00 on Fixed Rate payslips whenever
+  attendance didn't clear the per-day thresholds; fixed same day.
 - Fixed Rate accounts no longer get Overtime pay or Commission — both are zeroed out of Gross
   Pay in `computeStaffPayroll`, and dropped from the Admin Staff payslip's Earnings table
   (`renderAdminPayslipSheet`), which now shows only Daily Rate + Allowance + Gross Pay for

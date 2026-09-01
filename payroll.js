@@ -1504,15 +1504,17 @@ function computeStaffPayroll(user, groupKey, period){
 
     /* Fixed Rate staff aren't paid per attendance day — they get half of
        their Monthly Rate on both the 1st and 2nd cutoff, regardless of
-       the days actually worked. Meal Allowance/Overtime still come from
-       attendance as normal. */
+       the days actually worked. Allowance is the same: half of the
+       configured Allowance amount every cutoff, not attendance-driven. */
     const dailyRateTotal =
         user.fixedRate
             ? rate.monthlyRate / 2
             : days.reduce(function(sum, day){ return sum + day.dailyRateAmount; }, 0);
 
     const mealAllowanceTotal =
-        days.reduce(function(sum, day){ return sum + day.mealAllowanceAmount; }, 0);
+        user.fixedRate
+            ? rate.mealAllowance / 2
+            : days.reduce(function(sum, day){ return sum + day.mealAllowanceAmount; }, 0);
 
     /* Fixed Rate (salaried) staff don't get separate Overtime pay or
        Commission — their earnings table only shows Daily Rate (half
