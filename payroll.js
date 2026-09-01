@@ -233,6 +233,15 @@ function initializeAdminView(){
     document.getElementById("payrollEndDate")
         .addEventListener("change", renderPayroll);
 
+    document.getElementById("payrollCutoffMonth").value =
+        toDateString(new Date()).slice(0, 7);
+
+    document.getElementById("payrollCutoff1Btn")
+        .addEventListener("click", function(){ applyPayrollCutoff(1); });
+
+    document.getElementById("payrollCutoff2Btn")
+        .addEventListener("click", function(){ applyPayrollCutoff(2); });
+
     document.getElementById("payrollGroup")
         .addEventListener("change", renderPayroll);
 
@@ -442,6 +451,39 @@ function initializeDates(){
         toDateString(lastWeekSaturday);
 }
 
+/* 1st cutoff: the 26th of the PREVIOUS month through the 10th of the
+   selected month. 2nd cutoff: the 11th through the 25th of the selected
+   month. */
+function pad2(n){ return String(n).padStart(2, "0"); }
+
+function applyPayrollCutoff(which){
+    const monthInput =
+        document.getElementById("payrollCutoffMonth");
+
+    const [y, m] =
+        (monthInput.value || toDateString(new Date()).slice(0, 7))
+            .split("-")
+            .map(Number);
+
+    if(which === 1){
+        const prev = new Date(y, m - 2, 1);
+
+        document.getElementById("payrollStartDate").value =
+            `${prev.getFullYear()}-${pad2(prev.getMonth() + 1)}-26`;
+
+        document.getElementById("payrollEndDate").value =
+            `${y}-${pad2(m)}-10`;
+    }else{
+        document.getElementById("payrollStartDate").value =
+            `${y}-${pad2(m)}-11`;
+
+        document.getElementById("payrollEndDate").value =
+            `${y}-${pad2(m)}-25`;
+    }
+
+    renderPayroll();
+}
+
 function getSelectedPeriod(){
     const start =
         document.getElementById("payrollStartDate").value;
@@ -563,9 +605,13 @@ function getStaffRate(userId){
 
     return {
         dailyRate: Number(saved.dailyRate) || 0,
+        monthlyRate: Number(saved.monthlyRate) || 0,
         mealAllowance: Number(saved.mealAllowance) || 0,
         otMealAllowance: Number(saved.otMealAllowance) || 0,
         secondaryDailyRate: Number(saved.secondaryDailyRate) || 0,
+        sssNumber: saved.sssNumber || "",
+        pagibigNumber: saved.pagibigNumber || "",
+        philhealthNumber: saved.philhealthNumber || "",
         bankType: saved.bankType || "GoTyme",
         bankTypeOther: saved.bankTypeOther || "",
         accountName: saved.accountName || "",
@@ -623,6 +669,33 @@ function openRateSetupModal(userId){
     document.getElementById("rateDailyRate").value =
         rate.dailyRate || "";
 
+    document.getElementById("rateMonthlyRate").value =
+        rate.monthlyRate || "";
+
+    document.getElementById("rateDailyRateWrapper")
+        .classList.toggle("d-none", user.fixedRate === true);
+
+    document.getElementById("rateMonthlyRateWrapper")
+        .classList.toggle("d-none", user.fixedRate !== true);
+
+    document.getElementById("rateMealAllowanceLabel").textContent =
+        user.fixedRate === true ? "Allowance (₱)" : "Meal Allowance (₱)";
+
+    document.getElementById("rateOtMealAllowanceWrapper")
+        .classList.toggle("d-none", user.fixedRate === true);
+
+    document.getElementById("rateGovtIdsWrapper")
+        .classList.toggle("d-none", user.compensationSchedule !== "Bi-Monthly");
+
+    document.getElementById("rateSssNumber").value =
+        rate.sssNumber || "";
+
+    document.getElementById("ratePagibigNumber").value =
+        rate.pagibigNumber || "";
+
+    document.getElementById("ratePhilhealthNumber").value =
+        rate.philhealthNumber || "";
+
     document.getElementById("rateMealAllowance").value =
         rate.mealAllowance || "";
 
@@ -673,9 +746,13 @@ function saveRateSetup(){
 
     rates[userId] = {
         dailyRate: Number(document.getElementById("rateDailyRate").value) || 0,
+        monthlyRate: Number(document.getElementById("rateMonthlyRate").value) || 0,
         mealAllowance: Number(document.getElementById("rateMealAllowance").value) || 0,
         otMealAllowance: Number(document.getElementById("rateOtMealAllowance").value) || 0,
         secondaryDailyRate: Number(document.getElementById("rateSecondaryDailyRate").value) || 0,
+        sssNumber: document.getElementById("rateSssNumber").value.trim(),
+        pagibigNumber: document.getElementById("ratePagibigNumber").value.trim(),
+        philhealthNumber: document.getElementById("ratePhilhealthNumber").value.trim(),
         bankType: bankType,
         bankTypeOther:
             bankType === "Others"
@@ -1425,17 +1502,30 @@ function computeStaffPayroll(user, groupKey, period){
             };
         });
 
+    /* Fixed Rate staff aren't paid per attendance day — they get half of
+       their Monthly Rate on both the 1st and 2nd cutoff, regardless of
+       the days actually worked. Meal Allowance/Overtime still come from
+       attendance as normal. */
     const dailyRateTotal =
-        days.reduce(function(sum, day){ return sum + day.dailyRateAmount; }, 0);
+        user.fixedRate
+            ? rate.monthlyRate / 2
+            : days.reduce(function(sum, day){ return sum + day.dailyRateAmount; }, 0);
 
     const mealAllowanceTotal =
         days.reduce(function(sum, day){ return sum + day.mealAllowanceAmount; }, 0);
 
+    /* Fixed Rate (salaried) staff don't get separate Overtime pay or
+       Commission — their earnings table only shows Daily Rate (half
+       Monthly Rate) + Allowance, so Gross Pay must exclude both here too. */
     const overtimeTotal =
-        days.reduce(function(sum, day){ return sum + day.overtimeAmount; }, 0);
+        user.fixedRate
+            ? 0
+            : days.reduce(function(sum, day){ return sum + day.overtimeAmount; }, 0);
 
     const commissionTotal =
-        days.reduce(function(sum, day){ return sum + day.commission; }, 0);
+        user.fixedRate
+            ? 0
+            : days.reduce(function(sum, day){ return sum + day.commission; }, 0);
 
     const grossTotal =
         dailyRateTotal + mealAllowanceTotal + overtimeTotal + commissionTotal;
@@ -2300,6 +2390,15 @@ function renderAdminPayslipSheet(result){
     document.getElementById("psAdmPeriod").textContent =
         currentPayslipContext.period.label;
 
+    document.getElementById("psAdmSss").textContent =
+        result.rate.sssNumber || "—";
+
+    document.getElementById("psAdmPagibig").textContent =
+        result.rate.pagibigNumber || "—";
+
+    document.getElementById("psAdmPhilhealth").textContent =
+        result.rate.philhealthNumber || "—";
+
     document.getElementById("psAdmRef").textContent =
         getPayslipReference(
             currentPayslipContext.userId,
@@ -2319,13 +2418,20 @@ function renderAdminPayslipSheet(result){
             `;
         }).join("");
 
-    document.getElementById("psAdmEarningsTable").innerHTML = `
-        <tr><td class="ps-line-label">Daily Rate</td><td class="ps-line-amount">${peso(result.dailyRateTotal)}</td></tr>
-        <tr><td class="ps-line-label">Meal Allowance</td><td class="ps-line-amount">${peso(result.mealAllowanceTotal)}</td></tr>
-        <tr><td class="ps-line-label">Overtime</td><td class="ps-line-amount">${peso(result.overtimeTotal)}</td></tr>
-        <tr><td class="ps-line-label">Commission</td><td class="ps-line-amount">${peso(result.commissionTotal)}</td></tr>
-        <tr class="ps-line-subtotal"><td class="ps-line-label">Gross Pay</td><td class="ps-line-amount">${peso(result.grossTotal)}</td></tr>
-    `;
+    document.getElementById("psAdmEarningsTable").innerHTML =
+        result.user.fixedRate
+            ? `
+                <tr><td class="ps-line-label">Daily Rate</td><td class="ps-line-amount">${peso(result.dailyRateTotal)}</td></tr>
+                <tr><td class="ps-line-label">Allowance</td><td class="ps-line-amount">${peso(result.mealAllowanceTotal)}</td></tr>
+                <tr class="ps-line-subtotal"><td class="ps-line-label">Gross Pay</td><td class="ps-line-amount">${peso(result.grossTotal)}</td></tr>
+            `
+            : `
+                <tr><td class="ps-line-label">Daily Rate</td><td class="ps-line-amount">${peso(result.dailyRateTotal)}</td></tr>
+                <tr><td class="ps-line-label">Meal Allowance</td><td class="ps-line-amount">${peso(result.mealAllowanceTotal)}</td></tr>
+                <tr><td class="ps-line-label">Overtime</td><td class="ps-line-amount">${peso(result.overtimeTotal)}</td></tr>
+                <tr><td class="ps-line-label">Commission</td><td class="ps-line-amount">${peso(result.commissionTotal)}</td></tr>
+                <tr class="ps-line-subtotal"><td class="ps-line-label">Gross Pay</td><td class="ps-line-amount">${peso(result.grossTotal)}</td></tr>
+            `;
 
     renderAdminDeductionsTable(result);
 

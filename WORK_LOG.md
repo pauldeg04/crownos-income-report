@@ -4,6 +4,48 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-01 — Fixed Rate staff (salaried Bi-Monthly accounts) + payslip changes
+
+**Requested by:** User — Bi-Monthly staff who are actually salaried need Individual Rate
+Setup to ask for a Monthly Rate instead of a Daily Rate, get paid half of it each cutoff, and
+have SSS/Pag-IBIG/PhilHealth numbers on file for their payslip.
+
+**Account Settings** ([account-settings.html](account-settings.html),
+[account-settings.js](account-settings.js)):
+- New **Fixed Rate** checkbox, shown only for Bi-Monthly accounts (same visibility rule as
+  "Hide from Admin Staff payroll group"). Saved as `user.fixedRate`.
+
+**Payroll** ([payroll.html](payroll.html), [payroll.js](payroll.js)):
+- Individual Rate Setup asks for **Monthly Rate** instead of Daily Rate for a Fixed Rate
+  account (`getStaffRate`/`saveRateSetup` now track `monthlyRate`); half of it is used as the
+  Daily Rate total for Fixed Rate staff (`computeStaffPayroll`), so it applies the same for
+  both cutoffs regardless of attendance.
+- "Meal Allowance" is relabeled **"Allowance"** and "Overtime Meal Allowance" is hidden for a
+  Fixed Rate account (still stored under the same `mealAllowance`/`otMealAllowance` keys — no
+  data migration needed).
+- Fixed Rate accounts no longer get Overtime pay or Commission — both are zeroed out of Gross
+  Pay in `computeStaffPayroll`, and dropped from the Admin Staff payslip's Earnings table
+  (`renderAdminPayslipSheet`), which now shows only Daily Rate + Allowance + Gross Pay for
+  them. Non-Fixed-Rate Bi-Monthly accounts keep the full Meal Allowance/Overtime/Commission
+  breakdown.
+- New **SSS / Pag-IBIG / PhilHealth Number** fields in Individual Rate Setup, shown for any
+  Bi-Monthly account (not just Fixed Rate) — printed on the Admin Staff payslip next to
+  Name/Position. Separate from the existing SSS/PhilHealth/Pag-IBIG *Contribution* amounts
+  already in the Deductions table (those are per-payroll-period amounts, these are ID numbers
+  on file).
+- Added **1st Cutoff** / **2nd Cutoff** buttons next to the payroll date range pickers (26th
+  of previous month–10th, and 11th–25th), ported from the existing pattern in the GoodSign
+  Project codebase.
+
+**Docs:** [manual.html](manual.html) Chapter 10 (Payroll) and Chapter 20 (Account Settings)
+updated to document Fixed Rate, Monthly Rate, the relabeled/hidden rate fields, the new SSS/
+Pag-IBIG/PhilHealth Number fields, the Fixed Rate payslip earnings table, and the Cut Off
+buttons.
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app
+
+---
+
 ## 2026-09-01 — getBookableServices now exposes each service's category
 
 **Requested by:** User — wants the public booking page's Service dropdown

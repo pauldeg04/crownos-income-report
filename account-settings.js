@@ -519,6 +519,9 @@ function openEditUserModal(userId){
     document.getElementById("hideFromAdminGroupInput").checked =
         user.hiddenFromAdminGroup === true;
 
+    document.getElementById("fixedRateInput").checked =
+        user.fixedRate === true;
+
     updateHideFromAdminGroupFieldState();
 
     renderBranchCheckboxes(
@@ -735,8 +738,12 @@ function updateHideFromAdminGroupFieldState(){
     document.getElementById("hideFromAdminGroupField")
         .classList.toggle("d-none", !isBiMonthly);
 
+    document.getElementById("fixedRateField")
+        .classList.toggle("d-none", !isBiMonthly);
+
     if(!isBiMonthly){
         document.getElementById("hideFromAdminGroupInput").checked = false;
+        document.getElementById("fixedRateInput").checked = false;
     }
 }
 
@@ -1031,6 +1038,12 @@ async function saveUserAccount(){
             .getElementById("hideFromAdminGroupInput")
             .checked;
 
+    const fixedRate =
+        compensationSchedule === "Bi-Monthly" &&
+        document
+            .getElementById("fixedRateInput")
+            .checked;
+
     const extraAccess =
         getSelectedExtraAccess();
 
@@ -1200,6 +1213,7 @@ async function saveUserAccount(){
         user.extraAccess = extraAccess;
         user.compensationSchedule = compensationSchedule;
         user.hiddenFromAdminGroup = hiddenFromAdminGroup;
+        user.fixedRate = fixedRate;
         user.updatedAt = new Date().toISOString();
 
         if(password){
@@ -1274,6 +1288,7 @@ async function saveUserAccount(){
             status: status,
             compensationSchedule: compensationSchedule,
             hiddenFromAdminGroup: hiddenFromAdminGroup,
+            fixedRate: fixedRate,
             createdAt: new Date().toISOString(),
             lastLogin: ""
         });

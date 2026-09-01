@@ -1274,14 +1274,20 @@ Amount to Pay      what the client actually pays</div>
     <dt>Daily Rate (₱)</dt>
     <dd>Pay for one full day of work.</dd>
 
+    <dt>Monthly Rate (₱)</dt>
+    <dd>Shown instead of Daily Rate for a <strong>Fixed Rate</strong> account (see Chapter 20). Half of it is paid on both the 1st and 2nd cutoff.</dd>
+
     <dt>Meal Allowance (₱)</dt>
-    <dd>Allowance once hours reach a full shift.</dd>
+    <dd>Allowance once hours reach a full shift. Labeled just <strong>Allowance (₱)</strong> for a Fixed Rate account, where it's a flat figure rather than attendance-driven.</dd>
 
     <dt>Overtime Meal Allowance (₱)</dt>
-    <dd>Additional allowance once hours pass the overtime threshold.</dd>
+    <dd>Additional allowance once hours pass the overtime threshold. Hidden for a Fixed Rate account — salaried staff don't get separate Overtime pay.</dd>
 
     <dt>Secondary Role Daily Rate (₱)</dt>
     <dd>For a Therapist who relieves as Receptionist. Used on days they chose Receptionist duty.</dd>
+
+    <dt>SSS / Pag-IBIG / PhilHealth Number</dt>
+    <dd>Shown only for a Bi-Monthly account. Identification numbers on file, printed on that person's payslip — separate from the SSS/PhilHealth/Pag-IBIG <em>Contribution</em> amounts entered per payroll period (see below).</dd>
 
     <dt>Bank Accounts</dt>
     <dd>Bank Type, Specify Bank, Account Name, and Account Number — for releasing pay.</dd>
@@ -1295,6 +1301,17 @@ Amount to Pay      what the client actually pays</div>
     <li><strong>Branch group</strong> (e.g. Crown Head Spa Biñan) — staff on a <strong>Weekly</strong> compensation schedule assigned to that branch. Only attendance and commission recorded <em>at that branch</em> are counted.</li>
     <li><strong>Admin Staff</strong> — staff on a <strong>Bi-Monthly</strong> schedule. Attendance and commission are counted across <strong>all</strong> branches.</li>
   </ul>
+
+  <div class="note">
+    <span class="callout-label">Cut Off buttons</span>
+    <p>
+      Next to the Start/End Date pickers, pick a month and click
+      <span class="ui">1st Cutoff</span> or <span class="ui">2nd Cutoff</span>
+      to fill in the date range instead of typing it — 1st Cutoff runs the
+      26th of the previous month through the 10th, 2nd Cutoff runs the 11th
+      through the 25th.
+    </p>
+  </div>
 
   <div class="note">
     <span class="callout-label">Working two branches in one day</span>
@@ -1340,14 +1357,23 @@ Meal Allowance     none for these roles</div>
     <p>
       Opening a payslip from the <strong>Admin Staff</strong> group shows a
       printable sheet instead of the plain table above — a company header,
-      a <strong>Daily Time Record</strong> table, and three side-by-side
-      columns: <strong>Earnings</strong> (Daily Rate, Meal Allowance,
-      Overtime, Commission, Gross Pay), <strong>Deductions</strong> (SSS,
-      PhilHealth, and Pag-IBIG Contribution, Withholding Tax, SSS Loan,
-      HDMF Loan, Cash Advance), and <strong>Adjustments</strong> (the same
-      Additional Pay / Deduction as any other group). Net Pay is the Gross
-      Pay plus Additional Pay, minus the Deduction and everything entered
-      under Deductions.
+      the person's SSS/Pag-IBIG/PhilHealth Number from Individual Rate Setup
+      alongside Name and Position, a <strong>Daily Time Record</strong>
+      table, and three side-by-side columns: <strong>Earnings</strong>,
+      <strong>Deductions</strong> (SSS, PhilHealth, and Pag-IBIG
+      Contribution, Withholding Tax, SSS Loan, HDMF Loan, Cash Advance —
+      these are the amounts, separate from the ID numbers above), and
+      <strong>Adjustments</strong> (the same Additional Pay / Deduction as
+      any other group). Net Pay is the Gross Pay plus Additional Pay, minus
+      the Deduction and everything entered under Deductions.
+    </p>
+    <p>
+      Earnings shows <strong>Daily Rate, Meal Allowance, Overtime,
+      Commission, Gross Pay</strong> — except for a <strong>Fixed
+      Rate</strong> account, which shows only <strong>Daily Rate,
+      Allowance, Gross Pay</strong>: no separate Overtime pay or Commission,
+      since a salaried account's pay is Daily Rate (half the Monthly Rate)
+      plus Allowance.
     </p>
     <p>
       Deductions are entered per payroll period — there's no default per
@@ -2287,6 +2313,9 @@ Branch receives    →  it is added to the branch's Available Stock</div>
 
     <dt>Hide from Admin Staff group</dt>
     <dd>Leaves the account out of the Admin Staff list in Payroll. The account still works normally.</dd>
+
+    <dt>Fixed Rate</dt>
+    <dd>Only shown for a Bi-Monthly account. Switches Individual Rate Setup to ask for a Monthly Rate instead of a Daily Rate, and Payroll pays half of it on both the 1st and 2nd cutoff instead of computing pay per attendance day (see Chapter 10).</dd>
 
     <dt>Linked Therapist</dt>
     <dd>Ties the account to a name in the List of Therapist so they see only their own Therapist Sales.</dd>

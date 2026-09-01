@@ -65,6 +65,21 @@
                     <input type="date" id="payrollEndDate" class="form-control">
                 </div>
 
+                <div class="col-lg-3 col-md-4">
+                    <label class="form-label fw-bold">Cut Off</label>
+                    <div class="rate-setup-row">
+                        <input type="month" id="payrollCutoffMonth" class="form-control">
+
+                        <button type="button" class="btn btn-outline-primary" id="payrollCutoff1Btn">
+                            1st Cutoff
+                        </button>
+
+                        <button type="button" class="btn btn-outline-primary" id="payrollCutoff2Btn">
+                            2nd Cutoff
+                        </button>
+                    </div>
+                </div>
+
                 <div class="col-lg-5 col-md-6">
                     <label class="form-label fw-bold">Individual Rate Setup</label>
                     <div class="rate-setup-row">
@@ -291,19 +306,43 @@
 
         <div class="payroll-modal-body">
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-4" id="rateDailyRateWrapper">
                     <label class="form-label fw-bold">Daily Rate (₱)</label>
                     <input type="number" min="0" step="0.01" id="rateDailyRate" class="form-control" placeholder="0.00">
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">Meal Allowance (₱)</label>
-                    <input type="number" min="0" step="0.01" id="rateMealAllowance" class="form-control" placeholder="0.00">
+                <div class="col-md-4 d-none" id="rateMonthlyRateWrapper">
+                    <label class="form-label fw-bold">Monthly Rate (₱)</label>
+                    <input type="number" min="0" step="0.01" id="rateMonthlyRate" class="form-control" placeholder="0.00">
                 </div>
 
                 <div class="col-md-4">
+                    <label class="form-label fw-bold" id="rateMealAllowanceLabel">Meal Allowance (₱)</label>
+                    <input type="number" min="0" step="0.01" id="rateMealAllowance" class="form-control" placeholder="0.00">
+                </div>
+
+                <div class="col-md-4" id="rateOtMealAllowanceWrapper">
                     <label class="form-label fw-bold">Overtime Meal Allowance (₱)</label>
                     <input type="number" min="0" step="0.01" id="rateOtMealAllowance" class="form-control" placeholder="0.00">
+                </div>
+
+                <div class="col-12 d-none" id="rateGovtIdsWrapper">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">SSS Number</label>
+                            <input type="text" id="rateSssNumber" class="form-control" autocomplete="off">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Pag-IBIG Number</label>
+                            <input type="text" id="ratePagibigNumber" class="form-control" autocomplete="off">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">PhilHealth Number</label>
+                            <input type="text" id="ratePhilhealthNumber" class="form-control" autocomplete="off">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="col-12 d-none" id="rateSecondaryDailyRateWrapper">
@@ -480,6 +519,9 @@
                                     <div><strong>Position:</strong> <span id="psAdmRole"></span></div>
                                     <div><strong>Coverage:</strong> <span>Admin Staff (All Branches)</span></div>
                                     <div><strong>Payroll Period:</strong> <span id="psAdmPeriod"></span></div>
+                                    <div><strong>SSS No.:</strong> <span id="psAdmSss"></span></div>
+                                    <div><strong>Pag-IBIG No.:</strong> <span id="psAdmPagibig"></span></div>
+                                    <div><strong>PhilHealth No.:</strong> <span id="psAdmPhilhealth"></span></div>
                                 </div>
 
                                 <div class="ps-dtr-section" id="psAdmDtrSection">
