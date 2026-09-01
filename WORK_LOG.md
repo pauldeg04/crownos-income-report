@@ -4,6 +4,48 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-01 — Family bundle services auto-add locked companions
+
+**Requested by:** User — special-case rule for three bundle services:
+selecting **Family Duo**, **Family Trio**, or **Family Royal Four** as a
+service should automatically add the matching number of companions (1, 2,
+or 3), each locked to the same bundle service at ₱0 since the bundle is
+paid once, and **Add Companion** should be disabled while one of the three
+is selected.
+
+- [script.js](script.js): added `FAMILY_BUNDLE_COMPANION_COUNTS` (Family
+  Duo → 1, Family Trio → 2, Family Royal Four → 3) and
+  `syncFamilyBundleCompanions()`, called whenever the principal's selected
+  services change (picking, switching, or removing a service). It adds or
+  removes auto-generated companions tagged `isFamilyBundleCompanion` so the
+  count always matches the active bundle, and each gets a single service
+  item (`isFamilyBundleItem`) locked to the bundle name at ₱0 — the
+  companion card hides its Remove/Add Service/Add Product controls, and the
+  service row renders as a disabled, read-only line instead of the normal
+  editable one.
+- `modalAddCompanionBtn` is disabled (with an explanatory tooltip) while
+  `getActiveFamilyBundleName()` returns a bundle, and re-enabled once it's
+  deselected.
+- `openEditSaleModal()` re-derives `isFamilyBundleCompanion` /
+  `familyBundleName` from the saved companion's locked item on load (that
+  flag isn't itself persisted on the companion record), so reopening a
+  saved bundle sale keeps the companions locked instead of showing them as
+  regular, removable ones.
+- Applies only to the Daily Income sales modal (`index.html` /
+  `script.js`), not the appointment Scheduling modal, since pricing/amount
+  only exists in the sales flow.
+- [manual.html](manual.html): documented the bundle behavior under
+  Chapter — Companions.
+- Exact service names in **List of Services** must match `Family Duo`,
+  `Family Trio`, `Family Royal Four` verbatim for the special case to
+  trigger.
+
+**Status:** Not yet tested live (login-gated, no test credentials
+available in that session) — verify in the app before relying on it for a
+real transaction.
+
+---
+
 ## 2026-08-30 — Admin Staff Group: new GoodSign-style payslip format
 
 **Requested by:** User — wanted the Admin Staff Group's payslip in

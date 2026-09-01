@@ -6,6 +6,16 @@ const THERAPIST_MASTER_KEY = "crownTherapistMasterList";
 const BRANCH_MASTER_KEY = "crownBranchMasterList";
 const SCHEDULE_PREFIX = "crownSchedule_";
 
+/* Family bundle services: picking one as a principal service
+   auto-adds the matching number of companions, each locked to the
+   same bundle service at ₱0 (the bundle price is charged once, on
+   the principal's item) — see syncFamilyBundleCompanions(). */
+const FAMILY_BUNDLE_COMPANION_COUNTS = {
+  "Family Duo": 1,
+  "Family Trio": 2,
+  "Family Royal Four": 3
+};
+
 /* Synchronous snapshot of the client list, kept current by getClients()
    (see client-store.js — the actual storage is IndexedDB, which is
    async). Exists so display-only reads (getClientByName, the Client
@@ -1619,14 +1629,25 @@ function openEditSaleModal(saleId){
 
   modalCompanions =
     savedCompanions.map(function(companion){
-      return {
-        id: companion.id || createId(),
-        name: companion.name || "",
-        therapist: companion.therapist || "",
-        seniorPwdIdNumber: companion.seniorPwdIdNumber || "",
-        items:
-          Array.isArray(companion.items)
-            ? companion.items.map(function(item){
+      const items =
+        Array.isArray(companion.items)
+          ? companion.items.map(function(item){
+              return {
+                ...item,
+                id: item.id || createId(),
+                itemType:
+                  item.itemType ||
+                  (findProduct(item.name) ? "Product" : "Service")
+              };
+            })
+          : (sale.services || [])
+              .filter(function(item){
+                return (
+                  item.participantType === "Companion" &&
+                  item.participantName === companion.name
+                );
+              })
+              .map(function(item){
                 return {
                   ...item,
                   id: item.id || createId(),
@@ -1634,23 +1655,26 @@ function openEditSaleModal(saleId){
                     item.itemType ||
                     (findProduct(item.name) ? "Product" : "Service")
                 };
-              })
-            : (sale.services || [])
-                .filter(function(item){
-                  return (
-                    item.participantType === "Companion" &&
-                    item.participantName === companion.name
-                  );
-                })
-                .map(function(item){
-                  return {
-                    ...item,
-                    id: item.id || createId(),
-                    itemType:
-                      item.itemType ||
-                      (findProduct(item.name) ? "Product" : "Service")
-                  };
-                })
+              });
+
+      /* Whether this companion is a family-bundle placeholder isn't
+         saved on the companion itself (only on its locked item) — so
+         it's re-derived from the item on load, to keep it locked and
+         hidden from the remove/add-service controls after re-opening
+         a saved sale. */
+      const bundleItem =
+        items.find(function(item){
+          return item.isFamilyBundleItem;
+        });
+
+      return {
+        id: companion.id || createId(),
+        name: companion.name || "",
+        therapist: companion.therapist || "",
+        seniorPwdIdNumber: companion.seniorPwdIdNumber || "",
+        isFamilyBundleCompanion: Boolean(bundleItem),
+        familyBundleName: bundleItem ? bundleItem.name : "",
+        items: items
       };
     });
 
@@ -2427,6 +2451,7 @@ function attachModalItemEvents(row, item){
       item.productKind = "";
       item.sourceServiceName = "";
       refreshModalVipState();
+      syncFamilyBundleCompanions();
       renderModalItems();
       renderModalCompanions();
       return;
@@ -2456,7 +2481,9 @@ function attachModalItemEvents(row, item){
     }
 
     refreshModalVipState();
+    syncFamilyBundleCompanions();
     renderModalItems();
+    renderModalCompanions();
   });
 
   if(item.itemType === "Service"){
@@ -2537,6 +2564,7 @@ function attachModalItemEvents(row, item){
     }
 
     refreshModalVipState();
+    syncFamilyBundleCompanions();
     renderModalItems();
     renderModalCompanions();
   });
@@ -2557,6 +2585,74 @@ function createEmptyItem(itemType){
     productKind: "",
     sourceServiceName: ""
   };
+}
+
+function getActiveFamilyBundleName(){
+  const bundleItem =
+    modalItems.find(function(item){
+      return (
+        item.itemType === "Service" &&
+        FAMILY_BUNDLE_COMPANION_COUNTS.hasOwnProperty(item.name)
+      );
+    });
+
+  return bundleItem ? bundleItem.name : null;
+}
+
+/* Keeps modalCompanions in sync with whichever family bundle (if any)
+   is currently selected as a principal service — adding/removing the
+   auto-generated, locked companion rows so the count always matches
+   the bundle size. Called whenever the principal's selected services
+   change. */
+function syncFamilyBundleCompanions(){
+  const bundleName =
+    getActiveFamilyBundleName();
+
+  modalCompanions =
+    modalCompanions.filter(function(companion){
+      return (
+        !companion.isFamilyBundleCompanion ||
+        companion.familyBundleName === bundleName
+      );
+    });
+
+  if(!bundleName){
+    return;
+  }
+
+  const requiredCount =
+    FAMILY_BUNDLE_COMPANION_COUNTS[bundleName];
+
+  const existingCount =
+    modalCompanions.filter(function(companion){
+      return companion.familyBundleName === bundleName;
+    }).length;
+
+  for(let i = existingCount; i < requiredCount; i++){
+    modalCompanions.push({
+      id: createId(),
+      name: "",
+      therapist: "",
+      seniorPwdIdNumber: "",
+      vip: isModalVip(),
+      isFamilyBundleCompanion: true,
+      familyBundleName: bundleName,
+      items: [{
+        id: createId(),
+        itemType: "Service",
+        name: bundleName,
+        priceType: "Regular",
+        quantity: 1,
+        unitPrice: 0,
+        amount: 0,
+        manualAmount: true,
+        manualUnitPrice: false,
+        productKind: "",
+        sourceServiceName: "",
+        isFamilyBundleItem: true
+      }]
+    });
+  }
 }
 
 function addModalCompanion(){
@@ -2631,6 +2727,20 @@ function renderModalCompanions(){
     return;
   }
 
+  const addCompanionBtn =
+    document.getElementById("modalAddCompanionBtn");
+
+  if(addCompanionBtn){
+    const bundleActive =
+      Boolean(getActiveFamilyBundleName());
+
+    addCompanionBtn.disabled = bundleActive;
+    addCompanionBtn.title =
+      bundleActive
+        ? "Companions are added automatically by the selected Family bundle service."
+        : "";
+  }
+
   container.innerHTML = "";
 
   if(modalCompanions.length === 0){
@@ -2670,15 +2780,27 @@ function renderModalCompanions(){
               ? '<span class="companion-vip-badge">VIP PRIVILEGE</span>'
               : ""
           }
+
+          ${
+            companion.isFamilyBundleCompanion
+              ? `<span class="companion-vip-badge">${escapeHtml(companion.familyBundleName)}</span>`
+              : ""
+          }
         </div>
 
-        <button
-          type="button"
-          class="companion-remove-btn"
-          aria-label="Remove companion"
-        >
-          Remove
-        </button>
+        ${
+          companion.isFamilyBundleCompanion
+            ? ""
+            : `
+                <button
+                  type="button"
+                  class="companion-remove-btn"
+                  aria-label="Remove companion"
+                >
+                  Remove
+                </button>
+              `
+        }
       </div>
 
       <div class="row g-3">
@@ -2743,21 +2865,27 @@ function renderModalCompanions(){
         }
       </div>
 
-      <div class="companion-actions">
-        <button
-          type="button"
-          class="btn btn-sm btn-success companion-add-service"
-        >
-          Add Service
-        </button>
+      ${
+        companion.isFamilyBundleCompanion
+          ? ""
+          : `
+              <div class="companion-actions">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-success companion-add-service"
+                >
+                  Add Service
+                </button>
 
-        <button
-          type="button"
-          class="btn btn-sm btn-primary companion-add-product"
-        >
-          Add Product
-        </button>
-      </div>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-primary companion-add-product"
+                >
+                  Add Product
+                </button>
+              </div>
+            `
+      }
 
       <div class="companion-items-list"></div>
 
@@ -2788,17 +2916,17 @@ function renderModalCompanions(){
     }
 
     card.querySelector(".companion-add-service")
-      .addEventListener("click", function(){
+      ?.addEventListener("click", function(){
         addCompanionItem(companion.id, "Service");
       });
 
     card.querySelector(".companion-add-product")
-      .addEventListener("click", function(){
+      ?.addEventListener("click", function(){
         addCompanionItem(companion.id, "Product");
       });
 
     card.querySelector(".companion-remove-btn")
-      .addEventListener("click", function(){
+      ?.addEventListener("click", function(){
         removeModalCompanion(companion.id);
       });
 
@@ -2813,7 +2941,25 @@ function renderModalCompanions(){
           ? "modal-item-row modal-product-row companion-item-row"
           : "modal-item-row companion-item-row";
 
-      if(item.itemType === "Service"){
+      if(item.isFamilyBundleItem){
+        row.innerHTML = `
+          <select class="form-select form-select-sm item-name" disabled title="Included in the ${escapeHtml(item.name)} bundle">
+            <option value="${escapeHtml(item.name)}" selected>${escapeHtml(item.name)}</option>
+          </select>
+
+          <select class="form-select form-select-sm item-price-type" disabled title="Included in the bundle">
+            <option value="Regular" selected>Regular</option>
+          </select>
+
+          <input
+            type="text"
+            class="form-control form-control-sm item-amount"
+            value="${peso(0)}"
+            readonly
+            title="Covered by the bundle purchase — no separate charge."
+          >
+        `;
+      }else if(item.itemType === "Service"){
         row.innerHTML = `
           <select class="form-select form-select-sm item-name">
             <option value="">Select Service</option>
@@ -2914,7 +3060,10 @@ function renderModalCompanions(){
         `;
       }
 
-      attachCompanionItemEvents(row, companion, item);
+      if(!item.isFamilyBundleItem){
+        attachCompanionItemEvents(row, companion, item);
+      }
+
       itemsContainer.appendChild(row);
     });
 
