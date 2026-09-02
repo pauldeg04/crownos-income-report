@@ -1,17 +1,24 @@
 const STORAGE_PREFIX = "crownDailySales_";
 const EXPENSE_PREFIX = "crownExpenses_";
+const RECURRING_PREFIX = "crownRecurring_";
 const BRANCH_KEY = "crownSelectedBranch";
 const SHAREHOLDERS_KEY = "crownShareholders";
 const NOTES_KEY = "crownShareholderNotes";
 
+/* Ledger categories (crownExpenses_<branch>_<month>): totaled straight from
+   their stored rows. Recurring categories (crownRecurring_<table>_<branch>)
+   aren't stored per month, so they're excluded here and totaled separately
+   below via recurringMonthTotal — matching expenses-report.js's
+   updateTotals grandTotal exactly, so this report's Overhead Expenses
+   agrees with the Expenses Report's Total Expenses. */
 const EXPENSE_CATEGORY_KEYS = [
     "operation",
     "salary",
-    "utilities",
-    "installments",
     "gov",
     "marketing"
 ];
+
+const RECURRING_CATEGORY_KEYS = ["utilities", "installments"];
 
 function getSelectedBranch(){
     return localStorage.getItem(BRANCH_KEY) || "";
@@ -362,11 +369,78 @@ function getNetSaleAmount(row){
 
 let currentMonthlyNet = 0;
 
-function getOverheadExpenses(branch, monthValue){
-    const saved = localStorage.getItem(EXPENSE_PREFIX + branch + "_" + monthValue);
+function monthKeyFromDateStr(dateStr){
+    return dateStr ? dateStr.slice(0, 7) : "";
+}
+
+function isRecurringActiveInMonth(item, monthValue){
+    const startMonth = monthKeyFromDateStr(item.startDate);
+    if(!startMonth || !monthValue || monthValue < startMonth) return false;
+    if(item.continues) return true;
+    return !!item.endMonth && monthValue <= item.endMonth;
+}
+
+function computeRecurringStatus(item, monthValue){
+    if(item.settledMonths && item.settledMonths[monthValue]) return "settled";
+
+    const [y, m] = monthValue.split("-").map(Number);
+    const day = Math.min(item.dueDay || 1, getDaysInMonth(y, m));
+    const due = new Date(y, m - 1, day);
+    due.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const diffDays = Math.round((due - today) / 86400000);
+
+    if(diffDays < 0) return "overdue";
+    if(diffDays <= 5) return "approaching";
+    return "pending";
+}
+
+function recurringAmountForMonth(item, monthValue){
+    if(item.amountType === "varies"){
+        return Number((item.monthlyAmounts || {})[monthValue]) || 0;
+    }
+    return Number(item.fixedAmount) || 0;
+}
+
+/* Only settled items count toward the total for a month, mirroring
+   expenses-report.js's recurringMonthTotal. */
+function recurringMonthTotal(tableKey, branch, monthValue){
+    const saved = localStorage.getItem(RECURRING_PREFIX + tableKey + "_" + branch);
 
     if(!saved){
         return 0;
+    }
+
+    let items;
+
+    try{
+        items = JSON.parse(saved);
+    }catch(error){
+        console.error("Unable to load recurring expenses for summary:", error);
+        return 0;
+    }
+
+    if(!Array.isArray(items)){
+        return 0;
+    }
+
+    return items
+        .filter(item => isRecurringActiveInMonth(item, monthValue) && computeRecurringStatus(item, monthValue) === "settled")
+        .reduce((sum, item) => sum + recurringAmountForMonth(item, monthValue), 0);
+}
+
+function getOverheadExpenses(branch, monthValue){
+    let total = RECURRING_CATEGORY_KEYS.reduce(function(sum, key){
+        return sum + recurringMonthTotal(key, branch, monthValue);
+    }, 0);
+
+    const saved = localStorage.getItem(EXPENSE_PREFIX + branch + "_" + monthValue);
+
+    if(!saved){
+        return total;
     }
 
     let data;
@@ -375,16 +449,16 @@ function getOverheadExpenses(branch, monthValue){
         data = JSON.parse(saved);
     }catch(error){
         console.error("Unable to load expenses for summary:", error);
-        return 0;
+        return total;
     }
 
-    return EXPENSE_CATEGORY_KEYS.reduce(function(total, key){
+    return EXPENSE_CATEGORY_KEYS.reduce(function(subtotal, key){
         const rows = Array.isArray(data?.[key]) ? data[key] : [];
 
-        return total + rows.reduce(function(subtotal, row){
-            return subtotal + (parseFloat(row?.amount) || 0);
+        return subtotal + rows.reduce(function(rowSum, row){
+            return rowSum + (parseFloat(row?.amount) || 0);
         }, 0);
-    }, 0);
+    }, total);
 }
 
 function getIncomeTotals(branch, monthValue){

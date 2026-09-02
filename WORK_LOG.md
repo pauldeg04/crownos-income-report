@@ -4,6 +4,28 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-02 — Share Holder Summary's Overhead Expenses now matches Expenses Report's Total
+
+**Requested by:** User — Overhead Expenses on the Share Holder Summary Report didn't match
+Summary Total Expenses on the Expenses Report for the same branch/month.
+
+**Share Holder Report** ([share-holder-report.js](share-holder-report.js)):
+- `getOverheadExpenses` only summed the four ledger categories stored under
+  `crownExpenses_<branch>_<month>` (Operation, Payroll, Government Dues, Marketing) — it never
+  counted **Utilities/Monthly Dues** or **Installments**, which Expenses Report stores
+  separately as recurring records (`crownRecurring_<table>_<branch>`) and totals only for
+  entries active and settled in the selected month.
+- Ported that same recurring-total logic (`isRecurringActiveInMonth`, `computeRecurringStatus`,
+  `recurringAmountForMonth`, `recurringMonthTotal`) into share-holder-report.js so Overhead
+  Expenses now adds settled Utilities/Monthly Dues and Installments for the month on top of the
+  four ledger categories — matching Expenses Report's `updateTotals` grand total exactly.
+- Verified with a sandboxed run of both totals against the same sample localStorage data:
+  both reports now agree (₱10,500 in the test case).
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app
+
+---
+
 ## 2026-09-01 — Fixed Rate staff (salaried Bi-Monthly accounts) + payslip changes
 
 **Requested by:** User — Bi-Monthly staff who are actually salaried need Individual Rate
