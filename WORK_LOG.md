@@ -49,6 +49,9 @@ unchanged so none of the underlying Firestore logic was touched:
 bell description all updated to describe the new 3-item/tabbed structure instead of the old
 6-item one.
 
+**Deployed:** `firebase deploy --only hosting` → live at
+https://crownos-5f03d.web.app (commit `4c47b83`)
+
 ---
 
 ## 2026-09-04 — Share Holder Summary: Product Sales mismatch, Loyalty settled-row bug, invisible Notes in PDF
