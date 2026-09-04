@@ -223,7 +223,13 @@ function refreshReport(){
         let total = 0;
 
         rows.forEach(function(row){
-            if(!row?.settled) return;
+            /* Matches script.js/statistics.js/therapist-sales.js/
+               product-sales-summary.js/share-holder-report.js's
+               convention: a row with no explicit settled field
+               (legacy/imported data) is treated as settled, not
+               excluded — this used to disagree with every other
+               report reading the same data. */
+            if(row?.settled === false) return;
 
             const loyaltyItems = getLoyaltyLineItems(row);
 

@@ -253,9 +253,28 @@ function isVipCardName(value){
     );
 }
 
+/* Voucher detection — ported from product-sales-summary.js's
+   isVoucherProduct() so this page's "products" bucket only ever counts
+   what Product Sales Summary counts (excludes Service Vouchers). */
+function isVoucherProduct(item){
+    const name = String(item?.name || "");
+
+    return (
+        item?.productKind === "Service Voucher" ||
+        item?.virtualProduct === true ||
+        name.startsWith("Voucher — ") ||
+        name.startsWith("Voucher - ") ||
+        normalizeName(name).startsWith("voucher")
+    );
+}
+
+/* "products" here must match product-sales-summary.js's
+   getProductLineItems() filter exactly (Product type, not a consumable,
+   not a voucher) — anything else (consumables, vouchers, other item
+   types) falls into "other" so it no longer inflates Product Sales. */
 function getSaleCategoryBreakdown(sale){
     const items = Array.isArray(sale?.services) ? sale.services : [];
-    const gross = { services: 0, vipCards: 0, products: 0 };
+    const gross = { services: 0, vipCards: 0, products: 0, other: 0 };
 
     items.forEach(function(item){
         const amount = Math.max(0, Number(item?.amount) || 0);
@@ -264,19 +283,25 @@ function getSaleCategoryBreakdown(sale){
             gross.vipCards += amount;
         }else if(item?.itemType === "Service"){
             gross.services += amount;
-        }else{
+        }else if(
+            item?.itemType === "Product" &&
+            item?.isConsumable !== true &&
+            !isVoucherProduct(item)
+        ){
             gross.products += amount;
+        }else{
+            gross.other += amount;
         }
     });
 
-    const grossTotal = gross.services + gross.vipCards + gross.products;
+    const grossTotal = gross.services + gross.vipCards + gross.products + gross.other;
 
     const voucherValue = Math.min(
         grossTotal,
         Math.max(0, Number(sale?.voucherValue) || 0)
     );
 
-    const net = { services: gross.services, vipCards: gross.vipCards, products: gross.products };
+    const net = { services: gross.services, vipCards: gross.vipCards, products: gross.products, other: gross.other };
 
     if(voucherValue <= 0 || grossTotal <= 0){
         return net;
@@ -320,7 +345,7 @@ function getSaleCategoryBreakdown(sale){
     );
 
     if(leftover > 0){
-        const remainingGross = net.services + net.vipCards + net.products;
+        const remainingGross = net.services + net.vipCards + net.products + net.other;
 
         if(remainingGross > 0){
             const ratio = Math.max(0, remainingGross - leftover) / remainingGross;
@@ -328,6 +353,7 @@ function getSaleCategoryBreakdown(sale){
             net.services *= ratio;
             net.vipCards *= ratio;
             net.products *= ratio;
+            net.other *= ratio;
         }
     }
 
