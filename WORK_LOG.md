@@ -4,6 +4,53 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-04 — Admin Hub consolidated into 201 Files / Bulletin Board / Staff Management
+
+**Requested by:** User — wanted the Admin Hub section of the sidebar reorganized from 6
+separate menu items into 3, each grouping related pages behind tabs on one page.
+
+**Sidebar / access control** ([sidebar.js](sidebar.js), [access-control.js](access-control.js)):
+- `MENU_ITEMS`'s Admin Hub entries (Announcement, Memo, Staff Schedule, Leave Request,
+  Incident Report, Payroll) replaced with 3 entries: **201 Files**, **Bulletin Board**,
+  **Staff Management**. `PAGE_ACCESS` gained matching entries with the union of each group's
+  former roles; the 6 old page-name entries were left in place (harmless — nothing links to
+  those filenames anymore, kept only as a safety net).
+- `NOTIFICATION_TYPE_PAGES` now routes memo/announcement/schedule notifications to
+  `bulletin-board.html?tab=…` / `staff-management.html?tab=…` instead of the old standalone
+  pages; `getNotificationDestination` compares full path+query (not just filename) so a
+  notification can still switch tabs while already on the merged page.
+
+**New pages** — real merges (no iframes), each constituent page's markup and script copied in
+unchanged so none of the underlying Firestore logic was touched:
+- [`bulletin-board.html`](bulletin-board.html) / [`bulletin-board.js`](bulletin-board.js) /
+  [`bulletin-board.css`](bulletin-board.css) — Announcement + Memo tabs. `bulletin-board.js` is
+  `admin-announcement.js` + `memos.js` concatenated (both already self-contained IIFEs) plus a
+  small tab-controller IIFE that reads `?tab=`.
+- [`staff-management.html`](staff-management.html) / [`staff-management.js`](staff-management.js)
+  / [`staff-management.css`](staff-management.css) — Staff Schedule, Leave Request, **Change
+  Rest Day** (new placeholder tab — details still to come), Incident Report, and Payroll tabs.
+  The 4 original scripts load as separate `<script>` tags unchanged; `staff-management.js` is
+  only the tab controller. [`payroll.js`](payroll.js) (3,594 lines, previously not
+  IIFE-wrapped) got wrapped in `(function(){ … })();` so its ~100 top-level identifiers can't
+  leak into the shared page scope — confirmed nothing outside payroll.js referenced any of them
+  and `payroll.html` had no inline `onclick=`/`onchange=` attributes before making that change.
+- [`201-files.html`](201-files.html) — new, placeholder only ("Coming soon"), Admin and
+  Executive Assistant access.
+- Verified before merging: no duplicate `id="…"` across any of the 6 source pages, no unscoped
+  `document.querySelectorAll('.card'/etc.)` that could pick up another tab's markup, and only
+  `sidebar.js`/`access-control.js` referenced the 6 old filenames anywhere in the codebase.
+- The 6 old standalone pages (`admin-announcement.html`, `memos.html`, `staff-schedule.html`,
+  `leave-requests.html`, `incident-report.html`, `payroll.html`) were left on disk untouched —
+  orphaned but harmless, kept as a rollback safety net rather than deleted.
+
+**User Manual** ([manual.html](manual.html)): Part Six intro, the 5 affected chapters
+(Announcement, Memo, Staff Schedule, Leave Request, Incident Report), the Payroll chapter's
+"where this lives" note, the sidebar layout table, the role-access matrix, and the notification
+bell description all updated to describe the new 3-item/tabbed structure instead of the old
+6-item one.
+
+---
+
 ## 2026-09-04 — Share Holder Summary: Product Sales mismatch, Loyalty settled-row bug, invisible Notes in PDF
 
 **Requested by:** User — Calamba branch, August 2026: Product Sales Page showed ₱8,300 but

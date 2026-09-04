@@ -92,11 +92,9 @@
         "Warehouse": "▣",
         "Branches": "▥",
         "Inventory Settings": "▤",
-        "Announcement": "◎",
-        "Memo": "✎",
-        "Staff Schedule": "▧",
-        "Leave Request": "⌘",
-        "Incident Report": "!",
+        "201 Files": "🗂",
+        "Bulletin Board": "📌",
+        "Staff Management": "🧑‍💼",
         "Ads Monitoring": "📣",
         "Monitoring Summary": "📈",
         "Daily Report": "📋",
@@ -153,40 +151,21 @@
         { section: "Admin Hub" },
 
         {
-            label: "Announcement",
-            href: "admin-announcement.html",
+            label: "201 Files",
+            href: "201-files.html",
+            roles: ["Admin", "Executive Assistant"]
+        },
+
+        {
+            label: "Bulletin Board",
+            href: "bulletin-board.html",
             roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device"]
         },
 
         {
-            label: "Memo",
-            href: "memos.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device"]
-        },
-
-        {
-            label: "Staff Schedule",
-            href: "staff-schedule.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist"]
-        },
-
-        {
-            label: "Leave Request",
-            href: "leave-requests.html",
+            label: "Staff Management",
+            href: "staff-management.html",
             roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent"]
-        },
-
-        {
-            label: "Incident Report",
-            href: "incident-report.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent"]
-        },
-
-        {
-            label: "Payroll",
-            href: "payroll.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent"],
-            sub: true
         },
 
         { section: "Marketing" },
@@ -1417,17 +1396,24 @@
        clicking a notification (bell panel or a future push notification)
        takes the user straight there instead of just marking it read. */
     const NOTIFICATION_TYPE_PAGES = {
-        schedule: "staff-schedule.html",
+        schedule: "staff-management.html?tab=schedule",
         attendance: "attendance.html",
-        memo: "memos.html",
-        announcement: "admin-announcement.html",
+        memo: "bulletin-board.html?tab=memo",
+        announcement: "bulletin-board.html?tab=announcement",
         "booking-request": "booking-requests.html"
     };
 
     function getNotificationDestination(type){
         const page = NOTIFICATION_TYPE_PAGES[type || "schedule"];
 
-        if(!page || page === currentPageFileName()){
+        if(!page){
+            return null;
+        }
+
+        const current =
+            currentPageFileName() + window.location.search;
+
+        if(page === current){
             return null;
         }
 
@@ -1491,6 +1477,9 @@
             "staff-schedule.html": "Staff Schedule",
             "leave-requests.html": "Leave Request",
             "incident-report.html": "Incident Report",
+            "201-files.html": "201 Files",
+            "bulletin-board.html": "Bulletin Board",
+            "staff-management.html": "Staff Management",
             "marketing-ads-daily.html": "Ads Monitoring",
             "marketing-ads-summary.html": "Monitoring Summary",
             "marketing-daily-report.html": "Daily Report",

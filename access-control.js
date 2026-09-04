@@ -225,6 +225,28 @@
             "Marketing Agent"
         ],
 
+        "201-files.html": [
+            "Admin",
+            "Executive Assistant"
+        ],
+
+        "bulletin-board.html": [
+            "Admin",
+            "Executive Assistant",
+            "Receptionist",
+            "Therapist",
+            "Marketing Agent",
+            "Branch Device"
+        ],
+
+        "staff-management.html": [
+            "Admin",
+            "Executive Assistant",
+            "Receptionist",
+            "Therapist",
+            "Marketing Agent"
+        ],
+
         "marketing-ads-daily.html": [
             "Admin",
             "Marketing Agent"

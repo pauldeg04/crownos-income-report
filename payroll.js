@@ -23,6 +23,8 @@
      counts attendance/commission across ALL branches.
    ========================================================================== */
 
+(function(){
+
 const PAYROLL_RATES_KEY = "crownPayrollRates";
 const PAYROLL_ADJUSTMENTS_KEY = "crownPayrollAdjustments";
 const PAYROLL_DEDUCTIONS_KEY = "crownPayrollDeductions";
@@ -3592,3 +3594,5 @@ function acknowledgePayslip(){
     saveAcknowledgements(acknowledgements);
     renderPayslipAckSection();
 }
+
+})();
