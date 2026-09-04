@@ -955,6 +955,14 @@ function exportPDF(){
                     doc.addPage();
                     drawHeader();
                     cursorY = 34;
+
+                    /* drawHeader() leaves the text color white (it draws
+                       the navy header bar's title in white) — restore the
+                       note body's styling or every note after a mid-list
+                       page break renders invisible (white on white). */
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(9.5);
+                    doc.setTextColor(32, 43, 60);
                 }
 
                 doc.text(lines, 14, cursorY);
