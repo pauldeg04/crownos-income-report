@@ -4,6 +4,47 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-04 — Share Holder Summary: Product Sales mismatch, Loyalty settled-row bug, invisible Notes in PDF
+
+**Requested by:** User — Calamba branch, August 2026: Product Sales Page showed ₱8,300 but
+Share Holder Summary showed ₱19,700 for the same month; asked to check for other
+inconsistencies on the same report; then reported that only Note #1 appeared in the exported
+PDF even though 6 notes were entered.
+
+**Share Holder Report** ([share-holder-report.js](share-holder-report.js)):
+- `getSaleCategoryBreakdown`'s "products" bucket used to be a catch-all — anything that wasn't
+  a Service or a VIP Card — so it counted Consumables and Service Vouchers as "Product Sales",
+  which Product Sales Summary correctly excludes. Now it uses the exact same filter as
+  `product-sales-summary.js`'s `getProductLineItems()` (Product type, not consumable, not a
+  voucher); everything else falls into a new untracked `other` bucket, which still
+  participates in the voucher-value proportional math so Monthly Net stays correct.
+- Also audited Overhead Expenses category keys, `getNetSaleAmount`, and VIP Card detection
+  against Expenses Report / Monthly Report / script.js — all already consistent, no changes
+  needed there.
+- **PDF export bug:** `drawHeader()` sets the text color to white to draw the navy header
+  bar's title, but never restores it. The Notes section's per-note loop calls `drawHeader()`
+  again when a note triggers a mid-list page break (to redraw the branded header on the new
+  page), then kept drawing the remaining notes in that leftover white — invisible white-on-
+  white text. Only notes drawn before the first mid-list page break stayed visible, since
+  they used the color set once, correctly, before the loop started. Fixed by re-applying the
+  note body's font/size/color right after every mid-loop `drawHeader()` call. Root-caused by
+  generating a real export from the user's actual August/Calamba data, confirming via the
+  PDF's underlying text layer that all 6 notes were present despite only 1 being visible on
+  screen, then diffing the fill-color operators emitted with and without the fix.
+
+**Loyalty Card Summary** ([loyalty-card-summary.js](loyalty-card-summary.js)):
+- Found during the inconsistency audit: `refreshReport` used `if(!row?.settled) return;`,
+  treating a row with no explicit `settled` field (legacy/imported data) as **unsettled** and
+  excluding it — the opposite of the convention every other report follows
+  (`row?.settled === false`, i.e. missing means settled). Could have undercounted this page's
+  total relative to Share Holder Summary's own Loyalty Card Sales figure for older data.
+  Fixed to match the app-wide convention.
+
+**Deployed:** two rounds — `firebase deploy --only hosting` → live at
+https://crownos-5f03d.web.app (commits `8110fe0`, `6d58e1c`)
+
+---
+
 ## 2026-09-02 — Share Holder Summary's Overhead Expenses now matches Expenses Report's Total
 
 **Requested by:** User — Overhead Expenses on the Share Holder Summary Report didn't match
