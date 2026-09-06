@@ -23,7 +23,7 @@ under their names, gusto ko makita kung VIP si Client. pag Hindi sya VIP, as is 
 VIP Client badge appears under the client's name in the appointment detail popup when VIP Status
 is Yes.
 
-**Status:** Code changed locally, not yet deployed.
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
 
 ---
 
