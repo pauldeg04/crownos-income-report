@@ -4,6 +4,29 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-06 — VIP badge on Dashboard appointment detail
+
+**Requested by:** User — "Sa CrownOS, under dashboard, gusto ko pagkaclick no ng card ng Client,
+under their names, gusto ko makita kung VIP si Client. pag Hindi sya VIP, as is lang tayo."
+
+**Change:**
+- [`home.html`](home.html) — added a `scheduleDetailVipBadge` span under the client name in the
+  Dashboard's appointment detail modal.
+- [`dashboard.js`](dashboard.js) — in `openScheduleDetailModal`, the badge is hidden by default
+  and shown only when the matched client record's `vip` field is `"Yes"` (same field the Clients
+  page uses). Non-VIP or unmatched clients show the detail modal unchanged, no badge.
+- [`dashboard.css`](dashboard.css) — `.schedule-detail-vip-badge` style, reusing the same
+  gold/navy pill look as the existing VIP badge on the Add Sale modal (`style.css`'s
+  `.modal-vip-badge`).
+
+**User Manual** ([manual.html](manual.html)): Chapter 5 (Dashboard and Clock In) — noted that a
+VIP Client badge appears under the client's name in the appointment detail popup when VIP Status
+is Yes.
+
+**Status:** Code changed locally, not yet deployed.
+
+---
+
 ## 2026-09-06 — Change Rest Day tab built out (Staff Management)
 
 **Requested by:** User — "Sa CrownOS, under Change Rest day, gawin natin yung format similar sa

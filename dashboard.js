@@ -936,9 +936,18 @@ async function openScheduleDetailModal(appointment, branch, selectedDate){
         notesWrapper.classList.add("d-none");
     }
 
+    const scheduleDetailVipBadge =
+        document.getElementById("scheduleDetailVipBadge");
+
+    scheduleDetailVipBadge.classList.add("d-none");
+
     if(window.ClientForms){
         const client =
             await ensureClientRecordForForms(appointment.client || "", branch.name);
+
+        if(client && client.vip === "Yes"){
+            scheduleDetailVipBadge.classList.remove("d-none");
+        }
 
         currentScheduleDetailContext = {
             client: client,

@@ -834,6 +834,18 @@ body.modal-open{
     font-style:italic;
 }
 
+.schedule-detail-vip-badge{
+    display:inline-flex;
+    margin-top:6px;
+    padding:4px 8px;
+    color:var(--navy);
+    background:var(--gold);
+    border-radius:999px;
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.05em;
+}
+
 .schedule-detail-close-btn{
     width:34px;
     height:34px;
