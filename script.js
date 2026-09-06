@@ -1667,6 +1667,13 @@ function openEditSaleModal(saleId){
           return item.isFamilyBundleItem;
         });
 
+      /* Self-heal sales saved before the family-bundle pricing fix,
+         where a VIP toggle could have overwritten this locked item's
+         amount back to the full bundle price. */
+      if(bundleItem){
+        bundleItem.amount = 0;
+      }
+
       return {
         id: companion.id || createId(),
         name: companion.name || "",
