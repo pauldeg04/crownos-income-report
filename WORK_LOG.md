@@ -4,6 +4,46 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-06 — Change Rest Day tab built out (Staff Management)
+
+**Requested by:** User — "Sa CrownOS, under Change Rest day, gawin natin yung format similar sa
+Leave Request." The tab existed only as a "Coming soon." placeholder since the 2026-09-04
+Admin Hub consolidation.
+
+**Change:**
+- [`staff-management.html`](staff-management.html) — Change Rest Day tab rebuilt to match Leave
+  Request's layout: **My Requests** / **All Requests** (approvers only) tables, a Request form
+  modal, and a View/Approve/Decline modal. Reuses Leave Request's existing CSS classes
+  (`leave-table`, `leave-modal-*`, `leave-view-row`) rather than duplicating styles, since those
+  classes are already generic.
+- [`restday-requests.js`](restday-requests.js) (new) — same structure as
+  [`leave-requests.js`](leave-requests.js): Firestore collection `restDayRequests`, fields
+  `currentDate` (rest day being changed) / `newDate` (requested replacement) / `reason` /
+  `declarationName` instead of Leave's date-range fields, same
+  Pending→Processing→Approved/Declined lifecycle, same approver gating (Admin / Executive
+  Assistant / teamLeader flag, branch-scoped for Team Leaders), same self-cancel while
+  Pending/Processing.
+- Included via `<script src="restday-requests.js">` in `staff-management.html`, right after
+  `leave-requests.js`.
+- [`firestore.rules`](firestore.rules) — added a `restDayRequests` match block, an exact copy of
+  `leaveRequests`'s status-transition guard (same "Team Leader isn't a custom claim" accepted
+  gap noted there).
+
+**Deliberately not done:** unlike Leave Request approval (which writes `staffSchedules` docs so
+the change shows up automatically), approving a rest day change does **not** touch
+`staffScheduleGrids` or `staffSchedules` — there's no simple additive analog to a leave-date
+range for a single-day swap on the weekly grid. The approver still needs to open Staff Schedule
+and move the rest day by hand. Documented as a callout in the manual chapter below.
+
+**User Manual** ([manual.html](manual.html)): added Chapter 28 "Change Rest Day" (modeled on
+Chapter 27 Leave Request), renumbering Incident Report through Troubleshooting from 28–32 to
+29–33 in both the table of contents and the chapter bodies; removed the "Change Rest Day is a
+new tab with its details still to come" note from the Part Six intro.
+
+**Status:** Code changed locally, not yet deployed.
+
+---
+
 ## 2026-09-04 — Admin Hub consolidated into 201 Files / Bulletin Board / Staff Management
 
 **Requested by:** User — wanted the Admin Hub section of the sidebar reorganized from 6

@@ -217,6 +217,30 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    /* Change Rest Day requests. Same shape/guard as leaveRequests above —
+       gated to Admin/Executive Assistant/Team Leader in the CrownOS UI. */
+    match /restDayRequests/{requestId} {
+      allow create: if request.auth != null &&
+        request.resource.data.requesterEmail == request.auth.token.email &&
+        request.resource.data.status == 'Pending';
+      allow get, list: if request.auth != null;
+      allow update: if request.auth != null && (
+        (resource.data.status == 'Pending' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'processingAt', 'processingBy']) &&
+          request.resource.data.status == 'Processing')
+        ||
+        (resource.data.status == 'Processing' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedAt', 'reviewedBy']) &&
+          request.resource.data.status in ['Approved', 'Declined'])
+        ||
+        (resource.data.requesterEmail == request.auth.token.email &&
+          resource.data.status in ['Pending', 'Processing'] &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelReason']) &&
+          request.resource.data.status == 'Canceled')
+      );
+      allow delete: if false;
+    }
+
     /* Incident reports. Submit-only log, no workflow/status. */
     match /incidentReports/{reportId} {
       allow create: if request.auth != null &&

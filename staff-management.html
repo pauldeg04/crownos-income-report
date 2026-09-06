@@ -422,11 +422,130 @@
 
     <!-- ===================== Change Rest Day tab ===================== -->
     <div id="restdayTabPanel" class="d-none">
-        <div class="card shadow-sm border-0">
+
+        <div class="text-end mb-3">
+            <button type="button" class="btn btn-primary" id="restdayRequestBtn">Request Rest Day Change</button>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
             <div class="card-body">
-                <div class="empty-state">Coming soon.</div>
+                <h5 class="fw-bold text-primary mb-3">My Requests</h5>
+
+                <div class="table-responsive">
+                    <table class="table leave-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Date Submitted</th>
+                                <th>Current Rest Day</th>
+                                <th>Requested Rest Day</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="myRestdayTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="empty-state d-none" id="myRestdayEmptyState">You haven't submitted any rest day change requests yet.</div>
             </div>
         </div>
+
+        <div class="card shadow-sm border-0 d-none" id="allRestdayCard">
+            <div class="card-body">
+                <h5 class="fw-bold text-primary mb-3">All Requests</h5>
+
+                <div class="table-responsive">
+                    <table class="table leave-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Date Submitted</th>
+                                <th>Nickname</th>
+                                <th>Current Rest Day</th>
+                                <th>Requested Rest Day</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allRestdayTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="empty-state d-none" id="allRestdayEmptyState">No rest day change requests yet.</div>
+            </div>
+        </div>
+
+        <!-- Request Rest Day Change Form modal -->
+        <div class="leave-modal-backdrop d-none" id="restdayFormBackdrop">
+            <div class="leave-modal">
+                <div class="leave-modal-header">
+                    <h4>Change Rest Day Form</h4>
+                    <button type="button" class="leave-modal-close" id="restdayFormCloseBtn">&times;</button>
+                </div>
+
+                <div class="leave-modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Employee Name</label>
+                            <input type="text" class="form-control" id="restdayEmployeeName" readonly>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Position</label>
+                            <input type="text" class="form-control" id="restdayPosition">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Current Rest Day</label>
+                            <input type="date" class="form-control" id="restdayCurrentDate">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Requested New Rest Day</label>
+                            <input type="date" class="form-control" id="restdayNewDate">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Reason for Change</label>
+                            <textarea class="form-control" id="restdayReason" rows="3"></textarea>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Employee Signature (Typed Name)</label>
+                            <input type="text" class="form-control" id="restdayDeclarationName">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Date of Request</label>
+                            <input type="date" class="form-control" id="restdayDateOfRequest" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="leave-modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" id="restdayFormCancelBtn">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="restdayFormSubmitBtn">Submit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View / Approve / Decline modal -->
+        <div class="leave-modal-backdrop d-none" id="restdayViewBackdrop">
+            <div class="leave-modal">
+                <div class="leave-modal-header">
+                    <h4>Rest Day Change Request</h4>
+                    <button type="button" class="leave-modal-close" id="restdayViewCloseBtn">&times;</button>
+                </div>
+
+                <div class="leave-modal-body" id="restdayViewBody"></div>
+
+                <div class="leave-modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" id="restdayViewCloseFooterBtn">Close</button>
+                    <button type="button" class="btn btn-outline-danger" id="restdayDeclineBtn">Decline</button>
+                    <button type="button" class="btn btn-primary" id="restdayApproveBtn">Approve</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- ===================== Incident Report tab ===================== -->
@@ -1152,6 +1271,7 @@
 
 <script src="staff-schedule.js"></script>
 <script src="leave-requests.js"></script>
+<script src="restday-requests.js"></script>
 <script src="incident-report.js"></script>
 <script src="commission-shared.js"></script>
 <script src="payroll.js"></script>
