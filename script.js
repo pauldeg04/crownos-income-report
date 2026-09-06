@@ -4581,7 +4581,7 @@ function buildAndValidateSaleData(settledFlag){
 
   if(
     validItems.some(function(item){
-      if(item.isConsumable){
+      if(item.isConsumable || item.isFamilyBundleItem){
         return false;
       }
 
