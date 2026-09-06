@@ -3646,6 +3646,11 @@ function getServicePrice(service, priceType){
 }
 
 function recalculateServiceItem(item, force = false){
+  if(item.isFamilyBundleItem){
+    item.amount = 0;
+    return;
+  }
+
   if(item.manualAmount && !force){
     return;
   }
