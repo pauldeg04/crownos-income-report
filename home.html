@@ -270,6 +270,11 @@
                     <span class="schedule-detail-label">Status</span>
                     <p id="scheduleDetailStatus">—</p>
                 </div>
+
+                <div class="d-none" id="scheduleDetailActualDurationWrapper">
+                    <span class="schedule-detail-label">Actual Duration</span>
+                    <p id="scheduleDetailActualDuration">—</p>
+                </div>
             </div>
 
             <div class="schedule-detail-notes d-none" id="scheduleDetailNotesWrapper">
@@ -285,6 +290,20 @@
                 <div id="scheduleDetailForms"></div>
             </div>
 
+        </div>
+
+        <div class="schedule-detail-footer d-none" id="scheduleDetailTimerFooter">
+            <span class="schedule-detail-timer-remaining d-none" id="scheduleDetailTimerRemaining">
+                —
+            </span>
+
+            <button
+                type="button"
+                class="btn btn-success schedule-detail-timer-btn"
+                id="scheduleDetailTimerBtn"
+            >
+                Start
+            </button>
         </div>
 
     </div>

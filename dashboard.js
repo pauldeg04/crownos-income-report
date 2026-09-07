@@ -1,6 +1,14 @@
 const BRANCH_KEY = "crownSelectedBranch";
 const BRANCH_MASTER_KEY = "crownBranchMasterList";
 const SCHEDULE_PREFIX = "crownSchedule_";
+const SERVICE_MASTER_KEY = "crownServiceMasterList";
+const TIMER_URGENT_THRESHOLD_SECONDS = 10 * 60;
+
+/* Schedule of the bed timeline currently on screen — kept up to date by
+   every renderSchedule() call so the once-a-second ticker below can
+   refresh the Bed-column countdowns without re-reading localStorage or
+   re-rendering the whole table 60 times a minute. */
+let currentRenderedSchedule = [];
 
 /* Client records, loaded for the appointment card's Forms section
    (client-forms.js reads/writes this same in-memory array; the storage
@@ -75,6 +83,34 @@ document.addEventListener("DOMContentLoaded", async function(){
             closeScheduleDetailModal();
         }
     });
+
+    document
+        .getElementById("scheduleDetailTimerBtn")
+        .addEventListener("click", handleTimerButtonClick);
+
+    /* firebase-sync.js's realtime listener writes an incoming remote
+       change straight into localStorage and fires this event — without
+       it, a bed timer started/stopped by a therapist on one device (or
+       an appointment created/edited from scheduling.js) would only show
+       up here after a manual reload. Re-render whenever any
+       crownSchedule_ key changed, same pattern scheduling.js uses. */
+    window.addEventListener("crownCloudUpdate", function(event){
+        const keys = event.detail?.keys || [];
+
+        if(keys.some(function(key){ return key.startsWith(SCHEDULE_PREFIX); })){
+            applyBranchState();
+            refreshOpenScheduleDetailContext();
+        }
+    });
+
+    /* Single shared ticker for every countdown on the page (the Bed
+       column labels plus the modal's own readout) — cheap DOM text
+       updates only, no re-fetch or re-render, since the underlying
+       timerStartedAt/timerDurationSeconds don't change between renders. */
+    setInterval(function(){
+        updateBedTimers(currentRenderedSchedule);
+        updateScheduleDetailTimerRemaining();
+    }, 1000);
 });
 
 function ensureDefaultBranches(){
@@ -388,6 +424,8 @@ function applyBranchState(){
     }
 
     if(!selectedBranch){
+        currentRenderedSchedule = [];
+
         document.getElementById("branchHint").textContent =
             "Please select a branch.";
 
@@ -533,7 +571,9 @@ function renderSchedule(branch){
     document.getElementById("nextSchedule").textContent =
         getNextScheduleText(schedule, selectedDate);
 
-    renderScheduleHeader(branch.beds);
+    currentRenderedSchedule = schedule;
+
+    renderScheduleHeader(branch.beds, schedule);
     renderScheduleBody(branch, schedule, selectedDate);
 }
 
@@ -602,7 +642,7 @@ function setTimelineGridColumns(numberOfBeds){
         ?.style.setProperty("--bed-count", numberOfBeds);
 }
 
-function renderScheduleHeader(numberOfBeds){
+function renderScheduleHeader(numberOfBeds, schedule){
     const head =
         document.getElementById("scheduleHead");
 
@@ -618,11 +658,52 @@ function renderScheduleHeader(numberOfBeds){
         html += `
             <div class="timeline-header-cell">
                 Bed ${bed}
+                <span class="bed-timer d-none" data-bed-timer="${bed}"></span>
             </div>
         `;
     }
 
     head.innerHTML = html;
+
+    updateBedTimers(schedule || []);
+}
+
+/* Whichever appointment on this bed currently has its countdown running
+   (Started but not yet Stopped) — that's the one whose remaining time
+   shows under the "Bed N" label. At most one appointment per bed is
+   ever "running" at a time in normal use. */
+function findRunningAppointmentForBed(schedule, bedNumber){
+    return schedule.find(function(item){
+        return (
+            Number(item.bed) === bedNumber &&
+            item.timerStatus === "running"
+        );
+    }) || null;
+}
+
+function updateBedTimers(schedule){
+    document
+        .querySelectorAll("[data-bed-timer]")
+        .forEach(function(el){
+            const bed = Number(el.getAttribute("data-bed-timer"));
+            const appointment = findRunningAppointmentForBed(schedule || [], bed);
+
+            if(!appointment){
+                el.classList.add("d-none");
+                el.textContent = "";
+                return;
+            }
+
+            const remaining = getRemainingSeconds(appointment);
+
+            el.textContent = formatCountdown(remaining);
+            el.classList.remove("d-none");
+
+            el.classList.toggle(
+                "timer-urgent",
+                remaining <= TIMER_URGENT_THRESHOLD_SECONDS
+            );
+        });
 }
 
 function updateLegendForTherapist(){
@@ -941,6 +1022,18 @@ async function openScheduleDetailModal(appointment, branch, selectedDate){
 
     scheduleDetailVipBadge.classList.add("d-none");
 
+    currentScheduleDetailContext = {
+        appointment: appointment,
+        branch: branch,
+        selectedDate: selectedDate,
+        client: null,
+        visitLike: {
+            date: selectedDate,
+            branch: branch.name,
+            items: getAppointmentServiceList(appointment).join(", ")
+        }
+    };
+
     if(window.ClientForms){
         const client =
             await ensureClientRecordForForms(appointment.client || "", branch.name);
@@ -949,17 +1042,12 @@ async function openScheduleDetailModal(appointment, branch, selectedDate){
             scheduleDetailVipBadge.classList.remove("d-none");
         }
 
-        currentScheduleDetailContext = {
-            client: client,
-            visitLike: {
-                date: selectedDate,
-                branch: branch.name,
-                items: getAppointmentServiceList(appointment).join(", ")
-            }
-        };
+        currentScheduleDetailContext.client = client;
 
         renderScheduleDetailForms();
     }
+
+    renderScheduleDetailTimerButton();
 
     document.getElementById("scheduleDetailBackdrop")
         .classList.remove("d-none");
@@ -988,4 +1076,367 @@ function closeScheduleDetailModal(){
 
     document.body.classList.remove("modal-open");
     currentScheduleDetailContext = null;
+}
+
+/* --- Per-appointment service timer (Start/Stop → Done) ------------------
+
+   Each schedule entry (main appointment or companion entry, they're both
+   plain items in the same crownSchedule_<branch>_<date> array) can carry:
+     timerStatus          "running" | "done"  (absent/undefined = not started)
+     timerDurationSeconds total countdown length, frozen at Start time
+     timerStartedAt        Date.now() when Start was pressed
+     timerStoppedAt         Date.now() when Stop was pressed
+
+   Remaining time is always derived (duration - elapsed), never stored, so
+   every viewer's ticker stays correct without needing its own sync. */
+
+function getServiceMasterList(){
+    try{
+        const saved = localStorage.getItem(SERVICE_MASTER_KEY);
+        const parsed = saved ? JSON.parse(saved) : [];
+
+        if(!Array.isArray(parsed)){
+            return [];
+        }
+
+        return parsed.map(function(service){
+            if(typeof service === "string"){
+                return { name: service, duration: 0 };
+            }
+
+            return {
+                name: service.name || "",
+                duration: Number(service.duration) || 0
+            };
+        });
+    }catch(error){
+        console.error("Unable to load services:", error);
+        return [];
+    }
+}
+
+/* appointment.duration (minutes) is already the sum of every service's
+   duration, computed once at booking time by scheduling.js. Only fall
+   back to re-summing from the service master list for older/edge-case
+   entries that don't carry it. */
+function getAppointmentTotalSeconds(appointment){
+    let minutes = Number(appointment.duration) || 0;
+
+    if(minutes <= 0){
+        const services = getServiceMasterList();
+
+        minutes = getAppointmentServiceList(appointment)
+            .reduce(function(sum, name){
+                const match = services.find(function(service){
+                    return (
+                        normalizeClientName(service.name).toLowerCase() ===
+                        normalizeClientName(name).toLowerCase()
+                    );
+                });
+
+                return sum + (match ? match.duration : 0);
+            }, 0);
+    }
+
+    return minutes * 60;
+}
+
+function getRemainingSeconds(appointment){
+    const total =
+        Number(appointment.timerDurationSeconds) ||
+        getAppointmentTotalSeconds(appointment);
+
+    if(appointment.timerStatus !== "running" || !appointment.timerStartedAt){
+        return total;
+    }
+
+    const elapsed =
+        Math.floor((Date.now() - appointment.timerStartedAt) / 1000);
+
+    return Math.max(0, total - elapsed);
+}
+
+function formatCountdown(totalSeconds){
+    const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+    const minutes = Math.floor(safeSeconds / 60);
+    const seconds = safeSeconds % 60;
+
+    return (
+        String(minutes).padStart(2, "0") +
+        ":" +
+        String(seconds).padStart(2, "0")
+    );
+}
+
+/* Stop patch — records when it stopped AND how long the service
+   actually ran (timerStoppedAt - timerStartedAt), separate from the
+   planned countdown length so both numbers stay on record: what was
+   scheduled (timerDurationSeconds) vs. what actually happened
+   (actualDurationSeconds). */
+function buildStopTimerPatch(appointment){
+    const stoppedAt = Date.now();
+
+    const actualDurationSeconds =
+        appointment.timerStartedAt
+            ? Math.max(0, Math.round((stoppedAt - appointment.timerStartedAt) / 1000))
+            : 0;
+
+    return {
+        timerStatus: "done",
+        timerStoppedAt: stoppedAt,
+        actualDurationSeconds: actualDurationSeconds
+    };
+}
+
+/* Mirrors scheduling.js's transactionalUpdateSchedules() but scoped to
+   patching a single appointment by id — timer start/stop doesn't need
+   the double-booking conflict handling that function guards against, so
+   a plain read-patch-write transaction is enough here. Optimistically
+   updates localStorage + the on-screen table first so the therapist who
+   pressed the button sees it instantly, then syncs to Firestore so
+   every other signed-in dashboard picks it up via crownCloudUpdate. */
+async function updateAppointmentTimer(branchName, date, appointmentId, patch){
+    const schedule = getSchedule(branchName, date);
+
+    const index = schedule.findIndex(function(item){
+        return item.id === appointmentId;
+    });
+
+    if(index === -1){
+        return;
+    }
+
+    schedule[index] = Object.assign({}, schedule[index], patch);
+
+    localStorage.setItem(
+        getScheduleStorageKey(branchName, date),
+        JSON.stringify(schedule)
+    );
+
+    if(localStorage.getItem(BRANCH_KEY) === branchName){
+        const branch =
+            getBranches().find(function(item){
+                return item.name === branchName;
+            });
+
+        if(branch){
+            renderSchedule(branch);
+        }
+    }
+
+    if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
+        return;
+    }
+
+    const key = getScheduleStorageKey(branchName, date);
+
+    const ref =
+        firebase.firestore()
+            .collection("appData")
+            .doc(encodeURIComponent(key));
+
+    try{
+        await firebase.firestore().runTransaction(async function(transaction){
+            const snap = await transaction.get(ref);
+            const data = snap.exists ? snap.data() : null;
+
+            if(data && Number.isInteger(data.chunkCount) && data.chunkCount > 1){
+                return;
+            }
+
+            let current = [];
+
+            if(data && !data.deleted && data.value){
+                try{
+                    const parsed = JSON.parse(data.value);
+                    current = Array.isArray(parsed) ? parsed : [];
+                }catch(error){
+                    current = [];
+                }
+            }
+
+            const currentIndex =
+                current.findIndex(function(item){
+                    return item.id === appointmentId;
+                });
+
+            if(currentIndex === -1){
+                return;
+            }
+
+            current[currentIndex] =
+                Object.assign({}, current[currentIndex], patch);
+
+            transaction.set(ref, {
+                key: key,
+                chunkIndex: 0,
+                chunkCount: 1,
+                value: JSON.stringify(current),
+                deleted: false,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        });
+    }catch(error){
+        console.error("Unable to sync appointment timer:", error);
+    }
+}
+
+/* Only a signed-in Therapist gets the Start/Stop control — everyone else
+   on the Dashboard (Admin, EA, etc.) still sees the Bed-column countdown
+   once it's running, they just can't drive it. */
+function canControlAppointmentTimer(){
+    const user =
+        window.CrownAuth ? CrownAuth.getCurrentUser() : null;
+
+    return Boolean(user && user.role === "Therapist");
+}
+
+function renderScheduleDetailTimerButton(){
+    const footer = document.getElementById("scheduleDetailTimerFooter");
+    const btn = document.getElementById("scheduleDetailTimerBtn");
+
+    if(!footer || !btn || !currentScheduleDetailContext){
+        return;
+    }
+
+    renderScheduleDetailActualDuration();
+
+    if(!canControlAppointmentTimer()){
+        footer.classList.add("d-none");
+        return;
+    }
+
+    footer.classList.remove("d-none");
+
+    const status = currentScheduleDetailContext.appointment.timerStatus || "idle";
+
+    btn.classList.remove("btn-success", "btn-danger", "btn-secondary");
+
+    if(status === "running"){
+        btn.textContent = "Stop";
+        btn.disabled = false;
+        btn.classList.add("btn-danger");
+    }else if(status === "done"){
+        btn.textContent = "Done";
+        btn.disabled = true;
+        btn.classList.add("btn-secondary");
+    }else{
+        btn.textContent = "Start";
+        btn.disabled = false;
+        btn.classList.add("btn-success");
+    }
+
+    updateScheduleDetailTimerRemaining();
+}
+
+function renderScheduleDetailActualDuration(){
+    const wrapper =
+        document.getElementById("scheduleDetailActualDurationWrapper");
+
+    const valueEl =
+        document.getElementById("scheduleDetailActualDuration");
+
+    if(!wrapper || !valueEl || !currentScheduleDetailContext){
+        return;
+    }
+
+    const appointment = currentScheduleDetailContext.appointment;
+
+    if(appointment.timerStatus !== "done" || !appointment.timerStoppedAt){
+        wrapper.classList.add("d-none");
+        return;
+    }
+
+    valueEl.textContent =
+        formatCountdown(Number(appointment.actualDurationSeconds) || 0) +
+        " (" +
+        new Date(appointment.timerStoppedAt).toLocaleTimeString("en-PH", {
+            hour: "numeric",
+            minute: "2-digit"
+        }) +
+        ")";
+
+    wrapper.classList.remove("d-none");
+}
+
+function updateScheduleDetailTimerRemaining(){
+    const remainingEl =
+        document.getElementById("scheduleDetailTimerRemaining");
+
+    if(!remainingEl || !currentScheduleDetailContext){
+        return;
+    }
+
+    const appointment = currentScheduleDetailContext.appointment;
+
+    if(appointment.timerStatus !== "running"){
+        remainingEl.classList.add("d-none");
+        return;
+    }
+
+    const remaining = getRemainingSeconds(appointment);
+
+    remainingEl.textContent = formatCountdown(remaining);
+    remainingEl.classList.remove("d-none");
+
+    remainingEl.classList.toggle(
+        "timer-urgent",
+        remaining <= TIMER_URGENT_THRESHOLD_SECONDS
+    );
+}
+
+async function handleTimerButtonClick(){
+    if(!currentScheduleDetailContext || !canControlAppointmentTimer()){
+        return;
+    }
+
+    const { appointment, branch, selectedDate } = currentScheduleDetailContext;
+    const status = appointment.timerStatus || "idle";
+
+    if(status === "done"){
+        return;
+    }
+
+    const btn = document.getElementById("scheduleDetailTimerBtn");
+    btn.disabled = true;
+
+    const patch =
+        status === "running"
+            ? buildStopTimerPatch(appointment)
+            : {
+                timerStatus: "running",
+                timerStartedAt: Date.now(),
+                timerDurationSeconds: getAppointmentTotalSeconds(appointment)
+            };
+
+    await updateAppointmentTimer(
+        branch.name,
+        selectedDate,
+        appointment.id,
+        patch
+    );
+
+    Object.assign(appointment, patch);
+    renderScheduleDetailTimerButton();
+}
+
+/* Keeps the open modal's Start/Stop/Done state in sync when a
+   crownCloudUpdate arrives (e.g. another device stopped this same
+   appointment's timer while this therapist still has the card open). */
+function refreshOpenScheduleDetailContext(){
+    if(!currentScheduleDetailContext){
+        return;
+    }
+
+    const { appointment, branch, selectedDate } = currentScheduleDetailContext;
+
+    const fresh =
+        getSchedule(branch.name, selectedDate).find(function(item){
+            return item.id === appointment.id;
+        });
+
+    if(fresh){
+        currentScheduleDetailContext.appointment = fresh;
+        renderScheduleDetailTimerButton();
+    }
 }

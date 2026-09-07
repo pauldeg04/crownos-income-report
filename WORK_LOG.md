@@ -4,6 +4,56 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-07 — Service timer (Start/Stop/Done) on Dashboard appointment cards
+
+**Requested by:** User — wanted a way for a Therapist to start a countdown timer on a
+client's appointment card once service begins, with the same countdown visible under that
+bed's column so everyone on the Dashboard can see it, based on the total duration of every
+service booked (multiple services add up). Followed up asking for a bold/red "almost done"
+state under 10 minutes remaining, and for an Actual Duration record once stopped.
+
+**Change:**
+- [`home.html`](home.html):
+  - Added a `scheduleDetailTimerFooter` (Start/Stop/Done button + live remaining-time readout)
+    to the bottom of the Dashboard's appointment detail modal.
+  - Added an `scheduleDetailActualDurationWrapper` field to the modal's detail grid, next to
+    Status, that only appears once a timer has been stopped.
+- [`dashboard.js`](dashboard.js):
+  - Each schedule entry (main appointment or companion) can now carry `timerStatus`
+    (`"running"` / `"done"`), `timerStartedAt`, `timerDurationSeconds`, `timerStoppedAt`, and
+    `actualDurationSeconds`. Remaining time is always derived (duration − elapsed), never
+    stored, so every viewer's countdown stays correct on its own.
+  - `getAppointmentTotalSeconds()` uses the appointment's already-computed `duration` (minutes,
+    summed across every service by `scheduling.js` at booking time); falls back to re-summing
+    from the service master list for older entries that don't carry it.
+  - `updateAppointmentTimer()` writes the patch to localStorage immediately (so the therapist
+    who pressed the button sees it instantly) and syncs it to the same
+    `crownSchedule_<branch>_<date>` Firestore document scheduling.js already uses, via a
+    transaction scoped to just that one appointment's id.
+  - Added a `crownCloudUpdate` listener (dashboard.js had none before this) so a timer
+    started/stopped on one device — or any other schedule change — shows up on every other
+    signed-in Dashboard within seconds, not just after a manual reload.
+  - `renderScheduleHeader()` now renders a `.bed-timer` label under each "Bed N" header cell,
+    fed by a once-a-second ticker (`updateBedTimers()`) that only touches those small DOM nodes,
+    not a full re-render.
+  - Only a signed-in **Therapist** sees/controls the Start/Stop button
+    (`canControlAppointmentTimer()`); the Bed-column countdown and the Actual Duration record
+    are visible to anyone with Dashboard access.
+  - Under 10 minutes remaining (`TIMER_URGENT_THRESHOLD_SECONDS`), both the Bed-column label and
+    the modal's countdown get a `timer-urgent` class — bold + red — so it's visible without
+    reading the exact number.
+- [`dashboard.css`](dashboard.css) — `.schedule-detail-footer`, `.schedule-detail-timer-*`,
+  `.bed-timer` (+ `.timer-urgent` red/bold variant), and widened `.timeline-header-cell` to fit
+  the countdown under the Bed label.
+
+**User Manual** ([manual.html](manual.html)): Chapter 5 (Dashboard and Clock In) — new "Service
+Timer (Start / Stop)" section explaining the Start→Stop→Done flow, the Bed-column countdown,
+the 10-minute red warning, and the Actual Duration record.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
+
+---
+
 ## 2026-09-06 — VIP badge on Dashboard appointment detail
 
 **Requested by:** User — "Sa CrownOS, under dashboard, gusto ko pagkaclick no ng card ng Client,

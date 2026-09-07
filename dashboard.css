@@ -247,8 +247,8 @@ body.modal-open{
 }
 
 .timeline-header-cell{
-    height:48px;
-    padding:10px;
+    min-height:48px;
+    padding:8px 10px;
     color:#fff;
     background:var(--navy);
     border-right:1px solid var(--border-light);
@@ -256,8 +256,10 @@ body.modal-open{
     font-size:12px;
     font-weight:900;
     display:flex;
+    flex-direction:column;
     align-items:center;
     justify-content:center;
+    gap:2px;
 }
 
 .timeline-header-cell.timeline-corner{
@@ -916,6 +918,51 @@ body.modal-open{
     margin:0;
     color:var(--navy);
     font-size:13px;
+}
+
+.schedule-detail-footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:16px 24px;
+    border-top:1px solid var(--border-light);
+}
+
+.schedule-detail-timer-remaining{
+    color:var(--navy);
+    font-size:20px;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+}
+
+.schedule-detail-timer-remaining.timer-urgent{
+    color:var(--state-red);
+    font-weight:900;
+}
+
+.schedule-detail-timer-btn{
+    flex:0 0 auto;
+    min-width:120px;
+}
+
+.bed-timer{
+    display:block;
+    margin-top:2px;
+    color:var(--gold);
+    font-size:12px;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:.02em;
+}
+
+/* 10 minutes or less left on a running timer — bold + a brighter red so
+   it stands out against the header's near-black background
+   (var(--navy) is #0E0E0E) the same way the countdown's gold already
+   does at rest. */
+.bed-timer.timer-urgent{
+    color:#FF6B6B;
+    font-weight:900;
 }
 
 @media(max-width:480px){
