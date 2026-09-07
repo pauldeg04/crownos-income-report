@@ -13,9 +13,23 @@ document.addEventListener("DOMContentLoaded", function(){
 
     loadData();
     attachEvents();
+    populateCategoryFilter();
     renderWarehouseTable();
     renderRequestsTable();
 });
+
+function populateCategoryFilter(){
+    const select =
+        document.getElementById("warehouseCategoryFilter");
+
+    select.innerHTML =
+        '<option value="">All Categories</option>' +
+        CrownInventory.CATEGORIES
+            .map(function(category){
+                return `<option value="${CrownInventory.escapeHtml(category)}">${CrownInventory.escapeHtml(category)}</option>`;
+            })
+            .join("");
+}
 
 function loadData(){
     items = CrownInventory.getItems();
@@ -55,6 +69,14 @@ function attachEvents(){
     document
         .getElementById("showHistoryBtn")
         .addEventListener("click", openHistoryModal);
+
+    document
+        .getElementById("warehouseItemSearch")
+        .addEventListener("input", renderWarehouseTable);
+
+    document
+        .getElementById("warehouseCategoryFilter")
+        .addEventListener("change", renderWarehouseTable);
 
     document
         .getElementById("closeHistoryModalBtn")
@@ -104,8 +126,25 @@ function renderWarehouseTable(){
 
     tbody.innerHTML = "";
 
+    const search =
+        document.getElementById("warehouseItemSearch").value.trim().toLowerCase();
+
+    const category =
+        document.getElementById("warehouseCategoryFilter").value;
+
     const sortedItems =
         items
+            .filter(function(item){
+                const matchesSearch =
+                    !search ||
+                    String(item.name || "").toLowerCase().includes(search);
+
+                const matchesCategory =
+                    !category ||
+                    item.category === category;
+
+                return matchesSearch && matchesCategory;
+            })
             .slice()
             .sort(function(a, b){
                 return String(a.name || "").localeCompare(String(b.name || ""));

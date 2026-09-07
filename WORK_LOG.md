@@ -4,6 +4,33 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-07 — Moved Inventory Settings into the Inventory menu; added Search/Category filters to Warehouse and Branches
+
+**Requested by:** User — "Sa CrownOS Inventory Menu may gusto akong ipabago: (1) Inventory
+Settings, ililpat dito sa Menu na ito. (2) Sa Warehouse at Branch page under Inventory, lagyan
+din natin ng Search Item at Category similar sa nasa Inventory Settings."
+
+**Change:**
+- [`sidebar.js`](sidebar.js) — moved the **Inventory Settings** menu item out of the Settings
+  section and into the Inventory section, listed after Branches (was previously a sub-item under
+  Settings, alongside List of Branches / System Health).
+- [`inventory-warehouse.html`](inventory-warehouse.html) / [`inventory-warehouse.js`](inventory-warehouse.js) —
+  added a **Search Item** input and **Category** dropdown above the Warehouse Stock table
+  (`warehouseItemSearch` / `warehouseCategoryFilter`), filtering `renderWarehouseTable()` the
+  same way Inventory Settings filters its item list.
+- [`inventory-branches.html`](inventory-branches.html) / [`inventory-branches.js`](inventory-branches.js) —
+  added the same Search Item / Category toolbar above the Available Stock table
+  (`stockItemSearch` / `stockCategoryFilter`), filtering `renderStockTable()`.
+
+**User Manual** ([manual.html](manual.html)): Chapter 15 (Warehouse and Branches) — updated the
+sidebar menu-location table (Inventory Settings now listed under Inventory, not Settings), and
+noted the new Search Item / Category filter on both the Warehouse Stock and Available Stock
+entries.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
+
+---
+
 ## 2026-09-07 — Service timer (Start/Stop/Done) on Dashboard appointment cards
 
 **Requested by:** User — wanted a way for a Therapist to start a countdown timer on a

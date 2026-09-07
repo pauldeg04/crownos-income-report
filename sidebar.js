@@ -205,6 +205,12 @@
             branchRequired: true
         },
 
+        {
+            label: "Inventory Settings",
+            href: "inventory-items.html",
+            roles: ["Admin"]
+        },
+
         { section: "Compliance" },
 
         {
@@ -327,13 +333,6 @@
             label: "List of Branches",
             href: "list-branches.html",
             roles: ["Admin", "Executive Assistant"],
-            sub: true
-        },
-
-        {
-            label: "Inventory Settings",
-            href: "inventory-items.html",
-            roles: ["Admin"],
             sub: true
         },
 
