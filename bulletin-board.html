@@ -24,6 +24,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
     <script src="firebase-init.js"></script>
     <script src="pwa-register.js"></script>
     <script src="client-store.js"></script>
@@ -77,6 +78,7 @@
                     </div>
 
                     <div class="d-none" id="announcementContent">
+                        <img class="d-none announcement-poster" id="announcementPoster" alt="Announcement poster">
                         <h4 class="announcement-title" id="announcementTitle"></h4>
                         <p class="announcement-body" id="announcementBody"></p>
                         <p class="announcement-meta text-muted mb-0" id="announcementMeta"></p>
@@ -97,6 +99,17 @@
                     <div class="mb-3">
                         <label for="announcementBodyInput" class="form-label fw-semibold">Message</label>
                         <textarea class="form-control" id="announcementBodyInput" rows="5" maxlength="2000"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Poster (optional)</label>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="announcementPosterPickBtn">Choose Image</button>
+                            <span class="text-muted small" id="announcementPosterName">No image chosen</span>
+                            <button type="button" class="btn btn-sm btn-outline-danger d-none" id="announcementPosterRemoveBtn">Remove</button>
+                        </div>
+                        <input type="file" id="announcementPosterInput" accept="image/*" class="d-none">
+                        <img id="announcementPosterPreview" class="d-none announcement-poster-preview" alt="Poster preview">
                     </div>
 
                     <div class="d-flex justify-content-end gap-2">
@@ -179,6 +192,17 @@
                     <div class="mb-3">
                         <label for="memoBodyInput" class="form-label fw-semibold">Message</label>
                         <textarea class="form-control" id="memoBodyInput" rows="5" maxlength="4000"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Poster (optional)</label>
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="memoPosterPickBtn">Choose Image</button>
+                            <span class="text-muted small" id="memoPosterName">No image chosen</span>
+                            <button type="button" class="btn btn-sm btn-outline-danger d-none" id="memoPosterRemoveBtn">Remove</button>
+                        </div>
+                        <input type="file" id="memoPosterInput" accept="image/*" class="d-none">
+                        <img id="memoPosterPreview" class="d-none memo-poster-preview" alt="Poster preview">
                     </div>
 
                     <div class="mb-2 d-none" id="memoGroupPickWrap">

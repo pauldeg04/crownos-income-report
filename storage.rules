@@ -50,5 +50,26 @@ service firebase.storage {
       allow read, write: if request.auth != null &&
         request.auth.token.role in ['Admin', 'Executive Assistant', 'Receptionist'];
     }
+
+    // Memo poster images uploaded from bulletin-board.js's Compose Memo
+    // modal (uploadMemoPoster()). Read is blanket-authenticated to mirror
+    // the memos Firestore collection's own read rule (see firestore.rules'
+    // note on that collection: reads can't be narrowed to sender/recipient
+    // at the rules level, so the client already relies on narrow queries,
+    // not rule enforcement, for that). Write matches memo composing itself.
+    match /memoPosters/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
+    }
+
+    // Announcement poster images uploaded from admin-announcement.js /
+    // bulletin-board.js's announcement editor (uploadAnnouncementPoster()).
+    // Same read/write split as the announcement Firestore collection.
+    match /announcementPosters/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
+    }
   }
 }

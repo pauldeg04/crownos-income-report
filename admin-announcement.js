@@ -50,6 +50,10 @@
         emptyState.classList.add("d-none");
         content.classList.remove("d-none");
 
+        const poster = document.getElementById("announcementPoster");
+        poster.classList.toggle("d-none", !data.posterUrl);
+        poster.src = data.posterUrl || "";
+
         document.getElementById("announcementTitle").textContent = data.title || "";
         document.getElementById("announcementBody").textContent = data.body || "";
 
@@ -67,9 +71,33 @@
         document.getElementById("announcementMeta").textContent = meta.join(" · ");
     }
 
+    let pendingPosterFile = null;
+    let pendingPosterRemoved = false;
+    let existingPosterUrl = "";
+
+    function resetPosterPicker(existingUrl){
+        pendingPosterFile = null;
+        pendingPosterRemoved = false;
+        existingPosterUrl = existingUrl || "";
+
+        document.getElementById("announcementPosterInput").value = "";
+        document.getElementById("announcementPosterName").textContent = existingUrl ? "Current poster kept" : "No image chosen";
+        document.getElementById("announcementPosterRemoveBtn").classList.toggle("d-none", !existingUrl);
+
+        const preview = document.getElementById("announcementPosterPreview");
+        if(existingUrl){
+            preview.src = existingUrl;
+            preview.classList.remove("d-none");
+        }else{
+            preview.classList.add("d-none");
+            preview.removeAttribute("src");
+        }
+    }
+
     function openEditor(data){
         document.getElementById("announcementTitleInput").value = data?.title || "";
         document.getElementById("announcementBodyInput").value = data?.body || "";
+        resetPosterPicker(data?.posterUrl || "");
         document.getElementById("announcementEditor").classList.remove("d-none");
         document.getElementById("announcementEditTrigger").classList.add("d-none");
     }
@@ -77,6 +105,24 @@
     function closeEditor(){
         document.getElementById("announcementEditor").classList.add("d-none");
         document.getElementById("announcementEditTrigger").classList.remove("d-none");
+    }
+
+    /* Firebase Storage upload, same pattern as petty-cash.js's
+       uploadPettyCashAttachment. */
+    function uploadAnnouncementPoster(file, cb, onError){
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const path = `announcementPosters/${Date.now()}_${safeName}`;
+        const ref = firebase.storage().ref().child(path);
+        const task = ref.put(file);
+
+        task.on("state_changed", null, function(err){
+            alert("Poster upload failed: " + (err.message || err.code || "unknown error"));
+            onError?.();
+        }, function(){
+            ref.getDownloadURL().then(function(url){
+                cb(url);
+            });
+        });
     }
 
     document.addEventListener("DOMContentLoaded", function(){
@@ -111,6 +157,36 @@
             closeEditor();
         });
 
+        document.getElementById("announcementPosterPickBtn")?.addEventListener("click", function(){
+            document.getElementById("announcementPosterInput").click();
+        });
+
+        document.getElementById("announcementPosterInput")?.addEventListener("change", function(event){
+            const file = event.target.files?.[0];
+            if(!file) return;
+
+            pendingPosterFile = file;
+            pendingPosterRemoved = false;
+
+            document.getElementById("announcementPosterName").textContent = file.name;
+            document.getElementById("announcementPosterRemoveBtn").classList.remove("d-none");
+
+            const preview = document.getElementById("announcementPosterPreview");
+            preview.src = URL.createObjectURL(file);
+            preview.classList.remove("d-none");
+        });
+
+        document.getElementById("announcementPosterRemoveBtn")?.addEventListener("click", function(){
+            pendingPosterFile = null;
+            pendingPosterRemoved = true;
+
+            document.getElementById("announcementPosterInput").value = "";
+            document.getElementById("announcementPosterName").textContent = "No image chosen";
+            document.getElementById("announcementPosterRemoveBtn").classList.add("d-none");
+            document.getElementById("announcementPosterPreview").classList.add("d-none");
+            document.getElementById("announcementPosterPreview").removeAttribute("src");
+        });
+
         document.getElementById("announcementSaveBtn")?.addEventListener("click", async function(){
             const title = document.getElementById("announcementTitleInput").value.trim();
             const body = document.getElementById("announcementBodyInput").value.trim();
@@ -123,35 +199,44 @@
             const btn = document.getElementById("announcementSaveBtn");
             btn.disabled = true;
 
-            try{
-                await firebase.firestore()
-                    .collection(COLLECTION)
-                    .doc(DOC_ID)
-                    .set({
-                        title,
-                        body,
-                        updatedBy: currentUser.account || "",
-                        updatedByName: currentUser.nickname || currentUser.account || "",
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+            const finishSave = async function(posterUrl){
+                try{
+                    await firebase.firestore()
+                        .collection(COLLECTION)
+                        .doc(DOC_ID)
+                        .set({
+                            title,
+                            body,
+                            posterUrl: posterUrl || "",
+                            updatedBy: currentUser.account || "",
+                            updatedByName: currentUser.nickname || currentUser.account || "",
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
 
-                const recipients = (window.CrownAuth?.getUsers?.() || [])
-                    .filter(function(u){ return u.status === "Active"; })
-                    .map(function(u){ return u.account; })
-                    .filter(Boolean);
+                    const recipients = (window.CrownAuth?.getUsers?.() || [])
+                        .filter(function(u){ return u.status === "Active"; })
+                        .map(function(u){ return u.account; })
+                        .filter(Boolean);
 
-                await window.CrownClientNotifications?.broadcast?.(
-                    recipients,
-                    "New announcement: " + (title || body.slice(0, 60)),
-                    "announcement"
-                );
+                    await window.CrownClientNotifications?.broadcast?.(
+                        recipients,
+                        "New announcement: " + (title || body.slice(0, 60)),
+                        "announcement"
+                    );
 
-                closeEditor();
-            }catch(error){
-                console.error("Unable to save announcement:", error);
-                alert("Unable to save the announcement. Please try again.");
-            }finally{
-                btn.disabled = false;
+                    closeEditor();
+                }catch(error){
+                    console.error("Unable to save announcement:", error);
+                    alert("Unable to save the announcement. Please try again.");
+                }finally{
+                    btn.disabled = false;
+                }
+            };
+
+            if(pendingPosterFile){
+                uploadAnnouncementPoster(pendingPosterFile, finishSave, function(){ btn.disabled = false; });
+            }else{
+                await finishSave(pendingPosterRemoved ? "" : existingPosterUrl);
             }
         });
 
@@ -176,6 +261,7 @@
                 await firebase.firestore().collection(ARCHIVE_COLLECTION).add({
                     title: latest.title || "",
                     body: latest.body || "",
+                    posterUrl: latest.posterUrl || "",
                     updatedBy: latest.updatedBy || "",
                     updatedByName: latest.updatedByName || "",
                     updatedAt: latest.updatedAt || null,
@@ -187,6 +273,7 @@
                 await firebase.firestore().collection(COLLECTION).doc(DOC_ID).set({
                     title: "",
                     body: "",
+                    posterUrl: "",
                     updatedBy: currentUser.account || "",
                     updatedByName: currentUser.nickname || currentUser.account || "",
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -239,6 +326,7 @@
 
                     return `
                         <div class="announcement-archive-item">
+                            ${item.posterUrl ? `<img class="announcement-poster" src="${escapeHtml(item.posterUrl)}" alt="Announcement poster">` : ""}
                             <h6>${escapeHtml(item.title || "(No title)")}</h6>
                             <p>${escapeHtml(item.body || "")}</p>
                             <small>Posted ${escapeHtml(formatUpdatedAt(item.updatedAt))} by ${escapeHtml(item.updatedByName || "")} · Archived ${escapeHtml(formatUpdatedAt(item.archivedAt))} by ${escapeHtml(item.archivedByName || "")}</small>

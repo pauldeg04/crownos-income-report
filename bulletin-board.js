@@ -50,6 +50,10 @@
         emptyState.classList.add("d-none");
         content.classList.remove("d-none");
 
+        const poster = document.getElementById("announcementPoster");
+        poster.classList.toggle("d-none", !data.posterUrl);
+        poster.src = data.posterUrl || "";
+
         document.getElementById("announcementTitle").textContent = data.title || "";
         document.getElementById("announcementBody").textContent = data.body || "";
 
@@ -67,9 +71,33 @@
         document.getElementById("announcementMeta").textContent = meta.join(" · ");
     }
 
+    let pendingPosterFile = null;
+    let pendingPosterRemoved = false;
+    let existingPosterUrl = "";
+
+    function resetPosterPicker(existingUrl){
+        pendingPosterFile = null;
+        pendingPosterRemoved = false;
+        existingPosterUrl = existingUrl || "";
+
+        document.getElementById("announcementPosterInput").value = "";
+        document.getElementById("announcementPosterName").textContent = existingUrl ? "Current poster kept" : "No image chosen";
+        document.getElementById("announcementPosterRemoveBtn").classList.toggle("d-none", !existingUrl);
+
+        const preview = document.getElementById("announcementPosterPreview");
+        if(existingUrl){
+            preview.src = existingUrl;
+            preview.classList.remove("d-none");
+        }else{
+            preview.classList.add("d-none");
+            preview.removeAttribute("src");
+        }
+    }
+
     function openEditor(data){
         document.getElementById("announcementTitleInput").value = data?.title || "";
         document.getElementById("announcementBodyInput").value = data?.body || "";
+        resetPosterPicker(data?.posterUrl || "");
         document.getElementById("announcementEditor").classList.remove("d-none");
         document.getElementById("announcementEditTrigger").classList.add("d-none");
     }
@@ -77,6 +105,24 @@
     function closeEditor(){
         document.getElementById("announcementEditor").classList.add("d-none");
         document.getElementById("announcementEditTrigger").classList.remove("d-none");
+    }
+
+    /* Firebase Storage upload, same pattern as petty-cash.js's
+       uploadPettyCashAttachment. */
+    function uploadAnnouncementPoster(file, cb, onError){
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const path = `announcementPosters/${Date.now()}_${safeName}`;
+        const ref = firebase.storage().ref().child(path);
+        const task = ref.put(file);
+
+        task.on("state_changed", null, function(err){
+            alert("Poster upload failed: " + (err.message || err.code || "unknown error"));
+            onError?.();
+        }, function(){
+            ref.getDownloadURL().then(function(url){
+                cb(url);
+            });
+        });
     }
 
     document.addEventListener("DOMContentLoaded", function(){
@@ -111,6 +157,36 @@
             closeEditor();
         });
 
+        document.getElementById("announcementPosterPickBtn")?.addEventListener("click", function(){
+            document.getElementById("announcementPosterInput").click();
+        });
+
+        document.getElementById("announcementPosterInput")?.addEventListener("change", function(event){
+            const file = event.target.files?.[0];
+            if(!file) return;
+
+            pendingPosterFile = file;
+            pendingPosterRemoved = false;
+
+            document.getElementById("announcementPosterName").textContent = file.name;
+            document.getElementById("announcementPosterRemoveBtn").classList.remove("d-none");
+
+            const preview = document.getElementById("announcementPosterPreview");
+            preview.src = URL.createObjectURL(file);
+            preview.classList.remove("d-none");
+        });
+
+        document.getElementById("announcementPosterRemoveBtn")?.addEventListener("click", function(){
+            pendingPosterFile = null;
+            pendingPosterRemoved = true;
+
+            document.getElementById("announcementPosterInput").value = "";
+            document.getElementById("announcementPosterName").textContent = "No image chosen";
+            document.getElementById("announcementPosterRemoveBtn").classList.add("d-none");
+            document.getElementById("announcementPosterPreview").classList.add("d-none");
+            document.getElementById("announcementPosterPreview").removeAttribute("src");
+        });
+
         document.getElementById("announcementSaveBtn")?.addEventListener("click", async function(){
             const title = document.getElementById("announcementTitleInput").value.trim();
             const body = document.getElementById("announcementBodyInput").value.trim();
@@ -123,35 +199,44 @@
             const btn = document.getElementById("announcementSaveBtn");
             btn.disabled = true;
 
-            try{
-                await firebase.firestore()
-                    .collection(COLLECTION)
-                    .doc(DOC_ID)
-                    .set({
-                        title,
-                        body,
-                        updatedBy: currentUser.account || "",
-                        updatedByName: currentUser.nickname || currentUser.account || "",
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+            const finishSave = async function(posterUrl){
+                try{
+                    await firebase.firestore()
+                        .collection(COLLECTION)
+                        .doc(DOC_ID)
+                        .set({
+                            title,
+                            body,
+                            posterUrl: posterUrl || "",
+                            updatedBy: currentUser.account || "",
+                            updatedByName: currentUser.nickname || currentUser.account || "",
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
 
-                const recipients = (window.CrownAuth?.getUsers?.() || [])
-                    .filter(function(u){ return u.status === "Active"; })
-                    .map(function(u){ return u.account; })
-                    .filter(Boolean);
+                    const recipients = (window.CrownAuth?.getUsers?.() || [])
+                        .filter(function(u){ return u.status === "Active"; })
+                        .map(function(u){ return u.account; })
+                        .filter(Boolean);
 
-                await window.CrownClientNotifications?.broadcast?.(
-                    recipients,
-                    "New announcement: " + (title || body.slice(0, 60)),
-                    "announcement"
-                );
+                    await window.CrownClientNotifications?.broadcast?.(
+                        recipients,
+                        "New announcement: " + (title || body.slice(0, 60)),
+                        "announcement"
+                    );
 
-                closeEditor();
-            }catch(error){
-                console.error("Unable to save announcement:", error);
-                alert("Unable to save the announcement. Please try again.");
-            }finally{
-                btn.disabled = false;
+                    closeEditor();
+                }catch(error){
+                    console.error("Unable to save announcement:", error);
+                    alert("Unable to save the announcement. Please try again.");
+                }finally{
+                    btn.disabled = false;
+                }
+            };
+
+            if(pendingPosterFile){
+                uploadAnnouncementPoster(pendingPosterFile, finishSave, function(){ btn.disabled = false; });
+            }else{
+                await finishSave(pendingPosterRemoved ? "" : existingPosterUrl);
             }
         });
 
@@ -176,6 +261,7 @@
                 await firebase.firestore().collection(ARCHIVE_COLLECTION).add({
                     title: latest.title || "",
                     body: latest.body || "",
+                    posterUrl: latest.posterUrl || "",
                     updatedBy: latest.updatedBy || "",
                     updatedByName: latest.updatedByName || "",
                     updatedAt: latest.updatedAt || null,
@@ -187,6 +273,7 @@
                 await firebase.firestore().collection(COLLECTION).doc(DOC_ID).set({
                     title: "",
                     body: "",
+                    posterUrl: "",
                     updatedBy: currentUser.account || "",
                     updatedByName: currentUser.nickname || currentUser.account || "",
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -239,6 +326,7 @@
 
                     return `
                         <div class="announcement-archive-item">
+                            ${item.posterUrl ? `<img class="announcement-poster" src="${escapeHtml(item.posterUrl)}" alt="Announcement poster">` : ""}
                             <h6>${escapeHtml(item.title || "(No title)")}</h6>
                             <p>${escapeHtml(item.body || "")}</p>
                             <small>Posted ${escapeHtml(formatUpdatedAt(item.updatedAt))} by ${escapeHtml(item.updatedByName || "")} · Archived ${escapeHtml(formatUpdatedAt(item.archivedAt))} by ${escapeHtml(item.archivedByName || "")}</small>
@@ -270,6 +358,46 @@
     let currentUser = null;
     let canCompose = false;
     let editingMemoId = null;
+    let pendingMemoPosterFile = null;
+    let pendingMemoPosterRemoved = false;
+    let existingMemoPosterUrl = "";
+
+    /* Firebase Storage upload, same pattern as petty-cash.js's
+       uploadPettyCashAttachment. */
+    function uploadMemoPoster(file, cb, onError){
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const path = `memoPosters/${Date.now()}_${safeName}`;
+        const ref = firebase.storage().ref().child(path);
+        const task = ref.put(file);
+
+        task.on("state_changed", null, function(err){
+            alert("Poster upload failed: " + (err.message || err.code || "unknown error"));
+            onError?.();
+        }, function(){
+            ref.getDownloadURL().then(function(url){
+                cb(url);
+            });
+        });
+    }
+
+    function resetMemoPosterPicker(existingUrl){
+        pendingMemoPosterFile = null;
+        pendingMemoPosterRemoved = false;
+        existingMemoPosterUrl = existingUrl || "";
+
+        document.getElementById("memoPosterInput").value = "";
+        document.getElementById("memoPosterName").textContent = existingUrl ? "Current poster kept" : "No image chosen";
+        document.getElementById("memoPosterRemoveBtn").classList.toggle("d-none", !existingUrl);
+
+        const preview = document.getElementById("memoPosterPreview");
+        if(existingUrl){
+            preview.src = existingUrl;
+            preview.classList.remove("d-none");
+        }else{
+            preview.classList.add("d-none");
+            preview.removeAttribute("src");
+        }
+    }
 
     function escapeHtml(value){
         return String(value ?? "")
@@ -330,6 +458,7 @@
                             : `<button type="button" class="btn btn-sm btn-primary memo-ack-btn" data-id="${escapeHtml(memo.id)}">Acknowledge</button>`
                         }
                     </div>
+                    ${memo.posterUrl ? `<img class="memo-poster" src="${escapeHtml(memo.posterUrl)}" alt="Memo poster">` : ""}
                     <div class="memo-body">${escapeHtml(memo.body || "")}</div>
                 </div>
             `;
@@ -410,6 +539,7 @@
                             <button type="button" class="btn btn-sm btn-outline-danger memo-delete-btn" data-id="${escapeHtml(memo.id)}">Delete</button>
                         </div>
                     </div>
+                    ${memo.posterUrl ? `<img class="memo-poster" src="${escapeHtml(memo.posterUrl)}" alt="Memo poster">` : ""}
                     <div class="memo-body">${escapeHtml(memo.body || "")}</div>
                     <div class="memo-ack-list">${ackRows}</div>
                 </div>
@@ -517,6 +647,7 @@
         document.getElementById("memoSubjectInput").value = memo ? (memo.subject || "") : "";
         document.getElementById("memoBodyInput").value = memo ? (memo.body || "") : "";
         document.getElementById("memoGroupSelect").value = "";
+        resetMemoPosterPicker(memo?.posterUrl || "");
         renderRecipientOptions("memoRecipientList");
 
         if(memo){
@@ -598,6 +729,36 @@
                 openComposeModal(null);
             });
 
+            document.getElementById("memoPosterPickBtn").addEventListener("click", function(){
+                document.getElementById("memoPosterInput").click();
+            });
+
+            document.getElementById("memoPosterInput").addEventListener("change", function(event){
+                const file = event.target.files?.[0];
+                if(!file) return;
+
+                pendingMemoPosterFile = file;
+                pendingMemoPosterRemoved = false;
+
+                document.getElementById("memoPosterName").textContent = file.name;
+                document.getElementById("memoPosterRemoveBtn").classList.remove("d-none");
+
+                const preview = document.getElementById("memoPosterPreview");
+                preview.src = URL.createObjectURL(file);
+                preview.classList.remove("d-none");
+            });
+
+            document.getElementById("memoPosterRemoveBtn").addEventListener("click", function(){
+                pendingMemoPosterFile = null;
+                pendingMemoPosterRemoved = true;
+
+                document.getElementById("memoPosterInput").value = "";
+                document.getElementById("memoPosterName").textContent = "No image chosen";
+                document.getElementById("memoPosterRemoveBtn").classList.add("d-none");
+                document.getElementById("memoPosterPreview").classList.add("d-none");
+                document.getElementById("memoPosterPreview").removeAttribute("src");
+            });
+
             document.getElementById("memoComposeDeleteBtn").addEventListener("click", async function(){
                 if(!editingMemoId){
                     return;
@@ -674,40 +835,49 @@
                 const btn = document.getElementById("memoComposeSendBtn");
                 btn.disabled = true;
 
-                try{
-                    if(editingMemoId){
-                        await firebase.firestore()
-                            .collection(COLLECTION)
-                            .doc(editingMemoId)
-                            .update({ subject, body, recipients });
+                const finishSend = async function(posterUrl){
+                    try{
+                        if(editingMemoId){
+                            await firebase.firestore()
+                                .collection(COLLECTION)
+                                .doc(editingMemoId)
+                                .update({ subject, body, recipients, posterUrl: posterUrl || "" });
 
-                        editingMemoId = null;
-                    }else{
-                        await firebase.firestore()
-                            .collection(COLLECTION)
-                            .add({
-                                subject,
-                                body,
-                                senderAccount: currentUser.account,
-                                senderName: currentUser.nickname || currentUser.account,
+                            editingMemoId = null;
+                        }else{
+                            await firebase.firestore()
+                                .collection(COLLECTION)
+                                .add({
+                                    subject,
+                                    body,
+                                    posterUrl: posterUrl || "",
+                                    senderAccount: currentUser.account,
+                                    senderName: currentUser.nickname || currentUser.account,
+                                    recipients,
+                                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                    acknowledgements: {}
+                                });
+
+                            await window.CrownClientNotifications?.broadcast?.(
                                 recipients,
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                                acknowledgements: {}
-                            });
+                                "New memo: " + subject,
+                                "memo"
+                            );
+                        }
 
-                        await window.CrownClientNotifications?.broadcast?.(
-                            recipients,
-                            "New memo: " + subject,
-                            "memo"
-                        );
+                        backdrop.classList.add("d-none");
+                    }catch(error){
+                        console.error("Unable to save memo:", error);
+                        alert("Unable to save this memo. Please try again.");
+                    }finally{
+                        btn.disabled = false;
                     }
+                };
 
-                    backdrop.classList.add("d-none");
-                }catch(error){
-                    console.error("Unable to save memo:", error);
-                    alert("Unable to save this memo. Please try again.");
-                }finally{
-                    btn.disabled = false;
+                if(pendingMemoPosterFile){
+                    uploadMemoPoster(pendingMemoPosterFile, finishSend, function(){ btn.disabled = false; });
+                }else{
+                    await finishSend(pendingMemoPosterRemoved ? "" : existingMemoPosterUrl);
                 }
             });
 

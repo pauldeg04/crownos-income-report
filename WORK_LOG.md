@@ -4,6 +4,47 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-08 — Poster image on Memo and Announcement (Bulletin Board)
+
+**Requested by:** User — "Sa CrownOS under Admin Hub / Bulletin Board / Memo, pwede ba natin
+gawin na pag magcompose ako ng memo ay makapag add ako ng Poster... parang kagaya ng sa
+Facebook, na nakapost yung image na idadagdag sa Memo. Same with Announcement page."
+
+**Change:**
+- [`bulletin-board.html`](bulletin-board.html) / [`admin-announcement.html`](admin-announcement.html) —
+  added a Poster image picker (Choose Image / Remove, with a live preview) to the Compose Memo
+  modal and the Announcement editor; added the `firebase-storage-compat.js` SDK script tag to
+  both pages (neither loaded it before). `bulletin-board.html` carries its own duplicate copy of
+  the Announcement editor markup for its Announcement tab, so it got the same picker.
+- [`bulletin-board.js`](bulletin-board.js) / [`admin-announcement.js`](admin-announcement.js) —
+  `uploadMemoPoster()` / `uploadAnnouncementPoster()` upload the chosen image to Firebase Storage
+  (`memoPosters/<timestamp>_<filename>`, `announcementPosters/<timestamp>_<filename>`), same
+  pattern as `petty-cash.js`'s `uploadPettyCashAttachment()`. The resulting download URL is saved
+  as `posterUrl` on the memo/announcement Firestore doc and rendered as a full-width `<img>`
+  inline in the memo card (Inbox and Sent) or above the announcement Title/Body — a real embedded
+  image, not an attachment link. `bulletin-board.js` bundles its own copy of the Announcement
+  logic (see note in that file), so both copies got the same treatment.
+- Editing an existing memo, or re-opening the Announcement editor, shows the current poster with
+  a Remove option; leaving it untouched keeps the existing image. "Send to Archive" now carries
+  `posterUrl` into the archived copy and clears it from the live slot.
+- [`memos.css`](memos.css) / [`admin-announcement.css`](admin-announcement.css) — `.memo-poster` /
+  `.announcement-poster` (full-width, `object-fit: cover`, rounded) for the posted image, and
+  `.memo-poster-preview` / `.announcement-poster-preview` for the smaller in-modal preview.
+- [`storage.rules`](storage.rules) — added `memoPosters/{fileName}` and
+  `announcementPosters/{fileName}` rules: read open to any authenticated user (matching the
+  Memo/Announcement Firestore collections' own read rules), write restricted to Admin/Executive
+  Assistant (matching who may compose/edit each). **Must be deployed**
+  (`firebase deploy --only storage:rules`) or uploads fail silently, the same gap `pettyCashAttachments`
+  shipped with previously.
+
+**User Manual** ([manual.html](manual.html)): Chapter 24 (Announcement) and Chapter 25 (Memo) —
+added a step for the optional Poster image, and noted the Archive keeps a memo's/announcement's
+poster along with its text.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting + Storage rules (crownos-5f03d).
+
+---
+
 ## 2026-09-07 — Moved Inventory Settings into the Inventory menu; added Search/Category filters to Warehouse and Branches
 
 **Requested by:** User — "Sa CrownOS Inventory Menu may gusto akong ipabago: (1) Inventory
