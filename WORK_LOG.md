@@ -51,7 +51,8 @@ the Access Matrix (Chapter 4).
 **Not built yet:** Inventory, Phone Marketing, and Clients Satisfaction tabs are placeholder
 panels ("coming soon") — the user said further instructions for those would follow.
 
-**Status:** Code changed locally, not yet deployed.
+**Status:** Pushed to GitHub and deployed — Firebase Hosting + Firestore rules
+(crownos-5f03d).
 
 ---
 
