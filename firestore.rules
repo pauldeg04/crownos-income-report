@@ -258,6 +258,20 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null;
     }
 
+    /* Daily Monitoring Sheet — Staff Monitoring tab. One doc per
+       (branch, date, staffId). Same "Team Leader isn't a custom claim"
+       reasoning as staffSchedules above: writes are open to any
+       authenticated user here and gated to teamLeader === true accounts
+       in daily-monitoring.js. Once a row is submitted the UI never lets
+       a Team Leader edit it again, but that's a UI-only lock — updates
+       stay allowed here so a submitted doc can still be read back
+       correctly (Firestore has no partial-field lock short of a Cloud
+       Function). */
+    match /dailyMonitoring/{docId} {
+      allow get, list: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
+    }
+
     /* Named recipient groups for faster Memo composing (see memos.js
        "Create Group"). Same editor set as memo composing itself. */
     match /memoGroups/{groupId} {

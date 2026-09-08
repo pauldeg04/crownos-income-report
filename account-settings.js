@@ -29,7 +29,8 @@ const EXTRA_ACCESS_PAGES = [
     { href: "inventory-items.html", label: "Inventory - Settings" },
     { href: "marketing-ads-daily.html", label: "Ads Monitoring" },
     { href: "marketing-ads-summary.html", label: "Monitoring Summary" },
-    { href: "marketing-daily-report.html", label: "Daily Report" }
+    { href: "marketing-daily-report.html", label: "Daily Report" },
+    { href: "daily-monitoring.html", label: "Daily Monitoring Sheet" }
 ];
 
 /* Set as Team Leader auto-grants these on top of the plain Therapist
@@ -38,7 +39,8 @@ const EXTRA_ACCESS_PAGES = [
 const TEAM_LEADER_AUTO_ACCESS_PAGES = [
     "index.html",
     "statistics.html",
-    "scheduling.html"
+    "scheduling.html",
+    "daily-monitoring.html"
 ];
 
 function applyTeamLeaderAutoAccess(){

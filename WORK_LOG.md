@@ -4,6 +4,57 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-08 — New Admin Hub page: Daily Monitoring Sheet (Staff Monitoring tab)
+
+**Requested by:** User — "Sa CrownOS / Admin Hub, Gusto ko mag add ng isa pang Menu... Daily
+Monitoring Sheet... apat na Tab. Staff Monitoring, Inventory, Phone Marketing, Clients
+Satisfaction." Only Staff Monitoring was specified in detail; the other three tabs are
+placeholders for future instructions.
+
+**Change:**
+- New page — [`daily-monitoring.html`](daily-monitoring.html) /
+  [`daily-monitoring.css`](daily-monitoring.css) / [`daily-monitoring.js`](daily-monitoring.js) —
+  added to Admin Hub in the sidebar, with a date stepper (Prev/Next/Today, same pattern as the
+  rest of the app) and a table of staff on duty at the branch selected in the header toolbar.
+  "On duty" reuses the Attendance log (`crownAttendanceLog`) — same branch/date match Attendance
+  itself uses — rather than a second roster.
+  - **Team Leader** accounts get an `Inspect` button per row → a modal to set Attendance
+    (Early/On-Time/Late), Uniform & Grooming, Name Tags, Walkie Talkie, Readiness, and Notes.
+    Submitting writes to a new Firestore collection `dailyMonitoring` (one doc per
+    branch+date+staff) and immediately locks that row — the button is replaced with
+    `Inspected at [time]`, and even the Team Leader who filed it can't edit it again.
+  - **Admin / Executive Assistant** can see every column but never get an `Inspect` button — the
+    Action column shows `Pending` until a Team Leader files it.
+  - A row nobody inspected by **11:59 PM** that day locks itself the same way and shows
+    `Not Inspected` — computed client-side from the date/time, not a scheduled job, so it only
+    takes effect the next time that row is rendered.
+- [`sidebar.js`](sidebar.js) — new "Daily Monitoring Sheet" menu item in Admin Hub, page title,
+  and icon. Visible to Admin/Executive Assistant by role; a Team Leader sees it through
+  `extraAccess` (see below), same mechanism as their other auto-granted pages.
+- [`access-control.js`](access-control.js) — `PAGE_ACCESS["daily-monitoring.html"]` = Admin,
+  Executive Assistant.
+- [`account-settings.js`](account-settings.js) — added to `EXTRA_ACCESS_PAGES` (so it can be
+  granted to any account through **Additional Access** when creating/editing a User Account) and
+  to `TEAM_LEADER_AUTO_ACCESS_PAGES` (so checking **Set as Team Leader** grants it automatically,
+  same as Daily Income Report/Statistics/Scheduling already do).
+- [`firestore.rules`](firestore.rules) — new `dailyMonitoring` collection, open read/write to any
+  authenticated user (same "Team Leader isn't a custom claim" reasoning as `staffSchedules` /
+  `staffScheduleGrids`), gated to `teamLeader === true` accounts in the UI. **Must be deployed**
+  (`firebase deploy --only firestore:rules`) or the page's Firestore calls fail with
+  permission-denied.
+
+**User Manual** ([manual.html](manual.html)): new Chapter 30 — Daily Monitoring Sheet (Part Six,
+Admin Hub) — bumping the old Chapters 30–33 (Marketing, BIR Compliance Desk, Checklists,
+Troubleshooting) up by one to 31–34. Also added a row to the sidebar layout table (Chapter 3) and
+the Access Matrix (Chapter 4).
+
+**Not built yet:** Inventory, Phone Marketing, and Clients Satisfaction tabs are placeholder
+panels ("coming soon") — the user said further instructions for those would follow.
+
+**Status:** Code changed locally, not yet deployed.
+
+---
+
 ## 2026-09-08 — Poster image on Memo and Announcement (Bulletin Board)
 
 **Requested by:** User — "Sa CrownOS under Admin Hub / Bulletin Board / Memo, pwede ba natin

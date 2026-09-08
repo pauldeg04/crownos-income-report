@@ -98,7 +98,8 @@
         "Ads Monitoring": "📣",
         "Monitoring Summary": "📈",
         "Daily Report": "📋",
-        "BIR Compliance Desk": "🧾"
+        "BIR Compliance Desk": "🧾",
+        "Daily Monitoring Sheet": "✅"
     };
 
     const MENU_ITEMS = [
@@ -166,6 +167,17 @@
             label: "Staff Management",
             href: "staff-management.html",
             roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent"]
+        },
+
+        /* Team Leader access comes entirely through extraAccess — see
+           TEAM_LEADER_AUTO_ACCESS_PAGES in account-settings.js — since
+           "Team Leader" is a flag on a Therapist account, not a role
+           this menu filter checks directly. */
+        {
+            label: "Daily Monitoring Sheet",
+            href: "daily-monitoring.html",
+            roles: ["Admin", "Executive Assistant"],
+            branchRequired: true
         },
 
         { section: "Marketing" },
@@ -1482,7 +1494,8 @@
             "marketing-ads-daily.html": "Ads Monitoring",
             "marketing-ads-summary.html": "Monitoring Summary",
             "marketing-daily-report.html": "Daily Report",
-            "bir-compliance.html": "BIR Compliance Desk"
+            "bir-compliance.html": "BIR Compliance Desk",
+            "daily-monitoring.html": "Daily Monitoring Sheet"
         };
 
         return titles[currentPage] || "CrownOS";

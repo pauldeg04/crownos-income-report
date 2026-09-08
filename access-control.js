@@ -260,6 +260,14 @@
         "marketing-daily-report.html": [
             "Admin",
             "Marketing Agent"
+        ],
+
+        /* Team Leader access is granted through extraAccess, not a role
+           listed here — see TEAM_LEADER_AUTO_ACCESS_PAGES in
+           account-settings.js. */
+        "daily-monitoring.html": [
+            "Admin",
+            "Executive Assistant"
         ]
     };
 

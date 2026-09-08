@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrownOS - Daily Monitoring Sheet</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="sidebar.css">
+<link rel="stylesheet" href="daily-monitoring.css">
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="pwa-register.js"></script>
+    <script src="client-store.js"></script>
+    <script src="firebase-sync.js"></script>
+    <script src="access-control.js"></script>
+    <script src="notifications.js"></script>
+    <script src="push-notifications.js"></script>
+</head>
+
+<body>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+
+            <div class="page-heading">
+                <div>
+                    <p class="page-eyebrow">
+                        Admin Hub
+                    </p>
+
+                    <h2 class="fw-bold text-primary mb-0">
+                        Daily Monitoring Sheet
+                    </h2>
+
+                    <p class="text-muted mb-0">
+                        Daily branch inspection and monitoring.
+                    </p>
+                </div>
+
+                <a href="home.html" class="btn-dashboard text-decoration-none">
+                    ← Back to Dashboard
+                </a>
+            </div>
+
+            <div class="tabs" role="tablist" id="monitoringTabs">
+                <button type="button" role="tab" data-tab="staff" aria-selected="true">Staff Monitoring</button>
+                <button type="button" role="tab" data-tab="inventory" aria-selected="false">Inventory</button>
+                <button type="button" role="tab" data-tab="marketing" aria-selected="false">Phone Marketing</button>
+                <button type="button" role="tab" data-tab="clients" aria-selected="false">Clients Satisfaction</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ===================== Staff Monitoring tab ===================== -->
+    <div id="staffTabPanel">
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+
+                <div class="monitor-date-row">
+                    <div class="date-stepper-group">
+                        <button
+                            type="button"
+                            class="date-step-btn"
+                            id="monitorPrevDayBtn"
+                            aria-label="Previous day"
+                            title="Previous day"
+                        >
+                            ‹
+                        </button>
+
+                        <input
+                            type="date"
+                            id="monitorDateInput"
+                            class="form-control monitor-date-input"
+                        >
+
+                        <button
+                            type="button"
+                            class="date-step-btn"
+                            id="monitorNextDayBtn"
+                            aria-label="Next day"
+                            title="Next day"
+                        >
+                            ›
+                        </button>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="monitorTodayBtn">
+                        Today
+                    </button>
+                </div>
+
+                <div class="monitor-branch-empty d-none" id="monitorBranchEmpty">
+                    Select a branch from the header above to view Staff Monitoring.
+                </div>
+
+                <div class="table-responsive" id="monitorTableWrap">
+                    <table class="table monitor-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Staff</th>
+                                <th>Attendance</th>
+                                <th>Uniform &amp; Grooming</th>
+                                <th>Name Tags</th>
+                                <th>Walkie Talkie</th>
+                                <th>Readiness</th>
+                                <th>Notes</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="monitorTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="empty-state d-none" id="monitorEmptyState">
+                    No staff on duty found for this branch and date.
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===================== Inventory tab (placeholder) ===================== -->
+    <div id="inventoryTabPanel" class="d-none">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="empty-state">
+                    Inventory monitoring is coming soon.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== Phone Marketing tab (placeholder) ===================== -->
+    <div id="marketingTabPanel" class="d-none">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="empty-state">
+                    Phone Marketing monitoring is coming soon.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== Clients Satisfaction tab (placeholder) ===================== -->
+    <div id="clientsTabPanel" class="d-none">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="empty-state">
+                    Clients Satisfaction monitoring is coming soon.
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Inspect modal -->
+<div class="monitor-modal-backdrop d-none" id="monitorModalBackdrop">
+    <div class="monitor-modal">
+        <div class="monitor-modal-header">
+            <h4 id="monitorModalTitle">Inspect Staff</h4>
+            <button type="button" class="monitor-modal-close" id="monitorModalCloseBtn">&times;</button>
+        </div>
+
+        <div class="monitor-modal-body">
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Attendance</label>
+                    <select class="form-select" id="monitorAttendanceInput">
+                        <option value="">Select</option>
+                        <option value="Early">Early</option>
+                        <option value="On-Time">On-Time</option>
+                        <option value="Late">Late</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Uniform &amp; Grooming</label>
+                    <select class="form-select" id="monitorUniformInput">
+                        <option value="">Select</option>
+                        <option value="Tidy">Tidy</option>
+                        <option value="Just Right">Just Right</option>
+                        <option value="Needs Improvement">Needs Improvement</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Name Tags</label>
+                    <select class="form-select" id="monitorNameTagInput">
+                        <option value="">Select</option>
+                        <option value="Okay">Okay</option>
+                        <option value="Forgotten">Forgotten</option>
+                        <option value="Lost">Lost</option>
+                        <option value="Not Available">Not Available</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Walkie Talkie</label>
+                    <select class="form-select" id="monitorWalkieInput">
+                        <option value="">Select</option>
+                        <option value="Complete and Working">Complete and Working</option>
+                        <option value="Low Battery">Low Battery</option>
+                        <option value="No Ear Piece">No Ear Piece</option>
+                        <option value="Not Working">Not Working</option>
+                        <option value="Not Available">Not Available</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Readiness</label>
+                    <select class="form-select" id="monitorReadinessInput">
+                        <option value="">Select</option>
+                        <option value="Ready">Ready</option>
+                        <option value="Need Guidance/Assistance">Need Guidance/Assistance</option>
+                        <option value="Not Ready">Not Ready</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Notes</label>
+                    <textarea class="form-control" id="monitorNotesInput" rows="3"></textarea>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="monitor-modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="monitorCancelBtn">Cancel</button>
+            <button type="button" class="btn btn-primary" id="monitorSubmitBtn">Submit</button>
+        </div>
+    </div>
+</div>
+
+<script src="daily-monitoring.js"></script>
+<script src="sidebar.js"></script>
+</body>
+</html>

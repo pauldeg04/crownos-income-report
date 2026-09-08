@@ -1,0 +1,209 @@
+/* ==========================================================================
+   CrownOS — Daily Monitoring Sheet
+   ========================================================================== */
+
+.page-eyebrow{
+    margin:0 0 6px;
+    color:var(--green);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+}
+
+.tabs{
+    display:flex;
+    gap:2px;
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+    border-radius:var(--radius-md);
+    padding:2px;
+    overflow-x:auto;
+    margin-top:16px;
+    width:fit-content;
+}
+
+.tabs button,
+.tabs [role="tab"]{
+    font:inherit;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--muted);
+    background:none;
+    border:none;
+    padding:7px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    white-space:nowrap;
+}
+
+.tabs [role="tab"][aria-selected="true"]{
+    background:#fff;
+    color:var(--navy);
+    box-shadow:var(--shadow-soft);
+}
+
+.empty-state{
+    padding:26px;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border-radius:var(--radius-md);
+    text-align:center;
+}
+
+.monitor-date-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:18px;
+}
+
+.monitor-date-input{
+    width:150px;
+    border-radius:0;
+}
+
+.monitor-branch-empty{
+    padding:26px;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border-radius:var(--radius-md);
+    text-align:center;
+    margin-bottom:0;
+}
+
+.monitor-table{
+    min-width:960px;
+    margin-bottom:0;
+}
+
+.monitor-table th{
+    background:var(--surface-soft);
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    border-bottom:2px solid var(--border);
+    padding:10px 12px;
+    white-space:nowrap;
+}
+
+.monitor-table td{
+    padding:10px 12px;
+    font-size:13px;
+    color:var(--ink);
+    border-color:var(--border-light);
+    vertical-align:middle;
+}
+
+.monitor-staff-name{
+    font-weight:700;
+    color:var(--navy);
+}
+
+.monitor-blank{
+    color:var(--muted);
+}
+
+.monitor-status-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:5px 9px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:700;
+    white-space:nowrap;
+}
+
+.monitor-status-pending{
+    color:var(--muted);
+    background:var(--surface-soft);
+    border:1px solid var(--border-light);
+}
+
+.monitor-status-missed{
+    color:#fff;
+    background:#C62828;
+}
+
+.monitor-status-submitted{
+    color:var(--navy);
+    background:var(--green-soft);
+    font-weight:800;
+}
+
+/* ---- Modal ---- */
+
+.monitor-modal-backdrop{
+    position:fixed;
+    inset:0;
+    z-index:2300;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(11,24,73,.55);
+    padding:20px;
+}
+
+.monitor-modal{
+    width:100%;
+    max-width:640px;
+    max-height:90vh;
+    display:flex;
+    flex-direction:column;
+    background:#fff;
+    border-radius:var(--radius-lg);
+    box-shadow:0 22px 60px rgba(7,16,51,.35);
+    overflow:hidden;
+}
+
+.monitor-modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 22px;
+    background:linear-gradient(120deg,var(--navy),var(--navy-soft));
+    color:#fff;
+}
+
+.monitor-modal-header h4{
+    margin:0;
+    color:#fff;
+    font-weight:800;
+}
+
+.monitor-modal-close{
+    border:none;
+    background:transparent;
+    color:#fff;
+    font-size:24px;
+    line-height:1;
+    cursor:pointer;
+    opacity:.85;
+}
+
+.monitor-modal-close:hover{
+    opacity:1;
+}
+
+.monitor-modal-body{
+    padding:22px;
+    overflow-y:auto;
+}
+
+.monitor-modal-footer{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    padding:16px 22px;
+    border-top:1px solid var(--border-light);
+    background:var(--surface-soft);
+}
+
+@media (max-width: 767.98px){
+    .monitor-date-row{
+        flex-wrap:wrap;
+    }
+}
