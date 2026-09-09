@@ -44,12 +44,17 @@ let calendarMonth;
 /* Receptionist can record new sales but cannot edit/delete a saved
    transaction, and cannot bulk-clear or manually re-save a day —
    only Admin / Executive Assistant can, so a mistake requires
-   calling a superior to void it. */
+   calling a superior to void it. A Therapist marked as Team Leader
+   is trusted with the same saved-sale edit/delete access so they can
+   fix their branch's entries without waiting on an Admin. */
 function canEditSavedSales(){
   const role =
     window.CrownAuth?.getEffectiveRole?.();
 
-  return role === "Admin" || role === "Executive Assistant";
+  const isTeamLeader =
+    window.CrownAuth?.getCurrentUser?.()?.teamLeader === true;
+
+  return role === "Admin" || role === "Executive Assistant" || isTeamLeader;
 }
 
 document.addEventListener("DOMContentLoaded", async function(){
@@ -6325,7 +6330,15 @@ function canEditOngoingSales(){
   const role =
     window.CrownAuth?.getEffectiveRole?.();
 
-  return role === "Admin" || role === "Executive Assistant" || role === "Receptionist";
+  const isTeamLeader =
+    window.CrownAuth?.getCurrentUser?.()?.teamLeader === true;
+
+  return (
+    role === "Admin" ||
+    role === "Executive Assistant" ||
+    role === "Receptionist" ||
+    isTeamLeader
+  );
 }
 
 function renderSalesTable(){

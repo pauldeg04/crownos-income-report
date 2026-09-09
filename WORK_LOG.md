@@ -4,6 +4,35 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-09 — Team Leader missing Action buttons on Daily Income Report
+
+**Reported by:** User — a Therapist account set as Team Leader can open the Daily Income
+Report (via the existing Team Leader auto-grant), but the Action column shows no Edit/Delete/
+Settle buttons.
+
+**Root cause:** Team Leader status only auto-grants **page access** (`index.html` added to the
+account's Additional Access, see `TEAM_LEADER_AUTO_ACCESS_PAGES` in `account-settings.js`). It
+does not change the account's `role`, which stays `"Therapist"`. The Action column buttons are
+gated separately, by role, via two functions in `script.js`:
+- `canEditSavedSales()` — previously Admin / Executive Assistant only.
+- `canEditOngoingSales()` — previously Admin / Executive Assistant / Receptionist only.
+
+Neither check looked at the `teamLeader` flag, so a Team Leader Therapist matched neither and
+saw no buttons — working as coded, but not as intended for a Team Leader.
+
+**Fix:** [`script.js`](script.js) — both `canEditSavedSales()` and `canEditOngoingSales()` now
+also return `true` when `window.CrownAuth.getCurrentUser().teamLeader === true`. All other
+Action-column call sites (single-row Edit/Delete/Settle, `applyReceptionistRestrictions()`)
+already route through these two functions, so no other file needed changes.
+
+**Docs:** [`manual.html`](manual.html) — the "Who can edit" callout in Chapter 6 (Daily Income
+Report) updated to state that Team Leader now has the same settled-sale edit/delete access as
+Admin/Executive Assistant, alongside Receptionist's existing ongoing-transaction access.
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app
+
+---
+
 ## 2026-09-09 — Add Sale: Category dropdown for items, and VIP Points redemption
 
 **Requested by:** User — wanted the Add Sale item buttons (Add Service, Freebie, Product, Etc.)
