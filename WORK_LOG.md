@@ -4,6 +4,25 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-09 — Fixed portrait Poster images getting cropped on desktop (Memo / Announcement)
+
+**Requested by:** User — reported that a portrait-orientation Poster image on an announcement
+looked fine on mobile, but was cropped ("putol") on desktop.
+
+**Change:**
+- [`memos.css`](memos.css) / [`admin-announcement.css`](admin-announcement.css) — `.memo-poster` /
+  `.announcement-poster` (and their `-preview` variants used in the compose/edit modals) switched
+  from `object-fit: cover` to `object-fit: contain`, with a neutral `background` (`--surface-muted`)
+  to letterbox the gap. `cover` filled the card's full width and a fixed `max-height`, which for a
+  wide desktop card meant a tall portrait photo got its top/bottom sliced off to fill that
+  landscape-shaped box; on a narrow mobile card the box was already close to portrait, so the
+  crop was barely visible. `contain` scales the whole image to fit inside that same box without
+  slicing any of it, at the cost of empty side-padding around a portrait image on wide screens.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
+
+---
+
 ## 2026-09-09 — Color coding on the Daily Monitoring Sheet's Staff Monitoring table
 
 **Requested by:** User — wanted each Attendance/Uniform/Name Tags/Walkie Talkie/Readiness value
