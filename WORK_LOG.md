@@ -27,7 +27,7 @@ Grooming), Unsubmissive (Readiness).
 - [`daily-monitoring.css`](daily-monitoring.css) — `.monitor-tag` pill plus one modifier per tone
   (`-green`, `-light-green`, `-yellow`, `-orange`, `-red`, `-purple`).
 
-**Status:** Code changed locally, not yet deployed.
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
 
 ---
 
