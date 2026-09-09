@@ -134,6 +134,52 @@
     font-weight:800;
 }
 
+/* ---- Color-coded value tags (Attendance / Uniform / Name Tags /
+   Walkie Talkie / Readiness) ---- */
+
+.monitor-tag{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:700;
+    white-space:nowrap;
+}
+
+.monitor-tag-green{
+    color:#fff;
+    background:var(--green);
+}
+
+.monitor-tag-light-green{
+    color:var(--green-dark);
+    background:var(--green-soft);
+    border:1px solid var(--green);
+}
+
+.monitor-tag-yellow{
+    color:#6B4E00;
+    background:var(--gold-soft);
+    border:1px solid var(--gold);
+}
+
+.monitor-tag-orange{
+    color:#fff;
+    background:#E07A1F;
+}
+
+.monitor-tag-red{
+    color:#fff;
+    background:#C62828;
+}
+
+.monitor-tag-purple{
+    color:#fff;
+    background:#6A3AA8;
+}
+
 /* ---- Modal ---- */
 
 .monitor-modal-backdrop{

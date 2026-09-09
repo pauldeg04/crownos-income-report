@@ -4,6 +4,33 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-09 — Color coding on the Daily Monitoring Sheet's Staff Monitoring table
+
+**Requested by:** User — wanted each Attendance/Uniform/Name Tags/Walkie Talkie/Readiness value
+color-coded, and three new values added: Absent (Attendance), Inappropriate (Uniform &
+Grooming), Unsubmissive (Readiness).
+
+**Change:**
+- [`daily-monitoring.html`](daily-monitoring.html) — added the three new `<option>`s to the
+  Inspect modal's Attendance, Uniform & Grooming, and Readiness dropdowns.
+- [`daily-monitoring.js`](daily-monitoring.js) — new `TONE_MAPS` (one map per column, since the
+  same word can mean a different color in a different column — e.g. "Not Available" is purple in
+  both Name Tags and Walkie Talkie but nothing else is shared) and a `toneCell()` renderer that
+  wraps a filled cell in a colored pill; blank cells stay the plain "—" they were before.
+  - Attendance: Early/On-Time green, Late orange, Absent red.
+  - Uniform & Grooming: Tidy/Just Right green, Needs Improvement orange, Inappropriate red.
+  - Name Tags: Okay green, Forgotten yellow, Lost red, Not Available purple.
+  - Walkie Talkie: Complete and Working green, Low Battery yellow, No Ear Piece/Not Working red,
+    Not Available purple.
+  - Readiness: Ready green, Need Guidance/Assistance light green, Not Ready yellow, Unsubmissive
+    red.
+- [`daily-monitoring.css`](daily-monitoring.css) — `.monitor-tag` pill plus one modifier per tone
+  (`-green`, `-light-green`, `-yellow`, `-orange`, `-red`, `-purple`).
+
+**Status:** Code changed locally, not yet deployed.
+
+---
+
 ## 2026-09-09 — Daily Monitoring Sheet: Staff column was reading the wrong roster
 
 **Reported by:** User — tried it on a demo Team Leader account: added a schedule and staff for

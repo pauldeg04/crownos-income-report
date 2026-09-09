@@ -247,10 +247,62 @@
         `;
     }
 
+    /* Color coding per column — same word can mean a different color in
+       a different column (e.g. "Not Available" is purple for both Name
+       Tags and Walkie Talkie, but there's no shared meaning across
+       columns otherwise), so each column gets its own value → tone map. */
+    const TONE_MAPS = {
+        attendance: {
+            "Early": "green",
+            "On-Time": "green",
+            "Late": "orange",
+            "Absent": "red"
+        },
+        uniform: {
+            "Tidy": "green",
+            "Just Right": "green",
+            "Needs Improvement": "orange",
+            "Inappropriate": "red"
+        },
+        nameTags: {
+            "Okay": "green",
+            "Forgotten": "yellow",
+            "Lost": "red",
+            "Not Available": "purple"
+        },
+        walkieTalkie: {
+            "Complete and Working": "green",
+            "Low Battery": "yellow",
+            "No Ear Piece": "red",
+            "Not Working": "red",
+            "Not Available": "purple"
+        },
+        readiness: {
+            "Ready": "green",
+            "Need Guidance/Assistance": "light-green",
+            "Not Ready": "yellow",
+            "Unsubmissive": "red"
+        }
+    };
+
     function cell(value){
         return value
             ? escapeHtml(value)
             : '<span class="monitor-blank">—</span>';
+    }
+
+    function toneCell(field, value){
+        if(!value){
+            return '<span class="monitor-blank">—</span>';
+        }
+
+        const tone = TONE_MAPS[field]?.[value] || "";
+
+        return `
+            <span class="monitor-tag monitor-tag-${tone}">
+                ${escapeHtml(value)}
+            </span>
+        `;
     }
 
     function renderTable(){
@@ -288,11 +340,11 @@
             return `
                 <tr>
                     <td class="monitor-staff-name">${escapeHtml(staff.name)}</td>
-                    <td>${cell(doc && doc.attendance)}</td>
-                    <td>${cell(doc && doc.uniform)}</td>
-                    <td>${cell(doc && doc.nameTags)}</td>
-                    <td>${cell(doc && doc.walkieTalkie)}</td>
-                    <td>${cell(doc && doc.readiness)}</td>
+                    <td>${toneCell("attendance", doc && doc.attendance)}</td>
+                    <td>${toneCell("uniform", doc && doc.uniform)}</td>
+                    <td>${toneCell("nameTags", doc && doc.nameTags)}</td>
+                    <td>${toneCell("walkieTalkie", doc && doc.walkieTalkie)}</td>
+                    <td>${toneCell("readiness", doc && doc.readiness)}</td>
                     <td>${cell(doc && doc.notes)}</td>
                     <td>${renderActionCell(doc, staff, pastCutoff)}</td>
                 </tr>
