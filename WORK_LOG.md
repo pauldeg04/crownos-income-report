@@ -32,7 +32,10 @@ account saved — any Team Leader account created before Daily Monitoring Sheet 
 confirmed `crownUserAccounts` came back with `daily-monitoring.html` added and the sidebar link
 appearing — without touching Account Settings at all.
 
-**Status:** Code changed locally, not yet deployed.
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d). (Deploy skipped an
+unrelated in-progress change sitting in the working tree — `clients.html`/`clients.js`'s VIP
+Points Ledger work, not part of this fix — by stashing it for the deploy and restoring it right
+after; it's still uncommitted, waiting for you.)
 
 ---
 
