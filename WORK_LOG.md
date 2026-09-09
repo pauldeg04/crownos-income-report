@@ -4,6 +4,33 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-09 — Daily Monitoring Sheet: Staff column was reading the wrong roster
+
+**Reported by:** User — tried it on a demo Team Leader account: added a schedule and staff for
+today in Staff Schedule, but the Staff Monitoring tab still showed an empty table.
+
+**Root cause:** [`daily-monitoring.js`](daily-monitoring.js) originally built the "on duty"
+roster from the Attendance log (`crownAttendanceLog`) — i.e. staff who had actually clocked in
+— not from Staff Schedule. The user's workflow (assign staff in Staff Schedule for the day) never
+touches the attendance log, so the table stayed empty no matter what was scheduled.
+
+**Fix:** Staff Monitoring's roster now reads straight from `staffScheduleGrids` (the same
+Firestore collection Staff Schedule's Opening/Closing grid writes to — see
+[`staff-schedule.js`](staff-schedule.js)) instead of Attendance. For the selected branch/date it
+resolves the ISO week's grid doc (`{slug(branch)}_{mondayOf(date)}`) and collects every non-blank
+account in that day's Opening and Closing rows (receptionist + all therapist rows), deduped and
+sorted by nickname. Rows in `dailyMonitoring` are now keyed by staff **account** instead of user
+id, to match how Staff Schedule itself identifies people (`staffId` → `staffAccount` field
+rename; no production data existed yet under the old key, so no migration needed). Also removed
+now-dead option-list constants left over from the first draft.
+
+**Not changed:** Firestore rules — `staffScheduleGrids` already allowed `get`/`list` to any
+authenticated user, so no rules redeploy was needed for this fix, only Hosting.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
+
+---
+
 ## 2026-09-08 — New Admin Hub page: Daily Monitoring Sheet (Staff Monitoring tab)
 
 **Requested by:** User — "Sa CrownOS / Admin Hub, Gusto ko mag add ng isa pang Menu... Daily

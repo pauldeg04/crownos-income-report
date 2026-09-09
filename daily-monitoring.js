@@ -2,39 +2,33 @@
    CrownOS — Daily Monitoring Sheet (Admin Hub)
 
    Firestore collection "dailyMonitoring" — one doc per (branch, date,
-   staff). Write access is open to any authenticated user in
+   staff account). Write access is open to any authenticated user in
    firestore.rules (same "Team Leader isn't a custom claim" reason as
    staffSchedules / staffScheduleGrids) and gated to Team Leader accounts
    here in the UI. Admin / Executive Assistant can view the sheet but
    cannot edit an inspection — only the account with teamLeader === true
    can.
+
+   The Staff column reads the Opening/Closing roster straight out of
+   staffScheduleGrids (see staff-schedule.js) instead of duplicating a
+   second "who's on duty" list — a branch/date shows nobody here until
+   it has an Opening or Closing assignment in Staff Schedule.
    ========================================================================== */
 
 (function(){
     const COLLECTION = "dailyMonitoring";
+    const GRID_COLLECTION = "staffScheduleGrids";
     const BRANCH_KEY = "crownSelectedBranch";
-    const ATTENDANCE_LOG_KEY = "crownAttendanceLog";
     const USER_ACCOUNTS_KEY = "crownUserAccounts";
     const MONITOR_DATE_KEY = "crownDailyMonitoringDate";
 
-    const ATTENDANCE_OPTIONS = ["Early", "On-Time", "Late"];
-    const UNIFORM_OPTIONS = ["Tidy", "Just Right", "Needs Improvement"];
-    const NAME_TAG_OPTIONS = ["Okay", "Forgotten", "Lost", "Not Available"];
-
-    const WALKIE_OPTIONS = [
-        "Complete and Working",
-        "Low Battery",
-        "No Ear Piece",
-        "Not Working",
-        "Not Available"
-    ];
-
-    const READINESS_OPTIONS = ["Ready", "Need Guidance/Assistance", "Not Ready"];
+    const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
     let currentUser = null;
     let canEdit = false;
     let selectedDate = getTodayValue();
     let monitorDocsCache = {};
+    let staffListCache = [];
     let inspectingRow = null;
 
     function escapeHtml(value){
@@ -81,61 +75,105 @@
         }
     }
 
-    function getAttendanceLog(){
+    function getStaffDisplayNameByAccount(account){
+        const user = getUserAccounts().find(function(item){
+            return item.account === account;
+        });
+
+        return (user && user.nickname) || account;
+    }
+
+    function slug(value){
+        return String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    }
+
+    function mondayOf(dateValue){
+        const date = new Date(dateValue + "T00:00:00");
+        const day = date.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        date.setDate(date.getDate() + diff);
+
+        return [
+            date.getFullYear(),
+            String(date.getMonth() + 1).padStart(2, "0"),
+            String(date.getDate()).padStart(2, "0")
+        ].join("-");
+    }
+
+    function dayKeyOf(dateValue){
+        const jsDay = new Date(dateValue + "T00:00:00").getDay();
+        return DAY_KEYS[(jsDay + 6) % 7];
+    }
+
+    /* Staff considered "on duty" for a branch/date are whoever the Staff
+       Schedule (Staff Management → Staff Schedule tab) has in the
+       Opening or Closing row for that day — the roster the Team Leader
+       and Admin/EA already build there, not a second one duplicated
+       here. See staff-schedule.js for the grid's shape:
+       staffScheduleGrids/{slug(branch)}_{weekStartDate}. */
+    async function getStaffOnDuty(branch, date){
+        if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
+            return [];
+        }
+
+        const docId = slug(branch) + "_" + mondayOf(date);
+        const dayKey = dayKeyOf(date);
+
         try{
-            const raw = localStorage.getItem(ATTENDANCE_LOG_KEY);
-            const parsed = raw ? JSON.parse(raw) : [];
-            return Array.isArray(parsed) ? parsed : [];
+            const doc = await firebase.firestore()
+                .collection(GRID_COLLECTION)
+                .doc(docId)
+                .get();
+
+            if(!doc.exists){
+                return [];
+            }
+
+            const grid = doc.data();
+            const accounts = [];
+
+            function collect(dayMap){
+                const value = dayMap && dayMap[dayKey];
+
+                if(value){
+                    accounts.push(value);
+                }
+            }
+
+            collect(grid.opening?.receptionist);
+            (grid.opening?.therapists || []).forEach(collect);
+            collect(grid.closing?.receptionist);
+            (grid.closing?.therapists || []).forEach(collect);
+
+            const seen = new Set();
+            const staff = [];
+
+            accounts.forEach(function(account){
+                if(seen.has(account)){
+                    return;
+                }
+
+                seen.add(account);
+
+                staff.push({
+                    account: account,
+                    name: getStaffDisplayNameByAccount(account)
+                });
+            });
+
+            staff.sort(function(a, b){
+                return a.name.localeCompare(b.name);
+            });
+
+            return staff;
         }catch(error){
+            console.error("Unable to load the Staff Schedule roster:", error);
             return [];
         }
     }
 
-    function getStaffDisplayName(userId, fallbackAccount){
-        const user = getUserAccounts().find(function(item){
-            return item.id === userId;
-        });
-
-        if(user && user.nickname){
-            return user.nickname;
-        }
-
-        return fallbackAccount || (user ? user.account : "Unknown");
-    }
-
-    /* Staff considered "on duty" for a branch/date are the staff who
-       clocked in at that branch on that date — see attendance.js, the
-       source this reuses instead of duplicating a second roster. */
-    function getStaffOnDuty(branch, date){
-        const seen = new Set();
-        const staff = [];
-
-        getAttendanceLog()
-            .filter(function(entry){
-                return entry.date === date && entry.branch === branch;
-            })
-            .forEach(function(entry){
-                if(seen.has(entry.userId)){
-                    return;
-                }
-
-                seen.add(entry.userId);
-
-                staff.push({
-                    userId: entry.userId,
-                    name: getStaffDisplayName(entry.userId, entry.account)
-                });
-            });
-
-        staff.sort(function(a, b){
-            return a.name.localeCompare(b.name);
-        });
-
-        return staff;
-    }
-
-    function monitorDocId(branch, date, userId){
-        return encodeURIComponent(branch) + "__" + date + "__" + encodeURIComponent(userId);
+    function monitorDocId(branch, date, account){
+        return encodeURIComponent(branch) + "__" + date + "__" + encodeURIComponent(account);
     }
 
     function isPastCutoff(date){
@@ -194,7 +232,7 @@
                 <button
                     type="button"
                     class="btn btn-sm btn-primary monitor-inspect-btn"
-                    data-user-id="${escapeHtml(staff.userId)}"
+                    data-account="${escapeHtml(staff.account)}"
                     data-staff-name="${escapeHtml(staff.name)}"
                 >
                     Inspect
@@ -232,12 +270,11 @@
         branchEmpty.classList.add("d-none");
         tableWrap.classList.remove("d-none");
 
-        const staffList = getStaffOnDuty(branch, selectedDate);
         const pastCutoff = isPastCutoff(selectedDate);
 
         const body = document.getElementById("monitorTableBody");
 
-        if(staffList.length === 0){
+        if(staffListCache.length === 0){
             body.innerHTML = "";
             emptyState.classList.remove("d-none");
             return;
@@ -245,8 +282,8 @@
 
         emptyState.classList.add("d-none");
 
-        body.innerHTML = staffList.map(function(staff){
-            const doc = monitorDocsCache[staff.userId] || null;
+        body.innerHTML = staffListCache.map(function(staff){
+            const doc = monitorDocsCache[staff.account] || null;
 
             return `
                 <tr>
@@ -264,15 +301,13 @@
 
         body.querySelectorAll(".monitor-inspect-btn").forEach(function(btn){
             btn.addEventListener("click", function(){
-                openInspectModal(btn.dataset.userId, btn.dataset.staffName);
+                openInspectModal(btn.dataset.account, btn.dataset.staffName);
             });
         });
     }
 
-    async function loadMonitorDocs(){
+    async function loadMonitorDocs(branch){
         monitorDocsCache = {};
-
-        const branch = getCurrentBranch();
 
         if(!branch || !window.firebase || !firebase.apps || firebase.apps.length === 0){
             return;
@@ -287,7 +322,7 @@
 
             snapshot.docs.forEach(function(doc){
                 const data = doc.data();
-                monitorDocsCache[data.staffId] = data;
+                monitorDocsCache[data.staffAccount] = data;
             });
         }catch(error){
             console.error("Unable to load Daily Monitoring Sheet data:", error);
@@ -295,14 +330,24 @@
     }
 
     async function refresh(){
-        await loadMonitorDocs();
+        const branch = getCurrentBranch();
+
+        if(!branch){
+            staffListCache = [];
+            monitorDocsCache = {};
+            renderTable();
+            return;
+        }
+
+        staffListCache = await getStaffOnDuty(branch, selectedDate);
+        await loadMonitorDocs(branch);
         renderTable();
     }
 
     /* ---- Inspect modal ---- */
 
-    function openInspectModal(userId, staffName){
-        inspectingRow = { userId, staffName };
+    function openInspectModal(account, staffName){
+        inspectingRow = { account, staffName };
 
         document.getElementById("monitorModalTitle").textContent =
             "Inspect — " + staffName;
@@ -346,11 +391,11 @@
         try{
             await firebase.firestore()
                 .collection(COLLECTION)
-                .doc(monitorDocId(branch, selectedDate, inspectingRow.userId))
+                .doc(monitorDocId(branch, selectedDate, inspectingRow.account))
                 .set({
                     branch: branch,
                     date: selectedDate,
-                    staffId: inspectingRow.userId,
+                    staffAccount: inspectingRow.account,
                     staffName: inspectingRow.staffName,
                     attendance: attendance,
                     uniform: uniform,
