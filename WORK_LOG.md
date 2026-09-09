@@ -4,6 +4,44 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-09 — Add Sale: Category dropdown for items, and VIP Points redemption
+
+**Requested by:** User — wanted the Add Sale item buttons (Add Service, Freebie, Product, Etc.)
+turned into a single dropdown per row, the same treatment applied to Companion items, and a way to
+redeem a VIP client's points against a sale.
+
+**Change:**
+- [`index.html`](index.html) / [`script.js`](script.js) / [`style.css`](style.css) — the
+  **Add Service / Add Freebie / Add Product / Add Consumable** buttons in Add Sale's Services /
+  Products section are replaced by a single **+ Add Item** button. Each item row now starts with a
+  **Category** dropdown (Service / Freebie / Product / Consumable) as its leftmost column,
+  followed by Select Service/Product, the Regular/First Timer/VIP/Senior-PWD price type, Amount,
+  and the same × remove button. Changing the Category on a row converts it in place. **Add VIP
+  Card** and **Add Purchase Voucher** stay as separate buttons since they open different flows.
+  The Companion section's **Add Service / Add Product** buttons got the same treatment — one
+  **+ Add Item** button with a Service/Product Category dropdown per companion row.
+- [`index.html`](index.html) / [`script.js`](script.js) / [`style.css`](style.css) — new
+  **Redeem Points** button, leftmost of the Voucher section's button row (before Add Voucher /
+  Executive Voucher). It only shows when the Client field matches an existing VIP client with
+  points on file. Under it, a plain gray subtext line (styled like the service Duration label)
+  reads **VIP: *points* - ₱*peso value*** (100 points = ₱1, the existing earn rate). Pressing it
+  redeems **all** of the client's available points at once as a discount, shown as a new **Points
+  Redemption** line between Voucher Deduction and Amount to Pay; pressing it again cancels the
+  redemption. The discount is only actually applied to the client's Client Database record once
+  the sale is **Settled** (mirrors how earned points are only credited at Settle) —
+  `redeemVipPointsForSale()` resets that client's points to **zero** at that point (not just
+  minus what was redeemed) and `creditVipPointsForSale()` skips crediting new points to that same
+  client on that same visit, so a redeeming client can't net out with more points than they
+  started with. They start earning again from their next visit or next use of their VIP Card
+  number.
+- [`manual.html`](manual.html) — Chapter 7 (Recording a Sale) rewritten for the Category dropdown
+  and the new Redeem Points button/summary line; Chapter 8 (VIP Points) updated to describe
+  redemption now that it's implemented (previously noted as "planned but not available yet").
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
+
+---
+
 ## 2026-09-09 — Reverted birthday SMS wording — original text does arrive
 
 **Update from the user:** after the wording swap below, both the original "Claim your FREE

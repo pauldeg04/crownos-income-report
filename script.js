@@ -30,6 +30,14 @@ let modalCompanions = [];
 let modalVouchers = [];
 let modalExecutiveVoucher = false;
 let modalPayments = [];
+
+/* Set only while the principal client's VIP points are being redeemed
+   on this sale — { clientName, points, value } — cleared whenever the
+   Client field changes so a redemption never rides along onto a
+   different client's record. Actually deducted from the client's
+   points balance only once the sale is Settled (mirrors how points
+   are earned — see creditVipPointsForSale). */
+let modalPointsRedemption = null;
 let calendarYear;
 let calendarMonth;
 
@@ -115,24 +123,12 @@ function attachEvents(){
   document.getElementById("addToListModalBtn").addEventListener("click", addModalSaleToList);
   document.getElementById("addToScheduleModalBtn").addEventListener("click", addModalSaleToSchedule);
 
-  document.getElementById("modalAddServiceBtn").addEventListener("click", function(){
-    addModalItem("Service");
+  document.getElementById("modalAddItemBtn").addEventListener("click", function(){
+    addModalBlankItem();
   });
 
   document.getElementById("modalTimeInput").addEventListener("change", function(){
     syncModalItemStartTimes(this.value);
-  });
-
-  document.getElementById("modalAddFreebieBtn").addEventListener("click", function(){
-    addModalFreebieItem();
-  });
-
-  document.getElementById("modalAddProductBtn").addEventListener("click", function(){
-    addModalItem("Product");
-  });
-
-  document.getElementById("modalAddConsumableBtn").addEventListener("click", function(){
-    addModalConsumableItem();
   });
 
   document.getElementById("modalAddVipCardBtn").addEventListener("click", function(){
@@ -147,6 +143,8 @@ function attachEvents(){
     document.getElementById("modalClientInput").addEventListener(eventName, function(){
       refreshModalVipState();
       refreshModalVipCardOwnerHint();
+      refreshModalPointsRedemptionUI();
+      updateModalTotal();
       renderModalItems();
       renderModalCompanions();
     });
@@ -183,6 +181,10 @@ function attachEvents(){
 
   document.getElementById("modalExecutiveVoucherBtn").addEventListener("click", function(){
     toggleExecutiveVoucher();
+  });
+
+  document.getElementById("modalRedeemPointsBtn").addEventListener("click", function(){
+    toggleRedeemPoints();
   });
 
   document.getElementById("modalGenerateVoucherBtn").addEventListener("click", function(){
@@ -899,6 +901,175 @@ function isExistingVipClient(clientName){
   );
 }
 
+/* ---------- VIP Points redemption ---------- */
+
+/* 100 points = ₱1 credit — mirrors the earn rate in clients.js
+   (computeEarnedPoints: ₱1 spent earns 1 point). */
+function pointsToPesoValue(points){
+  return Number(points || 0) / 100;
+}
+
+function getModalPrincipalClientRecord(){
+  const clientName =
+    document.getElementById("modalClientInput")?.value.trim();
+
+  return clientName ? getClientByName(clientName) : null;
+}
+
+function getClientAvailablePoints(client){
+  return Math.max(0, Number(client?.points) || 0);
+}
+
+/* Toggles redeeming ALL of the principal client's available points on
+   this sale — a second click cancels the redemption. Redeeming is just
+   a discount held on the modal; the client's actual points balance is
+   only deducted once the sale is Settled (see redeemVipPointsForSale),
+   the same finalization point where earned points get credited. */
+function toggleRedeemPoints(){
+  if(modalPointsRedemption){
+    modalPointsRedemption = null;
+    refreshModalPointsRedemptionUI();
+    updateModalTotal();
+    return;
+  }
+
+  const client = getModalPrincipalClientRecord();
+  const availablePoints = getClientAvailablePoints(client);
+
+  if(!client || !clientHasVipStatus(client) || availablePoints <= 0){
+    return;
+  }
+
+  modalPointsRedemption = {
+    clientName: normalizeClientName(client.name),
+    points: availablePoints,
+    value: pointsToPesoValue(availablePoints)
+  };
+
+  refreshModalPointsRedemptionUI();
+  updateModalTotal();
+}
+
+/* Keeps the Redeem Points button/label in sync with the principal
+   Client field — shown only for an existing VIP client with points to
+   redeem, and auto-cancels an active redemption if the Client field
+   changes to someone else (or stops being VIP) so it can never ride
+   onto the wrong client's record. */
+function refreshModalPointsRedemptionUI(){
+  const wrapper =
+    document.getElementById("modalRedeemPointsWrapper");
+
+  const button =
+    document.getElementById("modalRedeemPointsBtn");
+
+  if(!wrapper || !button){
+    return;
+  }
+
+  const client = getModalPrincipalClientRecord();
+  const clientIsVip = clientHasVipStatus(client);
+  const availablePoints = getClientAvailablePoints(client);
+
+  if(
+    modalPointsRedemption &&
+    (
+      !client ||
+      normalizeClientName(client.name) !== modalPointsRedemption.clientName
+    )
+  ){
+    modalPointsRedemption = null;
+  }
+
+  const canRedeem =
+    clientIsVip && (availablePoints > 0 || Boolean(modalPointsRedemption));
+
+  button.classList.toggle("d-none", !canRedeem);
+  wrapper.classList.toggle("d-none", !canRedeem);
+
+  if(!canRedeem){
+    return;
+  }
+
+  button.classList.toggle(
+    "redeem-points-selected",
+    Boolean(modalPointsRedemption)
+  );
+
+  button.textContent =
+    modalPointsRedemption
+      ? "Cancel Points Redemption"
+      : "Redeem Points";
+
+  const label =
+    document.getElementById("modalRedeemPointsLabel");
+
+  if(label){
+    const pointsToShow =
+      modalPointsRedemption
+        ? modalPointsRedemption.points
+        : availablePoints;
+
+    const valueToShow =
+      modalPointsRedemption
+        ? modalPointsRedemption.value
+        : pointsToPesoValue(availablePoints);
+
+    label.textContent =
+      `VIP: ${pointsToShow.toLocaleString("en-PH")} - ${peso(valueToShow)}`;
+  }
+}
+
+/* Mirrors creditVipPointsForSale's guard pattern (sale.pointsCredited)
+   so re-saving/editing an already-settled sale never deducts the same
+   redemption twice. */
+async function redeemVipPointsForSale(saleData){
+  if(
+    !saleData.pointsRedeemed ||
+    saleData.pointsRedemptionApplied ||
+    !saleData.client
+  ){
+    return;
+  }
+
+  const clients = await getClients();
+
+  const client =
+    clients.find(function(existing){
+      return (
+        normalizeClientName(existing?.name).toLowerCase() ===
+        normalizeClientName(saleData.client).toLowerCase()
+      );
+    });
+
+  if(!client){
+    return;
+  }
+
+  /* Redeeming always consumes the client's ENTIRE balance, not just
+     what was redeemed at click time — resets straight to zero so they
+     start earning fresh from their next visit (or next use of their
+     VIP number), regardless of whatever the balance drifted to since
+     the redemption was chosen in the modal. */
+  const before = Number(client.points || 0);
+  const after = 0;
+
+  client.points = after;
+  client.updatedAt = new Date().toISOString();
+
+  appendPointsLedgerEntry(client, {
+    type: "Redeem",
+    branch: saleData.branch || getSelectedBranch() || "",
+    delta: after - before,
+    before: before,
+    after: after,
+    note: `Redeemed on sale for ${peso(saleData.pointsRedemptionValue || 0)}`
+  });
+
+  saleData.pointsRedemptionApplied = true;
+
+  await window.CrownClientStore.saveAll(clients);
+}
+
 /* ---------- "More" client details panel (Client field shortcut) ---------- */
 
 function getBranchListForModal(){
@@ -1350,7 +1521,16 @@ function getModalNetAmount(){
   const gross = getModalGrossAmount();
   const voucher = getSelectedVoucherData();
   const deduction = Math.min(gross, Math.max(0, Number(voucher.value) || 0));
-  return Math.max(0, gross - deduction);
+
+  const pointsValue =
+    modalPointsRedemption
+      ? Math.max(0, Number(modalPointsRedemption.value) || 0)
+      : 0;
+
+  const pointsDeduction =
+    Math.min(Math.max(0, gross - deduction), pointsValue);
+
+  return Math.max(0, gross - deduction - pointsDeduction);
 }
 
 function getModalPaymentTotal(){
@@ -1543,6 +1723,7 @@ function openNewSaleModal(){
   modalVouchers = [];
   modalExecutiveVoucher = false;
   modalPayments = [];
+  modalPointsRedemption = null;
 
   document.getElementById("saleModalEyebrow").textContent = "New Sale";
   document.getElementById("saleModalTitle").textContent = "Add Sale";
@@ -1564,6 +1745,7 @@ function openNewSaleModal(){
   syncSinglePaymentToBalance();
   renderModalPayments();
   refreshModalVipState();
+  refreshModalPointsRedemptionUI();
   resetModalClientDetailsPanel();
   showSaleModal();
 }
@@ -1799,6 +1981,15 @@ function openEditSaleModal(saleId){
             : []
         );
 
+  modalPointsRedemption =
+    Number(sale.pointsRedeemed) > 0 && sale.client
+      ? {
+          clientName: normalizeClientName(sale.client),
+          points: Number(sale.pointsRedeemed) || 0,
+          value: Number(sale.pointsRedemptionValue) || 0
+        }
+      : null;
+
   renderModalVouchers();
   syncSinglePaymentToBalance();
   renderModalPayments();
@@ -1823,6 +2014,7 @@ function openEditSaleModal(saleId){
 
   refreshModalVipCardOwnerHint();
   refreshModalVipState();
+  refreshModalPointsRedemptionUI();
   renderModalItems();
   renderModalCompanions();
   prefillModalClientDetailsPanel(sale.client);
@@ -2099,6 +2291,104 @@ function getDefaultServiceStartTime(){
   return document.getElementById("modalTimeInput").value || "";
 }
 
+/* A blank item has no itemType yet — it renders as just the Category
+   dropdown until the receptionist picks Service / Freebie / Product /
+   Consumable, at which point applyModalItemCategory() turns it into a
+   real item of that type. */
+function addModalBlankItem(){
+  modalItems.push({
+    id: createId(),
+    itemType: "",
+    name: "",
+    priceType:
+      isModalVip()
+        ? "VIP"
+        : "Regular",
+    quantity: 1,
+    unitPrice: 0,
+    amount: 0,
+    manualAmount: false,
+    manualUnitPrice: false,
+    productKind: "",
+    sourceServiceName: "",
+    isFreebie: false,
+    freebieValue: 0,
+    isConsumable: false,
+    serviceStartTime: "",
+    manualStartTime: false
+  });
+
+  renderModalItems();
+}
+
+/* Re-purposes an existing item row (identified by its Category dropdown)
+   into a fresh Service / Freebie / Product / Consumable item, discarding
+   whatever name/amount it had under its previous category. */
+function applyModalItemCategory(item, category){
+  item.name = "";
+  item.amount = 0;
+  item.unitPrice = 0;
+  item.quantity = 1;
+  item.manualAmount = false;
+  item.manualUnitPrice = false;
+  item.productKind = "";
+  item.sourceServiceName = "";
+  item.freebieValue = 0;
+  item.manualStartTime = false;
+  item.priceType = isModalVip() ? "VIP" : "Regular";
+
+  if(category === "Service"){
+    item.itemType = "Service";
+    item.isFreebie = false;
+    item.isConsumable = false;
+    item.serviceStartTime = getDefaultServiceStartTime();
+  }else if(category === "Freebie"){
+    item.itemType = "Service";
+    item.isFreebie = true;
+    item.isConsumable = false;
+    item.serviceStartTime = getDefaultServiceStartTime();
+  }else if(category === "Product"){
+    item.itemType = "Product";
+    item.isFreebie = false;
+    item.isConsumable = false;
+    item.serviceStartTime = "";
+  }else if(category === "Consumable"){
+    item.itemType = "Product";
+    item.isFreebie = false;
+    item.isConsumable = true;
+    item.serviceStartTime = "";
+  }else{
+    item.itemType = "";
+    item.isFreebie = false;
+    item.isConsumable = false;
+    item.serviceStartTime = "";
+  }
+}
+
+function getModalItemCategory(item){
+  if(!item.itemType){
+    return "";
+  }
+
+  if(item.itemType === "Service"){
+    return item.isFreebie ? "Freebie" : "Service";
+  }
+
+  return item.isConsumable ? "Consumable" : "Product";
+}
+
+function buildModalItemCategorySelectHtml(category){
+  return `
+    <select class="form-select form-select-sm item-category">
+      <option value="">Category</option>
+      <option value="Service" ${category === "Service" ? "selected" : ""}>Service</option>
+      <option value="Freebie" ${category === "Freebie" ? "selected" : ""}>Freebie</option>
+      <option value="Product" ${category === "Product" ? "selected" : ""}>Product</option>
+      <option value="Consumable" ${category === "Consumable" ? "selected" : ""}>Consumable</option>
+    </select>
+  `;
+}
+
 function addModalItem(itemType){
   modalItems.push({
     id: createId(),
@@ -2270,11 +2560,22 @@ function renderModalItems(){
       row.className += " modal-consumable-row";
     }
 
-    if(item.itemType === "Service"){
+    const itemCategory =
+      getModalItemCategory(item);
+
+    if(!item.itemType){
+      row.innerHTML = `
+        ${buildModalItemCategorySelectHtml(itemCategory)}
+        <div class="modal-item-placeholder">Select a category to continue</div>
+        <button type="button" class="modal-remove-item">×</button>
+      `;
+    }else if(item.itemType === "Service"){
       const durationLabel =
         getModalItemDurationLabel(item);
 
       row.innerHTML = `
+        ${buildModalItemCategorySelectHtml(itemCategory)}
+
         <div class="item-name-wrap">
           <select class="form-select form-select-sm item-name">
             <option value="">${item.isFreebie ? "Select Freebie" : "Select Service"}</option>
@@ -2332,6 +2633,8 @@ function renderModalItems(){
       `;
     }else if(item.isConsumable){
       row.innerHTML = `
+        ${buildModalItemCategorySelectHtml(itemCategory)}
+
         <select class="form-select form-select-sm item-name">
           <option value="">Select Consumable</option>
           ${(CrownInventory?.getConsumableProductNames?.() || [])
@@ -2379,6 +2682,8 @@ function renderModalItems(){
       `;
     }else{
       row.innerHTML = `
+        ${buildModalItemCategorySelectHtml(itemCategory)}
+
         <select class="form-select form-select-sm item-name">
           <option value="">Select Product</option>
           ${getProducts()
@@ -2445,102 +2750,118 @@ function renderModalItems(){
 }
 
 function attachModalItemEvents(row, item){
-  row.querySelector(".item-name").addEventListener("change", function(){
-    item.name = this.value;
+  const categorySelect =
+    row.querySelector(".item-category");
 
-    if(!item.name){
-      item.amount = 0;
-      item.freebieValue = 0;
-      item.unitPrice = 0;
-      item.quantity = 1;
-      item.manualAmount = false;
-      item.manualUnitPrice = false;
-      item.productKind = "";
-      item.sourceServiceName = "";
+  if(categorySelect){
+    categorySelect.addEventListener("change", function(){
+      applyModalItemCategory(item, this.value);
+
       refreshModalVipState();
       syncFamilyBundleCompanions();
       renderModalItems();
       renderModalCompanions();
-      return;
-    }
-
-    if(item.itemType === "Service"){
-      item.manualAmount = false;
-      recalculateServiceItem(item);
-    }else{
-      item.manualUnitPrice = false;
-
-      const selectedProduct =
-        findProduct(item.name);
-
-      item.productKind =
-        selectedProduct?.productKind || "Product";
-
-      item.sourceServiceName =
-        selectedProduct?.sourceServiceName || "";
-
-      recalculateProductItem(item);
-    }
-
-    if(item.isConsumable){
-      item.unitPrice = 0;
-      item.amount = 0;
-    }
-
-    refreshModalVipState();
-    syncFamilyBundleCompanions();
-    renderModalItems();
-    renderModalCompanions();
-  });
-
-  if(item.itemType === "Service"){
-    row.querySelector(".item-price-type").addEventListener("change", function(){
-      item.priceType = this.value;
-      item.manualAmount = false;
-      recalculateServiceItem(item);
-
-      refreshModalVipState();
-      renderModalItems();
-      renderModalCompanions();
     });
+  }
 
-    if(item.isFreebie){
-      /* Freebie amount always follows the service's own tier price
-         (via recalculateServiceItem) — no manual override, so the
-         commission basis can't drift from what the service is really
-         worth. */
-    }else{
-      row.querySelector(".item-amount").addEventListener("input", function(){
-        item.amount = Number(this.value) || 0;
-        item.manualAmount = true;
-        updateModalTotal();
-      });
-    }
-  }else{
-    row.querySelector(".item-quantity").addEventListener("input", function(){
-      item.quantity = Math.max(1, Number(this.value) || 1);
-      recalculateProductItem(item);
+  if(item.itemType){
+    row.querySelector(".item-name").addEventListener("change", function(){
+      item.name = this.value;
+
+      if(!item.name){
+        item.amount = 0;
+        item.freebieValue = 0;
+        item.unitPrice = 0;
+        item.quantity = 1;
+        item.manualAmount = false;
+        item.manualUnitPrice = false;
+        item.productKind = "";
+        item.sourceServiceName = "";
+        refreshModalVipState();
+        syncFamilyBundleCompanions();
+        renderModalItems();
+        renderModalCompanions();
+        return;
+      }
+
+      if(item.itemType === "Service"){
+        item.manualAmount = false;
+        recalculateServiceItem(item);
+      }else{
+        item.manualUnitPrice = false;
+
+        const selectedProduct =
+          findProduct(item.name);
+
+        item.productKind =
+          selectedProduct?.productKind || "Product";
+
+        item.sourceServiceName =
+          selectedProduct?.sourceServiceName || "";
+
+        recalculateProductItem(item);
+      }
 
       if(item.isConsumable){
         item.unitPrice = 0;
         item.amount = 0;
       }
 
+      refreshModalVipState();
+      syncFamilyBundleCompanions();
       renderModalItems();
+      renderModalCompanions();
     });
 
-    /* Consumables have no unit-price input — they're never charged to
-       the client, so there's nothing to wire here. */
-    if(!item.isConsumable){
-      row.querySelector(".item-unit-price").addEventListener("input", function(){
-        item.unitPrice = Number(this.value) || 0;
-        item.manualUnitPrice = true;
-        item.amount = item.quantity * item.unitPrice;
-        updateModalTotal();
+    if(item.itemType === "Service"){
+      row.querySelector(".item-price-type").addEventListener("change", function(){
+        item.priceType = this.value;
+        item.manualAmount = false;
+        recalculateServiceItem(item);
 
-        const amountInput = row.querySelector(".item-amount");
-        amountInput.value = Number(item.amount || 0).toFixed(2);
+        refreshModalVipState();
+        renderModalItems();
+        renderModalCompanions();
       });
+
+      if(item.isFreebie){
+        /* Freebie amount always follows the service's own tier price
+           (via recalculateServiceItem) — no manual override, so the
+           commission basis can't drift from what the service is really
+           worth. */
+      }else{
+        row.querySelector(".item-amount").addEventListener("input", function(){
+          item.amount = Number(this.value) || 0;
+          item.manualAmount = true;
+          updateModalTotal();
+        });
+      }
+    }else{
+      row.querySelector(".item-quantity").addEventListener("input", function(){
+        item.quantity = Math.max(1, Number(this.value) || 1);
+        recalculateProductItem(item);
+
+        if(item.isConsumable){
+          item.unitPrice = 0;
+          item.amount = 0;
+        }
+
+        renderModalItems();
+      });
+
+      /* Consumables have no unit-price input — they're never charged to
+         the client, so there's nothing to wire here. */
+      if(!item.isConsumable){
+        row.querySelector(".item-unit-price").addEventListener("input", function(){
+          item.unitPrice = Number(this.value) || 0;
+          item.manualUnitPrice = true;
+          item.amount = item.quantity * item.unitPrice;
+          updateModalTotal();
+
+          const amountInput = row.querySelector(".item-amount");
+          amountInput.value = Number(item.amount || 0).toFixed(2);
+        });
+      }
     }
   }
 
@@ -2557,12 +2878,14 @@ function attachModalItemEvents(row, item){
     if(modalItems.length === 0){
       modalItems.push({
         id: createId(),
-        itemType: "Service",
+        itemType: "",
         name: "",
         priceType: isModalVip() ? "VIP" : "Regular",
         quantity: 1,
         unitPrice: 0,
-        amount: 0
+        amount: 0,
+        isFreebie: false,
+        isConsumable: false
       });
     }
 
@@ -2715,6 +3038,41 @@ function addCompanionItem(companionId, itemType){
 
   companion.items.push(createEmptyItem(itemType));
   renderModalCompanions();
+}
+
+function getCompanionItemCategory(item){
+  if(item.itemType === "Service"){
+    return "Service";
+  }
+
+  if(item.itemType === "Product"){
+    return "Product";
+  }
+
+  return "";
+}
+
+function buildCompanionItemCategorySelectHtml(category){
+  return `
+    <select class="form-select form-select-sm item-category">
+      <option value="">Category</option>
+      <option value="Service" ${category === "Service" ? "selected" : ""}>Service</option>
+      <option value="Product" ${category === "Product" ? "selected" : ""}>Product</option>
+    </select>
+  `;
+}
+
+function applyCompanionItemCategory(item, category){
+  item.name = "";
+  item.amount = 0;
+  item.unitPrice = 0;
+  item.quantity = 1;
+  item.manualAmount = false;
+  item.manualUnitPrice = false;
+  item.productKind = "";
+  item.sourceServiceName = "";
+  item.priceType = isModalVip() ? "VIP" : "Regular";
+  item.itemType = category === "Service" || category === "Product" ? category : "";
 }
 
 function removeModalCompanion(companionId){
@@ -2879,16 +3237,9 @@ function renderModalCompanions(){
               <div class="companion-actions">
                 <button
                   type="button"
-                  class="btn btn-sm btn-success companion-add-service"
+                  class="btn btn-sm btn-success companion-add-item"
                 >
-                  Add Service
-                </button>
-
-                <button
-                  type="button"
-                  class="btn btn-sm btn-primary companion-add-product"
-                >
-                  Add Product
+                  + Add Item
                 </button>
               </div>
             `
@@ -2922,14 +3273,9 @@ function renderModalCompanions(){
       });
     }
 
-    card.querySelector(".companion-add-service")
+    card.querySelector(".companion-add-item")
       ?.addEventListener("click", function(){
-        addCompanionItem(companion.id, "Service");
-      });
-
-    card.querySelector(".companion-add-product")
-      ?.addEventListener("click", function(){
-        addCompanionItem(companion.id, "Product");
+        addCompanionItem(companion.id, "");
       });
 
     card.querySelector(".companion-remove-btn")
@@ -2966,8 +3312,16 @@ function renderModalCompanions(){
             title="Covered by the bundle purchase — no separate charge."
           >
         `;
+      }else if(!item.itemType){
+        row.innerHTML = `
+          ${buildCompanionItemCategorySelectHtml("")}
+          <div class="modal-item-placeholder">Select a category to continue</div>
+          <button type="button" class="modal-remove-item">×</button>
+        `;
       }else if(item.itemType === "Service"){
         row.innerHTML = `
+          ${buildCompanionItemCategorySelectHtml("Service")}
+
           <select class="form-select form-select-sm item-name">
             <option value="">Select Service</option>
 
@@ -3018,6 +3372,8 @@ function renderModalCompanions(){
         `;
       }else{
         row.innerHTML = `
+          ${buildCompanionItemCategorySelectHtml("Product")}
+
           <select class="form-select form-select-sm item-name">
             <option value="">Select Product</option>
 
@@ -3082,64 +3438,76 @@ function renderModalCompanions(){
 }
 
 function attachCompanionItemEvents(row, companion, item){
-  row.querySelector(".item-name").addEventListener("change", function(){
-    item.name = this.value;
+  const categorySelect =
+    row.querySelector(".item-category");
+
+  if(categorySelect){
+    categorySelect.addEventListener("change", function(){
+      applyCompanionItemCategory(item, this.value);
+      renderModalCompanions();
+    });
+  }
+
+  if(item.itemType){
+    row.querySelector(".item-name").addEventListener("change", function(){
+      item.name = this.value;
+
+      if(item.itemType === "Service"){
+        item.manualAmount = false;
+        recalculateServiceItem(item);
+      }else{
+        item.manualUnitPrice = false;
+
+        const selectedProduct = findProduct(item.name);
+
+        item.productKind =
+          selectedProduct?.productKind || "Product";
+
+        item.sourceServiceName =
+          selectedProduct?.sourceServiceName || "";
+
+        recalculateProductItem(item);
+      }
+
+      refreshModalVipState();
+      renderModalCompanions();
+    });
 
     if(item.itemType === "Service"){
-      item.manualAmount = false;
-      recalculateServiceItem(item);
+      row.querySelector(".item-price-type").addEventListener("change", function(){
+        item.priceType =
+          isModalVip()
+            ? "VIP"
+            : this.value;
+
+        item.manualAmount = false;
+        recalculateServiceItem(item);
+        renderModalCompanions();
+      });
+
+      row.querySelector(".item-amount").addEventListener("input", function(){
+        item.amount = Number(this.value) || 0;
+        item.manualAmount = true;
+        updateModalTotal();
+      });
     }else{
-      item.manualUnitPrice = false;
+      row.querySelector(".item-quantity").addEventListener("input", function(){
+        item.quantity = Math.max(1, Number(this.value) || 1);
+        recalculateProductItem(item);
+        renderModalCompanions();
+      });
 
-      const selectedProduct = findProduct(item.name);
+      row.querySelector(".item-unit-price").addEventListener("input", function(){
+        item.unitPrice = Number(this.value) || 0;
+        item.manualUnitPrice = true;
+        item.amount = item.quantity * item.unitPrice;
 
-      item.productKind =
-        selectedProduct?.productKind || "Product";
+        row.querySelector(".item-amount").value =
+          Number(item.amount || 0).toFixed(2);
 
-      item.sourceServiceName =
-        selectedProduct?.sourceServiceName || "";
-
-      recalculateProductItem(item);
+        updateModalTotal();
+      });
     }
-
-    refreshModalVipState();
-    renderModalCompanions();
-  });
-
-  if(item.itemType === "Service"){
-    row.querySelector(".item-price-type").addEventListener("change", function(){
-      item.priceType =
-        isModalVip()
-          ? "VIP"
-          : this.value;
-
-      item.manualAmount = false;
-      recalculateServiceItem(item);
-      renderModalCompanions();
-    });
-
-    row.querySelector(".item-amount").addEventListener("input", function(){
-      item.amount = Number(this.value) || 0;
-      item.manualAmount = true;
-      updateModalTotal();
-    });
-  }else{
-    row.querySelector(".item-quantity").addEventListener("input", function(){
-      item.quantity = Math.max(1, Number(this.value) || 1);
-      recalculateProductItem(item);
-      renderModalCompanions();
-    });
-
-    row.querySelector(".item-unit-price").addEventListener("input", function(){
-      item.unitPrice = Number(this.value) || 0;
-      item.manualUnitPrice = true;
-      item.amount = item.quantity * item.unitPrice;
-
-      row.querySelector(".item-amount").value =
-        Number(item.amount || 0).toFixed(2);
-
-      updateModalTotal();
-    });
   }
 
   row.querySelector(".modal-remove-item").addEventListener("click", function(){
@@ -3149,7 +3517,7 @@ function attachCompanionItemEvents(row, companion, item){
       });
 
     if(companion.items.length === 0){
-      companion.items.push(createEmptyItem("Service"));
+      companion.items.push(createEmptyItem(""));
     }
 
     renderModalCompanions();
@@ -4255,10 +4623,21 @@ function updateModalTotal(){
       )
     );
 
+  const pointsValue =
+    modalPointsRedemption
+      ? Math.max(0, Number(modalPointsRedemption.value) || 0)
+      : 0;
+
+  const pointsDeduction =
+    Math.min(
+      Math.max(0, gross - deduction),
+      pointsValue
+    );
+
   const net =
     Math.max(
       0,
-      gross - deduction
+      gross - deduction - pointsDeduction
     );
 
   document.getElementById("modalGrossAmount").textContent =
@@ -4266,6 +4645,21 @@ function updateModalTotal(){
 
   document.getElementById("modalVoucherDeduction").textContent =
     `− ${peso(deduction)}`;
+
+  const pointsDeductionRow =
+    document.getElementById("modalPointsDeductionRow");
+
+  if(pointsDeductionRow){
+    pointsDeductionRow.classList.toggle("d-none", !modalPointsRedemption);
+  }
+
+  const pointsDeductionEl =
+    document.getElementById("modalPointsDeduction");
+
+  if(pointsDeductionEl){
+    pointsDeductionEl.textContent =
+      `− ${peso(pointsDeduction)}`;
+  }
 
   document.getElementById("modalTotalAmount").textContent =
     peso(net);
@@ -4294,7 +4688,7 @@ function updateModalTotal(){
 
   if(stickyVoucherAmount){
     stickyVoucherAmount.textContent =
-      `− ${peso(deduction)}`;
+      `− ${peso(deduction + pointsDeduction)}`;
   }
 
   if(stickyNetAmount){
@@ -4387,10 +4781,20 @@ function buildAndValidateSaleData(settledFlag){
       )
     );
 
+  const pointsRedeemed =
+    modalPointsRedemption
+      ? Math.max(0, Number(modalPointsRedemption.points) || 0)
+      : 0;
+
+  const pointsRedemptionValue =
+    modalPointsRedemption
+      ? Math.max(0, Number(modalPointsRedemption.value) || 0)
+      : 0;
+
   const netAmount =
     Math.max(
       0,
-      grossAmount - voucherValue
+      grossAmount - voucherValue - pointsRedemptionValue
     );
 
   const saleData = {
@@ -4462,6 +4866,9 @@ function buildAndValidateSaleData(settledFlag){
     voucherName: voucherData.name,
     voucherValue: voucherValue,
     executiveVoucher: modalExecutiveVoucher,
+    pointsRedeemed: pointsRedeemed,
+    pointsRedemptionValue: pointsRedemptionValue,
+    pointsRedemptionApplied: false,
     grossAmount: grossAmount,
     netAmount: netAmount,
     remarks: document.getElementById("modalRemarksInput").value.trim(),
@@ -4754,6 +5161,7 @@ async function persistModalSaleData(saleData, validItems){
      VIP Card Number was entered) still earns points on it. */
   if(saleData.settled){
     await creditVipPointsForSale(saleData);
+    await redeemVipPointsForSale(saleData);
   }
 
   syncSaleToStockAudit(saleData);
@@ -4845,6 +5253,35 @@ function getCompanionSaleSubtotal(companion, sale){
     }, 0);
 }
 
+/* Keeps a running log of every points change on a client record (earn or
+   manual adjustment) so staff can see how a balance was arrived at instead
+   of only the current total. Capped at the most recent 200 entries per
+   client — the client masterlist is one shared JSON blob, so an unbounded
+   per-client log would eventually bloat every sync for every device. */
+function appendPointsLedgerEntry(client, entry){
+  if(!client){
+    return;
+  }
+
+  if(!Array.isArray(client.pointsLedger)){
+    client.pointsLedger = [];
+  }
+
+  client.pointsLedger.push({
+    date: new Date().toISOString(),
+    type: entry.type || "Adjustment",
+    branch: entry.branch || "",
+    delta: Number(entry.delta) || 0,
+    before: Number(entry.before) || 0,
+    after: Number(entry.after) || 0,
+    note: entry.note || ""
+  });
+
+  if(client.pointsLedger.length > 200){
+    client.pointsLedger = client.pointsLedger.slice(-200);
+  }
+}
+
 /* VIP Point System: ₱1 spent = 1 point. Credited once per settled sale
    (guarded by sale.pointsCredited) so editing/re-saving an already-
    settled sale never adds the same points twice — existing balances
@@ -4872,7 +5309,7 @@ async function creditVipPointsForSale(saleData){
     }) || null;
   };
 
-  const addPoints = function(client, amount){
+  const addPoints = function(client, amount, ledgerType, note){
     if(!client || client.vip !== "Yes"){
       return;
     }
@@ -4883,8 +5320,20 @@ async function creditVipPointsForSale(saleData){
       return;
     }
 
-    client.points = Number(client.points || 0) + earned;
+    const before = Number(client.points || 0);
+    const after = before + earned;
+
+    client.points = after;
     client.updatedAt = new Date().toISOString();
+
+    appendPointsLedgerEntry(client, {
+      type: ledgerType,
+      branch: saleData.branch || getSelectedBranch() || "",
+      delta: earned,
+      before: before,
+      after: after,
+      note: note
+    });
   };
 
   const saleCompanions =
@@ -4897,10 +5346,18 @@ async function creditVipPointsForSale(saleData){
 
   const saleNet = calculateStoredSaleNet(saleData);
 
-  addPoints(
-    findClientByName(saleData.client),
-    saleNet - companionsSubtotal
-  );
+  /* A sale where the client redeemed their VIP points earns no new
+     points on that same visit — redeeming resets their balance to
+     zero (see redeemVipPointsForSale), so it starts fresh from their
+     next visit instead of immediately re-crediting this one. */
+  if(!(Number(saleData.pointsRedeemed) > 0)){
+    addPoints(
+      findClientByName(saleData.client),
+      saleNet - companionsSubtotal,
+      "Visit",
+      "Own visit sale"
+    );
+  }
 
   saleCompanions.forEach(function(companion){
     if(companion?.vip !== true){
@@ -4909,7 +5366,9 @@ async function creditVipPointsForSale(saleData){
 
     addPoints(
       findClientByName(companion.name),
-      getCompanionSaleSubtotal(companion, saleData)
+      getCompanionSaleSubtotal(companion, saleData),
+      "Companion Visit",
+      "Companion of " + (saleData.client || "—")
     );
   });
 
@@ -4918,7 +5377,12 @@ async function creditVipPointsForSale(saleData){
     normalizeClientName(saleData.vipCardOwnerName).toLowerCase() !==
       normalizeClientName(saleData.client).toLowerCase()
   ){
-    addPoints(findClientByName(saleData.vipCardOwnerName), saleNet);
+    addPoints(
+      findClientByName(saleData.vipCardOwnerName),
+      saleNet,
+      "VIP Card Referral",
+      "VIP card used by " + (saleData.client || "—")
+    );
   }
 
   saleData.pointsCredited = true;

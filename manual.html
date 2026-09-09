@@ -935,19 +935,23 @@
 
   <h3>2 · Services and products</h3>
 
-  <p>Six buttons add lines to the transaction:</p>
+  <p>
+    Press <span class="ui">+ Add Item</span> to add a blank line, then use its
+    leftmost <strong>Category</strong> dropdown to say what it is. The rest of
+    the line changes to match:
+  </p>
 
   <dl class="deflist">
-    <dt>Add Service</dt>
+    <dt>Service</dt>
     <dd>A service from the List of Services. Price and duration are filled in automatically.</dd>
 
-    <dt>Add Freebie</dt>
+    <dt>Freebie</dt>
     <dd>A complimentary service. Its value is still recorded for reporting, but <strong>₱0.00</strong> is charged.</dd>
 
-    <dt>Add Product</dt>
+    <dt>Product</dt>
     <dd>A retail product. Enter the quantity — the price multiplies automatically.</dd>
 
-    <dt>Add Consumable</dt>
+    <dt>Consumable</dt>
     <dd>
       A product used on the client but not sold to them — picked from
       products marked <strong>Available for Consumables</strong> in the
@@ -955,7 +959,17 @@
       deducts from the branch's stock and logs in the Stock Audit exactly
       like a sold product.
     </dd>
+  </dl>
 
+  <p>
+    Changing the Category on an existing line converts it on the spot — it
+    clears whatever was selected and switches the rest of the line to match
+    the new category.
+  </p>
+
+  <p>Two more buttons sit beside <span class="ui">+ Add Item</span>:</p>
+
+  <dl class="deflist">
     <dt>Add VIP Card</dt>
     <dd>
       Sells a VIP membership card and immediately switches every service in
@@ -1040,10 +1054,22 @@
     complimentary or management-issued vouchers.
   </p>
 
-  <p>Three lines are always visible:</p>
+  <p>
+    Leftmost of that row is <span class="ui">Redeem Points</span> — it only
+    appears when the Client field matches an existing VIP client who has
+    points to spend. Underneath it, a plain line reads
+    <strong>VIP: <em>points</em> - <em>peso value</em></strong> showing their
+    current balance. Pressing the button redeems <strong>all</strong> of it
+    at once as a discount; press it again to cancel the redemption. See
+    <a href="#ch-vouchers">Chapter 8, VIP Points</a> for what happens to the
+    client's balance once the sale is settled.
+  </p>
 
-  <div class="formula">Gross Total        the full amount before vouchers
+  <p>Four lines are always visible:</p>
+
+  <div class="formula">Gross Total        the full amount before vouchers and points
 Voucher Deduction  − the amount the voucher covers
+Points Redemption  − the peso value of redeemed VIP Points (only if redeemed)
 Amount to Pay      what the client actually pays</div>
 
   <h3>6 · Invoice</h3>
@@ -1238,9 +1264,27 @@ Amount to Pay      what the client actually pays</div>
   <div class="note">
     <span class="callout-label">100 Points = ₱1 of credit</span>
     <p>
-      Points are meant to be spent on a future visit — 100 Points redeem for
-      ₱1 off. Redeeming them as a payment method in Add Sale is planned but
-      not available yet; for now, points only accumulate.
+      Points are spent on a future visit — 100 Points redeem for ₱1 off.
+      In Add Sale, press <span class="ui">Redeem Points</span> (beside
+      Add Voucher) to redeem <strong>all</strong> of a VIP client's
+      available points at once; the peso value is deducted from the
+      Amount to Pay. Press it again before settling to cancel the
+      redemption.
+    </p>
+  </div>
+
+  <div class="stop">
+    <span class="callout-label">Redeeming resets the balance to zero</span>
+    <p>
+      Redemption always consumes the client's <strong>entire</strong>
+      balance — there is no partial redemption. Once the sale is
+      <span class="ui">Settled</span>, that client's VIP Points balance is
+      reset to <strong>zero</strong> and they earn no new points on that
+      same visit. They start accumulating again from their next visit, or
+      the next time their VIP Card number is used. (Saving to
+      <span class="ui">Add to List</span> or
+      <span class="ui">Add to Schedule</span> shows the discount but does
+      not touch the client's record — only Settling does.)
     </p>
   </div>
 

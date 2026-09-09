@@ -736,7 +736,7 @@ body.modal-open{
 
 .modal-item-row{
     display:grid;
-    grid-template-columns:70px minmax(220px,2fr) minmax(115px,1fr) minmax(110px,1fr) 34px;
+    grid-template-columns:110px 70px minmax(220px,2fr) minmax(115px,1fr) minmax(110px,1fr) 34px;
     gap:7px;
     align-items:center;
     padding:9px;
@@ -746,7 +746,7 @@ body.modal-open{
 }
 
 .modal-product-row{
-    grid-template-columns:70px minmax(210px,2fr) 72px minmax(105px,1fr) minmax(110px,1fr) 34px;
+    grid-template-columns:110px 70px minmax(210px,2fr) 72px minmax(105px,1fr) minmax(110px,1fr) 34px;
 }
 
 .modal-item-type{
@@ -1337,13 +1337,25 @@ body.modal-open{
 }
 
 .modal-item-row{
-  grid-template-columns:minmax(210px,1.7fr) minmax(115px,.8fr) minmax(110px,.7fr) 36px;
+  grid-template-columns:120px minmax(210px,1.7fr) minmax(115px,.8fr) minmax(110px,.7fr) 36px;
   align-items:start;
 }
 
 .modal-product-row{
-  grid-template-columns:minmax(210px,1.6fr) 74px minmax(105px,.8fr) minmax(105px,.8fr) 36px;
+  grid-template-columns:120px minmax(210px,1.6fr) 74px minmax(105px,.8fr) minmax(105px,.8fr) 36px;
   align-items:center;
+}
+
+.item-category{
+  align-self:center;
+}
+
+.modal-item-placeholder{
+  grid-column:span 3;
+  color:var(--text-muted,#6B7280);
+  font-size:12px;
+  font-style:italic;
+  padding:0 4px;
 }
 
 .modal-item-type{
@@ -1970,6 +1982,13 @@ body.modal-open{
 .executive-voucher-active strong{display:flex;align-items:center;gap:7px;font-size:12px;}
 .executive-voucher-active small{display:block;margin-top:2px;font-size:10px;color:#75601B;}
 .executive-voucher-remove{width:27px;height:27px;border:0;border-radius:50%;background:rgba(81,64,14,.10);color:#51400E;font-size:18px;line-height:1;cursor:pointer;}
+
+/* Redeem Points */
+.redeem-points-btn{border:1px solid #2E7D5B;background:#3EA372;color:#fff;font-weight:800;box-shadow:0 2px 6px rgba(46,125,91,.18);}
+.redeem-points-btn:hover,.redeem-points-btn:focus{border-color:#26674C;background:#348C61;color:#fff;}
+.redeem-points-btn.redeem-points-selected{border-color:#1E4F3A;background:#1E4F3A;color:#fff;}
+.redeem-points-wrapper{width:100%;margin-top:4px;padding-left:2px;}
+.redeem-points-label{color:var(--text-muted, #6B7280);font-size:11px;font-weight:400;}
 .executive-voucher-remove:hover{background:rgba(81,64,14,.20);}
 .payment-badge-stack .voucher-used-badge{max-width:150px;white-space:normal;text-align:center;}
 
