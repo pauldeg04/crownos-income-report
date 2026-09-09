@@ -4,6 +4,23 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-09 — Reverted birthday SMS wording — original text does arrive
+
+**Update from the user:** after the wording swap below, both the original "Claim your FREE
+Birthday Upgrade..." text and the softened replacement were tested again and **both arrived** on
+the same Smart/TNT number. The user preferred the original. The "Pending" status logged earlier
+was Smart's normal delivery lag, not a silent drop — the promo-keyword-filter theory was a dead
+end.
+
+**Change:**
+- [`clients.js`](clients.js) — `BIRTHDAY_SMS_MESSAGE` reverted to the original: *"Claim your FREE
+  Birthday Upgrade! Book any service this month & get a FREE 30-Min Back Massage or Foot Reflex.
+  Msg us now. Happy Birthday!"*
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
+
+---
+
 ## 2026-09-09 — Birthday SMS wording softened after a Smart/TNT delivery failure
 
 **Reported by:** User — tested the new birthday Send SMS / Send Email buttons; the email arrived

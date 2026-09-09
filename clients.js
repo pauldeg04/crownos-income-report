@@ -291,20 +291,17 @@ function loadBranchOptions(){
     });
 }
 
-/* SMS wording avoids "FREE"/"CLAIM"/"UPGRADE" — a real-world test send to a
-   Smart/TNT number came back "Pending" from Semaphore (accepted, message_id
-   returned, no error) but never arrived, which matches this project's
-   already-documented pattern of Smart silently dropping SMS that Semaphore
-   reports as sent (see toGsm7Safe's comment above). The two previously known
-   triggers (accented characters, a link in the message) don't apply here, so
-   the remaining suspect is Smart's promo/spam keyword filter on an
-   unregistered-for-marketing sender ID — hence the softer copy below. Also
-   kept under 160 chars to stay inside a single GSM-7 SMS segment, since
-   Semaphore bills per segment (see buildReminderSmsText in
-   functions/index.js). The user's original longer wording is kept as-is for
-   email, which has no such limit and delivered successfully. */
+/* Same copy for SMS and email — kept short enough (under 160 chars) to
+   stay inside a single GSM-7 SMS segment, since Semaphore bills per
+   160-char segment (see buildReminderSmsText in functions/index.js for
+   the same constraint). The user's original longer wording is used
+   as-is for email, which has no such limit. A test send of this exact
+   text to a Smart/TNT number came back "Pending" and looked dropped at
+   first, but it arrived — the delay was just Smart's normal delivery
+   lag, not the promo-keyword filtering this was briefly swapped out
+   for (see git history around 2026-09-09 for that dead end). */
 const BIRTHDAY_SMS_MESSAGE =
-    "Hi! Book any service this month for a complimentary 30-Min Back Massage or Foot Reflex add-on. Msg us now. Happy Birthday!";
+    "Claim your FREE Birthday Upgrade! Book any service this month & get a FREE 30-Min Back Massage or Foot Reflex. Msg us now. Happy Birthday!";
 
 const BIRTHDAY_EMAIL_MESSAGE =
     "Claim your FREE BIRTHDAY UPGRADE. Book any service during your birthday month\n" +
