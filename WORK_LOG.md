@@ -4,6 +4,38 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-09 — Existing Team Leader accounts now self-heal into Daily Monitoring Sheet access
+
+**Requested by:** User — "bigyan natin ng Access ang mga Team Leader Accounts since sila ang mag
+aaccomplish nito." Team Leader access was already wired up (`TEAM_LEADER_AUTO_ACCESS_PAGES` in
+account-settings.js), but it only applied at the moment **Set as Team Leader** was ticked and the
+account saved — any Team Leader account created before Daily Monitoring Sheet existed never got
+`daily-monitoring.html` added to its `extraAccess`, since nothing re-saves an account on its own.
+
+**Change:**
+- [`access-control.js`](access-control.js) — moved `TEAM_LEADER_AUTO_ACCESS_PAGES` here from
+  account-settings.js (exported as `CrownAuth.TEAM_LEADER_AUTO_ACCESS_PAGES`, single source of
+  truth now) and added `healTeamLeaderAutoAccess()`, called from `refreshCurrentUser()` — which
+  already runs on every page load for the signed-in account. For a Therapist account with
+  `teamLeader === true`, it adds any page from that list missing from `extraAccess` and saves,
+  but only when something was actually missing (no-op, no write, on every other load). This
+  self-heals **every** existing Team Leader account the next time that person signs in or
+  reloads any page — no need to track down and re-save each one by hand, and it protects the
+  same gap for whatever page gets added to that list next time.
+- [`account-settings.js`](account-settings.js) — `applyTeamLeaderAutoAccess()` (the Account
+  Settings checkbox handler) now reads `CrownAuth.TEAM_LEADER_AUTO_ACCESS_PAGES` instead of its
+  own copy of the list, so the two can't drift apart again.
+- [`sidebar.js`](sidebar.js) — updated a stale comment pointing at the old location of the list.
+
+**Verified locally:** seeded a Team Leader account with an `extraAccess` array missing
+`daily-monitoring.html` (simulating one created before this page existed), loaded a page, and
+confirmed `crownUserAccounts` came back with `daily-monitoring.html` added and the sidebar link
+appearing — without touching Account Settings at all.
+
+**Status:** Code changed locally, not yet deployed.
+
+---
+
 ## 2026-09-09 — Incident Report Acknowledge button, Leave Request Team Leader access removed, Monthly Summary Quarterly/Yearly tabs
 
 **Requested by:** User — three changes: (1) an Acknowledge button on Incident Report, Admin-only,

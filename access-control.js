@@ -18,6 +18,21 @@
         "cashflow.html"
     ];
 
+    /* Pages a Team Leader (a Therapist account with teamLeader === true)
+       gets on top of the plain Therapist default — see "Set as Team
+       Leader" in account-settings.js, which ticks these under Additional
+       Access at save time. Defined here (not just in account-settings.js)
+       so refreshCurrentUser() below can self-heal an existing Team Leader
+       account that predates one of these pages — e.g. Daily Monitoring
+       Sheet — without needing an Admin to re-open and re-save every one
+       of them by hand. */
+    const TEAM_LEADER_AUTO_ACCESS_PAGES = [
+        "index.html",
+        "statistics.html",
+        "scheduling.html",
+        "daily-monitoring.html"
+    ];
+
     const PAGE_ACCESS = {
         "home.html": [
             "Admin",
@@ -263,8 +278,7 @@
         ],
 
         /* Team Leader access is granted through extraAccess, not a role
-           listed here — see TEAM_LEADER_AUTO_ACCESS_PAGES in
-           account-settings.js. */
+           listed here — see TEAM_LEADER_AUTO_ACCESS_PAGES above. */
         "daily-monitoring.html": [
             "Admin",
             "Executive Assistant"
@@ -453,8 +467,53 @@
             return null;
         }
 
+        healTeamLeaderAutoAccess(latest);
+
         setCurrentUser(latest);
         return getCurrentUser();
+    }
+
+    /* Backfills TEAM_LEADER_AUTO_ACCESS_PAGES onto an existing Team
+       Leader account that was set up before one of those pages existed
+       (e.g. Daily Monitoring Sheet, added after some Team Leader
+       accounts already had the checkbox on) — runs on every login/page
+       load for the signed-in account only, and only writes when
+       something was actually missing. */
+    function healTeamLeaderAutoAccess(user){
+        if(
+            user.role !== "Therapist" ||
+            user.teamLeader !== true
+        ){
+            return;
+        }
+
+        const extraAccess =
+            Array.isArray(user.extraAccess)
+                ? user.extraAccess
+                : [];
+
+        const missing =
+            TEAM_LEADER_AUTO_ACCESS_PAGES.filter(function(href){
+                return !extraAccess.includes(href);
+            });
+
+        if(missing.length === 0){
+            return;
+        }
+
+        user.extraAccess = extraAccess.concat(missing);
+
+        const users = getUsers();
+
+        const index =
+            users.findIndex(function(item){
+                return item.id === user.id;
+            });
+
+        if(index !== -1){
+            users[index] = user;
+            saveUsers(users);
+        }
     }
 
     async function authenticate(account, password){
@@ -629,6 +688,7 @@
         USERS_KEY,
         SESSION_KEY,
         PAGE_ACCESS,
+        TEAM_LEADER_AUTO_ACCESS_PAGES,
         createId,
         hashPassword,
         ensureDefaultAdmin,

@@ -33,22 +33,15 @@ const EXTRA_ACCESS_PAGES = [
     { href: "daily-monitoring.html", label: "Daily Monitoring Sheet" }
 ];
 
-/* Set as Team Leader auto-grants these on top of the plain Therapist
-   default, so a Team Leader doesn't also need someone to manually tick
-   them under Additional Access. */
-const TEAM_LEADER_AUTO_ACCESS_PAGES = [
-    "index.html",
-    "statistics.html",
-    "scheduling.html",
-    "daily-monitoring.html"
-];
-
 function applyTeamLeaderAutoAccess(){
     if(!document.getElementById("teamLeaderInput").checked){
         return;
     }
 
-    TEAM_LEADER_AUTO_ACCESS_PAGES.forEach(function(href){
+    /* Defined once in access-control.js (as CrownAuth.TEAM_LEADER_AUTO_ACCESS_PAGES)
+       so refreshCurrentUser() there can also self-heal an existing Team
+       Leader account against the same list — see healTeamLeaderAutoAccess(). */
+    (CrownAuth.TEAM_LEADER_AUTO_ACCESS_PAGES || []).forEach(function(href){
         const checkbox =
             document.querySelector(
                 `.extra-access-checkbox[value="${href}"]`

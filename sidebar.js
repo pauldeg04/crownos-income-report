@@ -170,9 +170,9 @@
         },
 
         /* Team Leader access comes entirely through extraAccess — see
-           TEAM_LEADER_AUTO_ACCESS_PAGES in account-settings.js — since
-           "Team Leader" is a flag on a Therapist account, not a role
-           this menu filter checks directly. */
+           CrownAuth.TEAM_LEADER_AUTO_ACCESS_PAGES in access-control.js —
+           since "Team Leader" is a flag on a Therapist account, not a
+           role this menu filter checks directly. */
         {
             label: "Daily Monitoring Sheet",
             href: "daily-monitoring.html",
