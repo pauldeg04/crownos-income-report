@@ -291,6 +291,21 @@ function loadBranchOptions(){
     });
 }
 
+/* Same copy for SMS and email — kept short enough (under 160 chars) to
+   stay inside a single GSM-7 SMS segment, since Semaphore bills per
+   160-char segment (see buildReminderSmsText in functions/index.js for
+   the same constraint). The user's original longer wording is used
+   as-is for email, which has no such limit. */
+const BIRTHDAY_SMS_MESSAGE =
+    "Claim your FREE Birthday Upgrade! Book any service this month & get a FREE 30-Min Back Massage or Foot Reflex. Msg us now. Happy Birthday!";
+
+const BIRTHDAY_EMAIL_MESSAGE =
+    "Claim your FREE BIRTHDAY UPGRADE. Book any service during your birthday month\n" +
+    "and receive a FREE 30 Minute Add-On:\n" +
+    "Complimentary Back Massage OR Complimentary Foot Reflex\n" +
+    "Message us Now. Have an amazing birthday month! See you\n" +
+    "soon and God Bless!";
+
 function renderBirthdayClients(){
     const tbody = document.getElementById("birthdayClientsBody");
     const emptyState = document.getElementById("birthdayEmptyState");
@@ -302,9 +317,10 @@ function renderBirthdayClients(){
     tbody.innerHTML = "";
 
     const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
 
     const celebrants = clients.filter(function(client){
-        if(!client.birthday){
+        if(!client.birthday || client.vip !== "Yes"){
             return false;
         }
 
@@ -323,11 +339,33 @@ function renderBirthdayClients(){
 
     celebrants.forEach(function(client){
         const row = document.createElement("tr");
+        const contactNumber = client.contactNumber || "";
+        const email = client.email || "";
+        const smsSent = client.birthdaySmsSentYear === currentYear;
+        const emailSent = client.birthdayEmailSentYear === currentYear;
 
         row.innerHTML = `
             <td>${escapeHtml(getClientDisplayName(client))}</td>
             <td>${formatDate(client.birthday)}</td>
-            <td>${client.contactNumber ? escapeHtml(client.contactNumber) : "—"}</td>
+            <td>${contactNumber ? escapeHtml(contactNumber) : "—"}</td>
+            <td>${email ? escapeHtml(email) : "—"}</td>
+            <td>
+                <div class="d-flex flex-wrap gap-2">
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary birthday-sms-btn"
+                        data-client-id="${escapeHtml(client.id)}"
+                        ${(!contactNumber || smsSent) ? "disabled" : ""}
+                    >${smsSent ? "SMS Sent" : "Send SMS"}</button>
+
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-outline-primary birthday-email-btn"
+                        data-client-id="${escapeHtml(client.id)}"
+                        ${(!email || emailSent) ? "disabled" : ""}
+                    >${emailSent ? "Email Sent" : "Send Email"}</button>
+                </div>
+            </td>
         `;
 
         tbody.appendChild(row);
@@ -335,6 +373,77 @@ function renderBirthdayClients(){
 
     emptyState.classList.toggle("d-none", celebrants.length > 0);
 }
+
+function findClientById(clientId){
+    return clients.find(function(client){ return client.id === clientId; });
+}
+
+async function sendBirthdaySms(client, button){
+    button.disabled = true;
+    button.textContent = "Sending...";
+
+    try{
+        await firebase.functions().httpsCallable("sendBirthdaySms")({
+            mobile: client.contactNumber,
+            clientName: getClientDisplayName(client),
+            message: BIRTHDAY_SMS_MESSAGE
+        });
+
+        client.birthdaySmsSentYear = new Date().getFullYear();
+        saveClientsToStorage();
+        renderBirthdayClients();
+    }catch(error){
+        console.error("Failed to send birthday SMS:", error);
+        alert("Could not send the birthday SMS.\n\nReason: " + (error?.message || "Unknown error"));
+        button.disabled = false;
+        button.textContent = "Send SMS";
+    }
+}
+
+async function sendBirthdayEmail(client, button){
+    button.disabled = true;
+    button.textContent = "Sending...";
+
+    try{
+        await firebase.functions().httpsCallable("sendBirthdayEmail")({
+            email: client.email,
+            clientName: getClientDisplayName(client),
+            message: BIRTHDAY_EMAIL_MESSAGE
+        });
+
+        client.birthdayEmailSentYear = new Date().getFullYear();
+        saveClientsToStorage();
+        renderBirthdayClients();
+    }catch(error){
+        console.error("Failed to send birthday email:", error);
+        alert("Could not send the birthday email.\n\nReason: " + (error?.message || "Unknown error"));
+        button.disabled = false;
+        button.textContent = "Send Email";
+    }
+}
+
+document.addEventListener("click", function(event){
+    const smsBtn = event.target.closest(".birthday-sms-btn");
+    const emailBtn = event.target.closest(".birthday-email-btn");
+
+    if(smsBtn){
+        const client = findClientById(smsBtn.dataset.clientId);
+
+        if(client){
+            sendBirthdaySms(client, smsBtn);
+        }
+
+        return;
+    }
+
+    if(emailBtn){
+        const client = findClientById(emailBtn.dataset.clientId);
+
+        if(client){
+            sendBirthdayEmail(client, emailBtn);
+        }
+    }
+});
 
 function renderClients(){
     const tbody = document.getElementById("clientsBody");

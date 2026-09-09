@@ -1340,6 +1340,148 @@ exports.sendAppointmentSmsConfirmation = onCall(
     }
 );
 
+/* ---------- sendBirthdaySms / sendBirthdayEmail (callable) ----------
+
+   Triggered from the "Send SMS" / "Send Email" buttons on the VIP
+   Birthday Celebrants table in clients.js — staff sends the birthday
+   promo manually per client, once each button is clicked it grays out
+   for the rest of that birthday year (tracked client-side via
+   birthdaySmsSentYear/birthdayEmailSentYear on the client record). */
+exports.sendBirthdaySms = onCall(
+    { secrets: [SEMAPHORE_API_KEY] },
+    async (request) => {
+        const data = request.data || {};
+        const mobile = String(data.mobile || "").trim();
+        const message = toGsm7Safe(String(data.message || "").trim());
+
+        if(!mobile){
+            throw new HttpsError("invalid-argument", "mobile is required.");
+        }
+
+        if(!message){
+            throw new HttpsError("invalid-argument", "message is required.");
+        }
+
+        let response;
+        let bodyText;
+
+        try {
+            response = await fetch("https://api.semaphore.co/api/v4/messages", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    apikey: SEMAPHORE_API_KEY.value(),
+                    number: mobile,
+                    message: message
+                })
+            });
+            bodyText = await response.text();
+        } catch (networkError) {
+            console.error("Birthday SMS: Semaphore request failed (network):", networkError);
+            throw new HttpsError("unavailable", "Could not reach Semaphore: " + networkError.message);
+        }
+
+        let result;
+
+        try {
+            result = JSON.parse(bodyText);
+        } catch (parseError) {
+            console.error("Birthday SMS: Semaphore returned a non-JSON response:", response.status, bodyText);
+            throw new HttpsError(
+                "internal",
+                `Semaphore returned an unexpected response (HTTP ${response.status}): ${bodyText.slice(0, 300)}`
+            );
+        }
+
+        console.log("Birthday SMS: Semaphore response:", response.status, JSON.stringify(result));
+
+        if(!response.ok || result?.message){
+            const reason = result?.message || JSON.stringify(result);
+            console.error("Birthday SMS: Semaphore API error:", response.status, reason);
+            throw new HttpsError("internal", `Semaphore error: ${reason}`);
+        }
+
+        return { ok: true, result };
+    }
+);
+
+exports.sendBirthdayEmail = onCall(
+    { secrets: [EMAIL_PASSWORD] },
+    async (request) => {
+        const data = request.data || {};
+        const email = String(data.email || "").trim();
+        const clientName = String(data.clientName || "").trim();
+        const message = String(data.message || "").trim();
+
+        if(!email){
+            throw new HttpsError("invalid-argument", "email is required.");
+        }
+
+        if(!message){
+            throw new HttpsError("invalid-argument", "message is required.");
+        }
+
+        const mailer = buildMailer();
+
+        await mailer.sendMail({
+            from: `"Crown Head Spa" <${BOOKING_EMAIL_FROM}>`,
+            to: email,
+            subject: "Claim your FREE Birthday Upgrade at Crown Head Spa!",
+            text: `Hi ${clientName || "there"},\n\n${message}`,
+            html: buildBirthdayEmailHtml({ clientName, message })
+        });
+
+        return { ok: true };
+    }
+);
+
+function buildBirthdayEmailHtml({ clientName, message }){
+    const messageHtml = escapeHtml(message).replace(/\n/g, "<br>");
+
+    return `
+<!doctype html>
+<html>
+<head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#efeae0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#efeae0;padding:32px 16px;">
+<tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#f7f5f0;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(20,17,10,0.12);">
+
+<tr>
+    <td style="background-color:#0E1B3D;background-image:linear-gradient(180deg, #0E1B3D 0%, #16245C 100%);padding:28px 32px;text-align:center;">
+        <img src="https://crownheadspa.com/images/crown-mark.png" width="44" height="44" alt="Crown Head Spa" style="display:block;margin:0 auto 10px;">
+        <div style="font-family:'Cinzel Decorative',Georgia,'Times New Roman',serif;font-size:20px;letter-spacing:.06em;color:#d4af37;font-weight:700;">CROWN HEAD SPA</div>
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:.18em;color:#e0c877;text-transform:uppercase;margin-top:4px;">Happy Birthday!</div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding:32px;">
+        <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;">Hi ${escapeHtml(clientName) || "there"},</p>
+        <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;line-height:1.7;">${messageHtml}</p>
+    </td>
+</tr>
+
+<tr>
+    <td style="background-color:#e4ddc9;padding:18px 32px;text-align:center;">
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b645a;">Bi&ntilde;an: 0939 588 4068 &nbsp;&bull;&nbsp; Calamba: 0961 440 2807</div>
+        <div style="margin-top:8px;">
+            <a href="https://crownheadspa.com" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#a9790a;text-decoration:none;font-weight:700;letter-spacing:.02em;">www.crownheadspa.com</a>
+        </div>
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#9c7d1c;margin-top:8px;">&copy; 2026 Crown Head Spa. All rights reserved.</div>
+    </td>
+</tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
 /* ---------- sendAppointmentReminders (scheduled) ----------
 
    Sends an SMS and/or email ~REMINDER_LEAD_MINUTES before an

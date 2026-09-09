@@ -4,6 +4,35 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-09 — VIP Birthday promo: Send SMS / Send Email on the Client Database
+
+**Requested by:** User — wanted the Birthday Celebrants panel restricted to VIP clients only,
+with one-click SMS/Email sending of a birthday promo straight to the client.
+
+**Change:**
+- [`clients.html`](clients.html) — panel renamed to **VIP Birthday Celebrants This Month**; table
+  gained **Email** and **Action** columns; added the `firebase-functions-compat.js` script needed
+  to call the two new Cloud Functions.
+- [`clients.js`](clients.js) — `renderBirthdayClients()` now filters to `client.vip === "Yes"`.
+  Each row gets a **Send SMS** button (enabled only when `contactNumber` is on file) and a **Send
+  Email** button (enabled only when `email` is on file). Clicking one calls the matching Cloud
+  Function, then stamps `birthdaySmsSentYear` / `birthdayEmailSentYear` on the client record and
+  saves it — the button grays out and reads "Sent", staying that way for the rest of the current
+  year so the same client can't be messaged twice by accident, and resets automatically the
+  following year. Message copy lives in two constants at the top of this section:
+  `BIRTHDAY_SMS_MESSAGE` (kept under 160 characters — Semaphore bills per GSM-7 segment, same
+  constraint as `buildReminderSmsText` in `functions/index.js`) and `BIRTHDAY_EMAIL_MESSAGE`
+  (no length limit, so it carries the user's full original wording).
+- [`functions/index.js`](functions/index.js) — new callable functions `sendBirthdaySms` (Semaphore,
+  mirrors `sendAppointmentSmsConfirmation`) and `sendBirthdayEmail` (nodemailer, branded HTML shell
+  mirroring `buildConfirmationEmailHtml`, via new `buildBirthdayEmailHtml()`).
+- [`manual.html`](manual.html) — Chapter 12 (Client Database) updated to describe the VIP-only
+  filter and the Send SMS / Send Email buttons.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting + Cloud Functions (crownos-5f03d).
+
+---
+
 ## 2026-09-09 — Fixed portrait Poster images getting cropped on desktop (Memo / Announcement)
 
 **Requested by:** User — reported that a portrait-orientation Poster image on an announcement
