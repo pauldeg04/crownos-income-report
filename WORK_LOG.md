@@ -4,6 +4,30 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-09 — Birthday SMS wording softened after a Smart/TNT delivery failure
+
+**Reported by:** User — tested the new birthday Send SMS / Send Email buttons; the email arrived
+but the SMS never reached a Smart/TNT number.
+
+**Investigation:** `firebase functions:log --only sendBirthdaySms` showed the call succeeded —
+Semaphore accepted it and returned a `message_id` with `status: "Pending"`, `network: "Smart"`, no
+error. This matches a pattern the project had already run into and documented (see the
+`toGsm7Safe` comment in `functions/index.js`): Smart silently drops messages that Semaphore reports
+as sent. The two previously known triggers — accented characters, a link in the message — don't
+apply to this text, so the remaining suspect is Smart's promo/spam keyword filter rejecting words
+like "FREE", "CLAIM", "UPGRADE" from a sender ID not registered for marketing content.
+
+**Change:**
+- [`clients.js`](clients.js) — `BIRTHDAY_SMS_MESSAGE` reworded to drop those trigger words while
+  keeping the same offer: *"Hi! Book any service this month for a complimentary 30-Min Back
+  Massage or Foot Reflex add-on. Msg us now. Happy Birthday!"* (122 characters). Email wording is
+  unchanged since it delivered successfully.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d). Awaiting a re-test
+on the same Smart/TNT number to confirm the softer wording gets through.
+
+---
+
 ## 2026-09-09 — VIP Birthday promo: Send SMS / Send Email on the Client Database
 
 **Requested by:** User — wanted the Birthday Celebrants panel restricted to VIP clients only,
