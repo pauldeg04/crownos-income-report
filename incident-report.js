@@ -60,6 +60,10 @@
         empty.classList.add("d-none");
 
         body.innerHTML = reportsCache.map(function(r){
+            const statusBadge = r.acknowledged
+                ? `<span class="badge bg-success">Acknowledged</span>`
+                : `<span class="badge bg-secondary">Pending</span>`;
+
             return `
                 <tr>
                     <td>${escapeHtml(formatIncidentDateTime(r))}</td>
@@ -67,6 +71,7 @@
                     <td>${escapeHtml((r.involvedPersons || "").slice(0, 60))}</td>
                     <td>${escapeHtml(r.reportedByName)}</td>
                     <td>${escapeHtml(formatTimestamp(r.submittedAt))}</td>
+                    <td>${statusBadge}</td>
                     <td><button type="button" class="btn btn-sm btn-outline-primary incident-view-btn" data-id="${escapeHtml(r.id)}">View</button></td>
                 </tr>
             `;
@@ -88,7 +93,7 @@
 
         const body = document.getElementById("incidentViewBody");
 
-        body.innerHTML = [
+        const rows = [
             ["Date / Time of Incident", formatIncidentDateTime(report)],
             ["Branch", report.branch],
             ["Involved Persons", report.involvedPersons],
@@ -96,11 +101,58 @@
             ["Actions Taken", report.actionsTaken],
             ["Reported By", report.reportedByName],
             ["Submitted", formatTimestamp(report.submittedAt)]
-        ].map(function(pair){
+        ];
+
+        if(report.acknowledged){
+            rows.push(["Acknowledged By", report.acknowledgedByName]);
+            rows.push(["Acknowledged", formatTimestamp(report.acknowledgedAt)]);
+        }
+
+        body.innerHTML = rows.map(function(pair){
             return `<div class="incident-view-row"><strong>${escapeHtml(pair[0])}</strong><span>${escapeHtml(pair[1] || "")}</span></div>`;
         }).join("");
 
+        const ackBtn = document.getElementById("incidentAcknowledgeBtn");
+        const canAcknowledge = currentUser && currentUser.role === "Admin";
+
+        if(canAcknowledge && !report.acknowledged){
+            ackBtn.classList.remove("d-none");
+            ackBtn.disabled = false;
+            ackBtn.onclick = function(){ acknowledgeReport(report.id); };
+        }else{
+            ackBtn.classList.add("d-none");
+            ackBtn.onclick = null;
+        }
+
         document.getElementById("incidentViewBackdrop").classList.remove("d-none");
+    }
+
+    async function acknowledgeReport(id){
+        const ackBtn = document.getElementById("incidentAcknowledgeBtn");
+        ackBtn.disabled = true;
+
+        try{
+            await firebase.firestore().collection(COLLECTION).doc(id).update({
+                acknowledged: true,
+                acknowledgedByAccount: currentUser.account,
+                acknowledgedByName: currentUser.nickname || currentUser.account,
+                acknowledgedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            const report = reportsCache.find(function(r){ return r.id === id; });
+            if(report){
+                report.acknowledged = true;
+                report.acknowledgedByName = currentUser.nickname || currentUser.account;
+                report.acknowledgedAt = { toDate: function(){ return new Date(); } };
+            }
+
+            renderTable();
+            openView(id);
+        }catch(error){
+            console.error("Unable to acknowledge incident report:", error);
+            alert("Unable to acknowledge this report. Please try again.");
+            ackBtn.disabled = false;
+        }
     }
 
     document.addEventListener("DOMContentLoaded", function(){

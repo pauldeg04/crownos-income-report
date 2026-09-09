@@ -3,10 +3,10 @@
 
    Firestore collection "leaveRequests" (see firestore.rules for the exact
    status-transition guard). Approve/Decline/Processing-transition is
-   gated in the UI to Admin, Executive Assistant, and accounts with the
-   teamLeader flag — see isApprover() below. On Approve, one staffSchedules
-   doc per date in range is written with source:"leave" so the requester's
-   Staff Schedule picks it up automatically.
+   gated in the UI to Admin and Executive Assistant only — Team Leader
+   accounts no longer get approver access here. On Approve, one
+   staffSchedules doc per date in range is written with source:"leave" so
+   the requester's Staff Schedule picks it up automatically.
    ========================================================================== */
 
 (function(){
@@ -271,13 +271,9 @@
         }
 
         isApprover = currentUser.role === "Admin" ||
-            currentUser.role === "Executive Assistant" ||
-            currentUser.teamLeader === true;
+            currentUser.role === "Executive Assistant";
 
-        const isBranchScopedApprover =
-            currentUser.role !== "Admin" &&
-            currentUser.role !== "Executive Assistant" &&
-            currentUser.teamLeader === true;
+        const isBranchScopedApprover = false;
 
         if(isApprover){
             document.getElementById("allLeaveCard").classList.remove("d-none");

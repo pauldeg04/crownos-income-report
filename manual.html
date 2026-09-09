@@ -2134,9 +2134,31 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   <ul class="roleline"><li><span class="pill pill-role">Admin only</span></li></ul>
 
   <p>
-    One row per day of the month: Date, Cash, GCash, Bank Transfer, Terminal,
-    and Total — followed by a Summary by category. It is the fastest way to see
-    a branch's whole month at once.
+    Three tabs — <strong>Monthly</strong>, <strong>Quarterly</strong>, and
+    <strong>Yearly</strong> — all reading the same underlying sales data for
+    whichever branch is selected in the toolbar, just grouped and rolled up
+    differently. Switching the branch in the toolbar refreshes all three
+    tabs, not just the one currently open.
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Tab</th><th>Picker</th><th>Rows</th><th>Generate button?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Monthly</strong></td><td>Month</td><td>One row per day of the month</td><td>Yes — <span class="ui">Generate Report</span></td></tr>
+        <tr><td><strong>Quarterly</strong></td><td>Quarter (e.g. Q1 2026)</td><td>One row per week of the quarter, labeled by week-of-year with its date range</td><td>No — updates as soon as you change the picker</td></tr>
+        <tr><td><strong>Yearly</strong></td><td>Year</td><td>One row per month of the year</td><td>No — updates as soon as you change the picker</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Every row lists Cash, GCash, Bank Transfer, Terminal, and a Total, and
+    every tab ends with its own Summary table by category. Each tab also has
+    its own <span class="ui">Export to PDF</span> button — it exports
+    whatever that tab is currently showing.
   </p>
 
   <h3>Expenses Report</h3>
@@ -2833,7 +2855,6 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     <li><span class="pill pill-role">All roles</span> <span class="text-muted">(submit)</span></li>
     <li><span class="pill pill-role">Admin</span></li>
     <li><span class="pill pill-role">Executive Assistant</span></li>
-    <li><span class="pill pill-role">Team Leader</span> <span class="text-muted">(review/approve)</span></li>
   </ul>
 
   <p class="text-muted">
@@ -2856,15 +2877,17 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     available if it's no longer needed.
   </p>
 
-  <h3>Reviewing (Admin / Executive Assistant / Team Leader)</h3>
+  <h3>Reviewing (Admin / Executive Assistant)</h3>
 
   <p>
-    <strong>All Requests</strong> lists submitted requests. Admin and
-    Executive Assistant see every request across all branches; a Team Leader
-    sees only requests from staff assigned to their own branch. Opening one
-    with <span class="ui">View</span> automatically moves it from
-    <strong>Pending</strong> to <strong>Processing</strong>. From there,
-    press <span class="ui">Approve</span> or <span class="ui">Decline</span>.
+    <strong>All Requests</strong> lists submitted requests across every
+    branch. Only Admin and Executive Assistant accounts can see this list —
+    Team Leader accounts no longer have review/approve access here, even
+    though the Leave Request tab itself is still visible to them for
+    submitting their own requests. Opening one with <span class="ui">View</span>
+    automatically moves it from <strong>Pending</strong> to
+    <strong>Processing</strong>. From there, press <span class="ui">Approve</span>
+    or <span class="ui">Decline</span>.
   </p>
 
   <div class="warn">
@@ -2961,7 +2984,18 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   <p>
     Admin, Executive Assistant, and Team Leader accounts see a
     <strong>Submitted Reports</strong> table of every report filed, with a
-    <span class="ui">View</span> button for the full text of each one.
+    <span class="ui">View</span> button for the full text of each one, plus a
+    <strong>Status</strong> column showing <strong>Pending</strong> or
+    <strong>Acknowledged</strong>.
+  </p>
+
+  <p>
+    Opening a report, an <strong>Admin</strong> account gets an
+    <span class="ui">Acknowledge</span> button in the view window. Pressing
+    it records who acknowledged the report and when — this is purely a
+    read receipt so the person who filed it can see it was seen, not an
+    approval step. Executive Assistant and Team Leader accounts can view
+    reports but cannot acknowledge them.
   </p>
 </section>
 

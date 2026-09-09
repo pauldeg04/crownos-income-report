@@ -1,6 +1,35 @@
 /* Page-specific overrides only — shared.css provides body/.btn-purple/
    .pdf-mode base styles */
 
+.report-tab-bar{
+    display:flex;
+    gap:6px;
+    border-bottom:2px solid var(--border);
+}
+
+.report-tab-btn{
+    border:none;
+    background:transparent;
+    padding:10px 18px;
+    font-weight:700;
+    font-size:14px;
+    color:var(--muted);
+    border-radius:var(--radius-md) var(--radius-md) 0 0;
+    cursor:pointer;
+    margin-bottom:-2px;
+    border-bottom:2px solid transparent;
+}
+
+.report-tab-btn:hover{
+    color:var(--navy);
+    background:var(--surface-soft);
+}
+
+.report-tab-btn.active{
+    color:var(--navy);
+    border-bottom:2px solid var(--navy);
+}
+
 .report-table th,
 .report-table td{
     text-align:center;

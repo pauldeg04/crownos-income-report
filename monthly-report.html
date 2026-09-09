@@ -64,78 +64,253 @@
                     <label class="form-label fw-bold">Branch</label>
                     <div class="branch-readout" id="branchReadout">—</div>
                 </div>
+            </div>
 
-                <div class="col-md-4">
-                    <label class="form-label fw-bold">Month</label>
-                    <input type="month" id="month" class="form-control" onchange="generateReport()">
+            <div class="report-tab-bar mt-3" role="tablist">
+                <button type="button" class="report-tab-btn active" id="monthlyTabBtn" onclick="switchReportTab('monthly')">Monthly</button>
+                <button type="button" class="report-tab-btn" id="quarterlyTabBtn" onclick="switchReportTab('quarterly')">Quarterly</button>
+                <button type="button" class="report-tab-btn" id="yearlyTabBtn" onclick="switchReportTab('yearly')">Yearly</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ===================== Monthly tab ===================== -->
+    <div id="monthlyTabPane">
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Month</label>
+                        <input type="month" id="month" class="form-control" onchange="generateReport()">
+                    </div>
                 </div>
             </div>
-
         </div>
-    </div>
 
-    <div class="button-area mb-4">
-        <button class="btn btn-primary" onclick="generateReport()">Generate Report</button>
-        <button class="btn btn-purple" id="exportPdfBtn" onclick="exportPDF()">Export to PDF</button>
-    </div>
+        <div class="button-area mb-4">
+            <button class="btn btn-primary" onclick="generateReport()">Generate Report</button>
+            <button class="btn btn-purple" id="exportPdfBtn" onclick="exportPDF()">Export to PDF</button>
+        </div>
 
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle mb-0 report-table">
-                    <thead class="table-primary text-center">
-                        <tr>
-                            <th>Date</th>
-                            <th>Cash</th>
-                            <th>GCash</th>
-                            <th>Bank Transfer</th>
-                            <th>Terminal</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="monthlyBody"></tbody>
-                </table>
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle mb-0 report-table">
+                        <thead class="table-primary text-center">
+                            <tr>
+                                <th>Date</th>
+                                <th>Cash</th>
+                                <th>GCash</th>
+                                <th>Bank Transfer</th>
+                                <th>Terminal</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthlyBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="card shadow-sm border-0 summary-card">
-        <div class="card-body">
-            <h3 class="fw-bold mb-3">Summary</h3>
+        <div class="card shadow-sm border-0 summary-card">
+            <div class="card-body">
+                <h3 class="fw-bold mb-3">Summary</h3>
 
-            <div class="table-responsive">
-                <table class="table table-bordered summary-table">
-                    <thead class="table-dark text-center">
-                        <tr>
-                            <th>Category</th>
-                            <th>Total Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="payment-summary-cash">
-                            <td>Cash</td>
-                            <td id="sumCash">₱0.00</td>
-                        </tr>
-                        <tr class="payment-summary-gcash">
-                            <td>GCash</td>
-                            <td id="sumGcash">₱0.00</td>
-                        </tr>
-                        <tr class="payment-summary-bank">
-                            <td>Bank Transfer</td>
-                            <td id="sumBank">₱0.00</td>
-                        </tr>
-                        <tr class="payment-summary-terminal">
-                            <td>Terminal</td>
-                            <td id="sumTerminal">₱0.00</td>
-                        </tr>
-                        <tr class="grand-total">
-                            <td>Grand Total</td>
-                            <td id="grandTotal">₱0.00</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-bordered summary-table">
+                        <thead class="table-dark text-center">
+                            <tr>
+                                <th>Category</th>
+                                <th>Total Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="payment-summary-cash">
+                                <td>Cash</td>
+                                <td id="sumCash">₱0.00</td>
+                            </tr>
+                            <tr class="payment-summary-gcash">
+                                <td>GCash</td>
+                                <td id="sumGcash">₱0.00</td>
+                            </tr>
+                            <tr class="payment-summary-bank">
+                                <td>Bank Transfer</td>
+                                <td id="sumBank">₱0.00</td>
+                            </tr>
+                            <tr class="payment-summary-terminal">
+                                <td>Terminal</td>
+                                <td id="sumTerminal">₱0.00</td>
+                            </tr>
+                            <tr class="grand-total">
+                                <td>Grand Total</td>
+                                <td id="grandTotal">₱0.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
+
+    </div>
+
+    <!-- ===================== Quarterly tab ===================== -->
+    <div id="quarterlyTabPane" class="d-none">
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Quarter</label>
+                        <select id="quarterInput" class="form-select" onchange="generateQuarterlyReport()"></select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="button-area mb-4">
+            <button class="btn btn-purple" id="exportQuarterlyPdfBtn" onclick="exportQuarterlyPDF()">Export to PDF</button>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle mb-0 report-table">
+                        <thead class="table-primary text-center">
+                            <tr>
+                                <th>Week</th>
+                                <th>Cash</th>
+                                <th>GCash</th>
+                                <th>Bank Transfer</th>
+                                <th>Terminal</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quarterlyBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 summary-card">
+            <div class="card-body">
+                <h3 class="fw-bold mb-3">Summary</h3>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered summary-table">
+                        <thead class="table-dark text-center">
+                            <tr>
+                                <th>Category</th>
+                                <th>Total Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="payment-summary-cash">
+                                <td>Cash</td>
+                                <td id="sumCashQ">₱0.00</td>
+                            </tr>
+                            <tr class="payment-summary-gcash">
+                                <td>GCash</td>
+                                <td id="sumGcashQ">₱0.00</td>
+                            </tr>
+                            <tr class="payment-summary-bank">
+                                <td>Bank Transfer</td>
+                                <td id="sumBankQ">₱0.00</td>
+                            </tr>
+                            <tr class="payment-summary-terminal">
+                                <td>Terminal</td>
+                                <td id="sumTerminalQ">₱0.00</td>
+                            </tr>
+                            <tr class="grand-total">
+                                <td>Grand Total</td>
+                                <td id="grandTotalQ">₱0.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===================== Yearly tab ===================== -->
+    <div id="yearlyTabPane" class="d-none">
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Year</label>
+                        <select id="yearInput" class="form-select" onchange="generateYearlyReport()"></select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="button-area mb-4">
+            <button class="btn btn-purple" id="exportYearlyPdfBtn" onclick="exportYearlyPDF()">Export to PDF</button>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle mb-0 report-table">
+                        <thead class="table-primary text-center">
+                            <tr>
+                                <th>Month</th>
+                                <th>Cash</th>
+                                <th>GCash</th>
+                                <th>Bank Transfer</th>
+                                <th>Terminal</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="yearlyBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 summary-card">
+            <div class="card-body">
+                <h3 class="fw-bold mb-3">Summary</h3>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered summary-table">
+                        <thead class="table-dark text-center">
+                            <tr>
+                                <th>Category</th>
+                                <th>Total Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="payment-summary-cash">
+                                <td>Cash</td>
+                                <td id="sumCashY">₱0.00</td>
+                            </tr>
+                            <tr class="payment-summary-gcash">
+                                <td>GCash</td>
+                                <td id="sumGcashY">₱0.00</td>
+                            </tr>
+                            <tr class="payment-summary-bank">
+                                <td>Bank Transfer</td>
+                                <td id="sumBankY">₱0.00</td>
+                            </tr>
+                            <tr class="payment-summary-terminal">
+                                <td>Terminal</td>
+                                <td id="sumTerminalY">₱0.00</td>
+                            </tr>
+                            <tr class="grand-total">
+                                <td>Grand Total</td>
+                                <td id="grandTotalY">₱0.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 
 </div>

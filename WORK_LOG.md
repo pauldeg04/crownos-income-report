@@ -4,6 +4,57 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-09 — Incident Report Acknowledge button, Leave Request Team Leader access removed, Monthly Summary Quarterly/Yearly tabs
+
+**Requested by:** User — three changes: (1) an Acknowledge button on Incident Report, Admin-only,
+so the person who filed a report can see it was seen; (2) remove Team Leader accounts' review/
+approve access on Leave Request; (3) split Monthly Summary into Monthly / Quarterly / Yearly tabs.
+
+**Change 1 — Incident Report acknowledge:**
+- [`incident-report.html`](incident-report.html) — new **Status** column in the Submitted Reports
+  table, and an **Acknowledge** button in the view modal's footer.
+- [`incident-report.js`](incident-report.js) — the Acknowledge button only shows for `role ===
+  "Admin"` accounts and only when the report isn't already acknowledged. Pressing it writes
+  `acknowledged: true`, `acknowledgedByAccount`, `acknowledgedByName`, and `acknowledgedAt`
+  (server timestamp) onto the `incidentReports` doc. The table's Status column reads
+  Pending/Acknowledged off that same field, and the view modal shows who acknowledged it and when
+  once set. This is a read receipt only — no approval workflow, matching the page's existing
+  submit-only design.
+
+**Change 2 — Leave Request, Team Leader access removed:**
+- [`leave-requests.js`](leave-requests.js) — `isApprover` no longer includes
+  `currentUser.teamLeader === true`; only `Admin` and `Executive Assistant` see **All Requests**
+  and can Approve/Decline. `isBranchScopedApprover` (the branch-filtering behavior that only ever
+  applied to Team Leader) is now always `false`. Team Leader accounts keep normal Therapist access
+  to the tab — they can still submit and cancel their own requests, just no longer review others'.
+  Firestore rules unchanged — `leaveRequests` writes were already open to any authenticated user
+  and gated in the UI, per the existing rule comment.
+
+**Change 3 — Monthly Summary tabs:**
+- [`monthly-report.html`](monthly-report.html) / [`monthly-report.js`](monthly-report.js) /
+  [`monthly-report.css`](monthly-report.css) — added a tab bar (Monthly / Quarterly / Yearly)
+  above the existing report. **Monthly** is unchanged. **Quarterly** adds a Quarter picker (e.g.
+  "Q1 2026"); rows are grouped by ISO week-of-year across the quarter's date range instead of by
+  day, labeled "Week *N*" with its Monday–Sunday date range; no Generate Report button, it
+  regenerates on picker change; has its own Export to PDF. **Yearly** adds a Year picker; rows are
+  grouped by calendar month instead of by day; same no-button/auto-generate/Export to PDF pattern.
+  All three tabs read the same per-day `crownDailySales_<branch>_<date>` localStorage rows through
+  a new shared `getDaySums()` helper, so they can never disagree on what counts as a sale.
+- **Follow-up fix (same day):** Quarterly and Yearly weren't refreshing when the branch was
+  switched in the sidebar toolbar — only Monthly happened to, incidentally, through the `#month`
+  input's own `change` handler inside `syncGlobalToolbarToPage()` (`sidebar.js`). Added a listener
+  on the `crownGlobalFiltersChanged` event (dispatched by the toolbar on every branch/date change)
+  that re-runs `generateQuarterlyReport()` and `generateYearlyReport()`, so all three tabs now stay
+  in sync with the toolbar's selected branch.
+
+**Docs:** [`manual.html`](manual.html) — Chapter 18 (Monthly Summary) rewritten to describe the
+three tabs; Chapter 27 (Leave Request) role line and reviewer section updated to drop Team Leader;
+Chapter 29 (Incident Report) updated with the Status column and Acknowledge button.
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app
+
+---
+
 ## 2026-09-09 — Team Leader missing Action buttons on Daily Income Report
 
 **Reported by:** User — a Therapist account set as Team Leader can open the Daily Income
