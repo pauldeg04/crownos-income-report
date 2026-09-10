@@ -36,7 +36,9 @@
         "Pcs",
         "Pack",
         "Bot",
-        "Cup"
+        "Cup",
+        "Liters",
+        "Gallons"
     ];
 
     function createId(prefix){

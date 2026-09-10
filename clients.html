@@ -283,6 +283,29 @@
             <div class="empty-state d-none" id="viewClientVisitsEmpty">
                 No visit records found for this client.
             </div>
+
+            <h5 class="client-visit-history-title">Points History</h5>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle client-visit-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Branch</th>
+                            <th>Change</th>
+                            <th>Before</th>
+                            <th>After</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+                    <tbody id="viewClientPointsLedgerBody"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state d-none" id="viewClientPointsLedgerEmpty">
+                No points history recorded for this client yet.
+            </div>
         </div>
 
         <div class="client-modal-footer">

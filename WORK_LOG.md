@@ -4,6 +4,34 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-10 — Liters/Gallons units, VIP Points Ledger history
+
+**Requested by:** User — wanted two more Unit options in Inventory Settings for adding/editing
+items, and to finish committing the in-progress VIP Points Ledger work that had been sitting
+uncommitted in the working tree since 2026-09-09.
+
+**Change:**
+- [`inventory-data.js`](inventory-data.js) — added `"Liters"` and `"Gallons"` to the `UNITS`
+  array. The Add/Edit Item form's Unit dropdown (`inventory-items.js`) builds its `<option>`
+  list from this array dynamically, so no other file needed changes.
+- [`manual.html`](manual.html) — Inventory Settings section's Unit example list updated to
+  mention liters/gallons alongside bottle/piece/box.
+- [`clients.html`](clients.html) / [`clients.js`](clients.js) — new **Points History** table in
+  the View Client modal, showing Date, Type, Branch, Change, Before, After, and Note for each
+  points adjustment:
+  - `appendPointsLedgerEntry()` logs a ledger entry (capped at 200 per client) — mirrors the
+    same-named function in `script.js`, kept in sync there since `clients.html` doesn't load
+    `script.js`.
+  - `renderClientPointsLedger()` / `formatPointsLedgerDate()` render the table, newest entry
+    first.
+  - `updateClient()` now records a `"Manual Adjustment"` ledger entry (with before/after/delta
+    and the editing staff's username) whenever a client's VIP points value is changed from the
+    Edit Client form.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
+
+---
+
 ## 2026-09-09 — Existing Team Leader accounts now self-heal into Daily Monitoring Sheet access
 
 **Requested by:** User — "bigyan natin ng Access ang mga Team Leader Accounts since sila ang mag

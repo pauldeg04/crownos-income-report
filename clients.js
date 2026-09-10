@@ -7,6 +7,33 @@ function computeEarnedPoints(amount){
     return Math.floor(Math.max(0, Number(amount) || 0) * VIP_POINTS_PER_PESO);
 }
 
+/* Mirrors appendPointsLedgerEntry in script.js — kept in sync there since
+   clients.html doesn't load script.js. See that copy's comment for why the
+   log is capped at 200 entries per client. */
+function appendPointsLedgerEntry(client, entry){
+    if(!client){
+        return;
+    }
+
+    if(!Array.isArray(client.pointsLedger)){
+        client.pointsLedger = [];
+    }
+
+    client.pointsLedger.push({
+        date: new Date().toISOString(),
+        type: entry.type || "Adjustment",
+        branch: entry.branch || "",
+        delta: Number(entry.delta) || 0,
+        before: Number(entry.before) || 0,
+        after: Number(entry.after) || 0,
+        note: entry.note || ""
+    });
+
+    if(client.pointsLedger.length > 200){
+        client.pointsLedger = client.pointsLedger.slice(-200);
+    }
+}
+
 const BRANCH_MASTER_KEY = "crownBranchMasterList";
 const SELECTED_BRANCH_KEY = "crownSelectedBranch";
 const SALES_PREFIX = "crownDailySales_";
@@ -874,8 +901,64 @@ function openViewClientModal(clientId){
     `;
 
     renderClientVisitsTable(client);
+    renderClientPointsLedger(client);
 
     document.getElementById("viewClientBackdrop").classList.remove("d-none");
+}
+
+/* Ledger dates are full timestamps (not the plain YYYY-MM-DD strings
+   formatDate expects), and worth showing to the minute since a client can
+   rack up more than one points event in a single day. */
+function formatPointsLedgerDate(isoString){
+    if(!isoString){
+        return "—";
+    }
+
+    const parsed = new Date(isoString);
+
+    if(Number.isNaN(parsed.getTime())){
+        return "—";
+    }
+
+    return parsed.toLocaleString("en-PH", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+    });
+}
+
+/* Newest entries first — matches renderClientVisitsTable's ordering. */
+function renderClientPointsLedger(client){
+    const entries =
+        (Array.isArray(client.pointsLedger) ? client.pointsLedger.slice() : [])
+            .sort(function(a, b){
+                return String(b.date || "").localeCompare(String(a.date || ""));
+            });
+
+    const tbody = document.getElementById("viewClientPointsLedgerBody");
+
+    tbody.innerHTML = entries.map(function(entry){
+        const delta = Number(entry.delta) || 0;
+        const deltaLabel =
+            (delta >= 0 ? "+" : "") + delta.toLocaleString("en-PH");
+
+        return `
+            <tr>
+                <td>${formatPointsLedgerDate(entry.date)}</td>
+                <td>${escapeHtml(entry.type || "—")}</td>
+                <td>${escapeHtml(entry.branch || "—")}</td>
+                <td>${deltaLabel}</td>
+                <td>${Number(entry.before || 0).toLocaleString("en-PH")}</td>
+                <td>${Number(entry.after || 0).toLocaleString("en-PH")}</td>
+                <td>${escapeHtml(entry.note || "—")}</td>
+            </tr>
+        `;
+    }).join("");
+
+    document.getElementById("viewClientPointsLedgerEmpty")
+        .classList.toggle("d-none", entries.length > 0);
 }
 
 /* Rebuilds the Visit History table body for the client currently open in
@@ -1028,8 +1111,23 @@ function updateClient(){
     /* Points stay on the record even if VIP status is toggled off —
        just not shown/used while Non-VIP, so a mistaken toggle doesn't
        wipe an accumulated balance. */
-    client.points =
+    const pointsBefore = Number(client.points) || 0;
+    const pointsAfter =
         Math.max(0, Number(document.getElementById("editVipPoints").value) || 0);
+
+    client.points = pointsAfter;
+
+    if(pointsAfter !== pointsBefore){
+        const editor = window.CrownAuth?.getCurrentUser?.();
+
+        appendPointsLedgerEntry(client, {
+            type: "Manual Adjustment",
+            delta: pointsAfter - pointsBefore,
+            before: pointsBefore,
+            after: pointsAfter,
+            note: "Edited by " + (editor?.username || editor?.name || "staff")
+        });
+    }
 
     client.loyaltyCardNumber = document.getElementById("editLoyaltyCardNumber").value.trim();
 
