@@ -618,6 +618,46 @@
        Notes so the rest of the row doesn't get squeezed. */
     const PDF_MARGIN = 8;
 
+    /* Same tone → color mapping as the on-screen pills (.monitor-tag-*
+       in daily-monitoring.css / TONE_MAPS above), as RGB triples for
+       jsPDF. Kept separate from the CSS since jsPDF can't read computed
+       styles — if a pill color changes, update it here too. */
+    const PDF_TONE_COLORS = {
+        "green": { fill: [18, 77, 28], text: [255, 255, 255] },
+        "light-green": { fill: [232, 241, 233], text: [14, 58, 22] },
+        "yellow": { fill: [255, 244, 207], text: [107, 78, 0] },
+        "orange": { fill: [224, 122, 31], text: [255, 255, 255] },
+        "red": { fill: [198, 40, 40], text: [255, 255, 255] },
+        "purple": { fill: [106, 58, 168], text: [255, 255, 255] }
+    };
+
+    /* The 5 toned columns always sit right after the leading Staff/Date
+       column, in this order, on both exported tables. */
+    const PDF_TONE_FIELDS = ["attendance", "uniform", "nameTags", "walkieTalkie", "readiness"];
+
+    function tonePdfCell(data){
+        if(data.section !== "body"){
+            return;
+        }
+
+        const field = PDF_TONE_FIELDS[data.column.index - 1];
+
+        if(!field){
+            return;
+        }
+
+        const tone = TONE_MAPS[field]?.[data.cell.raw];
+        const colors = tone && PDF_TONE_COLORS[tone];
+
+        if(!colors){
+            return;
+        }
+
+        data.cell.styles.fillColor = colors.fill;
+        data.cell.styles.textColor = colors.text;
+        data.cell.styles.fontStyle = "bold";
+    }
+
     function pdfRowValues(doc){
         return [
             (doc && doc.attendance) || "—",
@@ -745,7 +785,8 @@
                 },
                 columnStyles: {
                     6: { cellWidth: 46 }
-                }
+                },
+                didParseCell: tonePdfCell
             });
 
             drawPdfFooter(doc);
@@ -806,7 +847,8 @@
                 },
                 columnStyles: {
                     6: { cellWidth: 46 }
-                }
+                },
+                didParseCell: tonePdfCell
             });
 
             drawPdfFooter(doc);

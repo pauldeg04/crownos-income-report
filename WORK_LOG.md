@@ -4,6 +4,33 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-11 — Daily Monitoring Sheet PDF export: same color coding as the on-screen pills
+
+**Requested by:** User — wanted the Attendance / Uniform & Grooming / Name Tags / Walkie Talkie /
+Readiness color coding (the green/yellow/orange/red/purple pills) carried over into the Export to
+PDF output added earlier today, so the PDF reads the same way the on-screen table does.
+
+**Change:**
+- [`daily-monitoring.js`](daily-monitoring.js) — `PDF_TONE_COLORS` maps each tone name
+  (green/light-green/yellow/orange/red/purple) to the same RGB values as the corresponding
+  `.monitor-tag-*` class in `daily-monitoring.css`, and `tonePdfCell()` (wired in as both
+  exports' `didParseCell`) looks up each of the 5 toned columns' raw cell value against the
+  existing `TONE_MAPS` and fills the cell with that color instead of leaving it plain — same
+  lookup the on-screen `toneCell()` already used, just applied to a PDF cell instead of an HTML
+  span. `PDF_TONE_FIELDS` encodes that both exported tables put the 5 toned columns at the same
+  fixed offset (right after the leading Staff/Date column), so one `didParseCell` handler covers
+  both exports.
+- [`manual.html`](manual.html) — Export to PDF section now notes that the 5 toned columns keep
+  their color coding in the PDF, as filled cells instead of pills.
+
+**Verified locally:** rendered `exportTeamPdf()`'s exact autoTable configuration with sample rows
+covering every tone (green, orange, red, yellow, purple, light-green) through a standalone jsPDF
+test page — every cell colored correctly, matching the on-screen pill colors.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
+
+---
+
 ## 2026-09-11 — Daily Monitoring Sheet: Export to PDF for the team table and the staff history table
 
 **Requested by:** User — wanted a separate Export to PDF button for each of the two Staff
