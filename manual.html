@@ -3003,9 +3003,9 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   <h2><span class="h2-num">Chapter 30</span>Daily Monitoring Sheet</h2>
 
   <ul class="roleline">
-    <li><span class="pill pill-role">Admin</span> <span class="text-muted">(team view)</span></li>
-    <li><span class="pill pill-role">Executive Assistant</span> <span class="text-muted">(team view)</span></li>
-    <li><span class="pill pill-role">Team Leader</span> <span class="text-muted">(team view and inspect)</span></li>
+    <li><span class="pill pill-role">Admin</span> <span class="text-muted">(team view, export to PDF)</span></li>
+    <li><span class="pill pill-role">Executive Assistant</span> <span class="text-muted">(team view, export to PDF)</span></li>
+    <li><span class="pill pill-role">Team Leader</span> <span class="text-muted">(team view and inspect, no export)</span></li>
     <li><span class="pill pill-role">Receptionist</span> <span class="text-muted">(own history)</span></li>
     <li><span class="pill pill-role">Therapist</span> <span class="text-muted">(own history)</span></li>
     <li><span class="pill pill-role">Marketing Agent</span> <span class="text-muted">(own history)</span></li>
@@ -3120,6 +3120,21 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     itself the same way and shows <strong>Not Inspected</strong> instead
     — there is no way to file a late inspection for a day that has
     already closed.
+  </p>
+
+  <h3>Export to PDF — Admin, Executive Assistant only</h3>
+
+  <p>
+    Both tables on this page get their own <span class="ui">Export to
+    PDF</span> button — one above the daily team table, one above the
+    Staff Monthly History table — visible only to Admin and Executive
+    Assistant accounts, not even a Team Leader who can otherwise see the
+    same team table. Each button exports only the table it sits above,
+    for whatever branch/date or staff/month is currently on screen, as a
+    portrait A4 PDF with the same columns shown on screen (the Action
+    column becomes a plain <strong>Inspected at [time]</strong> /
+    <strong>Not Inspected</strong> / <strong>Pending</strong> status, since
+    a PDF has no button to press).
   </p>
 </section>
 

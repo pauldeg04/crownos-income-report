@@ -4,6 +4,51 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-11 — Daily Monitoring Sheet: Export to PDF for the team table and the staff history table
+
+**Requested by:** User — wanted a separate Export to PDF button for each of the two Staff
+Monitoring tables (the per-day team table, and the per-staff Staff Monthly History table),
+restricted to Admin and Executive Assistant only (explicitly not Team Leader, even though Team
+Leader also sees the team table). Portrait A4, with margins tightened so an 8-column table
+doesn't feel cramped.
+
+**Change:**
+- [`daily-monitoring.html`](daily-monitoring.html) — added the jsPDF + jspdf-autotable CDN
+  scripts (same versions already used elsewhere in CrownOS, e.g. `expenses-report.html`), and one
+  `Export to PDF` button above each table (`#monitorExportTeamPdfBtn`,
+  `#monitorExportHistoryPdfBtn`), both `d-none` by default.
+- [`daily-monitoring.js`](daily-monitoring.js):
+  - `canExportPdf` (Admin or Executive Assistant only, checked against `getEffectiveRole()` — a
+    Team Leader does not get it) un-hides both buttons and wires their click handlers; only
+    reached in the team-view branch of `DOMContentLoaded`, so the personal view never renders
+    them at all.
+  - `exportTeamPdf()` — one portrait-A4 table (Staff, Attendance, Uniform & Grooming, Name Tags,
+    Walkie Talkie, Readiness, Notes, Status) built from the same `staffListCache` /
+    `monitorDocsCache` driving the on-screen team table, for the currently selected branch/date.
+    The Action column becomes plain text (`Inspected at [time]` / `Not Inspected` / `Pending`)
+    since a PDF has no button.
+  - `exportHistoryPdf()` — the same shape for the Staff Monthly History table (Date instead of
+    Staff, Time Inspected instead of Status), for whichever staff member and month is currently
+    selected.
+  - `drawPdfHeader()` / `drawPdfFooter()` / `runPdfExport()` factored out so both exports share
+    one branded navy header (CROWN HEAD SPA + page title + branch/date or staff/month), page
+    footer, and busy-button handling, matching the style already used by `expenses-report.js`'s
+    PDF export.
+  - `PDF_MARGIN` (8mm, down from the usual 14mm) and a fixed 46mm Notes column width — portrait
+    A4 is only 210mm wide for an 8-column table, so the tighter margin and a capped Notes width
+    keep the short enum columns (Attendance, Readiness, etc.) legible instead of getting squeezed
+    by word-wrapped Notes text.
+- [`manual.html`](manual.html) — Chapter 30 roleline updated (Admin/EA now show "export to PDF",
+  Team Leader shows "no export"), and a new **Export to PDF** subsection documents both buttons.
+
+**Verified locally:** rendered both tables' exact autoTable configuration with sample data through
+a standalone jsPDF test page — portrait A4, full-width table, Notes column wraps without
+crowding the rest of the row, navy header/footer render as expected.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
+
+---
+
 ## 2026-09-11 — Daily Monitoring Sheet: personal history for every account, staff picker for Admin/EA/Team Leader
 
 **Requested by:** User — wanted regular user accounts to see their own accomplished Staff

@@ -605,6 +605,216 @@
         refreshHistory();
     }
 
+    /* ---- Export to PDF — Admin / Executive Assistant only (not Team
+       Leader, even though Team Leader also sees the team view). Two
+       separate exports, matching the two separate tables: the per-day
+       team table, and the per-staff monthly history table. Branded
+       jsPDF+autoTable export, same style as the rest of CrownOS. ---- */
+
+    const PDF_COLUMNS = ["Attendance", "Uniform & Grooming", "Name Tags", "Walkie Talkie", "Readiness", "Notes"];
+
+    /* Portrait A4 is narrow (210mm) for an 8-column table — a tight
+       8mm side margin instead of the usual 14mm buys back real room for
+       Notes so the rest of the row doesn't get squeezed. */
+    const PDF_MARGIN = 8;
+
+    function pdfRowValues(doc){
+        return [
+            (doc && doc.attendance) || "—",
+            (doc && doc.uniform) || "—",
+            (doc && doc.nameTags) || "—",
+            (doc && doc.walkieTalkie) || "—",
+            (doc && doc.readiness) || "—",
+            (doc && doc.notes) || "—"
+        ];
+    }
+
+    function statusTextForRow(doc, pastCutoff){
+        if(doc && doc.status === "submitted"){
+            return "Inspected at " + formatSubmittedAt(doc.submittedAt);
+        }
+
+        return pastCutoff ? "Not Inspected" : "Pending";
+    }
+
+    function drawPdfHeader(doc, title, rightLine1, rightLine2){
+        const pageWidth = doc.internal.pageSize.getWidth();
+
+        doc.setFillColor(11, 24, 73);
+        doc.rect(0, 0, pageWidth, 26, "F");
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("CROWN HEAD SPA", PDF_MARGIN, 11);
+
+        doc.setFontSize(10);
+        doc.text(title, PDF_MARGIN, 18);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.text(rightLine1, pageWidth - PDF_MARGIN, 10, { align: "right" });
+        doc.text(rightLine2, pageWidth - PDF_MARGIN, 16, { align: "right" });
+    }
+
+    function drawPdfFooter(doc){
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const pageCount = doc.internal.getNumberOfPages();
+
+        for(let pageNumber = 1; pageNumber <= pageCount; pageNumber++){
+            doc.setPage(pageNumber);
+
+            doc.setTextColor(120, 126, 138);
+            doc.setFontSize(7.5);
+            doc.text(
+                "Generated " + new Date().toLocaleDateString("en-PH", { month: "long", day: "numeric", year: "numeric" }),
+                PDF_MARGIN,
+                pageHeight - 8
+            );
+
+            doc.text(
+                `Page ${pageNumber} of ${pageCount}`,
+                pageWidth - PDF_MARGIN,
+                pageHeight - 8,
+                { align: "right" }
+            );
+        }
+    }
+
+    function runPdfExport(button, buildFn){
+        if(!window.jspdf || !window.jspdf.jsPDF){
+            alert("PDF library is unavailable. Please check your internet connection and reload the page.");
+            return;
+        }
+
+        const originalLabel = button.textContent;
+        button.disabled = true;
+        button.textContent = "Generating PDF...";
+
+        try{
+            buildFn(new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true }));
+        }catch(error){
+            console.error("Unable to export PDF:", error);
+            alert("Unable to export this table to PDF.");
+        }finally{
+            button.disabled = false;
+            button.textContent = originalLabel;
+        }
+    }
+
+    function exportTeamPdf(){
+        const button = document.getElementById("monitorExportTeamPdfBtn");
+        const branch = getCurrentBranch();
+
+        if(!branch || staffListCache.length === 0){
+            alert("There is nothing to export for this branch and date yet.");
+            return;
+        }
+
+        runPdfExport(button, function(doc){
+            const pastCutoff = isPastCutoff(selectedDate);
+
+            drawPdfHeader(doc, "Daily Monitoring Sheet — Staff Monitoring", branch, formatDateForRow(selectedDate));
+
+            doc.autoTable({
+                startY: 32,
+                margin: { top: 30, left: PDF_MARGIN, right: PDF_MARGIN, bottom: 16 },
+                tableWidth: "auto",
+                head: [["Staff", ...PDF_COLUMNS, "Status"]],
+                body: staffListCache.map(function(staff){
+                    const rowDoc = monitorDocsCache[staff.account] || null;
+                    return [staff.name, ...pdfRowValues(rowDoc), statusTextForRow(rowDoc, pastCutoff)];
+                }),
+                theme: "grid",
+                styles: {
+                    font: "helvetica",
+                    fontSize: 8,
+                    cellPadding: 2,
+                    valign: "middle",
+                    overflow: "linebreak",
+                    textColor: [32, 43, 60],
+                    lineColor: [216, 222, 232],
+                    lineWidth: 0.15
+                },
+                headStyles: {
+                    fillColor: [11, 24, 73],
+                    textColor: [255, 255, 255],
+                    fontStyle: "bold",
+                    fontSize: 7.5
+                },
+                columnStyles: {
+                    6: { cellWidth: 46 }
+                }
+            });
+
+            drawPdfFooter(doc);
+
+            doc.save(`Crown Head Spa - Staff Monitoring - ${branch} - ${selectedDate}.pdf`);
+        });
+    }
+
+    function exportHistoryPdf(){
+        const button = document.getElementById("monitorExportHistoryPdfBtn");
+        const select = document.getElementById("monitorStaffPickerInput");
+        const staffName = select.options[select.selectedIndex]?.text || "";
+
+        if(!selectedHistoryStaff){
+            alert("Select a staff member first.");
+            return;
+        }
+
+        runPdfExport(button, function(doc){
+            const docsByDate = {};
+            historyDocsCache.forEach(function(item){
+                docsByDate[item.date] = item;
+            });
+
+            const days = daysInMonthSoFar(selectedHistoryMonth);
+
+            drawPdfHeader(doc, "Daily Monitoring Sheet — Staff Monthly History", staffName, selectedHistoryMonth);
+
+            doc.autoTable({
+                startY: 32,
+                margin: { top: 30, left: PDF_MARGIN, right: PDF_MARGIN, bottom: 16 },
+                tableWidth: "auto",
+                head: [["Date", ...PDF_COLUMNS, "Time Inspected"]],
+                body: days.map(function(dateValue){
+                    const rowDoc = docsByDate[dateValue] || null;
+                    return [
+                        formatDateForRow(dateValue),
+                        ...pdfRowValues(rowDoc),
+                        (rowDoc && formatSubmittedAt(rowDoc.submittedAt)) || "—"
+                    ];
+                }),
+                theme: "grid",
+                styles: {
+                    font: "helvetica",
+                    fontSize: 8,
+                    cellPadding: 2,
+                    valign: "middle",
+                    overflow: "linebreak",
+                    textColor: [32, 43, 60],
+                    lineColor: [216, 222, 232],
+                    lineWidth: 0.15
+                },
+                headStyles: {
+                    fillColor: [11, 24, 73],
+                    textColor: [255, 255, 255],
+                    fontStyle: "bold",
+                    fontSize: 7.5
+                },
+                columnStyles: {
+                    6: { cellWidth: 46 }
+                }
+            });
+
+            drawPdfFooter(doc);
+
+            doc.save(`Crown Head Spa - Staff Monthly History - ${staffName} - ${selectedHistoryMonth}.pdf`);
+        });
+    }
+
     /* ---- Inspect modal ---- */
 
     function openInspectModal(account, staffName){
@@ -725,6 +935,12 @@
         canEdit = currentUser.teamLeader === true;
 
         const effectiveRole = window.CrownAuth?.getEffectiveRole?.(currentUser) || currentUser.role;
+
+        /* Export to PDF is Admin/Executive Assistant only — a Team
+           Leader sees the team view too but does not get an export
+           button, per the request that created this feature. */
+        const canExportPdf = effectiveRole === "Admin" || effectiveRole === "Executive Assistant";
+
         isPersonalView = !(
             effectiveRole === "Admin" ||
             effectiveRole === "Executive Assistant" ||
@@ -791,6 +1007,17 @@
         document.getElementById("monitorTodayBtn").addEventListener("click", function(){
             applyDate(getTodayValue());
         });
+
+        if(canExportPdf){
+            const exportTeamBtn = document.getElementById("monitorExportTeamPdfBtn");
+            const exportHistoryBtn = document.getElementById("monitorExportHistoryPdfBtn");
+
+            exportTeamBtn.classList.remove("d-none");
+            exportHistoryBtn.classList.remove("d-none");
+
+            exportTeamBtn.addEventListener("click", exportTeamPdf);
+            exportHistoryBtn.addEventListener("click", exportHistoryPdf);
+        }
 
         selectedHistoryMonth = getCurrentMonthValue();
         document.getElementById("monitorHistoryMonthInput").value = selectedHistoryMonth;

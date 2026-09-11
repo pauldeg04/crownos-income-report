@@ -17,6 +17,8 @@
 <link rel="stylesheet" href="shared.css">
 <link rel="stylesheet" href="sidebar.css">
 <link rel="stylesheet" href="daily-monitoring.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
 
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -109,6 +111,10 @@
                         <button type="button" class="btn btn-outline-primary btn-sm" id="monitorTodayBtn">
                             Today
                         </button>
+
+                        <button type="button" class="btn btn-outline-secondary btn-sm ms-auto d-none" id="monitorExportTeamPdfBtn">
+                            Export to PDF
+                        </button>
                     </div>
 
                     <div class="monitor-branch-empty d-none" id="monitorBranchEmpty">
@@ -181,6 +187,10 @@
                                 ›
                             </button>
                         </div>
+
+                        <button type="button" class="btn btn-outline-secondary btn-sm ms-auto d-none" id="monitorExportHistoryPdfBtn">
+                            Export to PDF
+                        </button>
                     </div>
 
                     <div class="monitor-branch-empty" id="monitorHistoryStaffEmpty">
