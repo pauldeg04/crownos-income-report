@@ -649,7 +649,7 @@
         <tr><td>201 Files (Admin Hub)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
         <tr><td>Bulletin Board (Admin Hub)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td></tr>
         <tr><td>Staff Management (Admin Hub)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
-        <tr><td>Daily Monitoring Sheet (Admin Hub) <span class="text-muted">— Team Leader too, via auto-grant</span></td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Daily Monitoring Sheet (Admin Hub) <span class="text-muted">— team view for Team Leader too, via auto-grant; everyone else gets their own history only</span></td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td></tr>
         <tr><td>Ads Monitoring</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
         <tr><td>Monitoring Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
         <tr><td>Daily Report</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
@@ -3003,21 +3003,24 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   <h2><span class="h2-num">Chapter 30</span>Daily Monitoring Sheet</h2>
 
   <ul class="roleline">
-    <li><span class="pill pill-role">Admin</span> <span class="text-muted">(view)</span></li>
-    <li><span class="pill pill-role">Executive Assistant</span> <span class="text-muted">(view)</span></li>
-    <li><span class="pill pill-role">Team Leader</span> <span class="text-muted">(view and inspect)</span></li>
+    <li><span class="pill pill-role">Admin</span> <span class="text-muted">(team view)</span></li>
+    <li><span class="pill pill-role">Executive Assistant</span> <span class="text-muted">(team view)</span></li>
+    <li><span class="pill pill-role">Team Leader</span> <span class="text-muted">(team view and inspect)</span></li>
+    <li><span class="pill pill-role">Receptionist</span> <span class="text-muted">(own history)</span></li>
+    <li><span class="pill pill-role">Therapist</span> <span class="text-muted">(own history)</span></li>
+    <li><span class="pill pill-role">Marketing Agent</span> <span class="text-muted">(own history)</span></li>
+    <li><span class="pill pill-role">Branch Device</span> <span class="text-muted">(own history)</span></li>
   </ul>
 
   <p class="text-muted">
     Lives in its own page in Admin Hub — <strong>Daily Monitoring
-    Sheet</strong>. A Team Leader account reaches it automatically once
-    <span class="ui">Set as Team Leader</span> is checked in Account
-    Settings — including an existing Team Leader account that was set up
-    before this page existed, which picks it up on its own the next time
-    that account signs in or reloads any page, no re-saving needed. Any
-    other account can be handed it individually through
-    <strong>Additional Access</strong> — see <a href="#ch-roles">Chapter
-    4</a>.
+    Sheet</strong>. A Team Leader account reaches the team view
+    automatically once <span class="ui">Set as Team Leader</span> is
+    checked in Account Settings — including an existing Team Leader
+    account that was set up before this page existed, which picks it up
+    on its own the next time that account signs in or reloads any page,
+    no re-saving needed. Every other role sees a personal history view
+    instead — see below.
   </p>
 
   <p>
@@ -3027,7 +3030,7 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     reserved for upcoming checks.
   </p>
 
-  <h3>Staff Monitoring</h3>
+  <h3>Staff Monitoring — Admin, Executive Assistant, Team Leader</h3>
 
   <p>
     Pick a date with the stepper at the top of the tab (or press
@@ -3054,6 +3057,39 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     <span class="ui">Inspect</span> button of their own — the Action
     column shows <strong>Pending</strong> for them until a Team Leader
     files it.
+  </p>
+
+  <h3>Staff Monthly History — Admin, Executive Assistant, Team Leader</h3>
+
+  <p>
+    Below the daily table, a second card lets these three roles pull up
+    any one staff member's own accomplished-assessment history instead of
+    the whole team's. Pick a name from the <span class="ui">Select a
+    staff member</span> dropdown — it lists every Receptionist and
+    Therapist assigned to the branch currently selected in the header —
+    then use the month stepper to move between months. The table below
+    shows one row per date for that month
+    (<strong>Date, Attendance, Uniform &amp; Grooming, Name Tags, Walkie
+    Talkie, Readiness, Notes, Time Inspected</strong>), the same shape a
+    staff member sees on their own account — see below. A day with no
+    filed assessment shows a dash in every column.
+  </p>
+
+  <h3>Staff Monitoring — every other account (own history)</h3>
+
+  <p>
+    A Receptionist, Therapist, Marketing Agent, or Branch Device account
+    sees this tab differently — no team table, no
+    <span class="ui">Inspect</span> button. Instead it's a read-only
+    monthly history of that account's own accomplished assessments only.
+    Use the month picker (not a date picker) to move between months —
+    there's no <span class="ui">Today</span> button since it's not tied
+    to a single day. Each row is one date in that month with
+    <strong>Date, Attendance, Uniform &amp; Grooming, Name Tags, Walkie
+    Talkie, Readiness, Notes,</strong> and <strong>Time Inspected</strong>
+    (the same moment shown as <strong>Inspected at [time]</strong> in the
+    team view's Action column). A date with no filed assessment shows a
+    dash in every column instead of an empty row.
   </p>
 
   <h3>Color coding</h3>

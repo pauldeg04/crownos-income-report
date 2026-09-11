@@ -277,11 +277,19 @@
             "Marketing Agent"
         ],
 
-        /* Team Leader access is granted through extraAccess, not a role
-           listed here — see TEAM_LEADER_AUTO_ACCESS_PAGES above. */
+        /* Team Leader access (the full team table) is granted through
+           extraAccess, not a role listed here — see
+           TEAM_LEADER_AUTO_ACCESS_PAGES above. Every other role listed
+           here only ever sees their own personal assessment history on
+           this page — see the isPersonalView branch in
+           daily-monitoring.js. */
         "daily-monitoring.html": [
             "Admin",
-            "Executive Assistant"
+            "Executive Assistant",
+            "Receptionist",
+            "Therapist",
+            "Marketing Agent",
+            "Branch Device"
         ]
     };
 

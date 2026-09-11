@@ -7,6 +7,14 @@
                 { "fieldPath": "status", "order": "ASCENDING" },
                 { "fieldPath": "expiresAt", "order": "ASCENDING" }
             ]
+        },
+        {
+            "collectionGroup": "dailyMonitoring",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "staffAccount", "order": "ASCENDING" },
+                { "fieldPath": "date", "order": "ASCENDING" }
+            ]
         }
     ],
     "fieldOverrides": []

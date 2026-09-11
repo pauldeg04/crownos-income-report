@@ -4,6 +4,47 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-11 — Daily Monitoring Sheet: personal history for every account, staff picker for Admin/EA/Team Leader
+
+**Requested by:** User — wanted regular user accounts to see their own accomplished Staff
+Monitoring assessments (one row per date instead of per staff member), and wanted Admin/Executive
+Assistant/Team Leader to be able to pull up any one staff member's same monthly history from the
+existing team view.
+
+**Change:**
+- [`access-control.js`](access-control.js) — `daily-monitoring.html` in `PAGE_ACCESS` now also
+  lists Receptionist, Therapist, Marketing Agent, and Branch Device (previously Admin/Executive
+  Assistant only, with Team Leader via `extraAccess`). Every one of these roles only ever sees
+  their own personal history on the page — never another account's.
+- [`sidebar.js`](sidebar.js) — Daily Monitoring Sheet menu item's `roles` list updated to match,
+  so the link now shows for every role.
+- [`daily-monitoring.html`](daily-monitoring.html) / [`daily-monitoring.js`](daily-monitoring.js):
+  - New **personal view** (`#monitorPersonalView`) for any account that is not Admin, Executive
+    Assistant, or a Team Leader: a month picker (no Today button — it's not tied to a single day)
+    and a table with one row per date in that month — `Date, Attendance, Uniform & Grooming, Name
+    Tags, Walkie Talkie, Readiness, Notes, Time Inspected` — sourced from that account's own
+    `dailyMonitoring` docs for the month. A date with no filed assessment shows a dash in every
+    column instead of being skipped.
+  - New **Staff Monthly History** card (`#monitorHistoryTableWrap` and friends) added below the
+    existing team table, visible only to Admin/Executive Assistant/Team Leader: a staff picker
+    (Receptionist/Therapist accounts assigned to the currently selected branch) plus the same
+    month-picker table shown above, for whichever staff member is selected.
+  - `loadMonthDocsForAccount()` / `renderMonthTable()` factored out so both the personal view and
+    the Staff Monthly History picker share one query and one render path instead of two copies.
+- [`daily-monitoring.css`](daily-monitoring.css) — `.monitor-staff-select` for the new picker's
+  width.
+- [`firestore.indexes.json`](firestore.indexes.json) — added the `dailyMonitoring` composite index
+  (`staffAccount` ASC, `date` ASC) the new month-range query needs; deploy with `firebase deploy
+  --only firestore:indexes` (or let Firestore's own error message on first query supply the
+  console link to create it).
+- [`manual.html`](manual.html) — Chapter 30 (Daily Monitoring Sheet) rewritten to document the
+  team view vs. personal view split, the new Staff Monthly History card, and the access matrix row
+  updated to show every role now has some access to this page.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
+
+---
+
 ## 2026-09-11 — Service Timer now shows HH:MM:SS
 
 **Requested by:** User — wanted the Dashboard's service timer countdown reformatted from `MM:SS`

@@ -26,10 +26,14 @@
 
     let currentUser = null;
     let canEdit = false;
+    let isPersonalView = false;
     let selectedDate = getTodayValue();
     let monitorDocsCache = {};
     let staffListCache = [];
     let inspectingRow = null;
+
+    let selectedMonth = getCurrentMonthValue();
+    let personalDocsCache = [];
 
     function escapeHtml(value){
         return String(value ?? "")
@@ -59,6 +63,58 @@
             String(date.getMonth() + 1).padStart(2, "0"),
             String(date.getDate()).padStart(2, "0")
         ].join("-");
+    }
+
+    function getCurrentMonthValue(){
+        const today = new Date();
+
+        return [
+            today.getFullYear(),
+            String(today.getMonth() + 1).padStart(2, "0")
+        ].join("-");
+    }
+
+    function addMonthsToMonthValue(value, months){
+        const [year, month] = value.split("-").map(Number);
+        const date = new Date(year, month - 1 + months, 1);
+
+        return [
+            date.getFullYear(),
+            String(date.getMonth() + 1).padStart(2, "0")
+        ].join("-");
+    }
+
+    /* All calendar days in the given "YYYY-MM" month that have already
+       occurred (so a personal history table never shows future dates),
+       oldest first. */
+    function daysInMonthSoFar(monthValue){
+        const [year, month] = monthValue.split("-").map(Number);
+        const lastDay = new Date(year, month, 0).getDate();
+        const today = getTodayValue();
+
+        const days = [];
+
+        for(let day = 1; day <= lastDay; day++){
+            const value = [year, String(month).padStart(2, "0"), String(day).padStart(2, "0")].join("-");
+
+            if(value > today){
+                break;
+            }
+
+            days.push(value);
+        }
+
+        return days;
+    }
+
+    function formatDateForRow(value){
+        const date = new Date(value + "T00:00:00");
+
+        return date.toLocaleDateString("en-PH", {
+            month: "short",
+            day: "numeric",
+            year: "numeric"
+        });
     }
 
     function getCurrentBranch(){
@@ -396,6 +452,159 @@
         renderTable();
     }
 
+    /* ---- Personal view — every non Admin/EA/Team Leader account sees
+       only their own accomplished assessments, one row per date instead
+       of one row per staff member. Also reused by the Admin / EA / Team
+       Leader "Staff Monthly History" picker below, which renders the
+       exact same shape for whichever staff account is picked. ---- */
+
+    async function loadMonthDocsForAccount(account, month){
+        if(!account || !window.firebase || !firebase.apps || firebase.apps.length === 0){
+            return [];
+        }
+
+        const monthStart = month + "-01";
+        const [year, monthNum] = month.split("-").map(Number);
+        const monthEnd = month + "-" + String(new Date(year, monthNum, 0).getDate()).padStart(2, "0");
+
+        try{
+            const snapshot = await firebase.firestore()
+                .collection(COLLECTION)
+                .where("staffAccount", "==", account)
+                .where("date", ">=", monthStart)
+                .where("date", "<=", monthEnd)
+                .get();
+
+            return snapshot.docs.map(function(doc){
+                return doc.data();
+            });
+        }catch(error){
+            console.error("Unable to load assessment history:", error);
+            return [];
+        }
+    }
+
+    function renderMonthTable(docs, month, bodyId, emptyStateId){
+        const body = document.getElementById(bodyId);
+        const emptyState = document.getElementById(emptyStateId);
+
+        const docsByDate = {};
+        docs.forEach(function(doc){
+            docsByDate[doc.date] = doc;
+        });
+
+        const days = daysInMonthSoFar(month);
+
+        if(docs.length === 0){
+            body.innerHTML = "";
+            emptyState.classList.remove("d-none");
+            return;
+        }
+
+        emptyState.classList.add("d-none");
+
+        body.innerHTML = days.map(function(dateValue){
+            const doc = docsByDate[dateValue] || null;
+
+            return `
+                <tr>
+                    <td class="monitor-staff-name">${escapeHtml(formatDateForRow(dateValue))}</td>
+                    <td>${toneCell("attendance", doc && doc.attendance)}</td>
+                    <td>${toneCell("uniform", doc && doc.uniform)}</td>
+                    <td>${toneCell("nameTags", doc && doc.nameTags)}</td>
+                    <td>${toneCell("walkieTalkie", doc && doc.walkieTalkie)}</td>
+                    <td>${toneCell("readiness", doc && doc.readiness)}</td>
+                    <td>${cell(doc && doc.notes)}</td>
+                    <td>${cell(doc && formatSubmittedAt(doc.submittedAt))}</td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    async function refreshPersonal(){
+        personalDocsCache = await loadMonthDocsForAccount(currentUser.account, selectedMonth);
+        renderMonthTable(personalDocsCache, selectedMonth, "monitorPersonalTableBody", "monitorPersonalEmptyState");
+    }
+
+    function applyMonth(value){
+        selectedMonth = value || getCurrentMonthValue();
+
+        document.getElementById("monitorMonthInput").value = selectedMonth;
+
+        refreshPersonal();
+    }
+
+    /* ---- Staff Monthly History — Admin / EA / Team Leader picker ---- */
+
+    let selectedHistoryStaff = "";
+    let selectedHistoryMonth = getCurrentMonthValue();
+    let historyDocsCache = [];
+
+    function getAssessableStaffForBranch(branch){
+        return getUserAccounts()
+            .filter(function(user){
+                return (
+                    (user.role === "Therapist" || user.role === "Receptionist") &&
+                    Array.isArray(user.branches) &&
+                    user.branches.includes(branch)
+                );
+            })
+            .map(function(user){
+                return { account: user.account, name: user.nickname || user.account };
+            })
+            .sort(function(a, b){
+                return a.name.localeCompare(b.name);
+            });
+    }
+
+    function populateStaffPicker(){
+        const select = document.getElementById("monitorStaffPickerInput");
+        const branch = getCurrentBranch();
+        const staff = branch ? getAssessableStaffForBranch(branch) : [];
+
+        const previousValue = selectedHistoryStaff;
+
+        select.innerHTML =
+            '<option value="">Select a staff member</option>' +
+            staff.map(function(person){
+                return `<option value="${escapeHtml(person.account)}">${escapeHtml(person.name)}</option>`;
+            }).join("");
+
+        selectedHistoryStaff = staff.some(function(person){ return person.account === previousValue; })
+            ? previousValue
+            : "";
+
+        select.value = selectedHistoryStaff;
+        select.disabled = !branch;
+    }
+
+    async function refreshHistory(){
+        const staffEmpty = document.getElementById("monitorHistoryStaffEmpty");
+        const tableWrap = document.getElementById("monitorHistoryTableWrap");
+        const emptyState = document.getElementById("monitorHistoryEmptyState");
+
+        if(!selectedHistoryStaff){
+            staffEmpty.classList.remove("d-none");
+            tableWrap.classList.add("d-none");
+            emptyState.classList.add("d-none");
+            return;
+        }
+
+        staffEmpty.classList.add("d-none");
+        tableWrap.classList.remove("d-none");
+
+        historyDocsCache = await loadMonthDocsForAccount(selectedHistoryStaff, selectedHistoryMonth);
+        renderMonthTable(historyDocsCache, selectedHistoryMonth, "monitorHistoryTableBody", "monitorHistoryEmptyState");
+    }
+
+    function applyHistoryMonth(value){
+        selectedHistoryMonth = value || getCurrentMonthValue();
+
+        document.getElementById("monitorHistoryMonthInput").value = selectedHistoryMonth;
+
+        refreshHistory();
+    }
+
     /* ---- Inspect modal ---- */
 
     function openInspectModal(account, staffName){
@@ -515,8 +724,12 @@
 
         canEdit = currentUser.teamLeader === true;
 
-        selectedDate = localStorage.getItem(MONITOR_DATE_KEY) || getTodayValue();
-        document.getElementById("monitorDateInput").value = selectedDate;
+        const effectiveRole = window.CrownAuth?.getEffectiveRole?.(currentUser) || currentUser.role;
+        isPersonalView = !(
+            effectiveRole === "Admin" ||
+            effectiveRole === "Executive Assistant" ||
+            currentUser.teamLeader === true
+        );
 
         document.querySelectorAll('#monitoringTabs [role="tab"]').forEach(function(btn){
             btn.addEventListener("click", function(){
@@ -525,6 +738,43 @@
         });
 
         selectTab("staff");
+
+        document.getElementById("monitorModalCloseBtn").addEventListener("click", closeInspectModal);
+        document.getElementById("monitorCancelBtn").addEventListener("click", closeInspectModal);
+        document.getElementById("monitorSubmitBtn").addEventListener("click", submitInspection);
+
+        document.getElementById("monitorModalBackdrop").addEventListener("click", function(event){
+            if(event.target === this){
+                closeInspectModal();
+            }
+        });
+
+        if(isPersonalView){
+            document.getElementById("monitorPersonalView").classList.remove("d-none");
+
+            selectedMonth = getCurrentMonthValue();
+            document.getElementById("monitorMonthInput").value = selectedMonth;
+
+            document.getElementById("monitorMonthInput").addEventListener("change", function(){
+                applyMonth(this.value);
+            });
+
+            document.getElementById("monitorPrevMonthBtn").addEventListener("click", function(){
+                applyMonth(addMonthsToMonthValue(selectedMonth, -1));
+            });
+
+            document.getElementById("monitorNextMonthBtn").addEventListener("click", function(){
+                applyMonth(addMonthsToMonthValue(selectedMonth, 1));
+            });
+
+            refreshPersonal();
+            return;
+        }
+
+        document.getElementById("monitorTeamView").classList.remove("d-none");
+
+        selectedDate = localStorage.getItem(MONITOR_DATE_KEY) || getTodayValue();
+        document.getElementById("monitorDateInput").value = selectedDate;
 
         document.getElementById("monitorDateInput").addEventListener("change", function(){
             applyDate(this.value);
@@ -542,24 +792,38 @@
             applyDate(getTodayValue());
         });
 
-        document.getElementById("monitorModalCloseBtn").addEventListener("click", closeInspectModal);
-        document.getElementById("monitorCancelBtn").addEventListener("click", closeInspectModal);
-        document.getElementById("monitorSubmitBtn").addEventListener("click", submitInspection);
+        selectedHistoryMonth = getCurrentMonthValue();
+        document.getElementById("monitorHistoryMonthInput").value = selectedHistoryMonth;
 
-        document.getElementById("monitorModalBackdrop").addEventListener("click", function(event){
-            if(event.target === this){
-                closeInspectModal();
-            }
+        document.getElementById("monitorStaffPickerInput").addEventListener("change", function(){
+            selectedHistoryStaff = this.value;
+            refreshHistory();
+        });
+
+        document.getElementById("monitorHistoryMonthInput").addEventListener("change", function(){
+            applyHistoryMonth(this.value);
+        });
+
+        document.getElementById("monitorHistoryPrevMonthBtn").addEventListener("click", function(){
+            applyHistoryMonth(addMonthsToMonthValue(selectedHistoryMonth, -1));
+        });
+
+        document.getElementById("monitorHistoryNextMonthBtn").addEventListener("click", function(){
+            applyHistoryMonth(addMonthsToMonthValue(selectedHistoryMonth, 1));
         });
 
         window.addEventListener("crownGlobalFiltersChanged", function(){
             refresh();
+            populateStaffPicker();
+            refreshHistory();
         });
 
         /* Re-render on a slow tick so a row still open past 11:59 PM
            locks itself (Not Inspected) without needing a manual reload. */
         setInterval(renderTable, 60000);
 
+        populateStaffPicker();
+        refreshHistory();
         refresh();
     });
 })();

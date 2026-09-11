@@ -169,14 +169,16 @@
             roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent"]
         },
 
-        /* Team Leader access comes entirely through extraAccess — see
-           CrownAuth.TEAM_LEADER_AUTO_ACCESS_PAGES in access-control.js —
-           since "Team Leader" is a flag on a Therapist account, not a
-           role this menu filter checks directly. */
+        /* Team Leader gets the full team table entirely through
+           extraAccess — see CrownAuth.TEAM_LEADER_AUTO_ACCESS_PAGES in
+           access-control.js — since "Team Leader" is a flag on a
+           Therapist account, not a role this menu filter checks
+           directly. Every other role listed below only ever sees their
+           own personal assessment history on this page. */
         {
             label: "Daily Monitoring Sheet",
             href: "daily-monitoring.html",
-            roles: ["Admin", "Executive Assistant"],
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device"],
             branchRequired: true
         },
 

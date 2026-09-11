@@ -71,7 +71,152 @@
     <!-- ===================== Staff Monitoring tab ===================== -->
     <div id="staffTabPanel">
 
-        <div class="card shadow-sm border-0">
+        <!-- Team table + Staff Monthly History — Admin / Executive Assistant / Team Leader -->
+        <div class="d-none" id="monitorTeamView">
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+
+                    <div class="monitor-date-row">
+                        <div class="date-stepper-group">
+                            <button
+                                type="button"
+                                class="date-step-btn"
+                                id="monitorPrevDayBtn"
+                                aria-label="Previous day"
+                                title="Previous day"
+                            >
+                                ‹
+                            </button>
+
+                            <input
+                                type="date"
+                                id="monitorDateInput"
+                                class="form-control monitor-date-input"
+                            >
+
+                            <button
+                                type="button"
+                                class="date-step-btn"
+                                id="monitorNextDayBtn"
+                                aria-label="Next day"
+                                title="Next day"
+                            >
+                                ›
+                            </button>
+                        </div>
+
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="monitorTodayBtn">
+                            Today
+                        </button>
+                    </div>
+
+                    <div class="monitor-branch-empty d-none" id="monitorBranchEmpty">
+                        Select a branch from the header above to view Staff Monitoring.
+                    </div>
+
+                    <div class="table-responsive" id="monitorTableWrap">
+                        <table class="table monitor-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Staff</th>
+                                    <th>Attendance</th>
+                                    <th>Uniform &amp; Grooming</th>
+                                    <th>Name Tags</th>
+                                    <th>Walkie Talkie</th>
+                                    <th>Readiness</th>
+                                    <th>Notes</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="monitorTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="empty-state d-none" id="monitorEmptyState">
+                        No staff scheduled for this branch and date. Add them in
+                        Staff Management → Staff Schedule (Opening/Closing row) first.
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Staff Monthly History — pick a staff member, view their
+                 personal assessment history exactly like their own view. -->
+            <div class="card shadow-sm border-0 mt-4">
+                <div class="card-body">
+
+                    <h5 class="fw-bold text-primary mb-3">Staff Monthly History</h5>
+
+                    <div class="monitor-date-row">
+                        <select class="form-select monitor-staff-select" id="monitorStaffPickerInput">
+                            <option value="">Select a staff member</option>
+                        </select>
+
+                        <div class="date-stepper-group">
+                            <button
+                                type="button"
+                                class="date-step-btn"
+                                id="monitorHistoryPrevMonthBtn"
+                                aria-label="Previous month"
+                                title="Previous month"
+                            >
+                                ‹
+                            </button>
+
+                            <input
+                                type="month"
+                                id="monitorHistoryMonthInput"
+                                class="form-control monitor-date-input"
+                            >
+
+                            <button
+                                type="button"
+                                class="date-step-btn"
+                                id="monitorHistoryNextMonthBtn"
+                                aria-label="Next month"
+                                title="Next month"
+                            >
+                                ›
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="monitor-branch-empty" id="monitorHistoryStaffEmpty">
+                        Select a staff member above to view their monthly assessment history.
+                    </div>
+
+                    <div class="table-responsive d-none" id="monitorHistoryTableWrap">
+                        <table class="table monitor-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Attendance</th>
+                                    <th>Uniform &amp; Grooming</th>
+                                    <th>Name Tags</th>
+                                    <th>Walkie Talkie</th>
+                                    <th>Readiness</th>
+                                    <th>Notes</th>
+                                    <th>Time Inspected</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="monitorHistoryTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="empty-state d-none" id="monitorHistoryEmptyState">
+                        No assessments recorded yet for this month.
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Personal history — every other user account, own assessments only -->
+        <div class="card shadow-sm border-0 d-none" id="monitorPersonalView">
             <div class="card-body">
 
                 <div class="monitor-date-row">
@@ -79,61 +224,52 @@
                         <button
                             type="button"
                             class="date-step-btn"
-                            id="monitorPrevDayBtn"
-                            aria-label="Previous day"
-                            title="Previous day"
+                            id="monitorPrevMonthBtn"
+                            aria-label="Previous month"
+                            title="Previous month"
                         >
                             ‹
                         </button>
 
                         <input
-                            type="date"
-                            id="monitorDateInput"
+                            type="month"
+                            id="monitorMonthInput"
                             class="form-control monitor-date-input"
                         >
 
                         <button
                             type="button"
                             class="date-step-btn"
-                            id="monitorNextDayBtn"
-                            aria-label="Next day"
-                            title="Next day"
+                            id="monitorNextMonthBtn"
+                            aria-label="Next month"
+                            title="Next month"
                         >
                             ›
                         </button>
                     </div>
-
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="monitorTodayBtn">
-                        Today
-                    </button>
                 </div>
 
-                <div class="monitor-branch-empty d-none" id="monitorBranchEmpty">
-                    Select a branch from the header above to view Staff Monitoring.
-                </div>
-
-                <div class="table-responsive" id="monitorTableWrap">
+                <div class="table-responsive">
                     <table class="table monitor-table align-middle">
                         <thead>
                             <tr>
-                                <th>Staff</th>
+                                <th>Date</th>
                                 <th>Attendance</th>
                                 <th>Uniform &amp; Grooming</th>
                                 <th>Name Tags</th>
                                 <th>Walkie Talkie</th>
                                 <th>Readiness</th>
                                 <th>Notes</th>
-                                <th>Action</th>
+                                <th>Time Inspected</th>
                             </tr>
                         </thead>
 
-                        <tbody id="monitorTableBody"></tbody>
+                        <tbody id="monitorPersonalTableBody"></tbody>
                     </table>
                 </div>
 
-                <div class="empty-state d-none" id="monitorEmptyState">
-                    No staff scheduled for this branch and date. Add them in
-                    Staff Management → Staff Schedule (Opening/Closing row) first.
+                <div class="empty-state d-none" id="monitorPersonalEmptyState">
+                    No assessments recorded yet for this month.
                 </div>
 
             </div>
