@@ -4,6 +4,24 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-11 — Service Timer now shows HH:MM:SS
+
+**Requested by:** User — wanted the Dashboard's service timer countdown reformatted from `MM:SS`
+to `HH:MM:SS`.
+
+**Change:**
+- [`dashboard.js`](dashboard.js) — `formatCountdown()` now derives and prefixes an hours segment
+  (`00:` for anything under an hour) ahead of minutes and seconds. Every caller (per-appointment
+  card countdown, Bed-column countdown on the Branch Schedule timeline, and the frozen Actual
+  Duration shown after Stop) shares this one function, so the new format applies everywhere
+  consistently with no other code changes needed. Purely a display change — the underlying
+  `timerStartedAt`/`timerDurationSeconds` data is untouched, so any timer already running when
+  this deploys keeps counting correctly under the new format.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
+
+---
+
 ## 2026-09-10 — Liters/Gallons units, VIP Points Ledger history
 
 **Requested by:** User — wanted two more Unit options in Inventory Settings for adding/editing
