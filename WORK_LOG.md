@@ -60,7 +60,11 @@ run (in addition to the usual `--only hosting`) before Client Engagement can act
 anything live. Held back pending confirmation since it stands up new billed, publicly-reachable
 infrastructure (the unsubscribe endpoint) rather than just updating static files.
 
-**Status:** Not yet pushed to GitHub or deployed.
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d) — the page, menu
+item, and access control are live. `firebase deploy --only functions,firestore:rules,storage:rules`
+is still outstanding (held back for confirmation, per the note above), so Send Email/Send SMS on
+the new page will fail until that runs, and the Preference column will show everyone as
+"Interested" until the `marketingUnsubscribes` read rule is live.
 
 ---
 
