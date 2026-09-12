@@ -3256,7 +3256,9 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     the top (a third tab, Archive, holds the send history — see below) —
     and choose which clients receive it from the client list below,
     sourced from the Client Database. Not scoped to the branch selector;
-    every client with an email or mobile number on file is listed.
+    the list is <strong>VIP clients only</strong> (VIP Status = Yes in
+    the Client Database) — keeps the table usable instead of listing
+    the entire client base.
   </p>
 
   <p>
@@ -3347,6 +3349,17 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     (SMS), how many recipients, how many succeeded, how many failed, and
     who sent it (the most recent 100 per channel, newest first) — and
     <span class="ui">Scheduled Sends</span>, covered next.
+  </p>
+
+  <p>
+    A <span class="ui">View</span> button on a row (when present — only
+    sends made after this was added carry the detail) opens the full
+    recipient-by-recipient result: every client that was part of that
+    send, by name and email/mobile number, each marked <em>Sent</em> or
+    <em>Failed</em> with the specific reason (or <em>Not attempted</em>
+    if a send stopped early before reaching them). This is the record to
+    check if a send's exact reach needs confirming later — who actually
+    got it, not just the totals.
   </p>
 
   <h3>Scheduling a send across multiple days</h3>

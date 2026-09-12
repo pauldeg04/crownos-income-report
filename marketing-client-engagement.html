@@ -145,6 +145,7 @@
                                     <th>Sent</th>
                                     <th>Failed</th>
                                     <th>Sent By</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody id="ceArchiveEmailTableBody"></tbody>
@@ -169,6 +170,7 @@
                                     <th>Sent</th>
                                     <th>Failed</th>
                                     <th>Sent By</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody id="ceArchiveSmsTableBody"></tbody>
@@ -211,7 +213,7 @@
     <div class="card shadow-sm border-0" id="ceClientsCard">
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                <h5 class="fw-bold text-primary mb-0">Clients</h5>
+                <h5 class="fw-bold text-primary mb-0">Clients <span class="text-muted fw-normal small">(VIP only)</span></h5>
                 <input type="text" class="form-control" id="ceClientSearch" placeholder="Search by name, email, or mobile..." style="max-width:280px;">
             </div>
 
@@ -300,11 +302,11 @@
     </div>
 </div>
 
-<!-- View Batch Recipients modal -->
+<!-- View Recipients / Send Results modal -->
 <div class="marketing-modal-backdrop d-none" id="ceViewRecipientsBackdrop">
-    <div class="marketing-modal">
+    <div class="marketing-modal marketing-modal-wide">
         <div class="marketing-modal-header">
-            <h4>Batch Recipients</h4>
+            <h4 id="ceViewRecipientsTitle">Batch Recipients</h4>
             <button type="button" class="marketing-modal-close" id="ceViewRecipientsCloseBtn">&times;</button>
         </div>
 
@@ -315,6 +317,7 @@
                         <tr>
                             <th>Name</th>
                             <th id="ceViewRecipientsContactHeader">Contact</th>
+                            <th id="ceViewRecipientsStatusHeader" class="d-none">Status</th>
                         </tr>
                     </thead>
                     <tbody id="ceViewRecipientsTableBody"></tbody>

@@ -128,7 +128,12 @@
 
     async function loadClients(){
         try{
-            clients = await window.CrownClientStore.getAll();
+            const allClients = await window.CrownClientStore.getAll();
+            /* VIP-only, per request — the full Client Database can run
+               into the thousands, and most promo blasts target VIPs
+               anyway; keeping this list to VIPs only is what keeps the
+               table usable instead of crowded. */
+            clients = allClients.filter(function(client){ return client.vip === "Yes"; });
         }catch(error){
             console.error("Failed to load clients:", error);
             clients = [];
@@ -211,6 +216,33 @@
         }catch(error){
             console.error("Failed to record undeliverable emails:", error);
         }
+    }
+
+    /* Merges the full originally-selected recipient list (which has
+       name) with the per-recipient send results (which don't carry
+       name back from the Cloud Function) into one array suitable for
+       storing on the marketingSentLog doc and later showing in the
+       Archive "View" modal. Anyone in `recipients` with no matching
+       result (e.g. a batch after the point a send stopped early) is
+       recorded as not attempted, so the Archive view always accounts
+       for the complete original selection, not just what went out. */
+    function buildLoggedResults(recipients, results, channel){
+        const key = channel === "email" ? "email" : "mobile";
+        const resultsByKey = new Map(results.map(function(r){ return [r[key], r]; }));
+
+        return recipients.map(function(recipient){
+            const result = resultsByKey.get(recipient[key]);
+
+            const row = {
+                name: recipient.name || "",
+                ok: result ? result.ok : false,
+                error: result ? (result.error || "") : "Not attempted (send stopped early)"
+            };
+
+            row[key] = recipient[key];
+
+            return row;
+        });
     }
 
     async function logSentBatch(entry){
@@ -351,6 +383,8 @@
     /* ---- Archive ---- */
 
     async function loadAndRenderArchive(){
+        sentLogCache = {};
+
         await Promise.all([
             loadAndRenderArchiveChannel("email", "ceArchiveEmailTableBody", "ceArchiveEmailEmptyState", renderEmailArchiveRow),
             loadAndRenderArchiveChannel("sms", "ceArchiveSmsTableBody", "ceArchiveSmsEmptyState", renderSmsArchiveRow),
@@ -429,7 +463,8 @@
             emptyState.classList.toggle("d-none", !snapshot.empty);
 
             snapshot.forEach(function(doc){
-                tbody.insertAdjacentHTML("beforeend", rowRenderer(doc.data()));
+                sentLogCache[doc.id] = doc.data();
+                tbody.insertAdjacentHTML("beforeend", rowRenderer(doc.id, doc.data()));
             });
         }catch(error){
             console.error(`Failed to load ${channel} sent log:`, error);
@@ -438,7 +473,13 @@
         }
     }
 
-    function renderEmailArchiveRow(entry){
+    function viewResultsButton(id, hasResults){
+        return hasResults
+            ? `<button type="button" class="btn btn-sm btn-outline-secondary ce-view-sentlog-btn" data-log-id="${escapeHtml(id)}">View</button>`
+            : `<span class="text-muted small">—</span>`;
+    }
+
+    function renderEmailArchiveRow(id, entry){
         return `
             <tr>
                 <td>${formatDateTime(entry.sentAt)}</td>
@@ -447,11 +488,12 @@
                 <td>${Number(entry.successCount) || 0}</td>
                 <td>${Number(entry.failCount) || 0}</td>
                 <td>${escapeHtml(entry.sentBy || "—")}</td>
+                <td>${viewResultsButton(id, Array.isArray(entry.results))}</td>
             </tr>
         `;
     }
 
-    function renderSmsArchiveRow(entry){
+    function renderSmsArchiveRow(id, entry){
         const preview = String(entry.message || "").slice(0, 80);
 
         return `
@@ -462,6 +504,7 @@
                 <td>${Number(entry.successCount) || 0}</td>
                 <td>${Number(entry.failCount) || 0}</td>
                 <td>${escapeHtml(entry.sentBy || "—")}</td>
+                <td>${viewResultsButton(id, Array.isArray(entry.results))}</td>
             </tr>
         `;
     }
@@ -729,7 +772,8 @@
                 totalRecipients: recipients.length,
                 successCount: allResults.filter(function(r){ return r.ok; }).length,
                 failCount: allResults.filter(function(r){ return !r.ok; }).length,
-                stoppedEarly: stoppedEarly
+                stoppedEarly: stoppedEarly,
+                results: buildLoggedResults(recipients, allResults, "email")
             });
 
             if(!stoppedEarly){
@@ -817,7 +861,8 @@
                 message: message,
                 totalRecipients: recipients.length,
                 successCount: allResults.filter(function(r){ return r.ok; }).length,
-                failCount: allResults.filter(function(r){ return !r.ok; }).length
+                failCount: allResults.filter(function(r){ return !r.ok; }).length,
+                results: buildLoggedResults(recipients, allResults, "sms")
             });
 
             archiveLoaded = false;
@@ -834,6 +879,7 @@
 
     let scheduleChannel = "email";
     let scheduledBatchesCache = {}; // id -> data, refreshed by loadAndRenderScheduled()
+    let sentLogCache = {}; // id -> data, refreshed by loadAndRenderArchiveChannel()
 
     const DEFAULT_BATCH_LIMIT = { email: 400, sms: 400 };
 
@@ -1010,6 +1056,33 @@
         }
     }
 
+    /* Shared by the Scheduled Sends "View" (a batch's fixed composition,
+       nothing sent yet) and the Email/SMS Sent Archive "View" (what
+       actually happened to each recipient) — `rows` is an array of
+       { name, contact, status } where status is "" for the former and
+       "Sent"/"Failed: <reason>" for the latter. */
+    function openViewRecipientsModal(title, channel, rows){
+        document.getElementById("ceViewRecipientsTitle").textContent = title;
+        document.getElementById("ceViewRecipientsContactHeader").textContent =
+            channel === "email" ? "Email Address" : "Mobile Number";
+
+        const statusHeader = document.getElementById("ceViewRecipientsStatusHeader");
+        const showStatus = rows.some(function(row){ return row.status; });
+        statusHeader.classList.toggle("d-none", !showStatus);
+
+        document.getElementById("ceViewRecipientsTableBody").innerHTML = rows.map(function(row){
+            return `
+                <tr>
+                    <td>${escapeHtml(row.name || "—")}</td>
+                    <td>${escapeHtml(row.contact || "—")}</td>
+                    ${showStatus ? `<td>${escapeHtml(row.status || "—")}</td>` : ""}
+                </tr>
+            `;
+        }).join("");
+
+        document.getElementById("ceViewRecipientsBackdrop").classList.remove("d-none");
+    }
+
     function handleViewBatch(scheduleId){
         const entry = scheduledBatchesCache[scheduleId];
 
@@ -1019,19 +1092,37 @@
 
         const recipients = Array.isArray(entry.originalRecipients) ? entry.originalRecipients : [];
 
-        document.getElementById("ceViewRecipientsContactHeader").textContent =
-            entry.channel === "email" ? "Email Address" : "Mobile Number";
+        openViewRecipientsModal(
+            `Batch ${Number(entry.batchNumber) || 1} of ${Number(entry.totalBatches) || 1} — Recipients`,
+            entry.channel,
+            recipients.map(function(recipient){
+                return {
+                    name: recipient.name,
+                    contact: entry.channel === "email" ? recipient.email : recipient.mobile,
+                    status: ""
+                };
+            })
+        );
+    }
 
-        document.getElementById("ceViewRecipientsTableBody").innerHTML = recipients.map(function(recipient){
-            return `
-                <tr>
-                    <td>${escapeHtml(recipient.name || "—")}</td>
-                    <td>${escapeHtml((entry.channel === "email" ? recipient.email : recipient.mobile) || "—")}</td>
-                </tr>
-            `;
-        }).join("");
+    function handleViewSentResults(logId){
+        const entry = sentLogCache[logId];
 
-        document.getElementById("ceViewRecipientsBackdrop").classList.remove("d-none");
+        if(!entry || !Array.isArray(entry.results)){
+            return;
+        }
+
+        openViewRecipientsModal(
+            `${entry.channel === "email" ? "Email" : "SMS"} Sent ${formatDateTime(entry.sentAt)} — Results`,
+            entry.channel,
+            entry.results.map(function(result){
+                return {
+                    name: result.name,
+                    contact: entry.channel === "email" ? result.email : result.mobile,
+                    status: result.ok ? "Sent" : `Failed: ${result.error || "Unknown error"}`
+                };
+            })
+        );
     }
 
     async function handleSendBatchNow(scheduleId){
@@ -1141,6 +1232,22 @@
                 handleSendBatchNow(sendNowBtn.dataset.scheduleId);
             }else if(rescheduleBtn){
                 openRescheduleModal(rescheduleBtn.dataset.scheduleId);
+            }
+        });
+
+        document.getElementById("ceArchiveEmailTableBody").addEventListener("click", function(event){
+            const viewBtn = event.target.closest(".ce-view-sentlog-btn");
+
+            if(viewBtn){
+                handleViewSentResults(viewBtn.dataset.logId);
+            }
+        });
+
+        document.getElementById("ceArchiveSmsTableBody").addEventListener("click", function(event){
+            const viewBtn = event.target.closest(".ce-view-sentlog-btn");
+
+            if(viewBtn){
+                handleViewSentResults(viewBtn.dataset.logId);
             }
         });
 

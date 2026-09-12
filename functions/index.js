@@ -2015,7 +2015,12 @@ async function finalizeScheduledBatchSend(doc, sentBySuffix){
         stoppedEarly: stoppedEarly,
         sentAt: new Date().toISOString(),
         sentBy: (campaign.createdBy || "Unknown") + sentBySuffix,
-        scheduledSendId: doc.id
+        scheduledSendId: doc.id,
+        results: results.map(function(r){
+            const row = { name: r.name || "", ok: r.ok, error: r.error || "" };
+            row[campaign.channel === "email" ? "email" : "mobile"] = r.email || r.mobile;
+            return row;
+        })
     });
 
     const nowIso = new Date().toISOString();

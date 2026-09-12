@@ -11,6 +11,61 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-12 — Client Engagement: client list is VIP-only
+
+**Requested by:** User — the client list was pulling the entire Client Database, which gets
+crowded; wanted it limited to VIP clients only.
+
+**Change:**
+- [`marketing-client-engagement.js`](marketing-client-engagement.js) — `loadClients()` now
+  filters to `client.vip === "Yes"` (same field/value `clients.js` uses for VIP Status)
+  immediately after loading, so every downstream piece (table, search, select-all, default
+  selection, Schedule Send, Archive) only ever sees VIP clients.
+- [`marketing-client-engagement.html`](marketing-client-engagement.html) — "Clients" heading now
+  labeled "(VIP only)".
+- [`manual.html`](manual.html) — Client Engagement intro updated to say VIP-only.
+
+**Status:** Pushed to GitHub and deployed (hosting).
+
+---
+
+## 2026-09-12 — Client Engagement: View exact recipient results on Archive rows
+
+**Requested by:** User — after realizing the earlier 2087-recipient send's exact per-recipient
+outcome was never recoverable (only aggregate counts were logged, and the undeliverable data was
+cleaned up as part of the quota-incident fix), asked to have this saved going forward so a
+send's actual reach can be checked later, the same way Scheduled Sends batches can already be
+viewed.
+
+**Change:**
+- [`marketing-client-engagement.js`](marketing-client-engagement.js) — new
+  `buildLoggedResults(recipients, results, channel)` merges the full originally-selected
+  recipient list (which has each client's name) with the per-recipient send results (which don't
+  carry name back from the Cloud Function) into one array — anyone not reached because a send
+  stopped early is recorded as "Not attempted (send stopped early)" rather than just missing.
+  Both `handleSendEmail` and `handleSendSms` now pass this as `results` into `logSentBatch()`, so
+  every new `marketingSentLog` doc carries it (still well under Firestore's 1MB doc limit even at
+  a few thousand recipients — roughly 100-150 bytes/recipient).
+- [`functions/index.js`](functions/index.js) — `finalizeScheduledBatchSend()` (used by both the
+  daily cron and `sendScheduledBatchNow`/"Send Now") now also writes a trimmed `results` array
+  (name, email/mobile, ok, error) onto its `marketingSentLog` entry, so Scheduled Send batches get
+  the same detail.
+- [`marketing-client-engagement.html`](marketing-client-engagement.html) /
+  `.js` — Email Sent and SMS Sent Archive rows gain a <span class="ui">View</span> button
+  (only shown when a row actually has `results` — older entries from before this don't) that opens
+  the same recipients modal Scheduled Sends batches use, extended with a Status column (Sent /
+  Failed: reason / Not attempted). Refactored the modal's population logic into one shared
+  `openViewRecipientsModal()` used by both the batch-composition view and this results view.
+
+**Note:** this only covers sends made after this shipped — the specific 2087-recipient send from
+earlier today still has no recoverable per-recipient list; the GoDaddy Workspace Email webmail's
+own Sent folder for info@crownheadspa.com is the only remaining source for who was actually
+reached by that one.
+
+**Status:** Pushed to GitHub and deployed (functions, hosting).
+
+---
+
 ## 2026-09-12 — Client Engagement: Scheduled Sends redesigned as pre-split batches
 
 **Requested by:** User — liked the Scheduled Sends list, but wanted scheduling to auto-split the
