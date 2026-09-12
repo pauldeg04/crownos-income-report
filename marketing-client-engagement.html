@@ -98,8 +98,9 @@
                     </div>
                 </div>
 
-                <div class="d-flex align-items-center gap-3 mt-3">
+                <div class="d-flex align-items-center gap-3 mt-3 flex-wrap">
                     <button type="button" class="btn btn-primary" id="ceSendEmailBtn">Send Email</button>
+                    <button type="button" class="btn btn-outline-primary" id="ceScheduleEmailBtn">Schedule Send...</button>
                     <span class="text-muted small" id="ceEmailSelectedCount">0 client(s) selected</span>
                 </div>
 
@@ -116,8 +117,9 @@
                     </div>
                 </div>
 
-                <div class="d-flex align-items-center gap-3 mt-3">
+                <div class="d-flex align-items-center gap-3 mt-3 flex-wrap">
                     <button type="button" class="btn btn-primary" id="ceSendSmsBtn">Send SMS</button>
+                    <button type="button" class="btn btn-outline-primary" id="ceScheduleSmsBtn">Schedule Send...</button>
                     <span class="text-muted small" id="ceSmsSelectedCount">0 client(s) selected</span>
                 </div>
 
@@ -175,6 +177,32 @@
                     <div class="empty-state d-none" id="ceArchiveSmsEmptyState">No SMS blasts sent yet.</div>
                 </div>
 
+                <button type="button" class="marketing-collapse-toggle mt-3" id="ceArchiveScheduledToggle">
+                    <span>Scheduled Sends</span>
+                    <span class="marketing-collapse-chevron" aria-hidden="true">▸</span>
+                </button>
+
+                <div class="marketing-collapse-body d-none" id="ceArchiveScheduledBody">
+                    <div class="table-responsive">
+                        <table class="table marketing-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Channel</th>
+                                    <th>Subject / Message</th>
+                                    <th>Started</th>
+                                    <th>Next Run</th>
+                                    <th>Sent so far</th>
+                                    <th>Remaining</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="ceArchiveScheduledTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="empty-state d-none" id="ceArchiveScheduledEmptyState">No scheduled sends.</div>
+                </div>
+
             </div>
 
         </div>
@@ -230,6 +258,42 @@
         <div class="marketing-modal-footer">
             <button type="button" class="btn btn-outline-secondary" id="ceConfirmNoBtn">No</button>
             <button type="button" class="btn btn-primary" id="ceConfirmYesBtn">Yes</button>
+        </div>
+    </div>
+</div>
+
+<!-- Schedule Send modal -->
+<div class="marketing-modal-backdrop d-none" id="ceScheduleBackdrop">
+    <div class="marketing-modal">
+        <div class="marketing-modal-header">
+            <h4>Schedule Send</h4>
+            <button type="button" class="marketing-modal-close" id="ceScheduleCloseBtn">&times;</button>
+        </div>
+
+        <div class="marketing-modal-body">
+            <p class="text-muted small">
+                A list bigger than the per-day limit goes out over several days automatically —
+                <span id="ceScheduleRecipientCount">0 client(s)</span> selected, sending
+                <span id="ceScheduleLimitPreview">450</span> per day starting on the date below,
+                every day at 7:00 AM, until everyone's been sent to.
+            </p>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Start Date</label>
+                    <input type="date" class="form-control" id="ceScheduleStartDate">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Per-day limit</label>
+                    <input type="number" class="form-control" id="ceScheduleDailyLimit" min="1" step="1" value="450">
+                </div>
+            </div>
+        </div>
+
+        <div class="marketing-modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="ceScheduleCancelBtn">Cancel</button>
+            <button type="button" class="btn btn-primary" id="ceScheduleConfirmBtn">Schedule</button>
         </div>
     </div>
 </div>

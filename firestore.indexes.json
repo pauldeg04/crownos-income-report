@@ -23,6 +23,14 @@
                 { "fieldPath": "channel", "order": "ASCENDING" },
                 { "fieldPath": "sentAt", "order": "DESCENDING" }
             ]
+        },
+        {
+            "collectionGroup": "marketingScheduledSends",
+            "queryScope": "COLLECTION",
+            "fields": [
+                { "fieldPath": "status", "order": "ASCENDING" },
+                { "fieldPath": "nextRunAt", "order": "ASCENDING" }
+            ]
         }
     ],
     "fieldOverrides": []

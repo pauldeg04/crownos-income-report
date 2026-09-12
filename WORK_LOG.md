@@ -11,6 +11,52 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-12 — Client Engagement: Schedule Send (multi-day batching)
+
+**Requested by:** User — after the GoDaddy 500-recipients/24h relay quota incident, asked whether
+sending could be scheduled per batch instead of manually re-sending the rest of a big list every
+day. Confirmed 7:00 AM as the daily run time (started at 8am, settled on 7am).
+
+**Change:**
+- [`functions/index.js`](functions/index.js) — extracted `sendEmailBatchCore()`/
+  `sendSmsBatchCore()` out of `sendMarketingEmailBlast`/`sendMarketingSmsBlast` so the same
+  send logic is shared with the new scheduled processor. New
+  `exports.processScheduledMarketingSends` (`onSchedule`, `"0 7 * * *"`, `Asia/Manila`) runs daily
+  at 7:00 AM: for every `marketingScheduledSends` doc with `status` in `["scheduled",
+  "in-progress"]` and `nextRunAt <= now`, sends one day's batch (`perBatchLimit` recipients off
+  the front of `remainingRecipients`) — email is worked in chunks of 20 (each chunk itself sent
+  concurrently) so an account-level lockout is caught within one chunk rather than only after the
+  whole batch; SMS is worked as one batch. `isAccountLevelFailureServer()` (the server-side twin
+  of the client's `isAccountLevelFailure()`) keeps quota/auth/connection failures out of
+  `marketingUndeliverable` and out of "handled" — those recipients stay in
+  `remainingRecipients` to retry the next day, and if more than half a chunk/batch fails that way,
+  the rest of that day's batch isn't attempted. Every day's run also logs its own
+  `marketingSentLog` entry (`sentBy` suffixed "(Scheduled Send)"), and sets `nextRunAt` to +24h.
+- [`marketing-client-engagement.html`](marketing-client-engagement.html) /
+  [`marketing-client-engagement.js`](marketing-client-engagement.js) — new
+  <span class="ui">Schedule Send...</span> button next to Send Email/Send SMS, opening a modal
+  (Start Date, Per-day limit — defaults 450 email / 1000 SMS) that writes a
+  `marketingScheduledSends` doc (recipients captured at schedule time, same eligibility rules as
+  a normal send via the new shared `getSelectedRecipients(channel)`/`isEligibleForChannel()`
+  helpers — `isEligibleForActiveTab` now just calls the latter with the active tab). `nextRunAt`
+  is built as `${date}T07:00:00+08:00` client-side — PH time is a fixed UTC+8 with no DST, so no
+  timezone library is needed, but this and the Cloud Function's cron/timeZone move together if
+  the run time ever changes. New "Scheduled Sends" collapsible section in the Archive tab lists
+  every schedule (channel, preview, created, next run, sent/total, remaining, status) with a
+  Cancel button on anything not yet finished (flips `status` to `cancelled` — already-reached
+  clients keep what they got, nothing further goes to anyone still waiting).
+- [`firestore.rules`](firestore.rules) — `marketingScheduledSends`: a client may `create` a
+  schedule and may only ever `update` it to cancel (`affectedKeys().hasOnly(['status'])` and
+  `status == 'cancelled'`); every other field is Cloud-Function-only (Admin SDK bypasses rules).
+- [`firestore.indexes.json`](firestore.indexes.json) — composite index (`status` asc, `nextRunAt`
+  asc) for the scheduled function's query.
+- [`manual.html`](manual.html) — new "Scheduling a send across multiple days" section.
+
+**Status:** Pushed to GitHub and deployed (functions, Firestore rules, Firestore indexes,
+hosting).
+
+---
+
 ## 2026-09-12 — Client Engagement: fix false-positive "Unavailable" from a mail quota hit
 
 **Incident:** First real large-scale send — 2087 clients — hit the mail account's (GoDaddy,

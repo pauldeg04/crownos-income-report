@@ -373,6 +373,25 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    /* Marketing / Client Engagement Scheduled Sends (see
+       processScheduledMarketingSends in functions/index.js, and the
+       Schedule modal / Archive tab's "Scheduled Sends" section in
+       marketing-client-engagement.js). A client may create a new
+       schedule and may only ever update it to cancel (flip status to
+       'cancelled') — every other field (remainingRecipients, sentCount,
+       nextRunAt, etc.) is only ever written by the scheduled Cloud
+       Function via the Admin SDK, which bypasses these rules entirely.
+       Same open-to-any-authenticated-user, gated-in-the-UI pattern as
+       marketingCampaigns. */
+    match /marketingScheduledSends/{scheduleId} {
+      allow get, list: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+        request.resource.data.status == 'cancelled';
+      allow delete: if false;
+    }
+
     /* One doc per registered device push token (doc ID = the token
        itself), written by push-notifications.js on opt-in. A user may
        only manage tokens addressed to their own recipientEmail; the

@@ -44,6 +44,7 @@
     const UNSUBSCRIBE_COLLECTION = "marketingUnsubscribes";
     const UNDELIVERABLE_COLLECTION = "marketingUndeliverable";
     const SENT_LOG_COLLECTION = "marketingSentLog";
+    const SCHEDULED_SENDS_COLLECTION = "marketingScheduledSends";
     const SMS_SEGMENT_LENGTH = 160;
     const SMS_MAX_SEGMENTS = 3;
     const BATCH_SIZE = 100;
@@ -248,16 +249,30 @@
             });
     }
 
-    function isEligibleForActiveTab(client){
-        if(activeTab === "email"){
+    function isEligibleForChannel(client, channel){
+        if(channel === "email"){
             return Boolean(normalizeEmail(client.email)) && !isUnsubscribed(client) && !isUndeliverable(client);
         }
 
-        if(activeTab === "sms"){
+        if(channel === "sms"){
             return Boolean(String(client.contactNumber || "").trim());
         }
 
         return false;
+    }
+
+    function isEligibleForActiveTab(client){
+        return isEligibleForChannel(client, activeTab);
+    }
+
+    function getSelectedRecipients(channel){
+        return clients
+            .filter(function(client){ return isEligibleForChannel(client, channel) && selectedClientIds.has(client.id); })
+            .map(function(client){
+                return channel === "email"
+                    ? { email: client.email, name: client.name }
+                    : { mobile: client.contactNumber, name: client.name };
+            });
     }
 
     function renderClientsTable(){
@@ -338,8 +353,54 @@
     async function loadAndRenderArchive(){
         await Promise.all([
             loadAndRenderArchiveChannel("email", "ceArchiveEmailTableBody", "ceArchiveEmailEmptyState", renderEmailArchiveRow),
-            loadAndRenderArchiveChannel("sms", "ceArchiveSmsTableBody", "ceArchiveSmsEmptyState", renderSmsArchiveRow)
+            loadAndRenderArchiveChannel("sms", "ceArchiveSmsTableBody", "ceArchiveSmsEmptyState", renderSmsArchiveRow),
+            loadAndRenderScheduled()
         ]);
+    }
+
+    async function loadAndRenderScheduled(){
+        const tbody = document.getElementById("ceArchiveScheduledTableBody");
+        const emptyState = document.getElementById("ceArchiveScheduledEmptyState");
+
+        try{
+            const snapshot = await firebase.firestore()
+                .collection(SCHEDULED_SENDS_COLLECTION)
+                .orderBy("createdAt", "desc")
+                .limit(50)
+                .get();
+
+            tbody.innerHTML = "";
+            emptyState.classList.toggle("d-none", !snapshot.empty);
+
+            snapshot.forEach(function(doc){
+                tbody.insertAdjacentHTML("beforeend", renderScheduledRow(doc.id, doc.data()));
+            });
+        }catch(error){
+            console.error("Failed to load scheduled sends:", error);
+            tbody.innerHTML = "";
+            emptyState.classList.remove("d-none");
+        }
+    }
+
+    function renderScheduledRow(id, entry){
+        const preview = entry.channel === "email" ? entry.subject : String(entry.message || "").slice(0, 60);
+        const remaining = Array.isArray(entry.remainingRecipients) ? entry.remainingRecipients.length : 0;
+        const cancellable = entry.status === "scheduled" || entry.status === "in-progress";
+
+        return `
+            <tr>
+                <td>${entry.channel === "email" ? "Email" : "SMS"}</td>
+                <td>${escapeHtml(preview || "—")}</td>
+                <td>${formatDateTime(entry.createdAt)}</td>
+                <td>${formatDateTime(entry.nextRunAt)}</td>
+                <td>${Number(entry.sentCount) || 0} / ${Number(entry.totalRecipients) || 0}</td>
+                <td>${remaining}</td>
+                <td><span class="marketing-status-pill ${entry.status === "completed" ? "status-active" : entry.status === "cancelled" ? "status-inactive" : "status-active"}">${escapeHtml(entry.status || "—")}</span></td>
+                <td>
+                    ${cancellable ? `<button type="button" class="btn btn-sm btn-outline-danger ce-cancel-schedule-btn" data-schedule-id="${escapeHtml(id)}">Cancel</button>` : ""}
+                </td>
+            </tr>
+        `;
     }
 
     async function loadAndRenderArchiveChannel(channel, tbodyId, emptyStateId, rowRenderer){
@@ -571,11 +632,7 @@
             return;
         }
 
-        const recipients = clients
-            .filter(function(client){
-                return Boolean(normalizeEmail(client.email)) && !isUnsubscribed(client) && selectedClientIds.has(client.id);
-            })
-            .map(function(client){ return { email: client.email, name: client.name }; });
+        const recipients = getSelectedRecipients("email");
 
         if(recipients.length === 0){
             renderSendError(statusId, "Select at least one client with an email address.");
@@ -701,9 +758,7 @@
             return;
         }
 
-        const recipients = clients
-            .filter(function(client){ return isEligibleForActiveTab(client) && selectedClientIds.has(client.id); })
-            .map(function(client){ return { mobile: client.contactNumber, name: client.name }; });
+        const recipients = getSelectedRecipients("sms");
 
         if(recipients.length === 0){
             renderSendError(statusId, "Select at least one client with a mobile number.");
@@ -765,6 +820,181 @@
         }
     }
 
+    /* ---- Schedule Send ---- */
+
+    let scheduleChannel = "email";
+
+    const DEFAULT_DAILY_LIMIT = { email: 450, sms: 1000 };
+
+    function openScheduleModal(channel){
+        scheduleChannel = channel;
+
+        const recipients = getSelectedRecipients(channel);
+
+        document.getElementById("ceScheduleRecipientCount").textContent =
+            `${recipients.length} client${recipients.length === 1 ? "" : "s"}`;
+
+        const limitInput = document.getElementById("ceScheduleDailyLimit");
+        limitInput.value = DEFAULT_DAILY_LIMIT[channel];
+        document.getElementById("ceScheduleLimitPreview").textContent = limitInput.value;
+
+        const dateInput = document.getElementById("ceScheduleStartDate");
+        const today = new Date().toISOString().slice(0, 10);
+        dateInput.min = today;
+        dateInput.value = today;
+
+        document.getElementById("ceScheduleBackdrop").classList.remove("d-none");
+    }
+
+    function closeScheduleModal(){
+        document.getElementById("ceScheduleBackdrop").classList.add("d-none");
+    }
+
+    /* Philippine Standard Time is a fixed UTC+8 year-round (no DST), so a
+       literal "+08:00" offset on the chosen date is always correct without
+       needing a timezone library. 7:00 AM matches
+       SCHEDULED_SEND_CRON/SCHEDULED_SEND_TIMEZONE in functions/index.js —
+       change both together if that ever moves. */
+    function buildNextRunAtIso(dateString){
+        return new Date(`${dateString}T07:00:00+08:00`).toISOString();
+    }
+
+    async function handleScheduleConfirm(){
+        const dateString = document.getElementById("ceScheduleStartDate").value;
+        const dailyLimit = Number(document.getElementById("ceScheduleDailyLimit").value);
+        const statusId = scheduleChannel === "email" ? "ceEmailSendStatus" : "ceSmsSendStatus";
+
+        if(!dateString){
+            renderSendError(statusId, "Please choose a start date.");
+            return;
+        }
+
+        if(!Number.isFinite(dailyLimit) || dailyLimit < 1){
+            renderSendError(statusId, "Please enter a valid per-day limit.");
+            return;
+        }
+
+        let subject = "";
+        let message = "";
+        let attachmentUrl = "";
+        let attachmentName = "";
+
+        if(scheduleChannel === "email"){
+            subject = document.getElementById("ceEmailSubject").value.trim();
+            message = document.getElementById("ceEmailMessage").value.trim();
+
+            if(!subject){
+                renderSendError(statusId, "Please enter a subject.");
+                return;
+            }
+        }else{
+            message = document.getElementById("ceSmsMessage").value.trim();
+
+            if(/https?:\/\//i.test(message)){
+                renderSendError(statusId, "Links are silently dropped from SMS by Smart — remove the URL from the message.");
+                return;
+            }
+
+            if(message.length > SMS_SEGMENT_LENGTH * SMS_MAX_SEGMENTS){
+                renderSendError(statusId, `Message is too long (${message.length} characters). Keep it under ${SMS_SEGMENT_LENGTH * SMS_MAX_SEGMENTS} characters.`);
+                return;
+            }
+        }
+
+        if(!message){
+            renderSendError(statusId, "Please enter a message.");
+            return;
+        }
+
+        const recipients = getSelectedRecipients(scheduleChannel);
+
+        if(recipients.length === 0){
+            renderSendError(statusId, `Select at least one client with ${scheduleChannel === "email" ? "an email address" : "a mobile number"}.`);
+            return;
+        }
+
+        const confirmBtn = document.getElementById("ceScheduleConfirmBtn");
+        confirmBtn.disabled = true;
+
+        try{
+            if(scheduleChannel === "email"){
+                const fileInput = document.getElementById("ceEmailAttachmentInput");
+
+                if(fileInput.files && fileInput.files[0] && !pendingAttachment){
+                    confirmBtn.textContent = "Uploading attachment...";
+                    pendingAttachment = await uploadAttachment(fileInput.files[0]);
+                    renderAttachmentReadout();
+                }
+
+                if(pendingAttachment){
+                    attachmentUrl = pendingAttachment.url;
+                    attachmentName = pendingAttachment.name;
+                }
+            }
+
+            const days = Math.ceil(recipients.length / dailyLimit);
+
+            closeScheduleModal();
+
+            const confirmed = await confirmSend(
+                `Schedule sending to ${recipients.length} Client${recipients.length === 1 ? "" : "s"} starting ${dateString}, ` +
+                `${dailyLimit} per day at 7:00 AM (about ${days} day${days === 1 ? "" : "s"})?`
+            );
+
+            if(!confirmed){
+                return;
+            }
+
+            const currentUser = window.CrownAuth?.getCurrentUser?.();
+
+            await firebase.firestore().collection(SCHEDULED_SENDS_COLLECTION).add({
+                channel: scheduleChannel,
+                subject: subject,
+                message: message,
+                attachmentUrl: attachmentUrl,
+                attachmentName: attachmentName,
+                perBatchLimit: dailyLimit,
+                remainingRecipients: recipients,
+                totalRecipients: recipients.length,
+                sentCount: 0,
+                failCount: 0,
+                status: "scheduled",
+                nextRunAt: buildNextRunAtIso(dateString),
+                createdAt: new Date().toISOString(),
+                createdBy: currentUser?.nickname || currentUser?.account || "Unknown"
+            });
+
+            closeScheduleModal();
+
+            document.getElementById(statusId).innerHTML =
+                `<div class="alert alert-success py-2 px-3 mb-0">Scheduled — ${recipients.length} clients, ${dailyLimit}/day starting ${dateString}. See the Archive tab's Scheduled Sends section.</div>`;
+
+            archiveLoaded = false;
+        }catch(error){
+            console.error("Failed to schedule send:", error);
+            renderSendError(statusId, "Could not schedule the send. Reason: " + (error?.message || "Unknown error"));
+        }finally{
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = "Schedule";
+        }
+    }
+
+    async function handleCancelSchedule(scheduleId){
+        const confirmed = await confirmSend("Cancel this scheduled send? Recipients not yet reached will not receive it.");
+
+        if(!confirmed){
+            return;
+        }
+
+        try{
+            await firebase.firestore().collection(SCHEDULED_SENDS_COLLECTION).doc(scheduleId).update({ status: "cancelled" });
+            await loadAndRenderScheduled();
+        }catch(error){
+            console.error("Failed to cancel scheduled send:", error);
+            alert("Could not cancel the scheduled send. Reason: " + (error?.message || "Unknown error"));
+        }
+    }
+
     /* ---- Wiring ---- */
 
     function wireEvents(){
@@ -778,6 +1008,18 @@
 
         document.getElementById("ceArchiveSmsToggle").addEventListener("click", function(){
             toggleArchiveSection("ceArchiveSmsToggle", "ceArchiveSmsBody");
+        });
+
+        document.getElementById("ceArchiveScheduledToggle").addEventListener("click", function(){
+            toggleArchiveSection("ceArchiveScheduledToggle", "ceArchiveScheduledBody");
+        });
+
+        document.getElementById("ceArchiveScheduledTableBody").addEventListener("click", function(event){
+            const cancelBtn = event.target.closest(".ce-cancel-schedule-btn");
+
+            if(cancelBtn){
+                handleCancelSchedule(cancelBtn.dataset.scheduleId);
+            }
         });
 
         document.getElementById("ceClientSearch").addEventListener("input", function(event){
@@ -835,6 +1077,15 @@
 
         document.getElementById("ceSendEmailBtn").addEventListener("click", handleSendEmail);
         document.getElementById("ceSendSmsBtn").addEventListener("click", handleSendSms);
+
+        document.getElementById("ceScheduleEmailBtn").addEventListener("click", function(){ openScheduleModal("email"); });
+        document.getElementById("ceScheduleSmsBtn").addEventListener("click", function(){ openScheduleModal("sms"); });
+        document.getElementById("ceScheduleCloseBtn").addEventListener("click", closeScheduleModal);
+        document.getElementById("ceScheduleCancelBtn").addEventListener("click", closeScheduleModal);
+        document.getElementById("ceScheduleConfirmBtn").addEventListener("click", handleScheduleConfirm);
+        document.getElementById("ceScheduleDailyLimit").addEventListener("input", function(event){
+            document.getElementById("ceScheduleLimitPreview").textContent = event.target.value || "0";
+        });
     }
 
     document.addEventListener("DOMContentLoaded", async function(){

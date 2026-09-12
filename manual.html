@@ -3339,14 +3339,50 @@ Branch receives    →  it is added to the branch's Available Stock</div>
 
   <p>
     <strong>Archive tab</strong> — every completed blast (Email or SMS)
-    logs itself here automatically; nothing to save or fill in. Two
-    collapsible sections, <span class="ui">Email Sent</span> and
-    <span class="ui">SMS Sent</span> (collapsed by default so the page
-    stays uncluttered — click either to expand), each a table of past
-    sends: when it went out, the Subject (Email) or a preview of the
-    Message (SMS), how many recipients, how many succeeded, how many
-    failed, and who sent it. The most recent 100 sends per channel are
-    listed, newest first.
+    logs itself here automatically; nothing to save or fill in. Three
+    collapsible sections (collapsed by default so the page stays
+    uncluttered — click any to expand): <span class="ui">Email Sent</span>
+    and <span class="ui">SMS Sent</span>, each a table of past sends —
+    when it went out, the Subject (Email) or a preview of the Message
+    (SMS), how many recipients, how many succeeded, how many failed, and
+    who sent it (the most recent 100 per channel, newest first) — and
+    <span class="ui">Scheduled Sends</span>, covered next.
+  </p>
+
+  <h3>Scheduling a send across multiple days</h3>
+
+  <p>
+    Next to <span class="ui">Send Email</span>/<span class="ui">Send
+    SMS</span> is <span class="ui">Schedule Send...</span> — for a list
+    too big to go out in one sitting (e.g. past a mail account's own
+    daily sending limit). It opens a small window: a Start Date and a
+    Per-day limit (defaults to 450 for Email, 1000 for SMS — change
+    either). Confirming it does <em>not</em> send anything right away; it
+    files the request (same recipients, message, and — for Email —
+    Subject/Attachment as the tab currently has filled in) to be worked
+    automatically, every day at <strong>7:00 AM</strong>, Per-day-limit
+    recipients at a time, starting on the chosen date, until the whole
+    list has been sent to.
+  </p>
+
+  <p>
+    Progress lives in the Archive tab's <span class="ui">Scheduled
+    Sends</span> section — channel, a preview of the Subject/Message,
+    when it was created, when its next batch runs, how many sent so far
+    out of the total, how many remain, and its status
+    (<em>scheduled</em> → <em>in-progress</em> → <em>completed</em>, or
+    <em>cancelled</em>). A <span class="ui">Cancel</span> button sits on
+    any row that hasn't finished yet — clients already reached keep what
+    they received; nobody still waiting gets anything further.
+  </p>
+
+  <p>
+    Same account-level-failure protection as a manual send (see above):
+    if a day's batch looks like the mail account itself hit its limit
+    rather than bad addresses, that day's remaining recipients are left
+    untouched for the next scheduled run instead of being wrongly marked
+    <em>Unavailable</em> — the schedule just quietly tries again at
+    7:00 AM the next day.
   </p>
 </section>
 

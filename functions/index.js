@@ -1644,6 +1644,57 @@ async function runWithConcurrency(items, concurrency, worker){
     return results;
 }
 
+/* Shared by sendMarketingEmailBlast (the onCall a "Send Email" click hits)
+   and processScheduledMarketingSends (the onSchedule that works one day's
+   worth of a multi-day Scheduled Send) — same per-recipient send logic,
+   same command/code annotation on failures either way. */
+async function sendEmailBatchCore(recipients, { subject, message, attachmentUrl, attachmentName }){
+    const isImageAttachment = /\.(jpe?g|png|gif|webp)$/i.test(attachmentName || "");
+    const posterCid = attachmentUrl && isImageAttachment ? "marketingPoster" : "";
+
+    const mailer = buildMailer();
+    const secretValue = EMAIL_PASSWORD.value();
+
+    return runWithConcurrency(recipients, 8, async function(recipient){
+        try{
+            const unsubscribeUrl = buildUnsubscribeUrl(recipient.email, secretValue);
+
+            await mailer.sendMail({
+                from: `"Crown Head Spa" <${BOOKING_EMAIL_FROM}>`,
+                to: recipient.email,
+                subject: subject,
+                text: `Hi ${recipient.name || "there"},\n\n${message}\n\n---\nUnsubscribe: ${unsubscribeUrl}`,
+                html: buildMarketingEmailHtml({ clientName: recipient.name, message, unsubscribeUrl, posterCid }),
+                attachments: attachmentUrl
+                    ? [{
+                        filename: attachmentName,
+                        path: attachmentUrl,
+                        cid: posterCid || undefined
+                    }]
+                    : []
+            });
+
+            return { email: recipient.email, ok: true };
+        }catch(error){
+            console.error("Marketing email failed for", recipient.email, error);
+            return {
+                email: recipient.email,
+                ok: false,
+                error: error.message || "Unknown error",
+                /* command/code let the client tell "this recipient's
+                   address is bad" apart from "our own account hit its
+                   sending limit / auth got rejected" — see
+                   isAccountLevelFailure() in
+                   marketing-client-engagement.js (and its server-side
+                   twin below). A RCPT TO rejection is about the
+                   recipient; an AUTH/CONN failure never is. */
+                command: error.command || "",
+                code: error.responseCode || null
+            };
+        }
+    });
+}
+
 exports.sendMarketingEmailBlast = onCall(
     { secrets: [EMAIL_PASSWORD], timeoutSeconds: 300 },
     async (request) => {
@@ -1681,54 +1732,7 @@ exports.sendMarketingEmailBlast = onCall(
         const attachmentUrl = String(data.attachmentUrl || "").trim();
         const attachmentName = String(data.attachmentName || "attachment").trim();
 
-        /* An image attachment (the common case — a promo poster/flyer) is
-           embedded inline in the email body via cid: so it shows full-size
-           the moment the email opens, with no separate download/open step.
-           Anything else (a PDF, for example) stays a plain attachment,
-           same as before. */
-        const isImageAttachment = /\.(jpe?g|png|gif|webp)$/i.test(attachmentName);
-        const posterCid = attachmentUrl && isImageAttachment ? "marketingPoster" : "";
-
-        const mailer = buildMailer();
-        const secretValue = EMAIL_PASSWORD.value();
-
-        const results = await runWithConcurrency(recipients, 8, async function(recipient){
-            try{
-                const unsubscribeUrl = buildUnsubscribeUrl(recipient.email, secretValue);
-
-                await mailer.sendMail({
-                    from: `"Crown Head Spa" <${BOOKING_EMAIL_FROM}>`,
-                    to: recipient.email,
-                    subject: subject,
-                    text: `Hi ${recipient.name || "there"},\n\n${message}\n\n---\nUnsubscribe: ${unsubscribeUrl}`,
-                    html: buildMarketingEmailHtml({ clientName: recipient.name, message, unsubscribeUrl, posterCid }),
-                    attachments: attachmentUrl
-                        ? [{
-                            filename: attachmentName,
-                            path: attachmentUrl,
-                            cid: posterCid || undefined
-                        }]
-                        : []
-                });
-
-                return { email: recipient.email, ok: true };
-            }catch(error){
-                console.error("Marketing email failed for", recipient.email, error);
-                return {
-                    email: recipient.email,
-                    ok: false,
-                    error: error.message || "Unknown error",
-                    /* command/code let the client tell "this recipient's
-                       address is bad" apart from "our own account hit its
-                       sending limit / auth got rejected" — see
-                       isAccountLevelFailure() in
-                       marketing-client-engagement.js. A RCPT TO rejection
-                       is about the recipient; an AUTH/CONN failure never is. */
-                    command: error.command || "",
-                    code: error.responseCode || null
-                };
-            }
-        });
+        const results = await sendEmailBatchCore(recipients, { subject, message, attachmentUrl, attachmentName });
 
         return { ok: true, results };
     }
@@ -1741,6 +1745,42 @@ exports.sendMarketingEmailBlast = onCall(
    buildConfirmationSmsText's comment above. */
 const MARKETING_SMS_MAX_SEGMENTS = 3;
 const MARKETING_SMS_SEGMENT_LENGTH = 160;
+
+/* Shared by sendMarketingSmsBlast and processScheduledMarketingSends —
+   same reasoning as sendEmailBatchCore above. */
+async function sendSmsBatchCore(recipients, message){
+    return runWithConcurrency(recipients, 5, async function(mobile){
+        try{
+            const response = await fetch("https://api.semaphore.co/api/v4/messages", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({
+                    apikey: SEMAPHORE_API_KEY.value(),
+                    number: mobile,
+                    message: message
+                })
+            });
+
+            const bodyText = await response.text();
+            let result;
+
+            try{
+                result = JSON.parse(bodyText);
+            }catch(parseError){
+                throw new Error(`Semaphore returned an unexpected response (HTTP ${response.status}): ${bodyText.slice(0, 300)}`);
+            }
+
+            if(!response.ok || result?.message){
+                throw new Error(result?.message || JSON.stringify(result));
+            }
+
+            return { mobile: mobile, ok: true };
+        }catch(error){
+            console.error("Marketing SMS failed for", mobile, error);
+            return { mobile: mobile, ok: false, error: error.message || "Unknown error" };
+        }
+    });
+}
 
 exports.sendMarketingSmsBlast = onCall(
     { secrets: [SEMAPHORE_API_KEY], timeoutSeconds: 300 },
@@ -1779,37 +1819,7 @@ exports.sendMarketingSmsBlast = onCall(
 
         requireBatchSizeWithinLimit(recipients);
 
-        const results = await runWithConcurrency(recipients, 5, async function(mobile){
-            try{
-                const response = await fetch("https://api.semaphore.co/api/v4/messages", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    body: new URLSearchParams({
-                        apikey: SEMAPHORE_API_KEY.value(),
-                        number: mobile,
-                        message: message
-                    })
-                });
-
-                const bodyText = await response.text();
-                let result;
-
-                try{
-                    result = JSON.parse(bodyText);
-                }catch(parseError){
-                    throw new Error(`Semaphore returned an unexpected response (HTTP ${response.status}): ${bodyText.slice(0, 300)}`);
-                }
-
-                if(!response.ok || result?.message){
-                    throw new Error(result?.message || JSON.stringify(result));
-                }
-
-                return { mobile: mobile, ok: true };
-            }catch(error){
-                console.error("Marketing SMS failed for", mobile, error);
-                return { mobile: mobile, ok: false, error: error.message || "Unknown error" };
-            }
-        });
+        const results = await sendSmsBatchCore(recipients, message);
 
         return { ok: true, results };
     }
@@ -1854,6 +1864,184 @@ h1{font-size:18px;color:#0E1B3D;}p{color:#6b645a;font-size:14px;}</style>
         });
 
         page(200, "You're unsubscribed", "You will no longer receive promotional emails from Crown Head Spa. You may still receive booking/appointment confirmations.");
+    }
+);
+
+/* ---------- processScheduledMarketingSends (scheduled) ----------
+
+   A "Scheduled Send" (created from marketing-client-engagement.js's
+   Schedule modal, one doc in marketingScheduledSends per campaign) exists
+   because of a real limit: the mail account's own GoDaddy relay quota
+   (500 recipients/24h at the time this was written) means a list bigger
+   than that has to go out a few hundred at a time, spread across days —
+   nobody wants to click Send Email by hand every morning to do that.
+
+   This runs once a day (see SCHEDULED_SEND_CRON below) and, for every
+   campaign whose nextRunAt has arrived, sends ONE day's batch
+   (perBatchLimit recipients off the front of remainingRecipients) using
+   the exact same sendEmailBatchCore/sendSmsBatchCore the manual Send
+   Email/Send SMS buttons use.
+
+   Same account-level-failure safeguard as the manual send (see
+   isAccountLevelFailure in marketing-client-engagement.js — this is its
+   server-side twin, since this function has no browser to run that
+   client-side logic in): a recipient whose failure looks like it's about
+   the mail account itself (quota/auth/connection) is left in
+   remainingRecipients to retry on the next scheduled run, is never
+   marked undeliverable, and if more than half of a batch fails that way
+   the rest of that batch isn't attempted — same "don't grind through a
+   doomed batch" reasoning as the manual send's stop-early behavior. */
+
+const SCHEDULED_SENDS_COLLECTION = "marketingScheduledSends";
+const MARKETING_UNDELIVERABLE_COLLECTION = "marketingUndeliverable";
+const SCHEDULED_SEND_CRON = "0 7 * * *"; // 7:00 AM daily
+const SCHEDULED_SEND_TIMEZONE = "Asia/Manila";
+
+const ACCOUNT_LEVEL_ERROR_PATTERN = /relay quota|sending limit|rate limit|too many|authentication rejected|invalid login|econnreset|connection closed|greeting never received|timed?\s*out/i;
+
+function isAccountLevelFailureServer(result){
+    if(result.command && result.command !== "RCPT TO"){
+        return true;
+    }
+
+    return ACCOUNT_LEVEL_ERROR_PATTERN.test(String(result.error || ""));
+}
+
+function addOneDayIso(fromIso){
+    const date = new Date(fromIso);
+    date.setDate(date.getDate() + 1);
+    return date.toISOString();
+}
+
+async function processOneScheduledCampaign(doc){
+    const campaign = doc.data();
+    const remaining = Array.isArray(campaign.remainingRecipients) ? campaign.remainingRecipients : [];
+
+    if(remaining.length === 0){
+        await doc.ref.set({ status: "completed" }, { merge: true });
+        return;
+    }
+
+    const perBatchLimit = Number(campaign.perBatchLimit) > 0 ? Number(campaign.perBatchLimit) : 450;
+    const batch = remaining.slice(0, perBatchLimit);
+
+    let results;
+    let stoppedEarly = false;
+
+    if(campaign.channel === "sms"){
+        const mobiles = batch.map(function(r){ return r.mobile; });
+        results = await sendSmsBatchCore(mobiles, campaign.message);
+        results = results.map(function(result, index){ return Object.assign({}, batch[index], result); });
+
+        const accountLevelCount = results.filter(isAccountLevelFailureServer).length;
+        stoppedEarly = results.length > 0 && accountLevelCount / results.length > 0.5;
+    }else{
+        /* Worked CHECK_CHUNK recipients at a time (each chunk itself sent
+           concurrently by sendEmailBatchCore) so an account-level lockout
+           is caught within one chunk instead of only after the whole
+           batch — without falling back to fully sequential sending. */
+        const CHECK_CHUNK = 20;
+        results = [];
+
+        for(let offset = 0; offset < batch.length; offset += CHECK_CHUNK){
+            const chunkRecipients = batch.slice(offset, offset + CHECK_CHUNK);
+
+            const chunkResults = await sendEmailBatchCore(chunkRecipients, {
+                subject: campaign.subject,
+                message: campaign.message,
+                attachmentUrl: campaign.attachmentUrl,
+                attachmentName: campaign.attachmentName
+            });
+
+            const mergedChunk = chunkResults.map(function(result, index){
+                return Object.assign({}, chunkRecipients[index], result);
+            });
+
+            results = results.concat(mergedChunk);
+
+            const accountLevelCount = mergedChunk.filter(isAccountLevelFailureServer).length;
+
+            if(mergedChunk.length > 0 && accountLevelCount / mergedChunk.length > 0.5){
+                stoppedEarly = true;
+                break;
+            }
+        }
+    }
+
+    const succeeded = results.filter(function(r){ return r.ok; });
+    const genuineFailures = results.filter(function(r){ return !r.ok && !isAccountLevelFailureServer(r); });
+    const accountLevelFailures = results.filter(function(r){ return !r.ok && isAccountLevelFailureServer(r); });
+
+    const handledKeys = new Set(
+        succeeded.concat(genuineFailures).map(function(r){ return r.email || r.mobile; })
+    );
+
+    const newRemaining = remaining.filter(function(r){
+        return !handledKeys.has(r.email || r.mobile);
+    });
+
+    if(campaign.channel === "email" && genuineFailures.length > 0){
+        const batchWrite = db.batch();
+
+        genuineFailures.forEach(function(failure){
+            const emailKey = normalizeMarketingEmail(failure.email);
+
+            if(emailKey){
+                batchWrite.set(db.collection(MARKETING_UNDELIVERABLE_COLLECTION).doc(emailKey), {
+                    email: emailKey,
+                    markedAt: new Date().toISOString()
+                });
+            }
+        });
+
+        await batchWrite.commit();
+    }
+
+    await db.collection("marketingSentLog").add({
+        channel: campaign.channel,
+        subject: campaign.subject || "",
+        message: campaign.message,
+        attachmentName: campaign.attachmentName || "",
+        totalRecipients: results.length,
+        successCount: succeeded.length,
+        failCount: genuineFailures.length,
+        stoppedEarly: stoppedEarly,
+        sentAt: new Date().toISOString(),
+        sentBy: (campaign.createdBy || "Unknown") + " (Scheduled Send)",
+        scheduledSendId: doc.id
+    });
+
+    const nowIso = new Date().toISOString();
+
+    await doc.ref.set({
+        remainingRecipients: newRemaining,
+        sentCount: (Number(campaign.sentCount) || 0) + succeeded.length,
+        failCount: (Number(campaign.failCount) || 0) + genuineFailures.length,
+        lastRunAt: nowIso,
+        nextRunAt: addOneDayIso(nowIso),
+        status: newRemaining.length === 0 ? "completed" : "in-progress",
+        lastRunStoppedEarly: stoppedEarly,
+        lastRunAccountLevelFailures: accountLevelFailures.length
+    }, { merge: true });
+}
+
+exports.processScheduledMarketingSends = onSchedule(
+    { schedule: SCHEDULED_SEND_CRON, timeZone: SCHEDULED_SEND_TIMEZONE, secrets: [EMAIL_PASSWORD, SEMAPHORE_API_KEY], timeoutSeconds: 540 },
+    async () => {
+        const nowIso = new Date().toISOString();
+
+        const snapshot = await db.collection(SCHEDULED_SENDS_COLLECTION)
+            .where("status", "in", ["scheduled", "in-progress"])
+            .where("nextRunAt", "<=", nowIso)
+            .get();
+
+        for(const doc of snapshot.docs){
+            try{
+                await processOneScheduledCampaign(doc);
+            }catch(error){
+                console.error("Failed to process scheduled campaign", doc.id, error);
+            }
+        }
     }
 );
 
