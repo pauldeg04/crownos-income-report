@@ -11,6 +11,48 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-12 — Client Engagement: Scheduled Sends redesigned as pre-split batches
+
+**Requested by:** User — liked the Scheduled Sends list, but wanted scheduling to auto-split the
+recipient list into fixed batches of 400 up front (one queue entry per batch, immediately
+visible) rather than one growing/shrinking campaign doc that the cron slices daily. Also wanted
+to view a specific batch's recipient list, and a way to reschedule (or immediately send) one
+particular batch — "para incase na may need ako isend agad ay maisisingit ko."
+
+**Change — this replaces most of the mechanism added in the previous entry below:**
+- `marketingScheduledSends` is now **one doc per batch**, not one doc per whole request.
+  `handleScheduleConfirm()` in
+  [`marketing-client-engagement.js`](marketing-client-engagement.js) splits the selected
+  recipients into `chunkArray(recipients, perBatchLimit)` (default 400) and writes them all in a
+  single Firestore batched write — `batchNumber`/`totalBatches`/`groupId` link sibling batches
+  from the same request, `nextRunAt` is `${startDate + batchIndex days}T07:00:00+08:00`, and
+  `originalRecipients` is a frozen copy of that batch's list (kept for the View action even after
+  it's sent) while `recipients` is the mutable remaining-to-send list.
+- [`functions/index.js`](functions/index.js) — `processOneScheduledCampaign` replaced by
+  `finalizeScheduledBatchSend(doc, sentBySuffix)`, shared by the daily cron
+  (`processScheduledMarketingSends`, unchanged schedule) and a new callable
+  `sendScheduledBatchNow` (the "Send Now" action). No more `perBatchLimit` slicing inside it —
+  each doc's `recipients` already *is* one batch, so a run just works that whole array (still
+  chunked in groups of 20 for email so an account-level lockout is caught early). A run that
+  leaves some recipients unhandled (account-level failure) shrinks `recipients` to just those and
+  keeps `status: "scheduled"` for a retry — either the next 7 AM cron tick, or another
+  <span class="ui">Send Now</span>.
+- New Archive tab actions per batch row: <span class="ui">View</span> (recipient list modal, from
+  `originalRecipients`), <span class="ui">Send Now</span> (calls `sendScheduledBatchNow`),
+  <span class="ui">Reschedule</span> (small date-picker modal, updates just `nextRunAt`),
+  <span class="ui">Cancel</span> (unchanged, flips `status` to `cancelled`) — the last three only
+  shown while a batch is still `scheduled`.
+- [`firestore.rules`](firestore.rules) — `marketingScheduledSends` update rule now also allows a
+  client to change only `nextRunAt` while `status` is (and stays) `scheduled`, for Reschedule.
+  `sendScheduledBatchNow` writes the actual "sent" result via the Admin SDK, so a client still can
+  never mark a batch sent on its own.
+- [`manual.html`](manual.html) — Scheduling section rewritten for the per-batch model and its four
+  row actions.
+
+**Status:** Pushed to GitHub and deployed (functions, Firestore rules, hosting).
+
+---
+
 ## 2026-09-12 — Client Engagement: Schedule Send (multi-day batching)
 
 **Requested by:** User — after the GoDaddy 500-recipients/24h relay quota incident, asked whether

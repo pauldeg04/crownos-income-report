@@ -371,8 +371,10 @@
 
             tbody.innerHTML = "";
             emptyState.classList.toggle("d-none", !snapshot.empty);
+            scheduledBatchesCache = {};
 
             snapshot.forEach(function(doc){
+                scheduledBatchesCache[doc.id] = doc.data();
                 tbody.insertAdjacentHTML("beforeend", renderScheduledRow(doc.id, doc.data()));
             });
         }catch(error){
@@ -384,21 +386,29 @@
 
     function renderScheduledRow(id, entry){
         const preview = entry.channel === "email" ? entry.subject : String(entry.message || "").slice(0, 60);
-        const remaining = Array.isArray(entry.remainingRecipients) ? entry.remainingRecipients.length : 0;
-        const cancellable = entry.status === "scheduled" || entry.status === "in-progress";
+        const isPending = entry.status === "scheduled";
+        const statusTone = entry.status === "sent" ? "status-active" : entry.status === "cancelled" ? "status-inactive" : "status-active";
+
+        const actions = [
+            `<button type="button" class="btn btn-sm btn-outline-secondary ce-view-batch-btn" data-schedule-id="${escapeHtml(id)}">View</button>`
+        ];
+
+        if(isPending){
+            actions.push(`<button type="button" class="btn btn-sm btn-outline-primary ce-sendnow-schedule-btn" data-schedule-id="${escapeHtml(id)}">Send Now</button>`);
+            actions.push(`<button type="button" class="btn btn-sm btn-outline-secondary ce-reschedule-btn" data-schedule-id="${escapeHtml(id)}">Reschedule</button>`);
+            actions.push(`<button type="button" class="btn btn-sm btn-outline-danger ce-cancel-schedule-btn" data-schedule-id="${escapeHtml(id)}">Cancel</button>`);
+        }
 
         return `
             <tr>
                 <td>${entry.channel === "email" ? "Email" : "SMS"}</td>
                 <td>${escapeHtml(preview || "—")}</td>
-                <td>${formatDateTime(entry.createdAt)}</td>
+                <td>${Number(entry.batchNumber) || 1} of ${Number(entry.totalBatches) || 1}</td>
+                <td>${Number(entry.totalRecipients) || 0}</td>
                 <td>${formatDateTime(entry.nextRunAt)}</td>
-                <td>${Number(entry.sentCount) || 0} / ${Number(entry.totalRecipients) || 0}</td>
-                <td>${remaining}</td>
-                <td><span class="marketing-status-pill ${entry.status === "completed" ? "status-active" : entry.status === "cancelled" ? "status-inactive" : "status-active"}">${escapeHtml(entry.status || "—")}</span></td>
-                <td>
-                    ${cancellable ? `<button type="button" class="btn btn-sm btn-outline-danger ce-cancel-schedule-btn" data-schedule-id="${escapeHtml(id)}">Cancel</button>` : ""}
-                </td>
+                <td>${Number(entry.sentCount) || 0} / ${Number(entry.failCount) || 0}</td>
+                <td><span class="marketing-status-pill ${statusTone}">${escapeHtml(entry.status || "—")}</span></td>
+                <td class="d-flex gap-1 flex-wrap">${actions.join("")}</td>
             </tr>
         `;
     }
@@ -823,25 +833,32 @@
     /* ---- Schedule Send ---- */
 
     let scheduleChannel = "email";
+    let scheduledBatchesCache = {}; // id -> data, refreshed by loadAndRenderScheduled()
 
-    const DEFAULT_DAILY_LIMIT = { email: 450, sms: 1000 };
+    const DEFAULT_BATCH_LIMIT = { email: 400, sms: 400 };
+
+    function updateScheduleBatchPreview(){
+        const recipients = getSelectedRecipients(scheduleChannel);
+        const limit = Math.max(1, Number(document.getElementById("ceScheduleDailyLimit").value) || 1);
+        const batchCount = Math.max(1, Math.ceil(recipients.length / limit));
+
+        document.getElementById("ceScheduleRecipientCount").textContent =
+            `${recipients.length} client${recipients.length === 1 ? "" : "s"}`;
+        document.getElementById("ceScheduleLimitPreview").textContent = limit;
+        document.getElementById("ceScheduleBatchCountPreview").textContent = batchCount;
+    }
 
     function openScheduleModal(channel){
         scheduleChannel = channel;
 
-        const recipients = getSelectedRecipients(channel);
-
-        document.getElementById("ceScheduleRecipientCount").textContent =
-            `${recipients.length} client${recipients.length === 1 ? "" : "s"}`;
-
-        const limitInput = document.getElementById("ceScheduleDailyLimit");
-        limitInput.value = DEFAULT_DAILY_LIMIT[channel];
-        document.getElementById("ceScheduleLimitPreview").textContent = limitInput.value;
+        document.getElementById("ceScheduleDailyLimit").value = DEFAULT_BATCH_LIMIT[channel];
 
         const dateInput = document.getElementById("ceScheduleStartDate");
         const today = new Date().toISOString().slice(0, 10);
         dateInput.min = today;
         dateInput.value = today;
+
+        updateScheduleBatchPreview();
 
         document.getElementById("ceScheduleBackdrop").classList.remove("d-none");
     }
@@ -855,13 +872,15 @@
        needing a timezone library. 7:00 AM matches
        SCHEDULED_SEND_CRON/SCHEDULED_SEND_TIMEZONE in functions/index.js —
        change both together if that ever moves. */
-    function buildNextRunAtIso(dateString){
-        return new Date(`${dateString}T07:00:00+08:00`).toISOString();
+    function buildNextRunAtIso(dateString, dayOffset){
+        const date = new Date(`${dateString}T07:00:00+08:00`);
+        date.setDate(date.getDate() + (dayOffset || 0));
+        return date.toISOString();
     }
 
     async function handleScheduleConfirm(){
         const dateString = document.getElementById("ceScheduleStartDate").value;
-        const dailyLimit = Number(document.getElementById("ceScheduleDailyLimit").value);
+        const batchLimit = Number(document.getElementById("ceScheduleDailyLimit").value);
         const statusId = scheduleChannel === "email" ? "ceEmailSendStatus" : "ceSmsSendStatus";
 
         if(!dateString){
@@ -869,8 +888,8 @@
             return;
         }
 
-        if(!Number.isFinite(dailyLimit) || dailyLimit < 1){
-            renderSendError(statusId, "Please enter a valid per-day limit.");
+        if(!Number.isFinite(batchLimit) || batchLimit < 1){
+            renderSendError(statusId, "Please enter a valid per-batch limit.");
             return;
         }
 
@@ -932,13 +951,13 @@
                 }
             }
 
-            const days = Math.ceil(recipients.length / dailyLimit);
+            const batches = chunkArray(recipients, batchLimit);
 
             closeScheduleModal();
 
             const confirmed = await confirmSend(
-                `Schedule sending to ${recipients.length} Client${recipients.length === 1 ? "" : "s"} starting ${dateString}, ` +
-                `${dailyLimit} per day at 7:00 AM (about ${days} day${days === 1 ? "" : "s"})?`
+                `Create ${batches.length} batch${batches.length === 1 ? "" : "es"} of up to ${batchLimit} for ${recipients.length} ` +
+                `Client${recipients.length === 1 ? "" : "s"}, one per day starting ${dateString} at 7:00 AM?`
             );
 
             if(!confirmed){
@@ -946,28 +965,40 @@
             }
 
             const currentUser = window.CrownAuth?.getCurrentUser?.();
+            const createdBy = currentUser?.nickname || currentUser?.account || "Unknown";
+            const createdAt = new Date().toISOString();
+            const groupId = firebase.firestore().collection(SCHEDULED_SENDS_COLLECTION).doc().id;
 
-            await firebase.firestore().collection(SCHEDULED_SENDS_COLLECTION).add({
-                channel: scheduleChannel,
-                subject: subject,
-                message: message,
-                attachmentUrl: attachmentUrl,
-                attachmentName: attachmentName,
-                perBatchLimit: dailyLimit,
-                remainingRecipients: recipients,
-                totalRecipients: recipients.length,
-                sentCount: 0,
-                failCount: 0,
-                status: "scheduled",
-                nextRunAt: buildNextRunAtIso(dateString),
-                createdAt: new Date().toISOString(),
-                createdBy: currentUser?.nickname || currentUser?.account || "Unknown"
+            const writeBatch = firebase.firestore().batch();
+
+            batches.forEach(function(batchRecipients, index){
+                const docRef = firebase.firestore().collection(SCHEDULED_SENDS_COLLECTION).doc();
+
+                writeBatch.set(docRef, {
+                    channel: scheduleChannel,
+                    subject: subject,
+                    message: message,
+                    attachmentUrl: attachmentUrl,
+                    attachmentName: attachmentName,
+                    groupId: groupId,
+                    batchNumber: index + 1,
+                    totalBatches: batches.length,
+                    originalRecipients: batchRecipients,
+                    recipients: batchRecipients,
+                    totalRecipients: batchRecipients.length,
+                    sentCount: 0,
+                    failCount: 0,
+                    status: "scheduled",
+                    nextRunAt: buildNextRunAtIso(dateString, index),
+                    createdAt: createdAt,
+                    createdBy: createdBy
+                });
             });
 
-            closeScheduleModal();
+            await writeBatch.commit();
 
             document.getElementById(statusId).innerHTML =
-                `<div class="alert alert-success py-2 px-3 mb-0">Scheduled — ${recipients.length} clients, ${dailyLimit}/day starting ${dateString}. See the Archive tab's Scheduled Sends section.</div>`;
+                `<div class="alert alert-success py-2 px-3 mb-0">Created ${batches.length} batch(es) for ${recipients.length} clients, starting ${dateString}. See the Archive tab's Scheduled Sends section.</div>`;
 
             archiveLoaded = false;
         }catch(error){
@@ -975,7 +1006,89 @@
             renderSendError(statusId, "Could not schedule the send. Reason: " + (error?.message || "Unknown error"));
         }finally{
             confirmBtn.disabled = false;
-            confirmBtn.textContent = "Schedule";
+            confirmBtn.textContent = "Create Batches";
+        }
+    }
+
+    function handleViewBatch(scheduleId){
+        const entry = scheduledBatchesCache[scheduleId];
+
+        if(!entry){
+            return;
+        }
+
+        const recipients = Array.isArray(entry.originalRecipients) ? entry.originalRecipients : [];
+
+        document.getElementById("ceViewRecipientsContactHeader").textContent =
+            entry.channel === "email" ? "Email Address" : "Mobile Number";
+
+        document.getElementById("ceViewRecipientsTableBody").innerHTML = recipients.map(function(recipient){
+            return `
+                <tr>
+                    <td>${escapeHtml(recipient.name || "—")}</td>
+                    <td>${escapeHtml((entry.channel === "email" ? recipient.email : recipient.mobile) || "—")}</td>
+                </tr>
+            `;
+        }).join("");
+
+        document.getElementById("ceViewRecipientsBackdrop").classList.remove("d-none");
+    }
+
+    async function handleSendBatchNow(scheduleId){
+        const confirmed = await confirmSend("Send this batch right now instead of waiting for its scheduled date?");
+
+        if(!confirmed){
+            return;
+        }
+
+        try{
+            const response = await firebase.functions().httpsCallable("sendScheduledBatchNow", { timeout: CALLABLE_TIMEOUT_MS })({ scheduleId: scheduleId });
+            await loadAndRenderScheduled();
+            archiveLoaded = false;
+            alert(`Sent — ${response.data.successCount} succeeded, ${response.data.failCount} failed.`);
+        }catch(error){
+            console.error("Failed to send batch now:", error);
+            alert("Could not send this batch. Reason: " + (error?.message || "Unknown error"));
+        }
+    }
+
+    let rescheduleTargetId = null;
+
+    function openRescheduleModal(scheduleId){
+        rescheduleTargetId = scheduleId;
+
+        const entry = scheduledBatchesCache[scheduleId];
+        const dateInput = document.getElementById("ceRescheduleDate");
+        const today = new Date().toISOString().slice(0, 10);
+
+        dateInput.min = today;
+        dateInput.value = entry?.nextRunAt ? entry.nextRunAt.slice(0, 10) : today;
+
+        document.getElementById("ceRescheduleBackdrop").classList.remove("d-none");
+    }
+
+    function closeRescheduleModal(){
+        document.getElementById("ceRescheduleBackdrop").classList.add("d-none");
+        rescheduleTargetId = null;
+    }
+
+    async function handleRescheduleConfirm(){
+        const dateString = document.getElementById("ceRescheduleDate").value;
+
+        if(!dateString || !rescheduleTargetId){
+            return;
+        }
+
+        try{
+            await firebase.firestore().collection(SCHEDULED_SENDS_COLLECTION).doc(rescheduleTargetId).update({
+                nextRunAt: buildNextRunAtIso(dateString, 0)
+            });
+
+            closeRescheduleModal();
+            await loadAndRenderScheduled();
+        }catch(error){
+            console.error("Failed to reschedule batch:", error);
+            alert("Could not reschedule this batch. Reason: " + (error?.message || "Unknown error"));
         }
     }
 
@@ -1016,11 +1129,31 @@
 
         document.getElementById("ceArchiveScheduledTableBody").addEventListener("click", function(event){
             const cancelBtn = event.target.closest(".ce-cancel-schedule-btn");
+            const viewBtn = event.target.closest(".ce-view-batch-btn");
+            const sendNowBtn = event.target.closest(".ce-sendnow-schedule-btn");
+            const rescheduleBtn = event.target.closest(".ce-reschedule-btn");
 
             if(cancelBtn){
                 handleCancelSchedule(cancelBtn.dataset.scheduleId);
+            }else if(viewBtn){
+                handleViewBatch(viewBtn.dataset.scheduleId);
+            }else if(sendNowBtn){
+                handleSendBatchNow(sendNowBtn.dataset.scheduleId);
+            }else if(rescheduleBtn){
+                openRescheduleModal(rescheduleBtn.dataset.scheduleId);
             }
         });
+
+        document.getElementById("ceViewRecipientsCloseBtn").addEventListener("click", function(){
+            document.getElementById("ceViewRecipientsBackdrop").classList.add("d-none");
+        });
+        document.getElementById("ceViewRecipientsCloseFooterBtn").addEventListener("click", function(){
+            document.getElementById("ceViewRecipientsBackdrop").classList.add("d-none");
+        });
+
+        document.getElementById("ceRescheduleCloseBtn").addEventListener("click", closeRescheduleModal);
+        document.getElementById("ceRescheduleCancelBtn").addEventListener("click", closeRescheduleModal);
+        document.getElementById("ceRescheduleConfirmBtn").addEventListener("click", handleRescheduleConfirm);
 
         document.getElementById("ceClientSearch").addEventListener("input", function(event){
             searchTerm = event.target.value.trim().toLowerCase();
@@ -1083,9 +1216,7 @@
         document.getElementById("ceScheduleCloseBtn").addEventListener("click", closeScheduleModal);
         document.getElementById("ceScheduleCancelBtn").addEventListener("click", closeScheduleModal);
         document.getElementById("ceScheduleConfirmBtn").addEventListener("click", handleScheduleConfirm);
-        document.getElementById("ceScheduleDailyLimit").addEventListener("input", function(event){
-            document.getElementById("ceScheduleLimitPreview").textContent = event.target.value || "0";
-        });
+        document.getElementById("ceScheduleDailyLimit").addEventListener("input", updateScheduleBatchPreview);
     }
 
     document.addEventListener("DOMContentLoaded", async function(){

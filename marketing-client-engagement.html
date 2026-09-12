@@ -189,12 +189,12 @@
                                 <tr>
                                     <th>Channel</th>
                                     <th>Subject / Message</th>
-                                    <th>Started</th>
+                                    <th>Batch</th>
+                                    <th>Recipients</th>
                                     <th>Next Run</th>
-                                    <th>Sent so far</th>
-                                    <th>Remaining</th>
+                                    <th>Sent / Failed</th>
                                     <th>Status</th>
-                                    <th></th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="ceArchiveScheduledTableBody"></tbody>
@@ -272,10 +272,12 @@
 
         <div class="marketing-modal-body">
             <p class="text-muted small">
-                A list bigger than the per-day limit goes out over several days automatically —
-                <span id="ceScheduleRecipientCount">0 client(s)</span> selected, sending
-                <span id="ceScheduleLimitPreview">450</span> per day starting on the date below,
-                every day at 7:00 AM, until everyone's been sent to.
+                <span id="ceScheduleRecipientCount">0 client(s)</span> selected — split
+                automatically into batches of <span id="ceScheduleLimitPreview">400</span> each
+                (<span id="ceScheduleBatchCountPreview">0</span> batch(es)), one batch per day
+                starting on the date below, each sent at 7:00 AM. Every batch shows up right away
+                in the Archive tab's Scheduled Sends section, where you can view who's in it,
+                send it right now, reschedule it, or cancel it.
             </p>
 
             <div class="row g-3">
@@ -285,15 +287,64 @@
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold">Per-day limit</label>
-                    <input type="number" class="form-control" id="ceScheduleDailyLimit" min="1" step="1" value="450">
+                    <label class="form-label fw-semibold">Per-batch limit</label>
+                    <input type="number" class="form-control" id="ceScheduleDailyLimit" min="1" step="1" value="400">
                 </div>
             </div>
         </div>
 
         <div class="marketing-modal-footer">
             <button type="button" class="btn btn-outline-secondary" id="ceScheduleCancelBtn">Cancel</button>
-            <button type="button" class="btn btn-primary" id="ceScheduleConfirmBtn">Schedule</button>
+            <button type="button" class="btn btn-primary" id="ceScheduleConfirmBtn">Create Batches</button>
+        </div>
+    </div>
+</div>
+
+<!-- View Batch Recipients modal -->
+<div class="marketing-modal-backdrop d-none" id="ceViewRecipientsBackdrop">
+    <div class="marketing-modal">
+        <div class="marketing-modal-header">
+            <h4>Batch Recipients</h4>
+            <button type="button" class="marketing-modal-close" id="ceViewRecipientsCloseBtn">&times;</button>
+        </div>
+
+        <div class="marketing-modal-body">
+            <div class="table-responsive">
+                <table class="table marketing-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th id="ceViewRecipientsContactHeader">Contact</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ceViewRecipientsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="marketing-modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="ceViewRecipientsCloseFooterBtn">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Reschedule Batch modal -->
+<div class="marketing-modal-backdrop d-none" id="ceRescheduleBackdrop">
+    <div class="marketing-modal">
+        <div class="marketing-modal-header">
+            <h4>Reschedule Batch</h4>
+            <button type="button" class="marketing-modal-close" id="ceRescheduleCloseBtn">&times;</button>
+        </div>
+
+        <div class="marketing-modal-body">
+            <label class="form-label fw-semibold">New Date</label>
+            <input type="date" class="form-control" id="ceRescheduleDate">
+            <div class="form-text">This batch will send at 7:00 AM on the new date instead.</div>
+        </div>
+
+        <div class="marketing-modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="ceRescheduleCancelBtn">Cancel</button>
+            <button type="button" class="btn btn-primary" id="ceRescheduleConfirmBtn">Reschedule</button>
         </div>
     </div>
 </div>

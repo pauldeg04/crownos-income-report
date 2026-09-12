@@ -1867,30 +1867,36 @@ h1{font-size:18px;color:#0E1B3D;}p{color:#6b645a;font-size:14px;}</style>
     }
 );
 
-/* ---------- processScheduledMarketingSends (scheduled) ----------
+/* ---------- Scheduled Sends: processScheduledMarketingSends (scheduled)
+   / sendScheduledBatchNow (callable) ----------
 
-   A "Scheduled Send" (created from marketing-client-engagement.js's
-   Schedule modal, one doc in marketingScheduledSends per campaign) exists
-   because of a real limit: the mail account's own GoDaddy relay quota
-   (500 recipients/24h at the time this was written) means a list bigger
-   than that has to go out a few hundred at a time, spread across days —
-   nobody wants to click Send Email by hand every morning to do that.
+   marketing-client-engagement.js's Schedule modal pre-splits a big
+   recipient list into fixed-size batches (one marketingScheduledSends
+   doc each, default 400 recipients) at schedule time — one doc per day,
+   dated sequentially from the chosen start date — rather than one growing
+   doc that gets sliced daily. That exists because of a real limit: the
+   mail account's own GoDaddy relay quota (500 recipients/24h at the time
+   this was written) means a list bigger than that has to go out a few
+   hundred at a time, spread across days, and nobody wants to click Send
+   Email by hand every morning to do that.
 
-   This runs once a day (see SCHEDULED_SEND_CRON below) and, for every
-   campaign whose nextRunAt has arrived, sends ONE day's batch
-   (perBatchLimit recipients off the front of remainingRecipients) using
-   the exact same sendEmailBatchCore/sendSmsBatchCore the manual Send
-   Email/Send SMS buttons use.
+   Each doc's `recipients` field is that batch's own remaining-to-send
+   list — starts as the full batch, shrinks as attempts succeed or
+   genuinely fail (see below), so a retry never re-sends to someone who
+   already got it. `originalRecipients` is a frozen copy of the full
+   batch as first assigned, kept only so the "View" action in the Archive
+   tab's Scheduled Sends list can always show the complete batch.
 
-   Same account-level-failure safeguard as the manual send (see
-   isAccountLevelFailure in marketing-client-engagement.js — this is its
-   server-side twin, since this function has no browser to run that
-   client-side logic in): a recipient whose failure looks like it's about
-   the mail account itself (quota/auth/connection) is left in
-   remainingRecipients to retry on the next scheduled run, is never
-   marked undeliverable, and if more than half of a batch fails that way
-   the rest of that batch isn't attempted — same "don't grind through a
-   doomed batch" reasoning as the manual send's stop-early behavior. */
+   Same account-level-failure safeguard as a manual send (see
+   isAccountLevelFailure in marketing-client-engagement.js —
+   isAccountLevelFailureServer below is its server-side twin, since these
+   functions have no browser to run that client-side logic in): a
+   recipient whose failure looks like it's about the mail account itself
+   (quota/auth/connection) is left in `recipients` to retry next time
+   instead of being marked undeliverable, and if more than half a chunk
+   fails that way, the rest of that run isn't attempted — same "don't
+   grind through a doomed batch" reasoning as the manual send's
+   stop-early behavior. */
 
 const SCHEDULED_SENDS_COLLECTION = "marketingScheduledSends";
 const MARKETING_UNDELIVERABLE_COLLECTION = "marketingUndeliverable";
@@ -1913,25 +1919,27 @@ function addOneDayIso(fromIso){
     return date.toISOString();
 }
 
-async function processOneScheduledCampaign(doc){
+/* Does the actual sending for one batch doc's current `recipients` list
+   and writes back every result — used by both the daily cron and
+   sendScheduledBatchNow ("Send Now" in the UI), so a manually-triggered
+   send gets exactly the same account-level protection and bookkeeping a
+   scheduled run gets. */
+async function finalizeScheduledBatchSend(doc, sentBySuffix){
     const campaign = doc.data();
-    const remaining = Array.isArray(campaign.remainingRecipients) ? campaign.remainingRecipients : [];
+    const pending = Array.isArray(campaign.recipients) ? campaign.recipients : [];
 
-    if(remaining.length === 0){
-        await doc.ref.set({ status: "completed" }, { merge: true });
-        return;
+    if(pending.length === 0){
+        await doc.ref.set({ status: "sent" }, { merge: true });
+        return { successCount: 0, failCount: 0 };
     }
-
-    const perBatchLimit = Number(campaign.perBatchLimit) > 0 ? Number(campaign.perBatchLimit) : 450;
-    const batch = remaining.slice(0, perBatchLimit);
 
     let results;
     let stoppedEarly = false;
 
     if(campaign.channel === "sms"){
-        const mobiles = batch.map(function(r){ return r.mobile; });
-        results = await sendSmsBatchCore(mobiles, campaign.message);
-        results = results.map(function(result, index){ return Object.assign({}, batch[index], result); });
+        const mobiles = pending.map(function(r){ return r.mobile; });
+        const raw = await sendSmsBatchCore(mobiles, campaign.message);
+        results = raw.map(function(result, index){ return Object.assign({}, pending[index], result); });
 
         const accountLevelCount = results.filter(isAccountLevelFailureServer).length;
         stoppedEarly = results.length > 0 && accountLevelCount / results.length > 0.5;
@@ -1943,8 +1951,8 @@ async function processOneScheduledCampaign(doc){
         const CHECK_CHUNK = 20;
         results = [];
 
-        for(let offset = 0; offset < batch.length; offset += CHECK_CHUNK){
-            const chunkRecipients = batch.slice(offset, offset + CHECK_CHUNK);
+        for(let offset = 0; offset < pending.length; offset += CHECK_CHUNK){
+            const chunkRecipients = pending.slice(offset, offset + CHECK_CHUNK);
 
             const chunkResults = await sendEmailBatchCore(chunkRecipients, {
                 subject: campaign.subject,
@@ -1970,13 +1978,12 @@ async function processOneScheduledCampaign(doc){
 
     const succeeded = results.filter(function(r){ return r.ok; });
     const genuineFailures = results.filter(function(r){ return !r.ok && !isAccountLevelFailureServer(r); });
-    const accountLevelFailures = results.filter(function(r){ return !r.ok && isAccountLevelFailureServer(r); });
 
     const handledKeys = new Set(
         succeeded.concat(genuineFailures).map(function(r){ return r.email || r.mobile; })
     );
 
-    const newRemaining = remaining.filter(function(r){
+    const newPending = pending.filter(function(r){
         return !handledKeys.has(r.email || r.mobile);
     });
 
@@ -2007,22 +2014,24 @@ async function processOneScheduledCampaign(doc){
         failCount: genuineFailures.length,
         stoppedEarly: stoppedEarly,
         sentAt: new Date().toISOString(),
-        sentBy: (campaign.createdBy || "Unknown") + " (Scheduled Send)",
+        sentBy: (campaign.createdBy || "Unknown") + sentBySuffix,
         scheduledSendId: doc.id
     });
 
     const nowIso = new Date().toISOString();
 
     await doc.ref.set({
-        remainingRecipients: newRemaining,
+        recipients: newPending,
         sentCount: (Number(campaign.sentCount) || 0) + succeeded.length,
         failCount: (Number(campaign.failCount) || 0) + genuineFailures.length,
         lastRunAt: nowIso,
-        nextRunAt: addOneDayIso(nowIso),
-        status: newRemaining.length === 0 ? "completed" : "in-progress",
-        lastRunStoppedEarly: stoppedEarly,
-        lastRunAccountLevelFailures: accountLevelFailures.length
+        nextRunAt: newPending.length === 0 ? campaign.nextRunAt : addOneDayIso(nowIso),
+        status: newPending.length === 0 ? "sent" : "scheduled",
+        sentAt: newPending.length === 0 ? nowIso : (campaign.sentAt || null),
+        lastRunStoppedEarly: stoppedEarly
     }, { merge: true });
+
+    return { successCount: succeeded.length, failCount: genuineFailures.length, stoppedEarly: stoppedEarly };
 }
 
 exports.processScheduledMarketingSends = onSchedule(
@@ -2031,17 +2040,48 @@ exports.processScheduledMarketingSends = onSchedule(
         const nowIso = new Date().toISOString();
 
         const snapshot = await db.collection(SCHEDULED_SENDS_COLLECTION)
-            .where("status", "in", ["scheduled", "in-progress"])
+            .where("status", "==", "scheduled")
             .where("nextRunAt", "<=", nowIso)
             .get();
 
         for(const doc of snapshot.docs){
             try{
-                await processOneScheduledCampaign(doc);
+                await finalizeScheduledBatchSend(doc, " (Scheduled Send)");
             }catch(error){
-                console.error("Failed to process scheduled campaign", doc.id, error);
+                console.error("Failed to process scheduled batch", doc.id, error);
             }
         }
+    }
+);
+
+/* "Send Now" on a Scheduled Sends row (marketing-client-engagement.js) —
+   sends that specific batch immediately instead of waiting for its
+   scheduled date, for when something needs to go out right away. */
+exports.sendScheduledBatchNow = onCall(
+    { secrets: [EMAIL_PASSWORD, SEMAPHORE_API_KEY], timeoutSeconds: 300 },
+    async (request) => {
+        requireMarketingRole(request);
+
+        const scheduleId = String(request.data?.scheduleId || "").trim();
+
+        if(!scheduleId){
+            throw new HttpsError("invalid-argument", "scheduleId is required.");
+        }
+
+        const docRef = db.collection(SCHEDULED_SENDS_COLLECTION).doc(scheduleId);
+        const doc = await docRef.get();
+
+        if(!doc.exists){
+            throw new HttpsError("not-found", "Scheduled batch not found.");
+        }
+
+        if(doc.data().status !== "scheduled"){
+            throw new HttpsError("failed-precondition", "This batch has already been sent or cancelled.");
+        }
+
+        const result = await finalizeScheduledBatchSend(doc, " (Sent Now)");
+
+        return Object.assign({ ok: true }, result);
     }
 );
 

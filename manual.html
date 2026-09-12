@@ -3356,33 +3356,56 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     SMS</span> is <span class="ui">Schedule Send...</span> — for a list
     too big to go out in one sitting (e.g. past a mail account's own
     daily sending limit). It opens a small window: a Start Date and a
-    Per-day limit (defaults to 450 for Email, 1000 for SMS — change
-    either). Confirming it does <em>not</em> send anything right away; it
-    files the request (same recipients, message, and — for Email —
-    Subject/Attachment as the tab currently has filled in) to be worked
-    automatically, every day at <strong>7:00 AM</strong>, Per-day-limit
-    recipients at a time, starting on the chosen date, until the whole
-    list has been sent to.
+    Per-batch limit (defaults to 400 for both Email and SMS — change it,
+    and the batch count updates live). Pressing <span class="ui">Create
+    Batches</span> does <em>not</em> send anything right away — it splits
+    the selected clients into fixed-size batches (same recipients,
+    message, and — for Email — Subject/Attachment as the tab currently
+    has filled in) and creates one entry per batch, dated one per day
+    starting on the chosen date. Every batch sends automatically at
+    <strong>7:00 AM</strong> on its own date.
   </p>
 
   <p>
-    Progress lives in the Archive tab's <span class="ui">Scheduled
-    Sends</span> section — channel, a preview of the Subject/Message,
-    when it was created, when its next batch runs, how many sent so far
-    out of the total, how many remain, and its status
-    (<em>scheduled</em> → <em>in-progress</em> → <em>completed</em>, or
-    <em>cancelled</em>). A <span class="ui">Cancel</span> button sits on
-    any row that hasn't finished yet — clients already reached keep what
-    they received; nobody still waiting gets anything further.
+    Every batch appears immediately in the Archive tab's
+    <span class="ui">Scheduled Sends</span> section — one row each, with
+    channel, a preview of the Subject/Message, which batch it is
+    (e.g. "3 of 6"), its recipient count, its next run date, how many
+    have sent/failed so far, and its status
+    (<em>scheduled</em> → <em>sent</em>, or <em>cancelled</em>). Four
+    actions sit on each row:
+  </p>
+
+  <ul class="checklist">
+    <li><span class="ui">View</span> — always available; lists every
+      client in that specific batch by name and email/mobile number,
+      exactly as originally assigned (even after it's sent).</li>
+    <li><span class="ui">Send Now</span> — sends that one batch
+      immediately instead of waiting for its scheduled date, for when
+      something needs to go out right away. Everything else in the
+      queue is untouched.</li>
+    <li><span class="ui">Reschedule</span> — moves that batch to a
+      different date (earlier or later); it still sends at 7:00 AM on
+      the new date.</li>
+    <li><span class="ui">Cancel</span> — removes that batch from the
+      queue; nobody in it receives anything further. Other batches in
+      the same original request are unaffected.</li>
+  </ul>
+
+  <p>
+    <span class="ui">Send Now</span>/<span class="ui">Reschedule</span>/
+    <span class="ui">Cancel</span> only appear while a batch is still
+    <em>scheduled</em> — once sent or cancelled, only
+    <span class="ui">View</span> remains.
   </p>
 
   <p>
     Same account-level-failure protection as a manual send (see above):
-    if a day's batch looks like the mail account itself hit its limit
-    rather than bad addresses, that day's remaining recipients are left
-    untouched for the next scheduled run instead of being wrongly marked
-    <em>Unavailable</em> — the schedule just quietly tries again at
-    7:00 AM the next day.
+    if a batch's send looks like the mail account itself hit its limit
+    rather than bad addresses, whoever in that batch wasn't reached yet
+    stays queued for a retry (the same batch tries again the next day)
+    instead of being wrongly marked <em>Unavailable</em> — clients who
+    already received it are never sent to twice.
   </p>
 </section>
 
