@@ -98,7 +98,11 @@
             return true;
         }
 
-        const haystack = (String(client.name || "") + " " + String(client.email || "")).toLowerCase();
+        const haystack = (
+            String(client.name || "") + " " +
+            String(client.email || "") + " " +
+            String(client.contactNumber || "")
+        ).toLowerCase();
         return haystack.includes(searchTerm);
     }
 
@@ -121,7 +125,10 @@
     function renderClientsTable(){
         const tbody = document.getElementById("ceClientsTableBody");
         const emptyState = document.getElementById("ceClientsEmptyState");
+        const contactHeader = document.getElementById("ceContactColumnHeader");
         const visible = getVisibleClients();
+
+        contactHeader.textContent = activeTab === "sms" ? "Mobile Number" : "Email Address";
 
         tbody.innerHTML = "";
         emptyState.classList.toggle("d-none", visible.length > 0);
@@ -130,12 +137,13 @@
             const unsubscribed = isUnsubscribed(client);
             const eligible = isEligibleForActiveTab(client);
             const checked = eligible && selectedClientIds.has(client.id);
+            const contactValue = activeTab === "sms" ? client.contactNumber : client.email;
 
             const tr = document.createElement("tr");
 
             tr.innerHTML = `
                 <td>${escapeHtml(client.name || "—")}</td>
-                <td>${escapeHtml(client.email || "—")}</td>
+                <td>${escapeHtml(contactValue || "—")}</td>
                 <td>${formatDate(client.lastVisit)}</td>
                 <td>${Number(client.totalVisits) || 0}</td>
                 <td class="ce-pref-cell">
