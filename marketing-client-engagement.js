@@ -154,11 +154,34 @@
         }
     }
 
+    /* A real-world 2000+ recipient send hit this exact failure mode: the
+       mail account's own 500-recipients/24h relay quota got exceeded
+       partway through, and every send after that failed with an SMTP AUTH
+       rejection (GoDaddy locks the account out once over quota) — none of
+       which says anything bad about any of those recipients' addresses.
+       That first version of markUndeliverable() didn't know the
+       difference and would have permanently greyed out ~1,665 perfectly
+       good client emails from one quota hiccup. isAccountLevelFailure()
+       is the fix: only a failure that's actually about the recipient (a
+       RCPT TO rejection, not AUTH/CONN, and no quota/rate-limit wording)
+       is ever eligible to be marked undeliverable. */
+    const ACCOUNT_LEVEL_ERROR_PATTERN = /relay quota|sending limit|rate limit|too many|authentication rejected|invalid login|econnreset|connection closed|greeting never received|timed?\s*out/i;
+
+    function isAccountLevelFailure(result){
+        if(result.command && result.command !== "RCPT TO"){
+            return true;
+        }
+
+        return ACCOUNT_LEVEL_ERROR_PATTERN.test(String(result.error || ""));
+    }
+
     /* Called right after a send completes — any address sendMail() rejected
-       is written here (doc ID = lowercased email) so the Action checkbox
-       greys out for future blasts without waiting for a page reload. Email
-       only, per spec — a bad send doesn't say anything about whether the
-       client's mobile number still works, so SMS eligibility is untouched. */
+       for a genuinely recipient-specific reason (see isAccountLevelFailure
+       above) is written here (doc ID = lowercased email) so the Action
+       checkbox greys out for future blasts without waiting for a page
+       reload. Email only, per spec — a bad send doesn't say anything
+       about whether the client's mobile number still works, so SMS
+       eligibility is untouched. */
     async function markUndeliverable(emails){
         const uniqueEmails = Array.from(new Set(emails.map(normalizeEmail).filter(Boolean)));
 
@@ -590,6 +613,7 @@
             const batches = chunkArray(recipients, BATCH_SIZE);
             const callable = firebase.functions().httpsCallable("sendMarketingEmailBlast", { timeout: CALLABLE_TIMEOUT_MS });
             const allResults = [];
+            let stoppedEarly = false;
 
             for(let i = 0; i < batches.length; i++){
                 sendBtn.textContent = batches.length > 1
@@ -606,11 +630,29 @@
 
                 allResults.push(...response.data.results);
                 renderSendStatus(statusId, allResults, "email(s)");
+
+                /* If most of THIS batch failed for an account-level reason
+                   (mail account over its sending quota, auth rejected,
+                   etc.), every remaining batch is going to fail the same
+                   way — stop instead of grinding through the rest. */
+                const batchResults = response.data.results;
+                const accountLevelCount = batchResults.filter(isAccountLevelFailure).length;
+
+                if(batchResults.length > 0 && accountLevelCount / batchResults.length > 0.5){
+                    stoppedEarly = true;
+                    renderSendError(
+                        statusId,
+                        `Stopped after batch ${i + 1} of ${batches.length}: the mail account appears to have hit its own sending ` +
+                        `limit (not a problem with the recipients' addresses). ${allResults.filter(function(r){ return r.ok; }).length} ` +
+                        `sent before this happened. Wait for the account's quota to reset, then send the rest of the list.`
+                    );
+                    break;
+                }
             }
 
-            const failedEmails = allResults.filter(function(r){ return !r.ok; }).map(function(r){ return r.email; });
+            const genuineFailures = allResults.filter(function(r){ return !r.ok && !isAccountLevelFailure(r); });
 
-            await markUndeliverable(failedEmails);
+            await markUndeliverable(genuineFailures.map(function(r){ return r.email; }));
 
             await logSentBatch({
                 channel: "email",
@@ -619,8 +661,13 @@
                 attachmentName: attachmentName || "",
                 totalRecipients: recipients.length,
                 successCount: allResults.filter(function(r){ return r.ok; }).length,
-                failCount: failedEmails.length
+                failCount: allResults.filter(function(r){ return !r.ok; }).length,
+                stoppedEarly: stoppedEarly
             });
+
+            if(!stoppedEarly){
+                renderSendStatus(statusId, allResults, "email(s)");
+            }
 
             archiveLoaded = false;
             renderClientsTable();

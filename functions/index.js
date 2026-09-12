@@ -1714,7 +1714,19 @@ exports.sendMarketingEmailBlast = onCall(
                 return { email: recipient.email, ok: true };
             }catch(error){
                 console.error("Marketing email failed for", recipient.email, error);
-                return { email: recipient.email, ok: false, error: error.message || "Unknown error" };
+                return {
+                    email: recipient.email,
+                    ok: false,
+                    error: error.message || "Unknown error",
+                    /* command/code let the client tell "this recipient's
+                       address is bad" apart from "our own account hit its
+                       sending limit / auth got rejected" — see
+                       isAccountLevelFailure() in
+                       marketing-client-engagement.js. A RCPT TO rejection
+                       is about the recipient; an AUTH/CONN failure never is. */
+                    command: error.command || "",
+                    code: error.responseCode || null
+                };
             }
         });
 

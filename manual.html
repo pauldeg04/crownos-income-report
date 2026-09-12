@@ -3294,15 +3294,28 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   <p>
     <strong>Preference</strong> shows <em>Interested</em> until either of
     two things happens: the client clicks the unsubscribe link in one of
-    these promo emails (flips to <em>Not Interested</em>), or an email
-    sent to that address fails to go through — bounces, invalid address,
-    etc. (flips to <em>Unavailable</em>). Either way, that row's Action
+    these promo emails (flips to <em>Not Interested</em>), or that
+    specific address itself was rejected — bounced, doesn't exist, etc.
+    (flips to <em>Unavailable</em>). Either way, that row's Action
     checkbox greys out (unticked, un-clickable) on the Email tab for
     future blasts — an <em>Unavailable</em> client's mobile number is
     untouched, so they can still be ticked on the SMS tab. Both only
     ever affect this page's own sends — neither has any effect on
     booking confirmations, reminders, or any other message CrownOS
     sends that client.
+  </p>
+
+  <p>
+    <em>Unavailable</em> only ever comes from a failure that's actually
+    about that one address — never from the mail account itself running
+    into trouble (its own daily sending limit, a rejected login, a
+    dropped connection). If a batch's failures look like the account
+    hit its own limit rather than bad addresses, the send stops right
+    there — "Stopped after batch 4 of 21: the mail account appears to
+    have hit its own sending limit..." — instead of ticking away through
+    every remaining batch and mislabeling perfectly good client emails.
+    Wait for the account's send quota to reset (the error names how long),
+    then send the rest of the list.
   </p>
 
   <p>

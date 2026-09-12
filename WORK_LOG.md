@@ -11,6 +11,47 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-12 — Client Engagement: fix false-positive "Unavailable" from a mail quota hit
+
+**Incident:** First real large-scale send — 2087 clients — hit the mail account's (GoDaddy,
+`info@crownheadspa.com`) own 500-recipients/24-hour relay quota partway through. Once over quota,
+GoDaddy started rejecting the account's SMTP login entirely ("535 ...authentication rejected"),
+so every send after that point failed too — not because those addresses were bad, but because
+*our own account* was locked out. `markUndeliverable()` (added earlier today) didn't know the
+difference and flagged all ~1,665 of those addresses as "Unavailable," which would have
+permanently greyed out their Action checkbox for perfectly good client emails.
+
+**Change:**
+- [`functions/index.js`](functions/index.js) — `sendMarketingEmailBlast`'s per-recipient error
+  result now also carries `command` (nodemailer's SMTP command the failure happened on — `"RCPT
+  TO"` for a rejection about the recipient, `"AUTH"`/`"CONN"`/etc. for anything about our own
+  account) and `code` (the SMTP response code).
+- [`marketing-client-engagement.js`](marketing-client-engagement.js) — new
+  `isAccountLevelFailure()`: true if `command` isn't `"RCPT TO"`, or the error text matches known
+  account-level wording (relay quota, sending limit, rate limit, authentication rejected, invalid
+  login, ECONNRESET, connection closed, timeout). `markUndeliverable()` is now only ever called
+  with failures that are **not** account-level — a genuine per-recipient bounce. Separately, after
+  each batch the send loop checks whether more than half of that batch's failures were
+  account-level; if so it stops sending further batches immediately with a clear message ("the
+  mail account appears to have hit its own sending limit...") instead of grinding through the
+  rest of a doomed list.
+- [`manual.html`](manual.html) — Client Engagement section explains both the distinction and the
+  stop-early behavior.
+
+**Remediation:** Deleted the entire `marketingUndeliverable` collection (`firebase
+firestore:delete marketingUndeliverable --recursive --force`) — every doc in it came from this
+one quota-triggered incident, none were genuine bounces, so clearing it was safe. The
+`marketingSentLog` entry for that send (422/2087 succeeded) was left as-is — an accurate record
+of what happened, useful in the Archive tab.
+
+**Not addressed here (flagged to the user):** the underlying GoDaddy sending-volume limit itself.
+A list this size will still need to go out over multiple days (or from a provider with a higher
+limit) — this fix only stops the app from mislabeling clients when that limit is hit.
+
+**Status:** Pushed to GitHub and deployed (functions + hosting).
+
+---
+
 ## 2026-09-12 — Client Engagement: Archive tab + auto-flag undeliverable emails
 
 **Requested by:** User — wanted (1) a third "Archive" tab logging every Email Sent / SMS Sent
