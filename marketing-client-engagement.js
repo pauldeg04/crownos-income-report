@@ -288,6 +288,46 @@
             `<div class="alert alert-danger py-2 px-3 mb-0">${escapeHtml(message)}</div>`;
     }
 
+    /* ---- Send confirmation ---- */
+
+    function formatPeso(amount){
+        return "₱" + (Number(amount) || 0).toLocaleString("en-PH", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function confirmSend(message, subnote){
+        return new Promise(function(resolve){
+            const backdrop = document.getElementById("ceConfirmBackdrop");
+            const messageEl = document.getElementById("ceConfirmMessage");
+            const subnoteEl = document.getElementById("ceConfirmSubnote");
+            const yesBtn = document.getElementById("ceConfirmYesBtn");
+            const noBtn = document.getElementById("ceConfirmNoBtn");
+            const closeBtn = document.getElementById("ceConfirmCloseBtn");
+
+            messageEl.textContent = message;
+            subnoteEl.textContent = subnote || "";
+            subnoteEl.classList.toggle("d-none", !subnote);
+            backdrop.classList.remove("d-none");
+
+            function cleanup(result){
+                backdrop.classList.add("d-none");
+                yesBtn.removeEventListener("click", onYes);
+                noBtn.removeEventListener("click", onNo);
+                closeBtn.removeEventListener("click", onNo);
+                resolve(result);
+            }
+
+            function onYes(){ cleanup(true); }
+            function onNo(){ cleanup(false); }
+
+            yesBtn.addEventListener("click", onYes);
+            noBtn.addEventListener("click", onNo);
+            closeBtn.addEventListener("click", onNo);
+        });
+    }
+
     /* ---- Send: Email ---- */
 
     async function handleSendEmail(){
@@ -313,6 +353,14 @@
 
         if(recipients.length === 0){
             renderSendError(statusId, "Select at least one client with an email address.");
+            return;
+        }
+
+        const confirmed = await confirmSend(
+            `Are you sure you want to send email to ${recipients.length} Client${recipients.length === 1 ? "" : "s"}?`
+        );
+
+        if(!confirmed){
             return;
         }
 
@@ -383,6 +431,21 @@
 
         if(recipients.length === 0){
             renderSendError(statusId, "Select at least one client with a mobile number.");
+            return;
+        }
+
+        const smsCost = recipients.length * 0.5;
+        const segments = Math.max(1, Math.ceil(message.length / SMS_SEGMENT_LENGTH));
+
+        const confirmed = await confirmSend(
+            `Are you sure you want to send SMS to ${recipients.length} Client${recipients.length === 1 ? "" : "s"}? ` +
+            `It will cost you ${formatPeso(smsCost)} of your SMS Credits.`,
+            segments > 1
+                ? `Message is ${segments} segments — Semaphore bills per segment, so the actual cost may be higher than shown.`
+                : ""
+        );
+
+        if(!confirmed){
             return;
         }
 

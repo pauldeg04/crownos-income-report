@@ -11,6 +11,29 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-12 — Client Engagement: confirmation window before sending
+
+**Requested by:** User — wanted a confirm/cancel step before Send Email/Send SMS actually fires,
+for security, stating recipient count and (for SMS) the estimated SMS Credits cost.
+
+**Change:**
+- [`marketing-client-engagement.html`](marketing-client-engagement.html) — new confirmation modal
+  (`#ceConfirmBackdrop`), reusing the existing `.marketing-modal` styling, with Yes/No buttons.
+- [`marketing-client-engagement.js`](marketing-client-engagement.js) — `confirmSend(message,
+  subnote)` shows the modal and resolves `true`/`false` on Yes/No/close; both `handleSendEmail`
+  and `handleSendSms` await it (after validation, before disabling the button and actually
+  calling the Cloud Function) and bail out on `false`. Email: "Are you sure you want to send
+  email to N Clients?". SMS: "Are you sure you want to send SMS to N Clients? It will cost you
+  ₱Z of your SMS Credits." where Z = N × ₱0.50 — plus a note when the message runs past one
+  160-char segment, since Semaphore bills per segment and the real cost then exceeds the
+  single-segment estimate.
+- [`manual.html`](manual.html) — Client Engagement section documents the confirmation step.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting — front-end only change, no
+Cloud Functions or rules touched.
+
+---
+
 ## 2026-09-12 — Client Engagement: image attachments embed inline as a poster
 
 **Requested by:** User — after seeing a preview, wanted an attached poster to show large,
