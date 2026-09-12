@@ -98,6 +98,7 @@
         "Ads Monitoring": "📣",
         "Monitoring Summary": "📈",
         "Daily Report": "📋",
+        "Client Engagement": "💌",
         "BIR Compliance Desk": "🧾",
         "Daily Monitoring Sheet": "✅"
     };
@@ -202,6 +203,12 @@
             href: "marketing-daily-report.html",
             roles: ["Admin", "Marketing Agent"],
             branchRequired: true
+        },
+
+        {
+            label: "Client Engagement",
+            href: "marketing-client-engagement.html",
+            roles: ["Admin", "Marketing Agent"]
         },
 
         { section: "Inventory" },
@@ -1496,6 +1503,7 @@
             "marketing-ads-daily.html": "Ads Monitoring",
             "marketing-ads-summary.html": "Monitoring Summary",
             "marketing-daily-report.html": "Daily Report",
+            "marketing-client-engagement.html": "Client Engagement",
             "bir-compliance.html": "BIR Compliance Desk",
             "daily-monitoring.html": "Daily Monitoring Sheet"
         };

@@ -14,12 +14,13 @@
    / saveSchedule), which is unchanged by any of this.
    ========================================================================== */
 
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onDocumentUpdated, onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const nodemailer = require("nodemailer");
+const crypto = require("crypto");
 
 const EMAIL_PASSWORD = defineSecret("EMAIL_PASSWORD");
 const SEMAPHORE_API_KEY = defineSecret("SEMAPHORE_API_KEY");
@@ -1481,6 +1482,308 @@ function buildBirthdayEmailHtml({ clientName, message }){
 </body>
 </html>`;
 }
+
+/* ---------- sendMarketingEmailBlast / sendMarketingSmsBlast /
+   unsubscribeMarketingEmail (callable/HTTP) ----------
+
+   Composed on marketing-client-engagement.html — unlike the templated
+   confirmation/birthday sends above, subject and body here are whatever
+   Marketing typed into that page's text box. Sent one-by-one (not BCC)
+   so each email carries that recipient's own personalized unsubscribe
+   link, and so a failure on one address doesn't block the rest — both
+   callables return a per-recipient result list instead of throwing on
+   the first error.
+
+   Unsubscribes are tracked in their own tiny collection
+   (marketingUnsubscribes, doc ID = lowercased email) instead of being
+   written into the synced Client Database blob (crownClientMasterList).
+   That blob is pushed as one whole JSON document per device (see
+   client-store.js / firebase-sync.js) — an unauthenticated visitor
+   clicking an unsubscribe link could otherwise race a staff device's own
+   push and have the opt-out silently clobbered. Keeping it a separate
+   collection means the write can never collide with anything else;
+   marketing-client-engagement.js just reads this collection on load and
+   overlays "Not Interested" + a disabled checkbox on top of whatever the
+   Client Database says. Booking confirmations and every other send path
+   never consult this collection at all. */
+
+const MARKETING_UNSUBSCRIBE_COLLECTION = "marketingUnsubscribes";
+const MARKETING_UNSUBSCRIBE_BASE_URL =
+    "https://us-central1-crownos-5f03d.cloudfunctions.net/unsubscribeMarketingEmail";
+
+/* Not a security boundary (the secret value never reaches the client) —
+   just enough to stop a recipient from unsubscribing an address that
+   isn't their own by editing the link's ?email= value. */
+function buildUnsubscribeToken(email, secretValue){
+    return crypto
+        .createHmac("sha256", secretValue)
+        .update(normalizeMarketingEmail(email))
+        .digest("hex")
+        .slice(0, 24);
+}
+
+function normalizeMarketingEmail(email){
+    return String(email || "").trim().toLowerCase();
+}
+
+function buildUnsubscribeUrl(email, secretValue){
+    const normalizedEmail = normalizeMarketingEmail(email);
+
+    return (
+        MARKETING_UNSUBSCRIBE_BASE_URL +
+        "?email=" + encodeURIComponent(normalizedEmail) +
+        "&token=" + buildUnsubscribeToken(normalizedEmail, secretValue)
+    );
+}
+
+function buildMarketingEmailHtml({ clientName, message, unsubscribeUrl }){
+    const messageHtml = escapeHtml(message).replace(/\n/g, "<br>");
+
+    return `
+<!doctype html>
+<html>
+<head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0;padding:0;background-color:#efeae0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#efeae0;padding:32px 16px;">
+<tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#f7f5f0;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(20,17,10,0.12);">
+
+<tr>
+    <td style="background-color:#0E1B3D;background-image:linear-gradient(180deg, #0E1B3D 0%, #16245C 100%);padding:28px 32px;text-align:center;">
+        <img src="https://crownheadspa.com/images/crown-mark.png" width="44" height="44" alt="Crown Head Spa" style="display:block;margin:0 auto 10px;">
+        <div style="font-family:'Cinzel Decorative',Georgia,'Times New Roman',serif;font-size:20px;letter-spacing:.06em;color:#d4af37;font-weight:700;">CROWN HEAD SPA</div>
+    </td>
+</tr>
+
+<tr>
+    <td style="padding:32px;">
+        <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;">Hi ${escapeHtml(clientName) || "there"},</p>
+        <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;line-height:1.7;">${messageHtml}</p>
+    </td>
+</tr>
+
+<tr>
+    <td style="background-color:#e4ddc9;padding:18px 32px;text-align:center;">
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b645a;">Bi&ntilde;an: 0939 588 4068 &nbsp;&bull;&nbsp; Calamba: 0961 440 2807</div>
+        <div style="margin-top:8px;">
+            <a href="https://crownheadspa.com" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#a9790a;text-decoration:none;font-weight:700;letter-spacing:.02em;">www.crownheadspa.com</a>
+        </div>
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#9c7d1c;margin-top:8px;">&copy; 2026 Crown Head Spa. All rights reserved.</div>
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#9c7d1c;margin-top:10px;">
+            <a href="${unsubscribeUrl}" style="color:#9c7d1c;">Unsubscribe from promo emails</a>
+        </div>
+    </td>
+</tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
+function requireMarketingRole(request){
+    if(
+        !request.auth ||
+        !request.auth.token ||
+        !["Admin", "Marketing Agent"].includes(request.auth.token.role)
+    ){
+        throw new HttpsError("permission-denied", "Only Admin/Marketing Agent can send marketing blasts.");
+    }
+}
+
+exports.sendMarketingEmailBlast = onCall(
+    { secrets: [EMAIL_PASSWORD], timeoutSeconds: 300 },
+    async (request) => {
+        requireMarketingRole(request);
+
+        const data = request.data || {};
+        const subject = String(data.subject || "").trim();
+        const message = String(data.message || "").trim();
+
+        const recipients = Array.isArray(data.recipients)
+            ? data.recipients
+                .map(function(recipient){
+                    return {
+                        email: String(recipient?.email || "").trim(),
+                        name: String(recipient?.name || "").trim()
+                    };
+                })
+                .filter(function(recipient){ return recipient.email.length > 0; })
+                .slice(0, 500)
+            : [];
+
+        if(!subject){
+            throw new HttpsError("invalid-argument", "subject is required.");
+        }
+
+        if(!message){
+            throw new HttpsError("invalid-argument", "message is required.");
+        }
+
+        if(recipients.length === 0){
+            throw new HttpsError("invalid-argument", "At least one recipient is required.");
+        }
+
+        const attachmentUrl = String(data.attachmentUrl || "").trim();
+        const attachmentName = String(data.attachmentName || "attachment").trim();
+
+        const mailer = buildMailer();
+        const secretValue = EMAIL_PASSWORD.value();
+        const results = [];
+
+        for(const recipient of recipients){
+            try{
+                const unsubscribeUrl = buildUnsubscribeUrl(recipient.email, secretValue);
+
+                await mailer.sendMail({
+                    from: `"Crown Head Spa" <${BOOKING_EMAIL_FROM}>`,
+                    to: recipient.email,
+                    subject: subject,
+                    text: `Hi ${recipient.name || "there"},\n\n${message}\n\n---\nUnsubscribe: ${unsubscribeUrl}`,
+                    html: buildMarketingEmailHtml({ clientName: recipient.name, message, unsubscribeUrl }),
+                    attachments: attachmentUrl
+                        ? [{ filename: attachmentName, path: attachmentUrl }]
+                        : []
+                });
+
+                results.push({ email: recipient.email, ok: true });
+            }catch(error){
+                console.error("Marketing email failed for", recipient.email, error);
+                results.push({ email: recipient.email, ok: false, error: error.message || "Unknown error" });
+            }
+        }
+
+        return { ok: true, results };
+    }
+);
+
+/* Same GSM-7 stripping as toGsm7Safe above — a marketing blast is exactly
+   the kind of send where an accented word (e.g. "Biñan") could
+   otherwise silently vanish on Smart. Bare-URL messages are refused
+   outright, for the same "Smart drops links from this sender" reason as
+   buildConfirmationSmsText's comment above. */
+const MARKETING_SMS_MAX_SEGMENTS = 3;
+const MARKETING_SMS_SEGMENT_LENGTH = 160;
+
+exports.sendMarketingSmsBlast = onCall(
+    { secrets: [SEMAPHORE_API_KEY], timeoutSeconds: 300 },
+    async (request) => {
+        requireMarketingRole(request);
+
+        const data = request.data || {};
+        const rawMessage = String(data.message || "").trim();
+
+        if(!rawMessage){
+            throw new HttpsError("invalid-argument", "message is required.");
+        }
+
+        if(/https?:\/\//i.test(rawMessage)){
+            throw new HttpsError("invalid-argument", "Links are silently dropped by Smart from this sender — remove the URL from the message.");
+        }
+
+        const message = toGsm7Safe(rawMessage);
+
+        if(message.length > MARKETING_SMS_MAX_SEGMENTS * MARKETING_SMS_SEGMENT_LENGTH){
+            throw new HttpsError(
+                "invalid-argument",
+                `Message is too long (${message.length} characters). Keep it under ${MARKETING_SMS_MAX_SEGMENTS * MARKETING_SMS_SEGMENT_LENGTH} characters.`
+            );
+        }
+
+        const recipients = Array.isArray(data.recipients)
+            ? data.recipients
+                .map(function(recipient){ return String(recipient?.mobile || "").trim(); })
+                .filter(function(mobile){ return mobile.length > 0; })
+                .slice(0, 500)
+            : [];
+
+        if(recipients.length === 0){
+            throw new HttpsError("invalid-argument", "At least one recipient is required.");
+        }
+
+        const results = [];
+
+        for(const mobile of recipients){
+            try{
+                const response = await fetch("https://api.semaphore.co/api/v4/messages", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: new URLSearchParams({
+                        apikey: SEMAPHORE_API_KEY.value(),
+                        number: mobile,
+                        message: message
+                    })
+                });
+
+                const bodyText = await response.text();
+                let result;
+
+                try{
+                    result = JSON.parse(bodyText);
+                }catch(parseError){
+                    throw new Error(`Semaphore returned an unexpected response (HTTP ${response.status}): ${bodyText.slice(0, 300)}`);
+                }
+
+                if(!response.ok || result?.message){
+                    throw new Error(result?.message || JSON.stringify(result));
+                }
+
+                results.push({ mobile: mobile, ok: true });
+            }catch(error){
+                console.error("Marketing SMS failed for", mobile, error);
+                results.push({ mobile: mobile, ok: false, error: error.message || "Unknown error" });
+            }
+        }
+
+        return { ok: true, results };
+    }
+);
+
+/* Public (unauthenticated) HTTP endpoint — a client clicks this straight
+   from their email client, which can't attach a Firebase Auth ID token.
+   Writes only to marketingUnsubscribes (never the Client Database blob —
+   see the header comment above) and never touches booking-confirmation
+   or reminder sends. */
+exports.unsubscribeMarketingEmail = onRequest(
+    { secrets: [EMAIL_PASSWORD] },
+    async (req, res) => {
+        const email = normalizeMarketingEmail(req.query.email);
+        const token = String(req.query.token || "").trim();
+
+        function page(status, title, body){
+            res.status(status);
+            res.set("Content-Type", "text/html");
+            res.send(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+<style>body{font-family:Arial,Helvetica,sans-serif;background:#efeae0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;}
+.box{background:#f7f5f0;border-radius:16px;padding:40px;max-width:420px;text-align:center;box-shadow:0 10px 30px rgba(20,17,10,0.12);}
+h1{font-size:18px;color:#0E1B3D;}p{color:#6b645a;font-size:14px;}</style>
+</head><body><div class="box"><h1>${title}</h1><p>${body}</p></div></body></html>`);
+        }
+
+        if(!email || !token){
+            page(400, "Invalid link", "This unsubscribe link is missing required information.");
+            return;
+        }
+
+        const expectedToken = buildUnsubscribeToken(email, EMAIL_PASSWORD.value());
+
+        if(token !== expectedToken){
+            page(403, "Invalid link", "This unsubscribe link could not be verified.");
+            return;
+        }
+
+        await db.collection(MARKETING_UNSUBSCRIBE_COLLECTION).doc(email).set({
+            email: email,
+            unsubscribedAt: new Date().toISOString()
+        });
+
+        page(200, "You're unsubscribed", "You will no longer receive promotional emails from Crown Head Spa. You may still receive booking/appointment confirmations.");
+    }
+);
 
 /* ---------- sendAppointmentReminders (scheduled) ----------
 

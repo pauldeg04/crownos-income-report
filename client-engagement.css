@@ -1,0 +1,21 @@
+/* Page-specific styles for Marketing — Client Engagement. */
+
+.ce-tab-panel{
+    border:1px solid var(--border-light);
+    border-top:none;
+    border-radius:0 0 var(--radius-md) var(--radius-md);
+    padding:16px;
+}
+
+#ceEmailSendStatus .alert,
+#ceSmsSendStatus .alert{
+    margin-bottom:0;
+}
+
+.ce-pref-cell .marketing-status-pill{
+    margin-bottom:2px;
+}
+
+.ce-action-checkbox:disabled{
+    opacity:.4;
+}

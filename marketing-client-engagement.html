@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crown Head Spa - Client Engagement</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="sidebar.css">
+<link rel="stylesheet" href="marketing.css">
+<link rel="stylesheet" href="client-engagement.css">
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-functions-compat.js"></script>
+<script src="firebase-init.js"></script>
+<script src="pwa-register.js"></script>
+<script src="client-store.js"></script>
+<script src="firebase-sync.js"></script>
+<script src="access-control.js"></script>
+<script src="notifications.js"></script>
+<script src="push-notifications.js"></script>
+</head>
+
+<body>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+
+            <div class="page-heading">
+                <div>
+                    <h2 class="fw-bold text-primary mb-0">Client Engagement</h2>
+                    <p class="text-muted mb-0">
+                        Compose a promo email or SMS blast and choose which clients receive it.
+                    </p>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <a href="home.html" class="btn-dashboard text-decoration-none">
+                        ← Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button type="button" class="nav-link active" id="ceTabEmailBtn" role="tab" data-ce-tab="email">Email</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button type="button" class="nav-link" id="ceTabSmsBtn" role="tab" data-ce-tab="sms">SMS</button>
+                </li>
+            </ul>
+
+            <!-- Email tab -->
+            <div id="cePanelEmail" class="ce-tab-panel pt-3">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Subject</label>
+                        <input type="text" class="form-control" id="ceEmailSubject" placeholder="e.g. Exclusive Promo Just For You!">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Message</label>
+                        <textarea class="form-control" id="ceEmailMessage" rows="6" placeholder="Type your promotion here..."></textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Attachment <span class="text-muted fw-normal">(optional)</span></label>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <input type="file" class="form-control" id="ceEmailAttachmentInput" style="max-width:320px;">
+                            <span class="text-muted small" id="ceEmailAttachmentName"></span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary d-none" id="ceEmailAttachmentRemoveBtn">Remove</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3 mt-3">
+                    <button type="button" class="btn btn-primary" id="ceSendEmailBtn">Send Email</button>
+                    <span class="text-muted small" id="ceEmailSelectedCount">0 client(s) selected</span>
+                </div>
+
+                <div class="mt-2" id="ceEmailSendStatus"></div>
+            </div>
+
+            <!-- SMS tab -->
+            <div id="cePanelSms" class="ce-tab-panel pt-3 d-none">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Message</label>
+                        <textarea class="form-control" id="ceSmsMessage" rows="5" placeholder="Type your SMS promo here... (no links — these get silently dropped)"></textarea>
+                        <div class="form-text" id="ceSmsCharCount">0 / 160 characters (1 segment)</div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3 mt-3">
+                    <button type="button" class="btn btn-primary" id="ceSendSmsBtn">Send SMS</button>
+                    <span class="text-muted small" id="ceSmsSelectedCount">0 client(s) selected</span>
+                </div>
+
+                <div class="mt-2" id="ceSmsSendStatus"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <h5 class="fw-bold text-primary mb-0">Clients</h5>
+                <input type="text" class="form-control" id="ceClientSearch" placeholder="Search by name or email..." style="max-width:280px;">
+            </div>
+
+            <div class="table-responsive">
+                <table class="table marketing-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email Address</th>
+                            <th>Last Visit</th>
+                            <th>Number of Visit</th>
+                            <th>Preference</th>
+                            <th>
+                                <div class="d-flex align-items-center gap-1">
+                                    <input type="checkbox" id="ceSelectAllCheckbox">
+                                    <span>Action</span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="ceClientsTableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state d-none" id="ceClientsEmptyState">No clients found.</div>
+        </div>
+    </div>
+
+</div>
+
+<script src="marketing-client-engagement.js"></script>
+<script src="sidebar.js"></script>
+</body>
+</html>

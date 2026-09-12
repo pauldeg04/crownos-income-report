@@ -11,6 +11,59 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-12 — Marketing: new Client Engagement page (promo Email/SMS blast)
+
+**Requested by:** User — wanted a new item under Marketing's Daily Report, "Client Engagement,"
+to compose a promo email or SMS and send it to a chosen set of clients from the Client Database,
+with an unsubscribe path for email that doesn't touch booking confirmations.
+
+**Change:**
+- [`marketing-client-engagement.html`](marketing-client-engagement.html) /
+  [`marketing-client-engagement.js`](marketing-client-engagement.js) /
+  [`client-engagement.css`](client-engagement.css) — new page, Admin + Marketing Agent only.
+  Email tab: Subject, free-text Message, optional file Attachment (uploaded to Firebase Storage
+  under `marketingAttachments/`). SMS tab: free-text Message only, with a 160-char segment
+  counter, a hard cap at 3 segments (480 chars), and a client-side refusal of any message
+  containing a link (Smart silently drops linked SMS from this sender — same restriction the
+  existing booking-confirmation SMS already has). Below both tabs, one shared client table (Name,
+  Email Address, Last Visit, Number of Visit, Preference, Action checkbox) sourced from
+  `CrownClientStore` — not branch-scoped — checked by default for every client eligible for the
+  active tab (has an email / has a mobile number), with a header "select all" and a name/email
+  search box.
+- [`sidebar.js`](sidebar.js) — new "Client Engagement" item under Marketing, right after Daily
+  Report; icon and page-title map entries.
+- [`access-control.js`](access-control.js) — `marketing-client-engagement.html` gated to
+  Admin/Marketing Agent, same as the other Marketing pages.
+- [`functions/index.js`](functions/index.js) — three new Cloud Functions:
+  `sendMarketingEmailBlast` (loops recipients, one email each via the existing SMTP mailer, each
+  with its own personalized unsubscribe link and the optional attachment), `sendMarketingSmsBlast`
+  (loops recipients through the existing Semaphore SMS API, same GSM-7/no-link rules as
+  booking-confirmation SMS), and `unsubscribeMarketingEmail` (public HTTP endpoint the email's
+  unsubscribe link hits directly — verifies an HMAC token, then records the opt-out).
+- Unsubscribes are recorded in a **new, separate** Firestore collection,
+  `marketingUnsubscribes` (doc ID = lowercased email) — deliberately kept out of the synced
+  Client Database blob (`crownClientMasterList`), since that blob is pushed as one whole document
+  per device and an unauthenticated visitor's opt-out could otherwise race a staff device's own
+  save and get clobbered either way. `marketing-client-engagement.js` reads this collection on
+  load to show "Not Interested" and grey out that client's Action checkbox; nothing else
+  (booking confirmations, reminders, birthday sends) ever reads or is affected by it.
+- [`firestore.rules`](firestore.rules) — read rule for `marketingUnsubscribes` (any authenticated
+  user; write is Cloud-Function-only).
+- [`storage.rules`](storage.rules) — read/write rule for `marketingAttachments/` (Admin +
+  Marketing Agent).
+- [`manual.html`](manual.html) — Part Seven / Chapter 31 gains a "Client Engagement" section;
+  contents/role-coverage tables updated to list the new page.
+
+**Not yet deployed:** this ships new Cloud Functions plus new Firestore/Storage rules, not just a
+hosting change — `firebase deploy --only functions,firestore:rules,storage:rules` still needs to
+run (in addition to the usual `--only hosting`) before Client Engagement can actually send
+anything live. Held back pending confirmation since it stands up new billed, publicly-reachable
+infrastructure (the unsubscribe endpoint) rather than just updating static files.
+
+**Status:** Not yet pushed to GitHub or deployed.
+
+---
+
 ## 2026-09-12 — Bulletin Board: click/tap a memo or announcement poster to expand it
 
 **Requested by:** User — poster images in Memo (and Announcement) cards render at card width,
