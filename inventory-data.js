@@ -29,6 +29,8 @@
         "Retail Products",
         "Tea room Supplies",
         "Pantry Supplies",
+        "Add Ons",
+        "Marketing Collaterals",
         "Others"
     ];
 

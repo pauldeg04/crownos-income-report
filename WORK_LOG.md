@@ -11,6 +11,19 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-12 — Inventory Settings: new categories (Add Ons, Marketing Collaterals)
+
+**Requested by:** User — wanted two new item categories available in Inventory Settings.
+
+**Change applied:**
+- [`inventory-data.js`](inventory-data.js) — added `"Add Ons"` and `"Marketing Collaterals"` to
+  the shared `CATEGORIES` list used by Inventory Settings, the Warehouse/Branch category filters,
+  and the item Add/Edit form.
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app
+
+---
+
 ## 2026-09-12 — Client Engagement: client list is VIP-only
 
 **Requested by:** User — the client list was pulling the entire Client Database, which gets
