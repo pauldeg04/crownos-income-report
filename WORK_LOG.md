@@ -28,8 +28,8 @@ attachment to see it.
   Attachment field explaining the image-vs-other-file behavior.
 - [`manual.html`](manual.html) — Client Engagement section updated to describe it.
 
-**Status:** Not yet pushed/deployed — bundling with the still-outstanding functions/rules deploy
-from the Client Engagement entry below.
+**Status:** Pushed to GitHub and fully deployed (hosting, functions, Firestore rules, Storage
+rules) — see the deploy note on the entry below.
 
 ---
 
@@ -82,11 +82,10 @@ run (in addition to the usual `--only hosting`) before Client Engagement can act
 anything live. Held back pending confirmation since it stands up new billed, publicly-reachable
 infrastructure (the unsubscribe endpoint) rather than just updating static files.
 
-**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d) — the page, menu
-item, and access control are live. `firebase deploy --only functions,firestore:rules,storage:rules`
-is still outstanding (held back for confirmation, per the note above), so Send Email/Send SMS on
-the new page will fail until that runs, and the Preference column will show everyone as
-"Interested" until the `marketingUnsubscribes` read rule is live.
+**Status:** Pushed to GitHub and fully deployed to crownos-5f03d — Hosting, the three Cloud
+Functions (`sendMarketingEmailBlast`, `sendMarketingSmsBlast`, `unsubscribeMarketingEmail`,
+live at https://us-central1-crownos-5f03d.cloudfunctions.net/unsubscribeMarketingEmail), and both
+the Firestore and Storage rules updates. Client Engagement is live end-to-end.
 
 ---
 
