@@ -2,6 +2,13 @@
 
 Running log of changes made to the CrownOS system, newest entry on top.
 
+**The ritual — after every change, in order:**
+1. Update User Manual (`manual.html`), if the change affects what a user sees or does.
+2. Update this Work Log with a new entry.
+3. Push to GitHub.
+4. Deploy (`firebase deploy --only hosting`; use `npx firebase deploy --only hosting` if the
+   `firebase` CLI isn't on PATH).
+
 ---
 
 ## 2026-09-12 — Bulletin Board: click/tap a memo or announcement poster to expand it
@@ -22,6 +29,8 @@ expand it.
   the lightbox for any `.memo-poster` or `.announcement-poster` image (covers cards rendered
   after the initial load, e.g. inbox/sent lists and the archive list); closes on the × button,
   a backdrop click, or Escape.
+- [`manual.html`](manual.html) — Announcement and Memo chapters both note that tapping/clicking
+  the poster image expands it full-size.
 
 **Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
 
