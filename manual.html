@@ -3252,11 +3252,11 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   <h3>Client Engagement</h3>
 
   <p>
-    Compose a one-off promo blast — Email or SMS, picked from the two
-    tabs at the top — and choose which clients receive it from the
-    client list below, sourced from the Client Database. Not scoped to
-    the branch selector; every client with an email or mobile number on
-    file is listed.
+    Compose a one-off promo blast — Email or SMS, picked from the tabs at
+    the top (a third tab, Archive, holds the send history — see below) —
+    and choose which clients receive it from the client list below,
+    sourced from the Client Database. Not scoped to the branch selector;
+    every client with an email or mobile number on file is listed.
   </p>
 
   <p>
@@ -3292,11 +3292,15 @@ Branch receives    →  it is added to the branch's Available Stock</div>
   </p>
 
   <p>
-    <strong>Preference</strong> shows <em>Interested</em> until a client
-    clicks the unsubscribe link in one of these promo emails, at which
-    point it flips to <em>Not Interested</em> and that row's Action
-    checkbox greys out (unticked, un-clickable) for future blasts. This
-    only ever affects this page's own sends — it has no effect on
+    <strong>Preference</strong> shows <em>Interested</em> until either of
+    two things happens: the client clicks the unsubscribe link in one of
+    these promo emails (flips to <em>Not Interested</em>), or an email
+    sent to that address fails to go through — bounces, invalid address,
+    etc. (flips to <em>Unavailable</em>). Either way, that row's Action
+    checkbox greys out (unticked, un-clickable) on the Email tab for
+    future blasts — an <em>Unavailable</em> client's mobile number is
+    untouched, so they can still be ticked on the SMS tab. Both only
+    ever affect this page's own sends — neither has any effect on
     booking confirmations, reminders, or any other message CrownOS
     sends that client.
   </p>
@@ -3318,6 +3322,18 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     and the result summary below fills in as each batch finishes rather
     than only at the very end. This is what keeps a send to a big client
     list from timing out.
+  </p>
+
+  <p>
+    <strong>Archive tab</strong> — every completed blast (Email or SMS)
+    logs itself here automatically; nothing to save or fill in. Two
+    collapsible sections, <span class="ui">Email Sent</span> and
+    <span class="ui">SMS Sent</span> (collapsed by default so the page
+    stays uncluttered — click either to expand), each a table of past
+    sends: when it went out, the Subject (Email) or a preview of the
+    Message (SMS), how many recipients, how many succeeded, how many
+    failed, and who sent it. The most recent 100 sends per channel are
+    listed, newest first.
   </p>
 </section>
 

@@ -348,6 +348,31 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    /* Marketing / Client Engagement delivery failures (see
+       marketing-client-engagement.js markUndeliverable()) — written
+       client-side right after a blast finishes, for every address
+       sendMarketingEmailBlast reported ok:false, so that client's Action
+       checkbox greys out on future sends. Doc ID is the lowercased
+       email, same shape as marketingUnsubscribes above. Same
+       open-to-any-authenticated-user, gated-in-the-UI pattern as
+       marketingCampaigns. */
+    match /marketingUndeliverable/{emailId} {
+      allow get, list: if request.auth != null;
+      allow create, update: if request.auth != null;
+      allow delete: if false;
+    }
+
+    /* Marketing / Client Engagement send history (Archive tab — see
+       marketing-client-engagement.js logSentBatch()). One doc per
+       completed blast (all its batches combined), append-only. Same
+       open-to-any-authenticated-user, gated-in-the-UI pattern as
+       marketingCampaigns. */
+    match /marketingSentLog/{logId} {
+      allow get, list: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if false;
+    }
+
     /* One doc per registered device push token (doc ID = the token
        itself), written by push-notifications.js on opt-in. A user may
        only manage tokens addressed to their own recipientEmail; the

@@ -42,6 +42,8 @@
 
 (function(){
     const UNSUBSCRIBE_COLLECTION = "marketingUnsubscribes";
+    const UNDELIVERABLE_COLLECTION = "marketingUndeliverable";
+    const SENT_LOG_COLLECTION = "marketingSentLog";
     const SMS_SEGMENT_LENGTH = 160;
     const SMS_MAX_SEGMENTS = 3;
     const BATCH_SIZE = 100;
@@ -59,10 +61,12 @@
 
     let clients = [];
     let unsubscribedEmails = new Set();
+    let undeliverableEmails = new Set();
     let activeTab = "email";
     let searchTerm = "";
     let selectedClientIds = new Set();
     let pendingAttachment = null; // { name, size, url, path }
+    let archiveLoaded = false;
 
     function escapeHtml(value){
         return String(value ?? "")
@@ -94,6 +98,31 @@
         return email.length > 0 && unsubscribedEmails.has(email);
     }
 
+    function isUndeliverable(client){
+        const email = normalizeEmail(client.email);
+        return email.length > 0 && undeliverableEmails.has(email);
+    }
+
+    function formatDateTime(isoString){
+        if(!isoString){
+            return "—";
+        }
+
+        const date = new Date(isoString);
+
+        if(Number.isNaN(date.getTime())){
+            return "—";
+        }
+
+        return date.toLocaleString("en-PH", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit"
+        });
+    }
+
     /* ---- Data loading ---- */
 
     async function loadClients(){
@@ -112,6 +141,64 @@
         }catch(error){
             console.error("Failed to load marketing unsubscribe list:", error);
             unsubscribedEmails = new Set();
+        }
+    }
+
+    async function loadUndeliverable(){
+        try{
+            const snapshot = await firebase.firestore().collection(UNDELIVERABLE_COLLECTION).get();
+            undeliverableEmails = new Set(snapshot.docs.map(function(doc){ return doc.id; }));
+        }catch(error){
+            console.error("Failed to load marketing undeliverable list:", error);
+            undeliverableEmails = new Set();
+        }
+    }
+
+    /* Called right after a send completes — any address sendMail() rejected
+       is written here (doc ID = lowercased email) so the Action checkbox
+       greys out for future blasts without waiting for a page reload. Email
+       only, per spec — a bad send doesn't say anything about whether the
+       client's mobile number still works, so SMS eligibility is untouched. */
+    async function markUndeliverable(emails){
+        const uniqueEmails = Array.from(new Set(emails.map(normalizeEmail).filter(Boolean)));
+
+        if(uniqueEmails.length === 0){
+            return;
+        }
+
+        try{
+            const db = firebase.firestore();
+            const chunks = chunkArray(uniqueEmails, 450); // stay under the 500-write batch limit
+
+            for(const chunk of chunks){
+                const batch = db.batch();
+
+                chunk.forEach(function(email){
+                    batch.set(db.collection(UNDELIVERABLE_COLLECTION).doc(email), {
+                        email: email,
+                        markedAt: new Date().toISOString()
+                    });
+                });
+
+                await batch.commit();
+            }
+
+            uniqueEmails.forEach(function(email){ undeliverableEmails.add(email); });
+        }catch(error){
+            console.error("Failed to record undeliverable emails:", error);
+        }
+    }
+
+    async function logSentBatch(entry){
+        try{
+            const currentUser = window.CrownAuth?.getCurrentUser?.();
+
+            await firebase.firestore().collection(SENT_LOG_COLLECTION).add(Object.assign({
+                sentAt: new Date().toISOString(),
+                sentBy: currentUser?.nickname || currentUser?.account || "Unknown"
+            }, entry));
+        }catch(error){
+            console.error("Failed to record sent log entry:", error);
         }
     }
 
@@ -140,10 +227,14 @@
 
     function isEligibleForActiveTab(client){
         if(activeTab === "email"){
-            return Boolean(normalizeEmail(client.email)) && !isUnsubscribed(client);
+            return Boolean(normalizeEmail(client.email)) && !isUnsubscribed(client) && !isUndeliverable(client);
         }
 
-        return Boolean(String(client.contactNumber || "").trim());
+        if(activeTab === "sms"){
+            return Boolean(String(client.contactNumber || "").trim());
+        }
+
+        return false;
     }
 
     function renderClientsTable(){
@@ -158,10 +249,22 @@
         emptyState.classList.toggle("d-none", visible.length > 0);
 
         visible.forEach(function(client){
+            const undeliverable = isUndeliverable(client);
             const unsubscribed = isUnsubscribed(client);
             const eligible = isEligibleForActiveTab(client);
             const checked = eligible && selectedClientIds.has(client.id);
             const contactValue = activeTab === "sms" ? client.contactNumber : client.email;
+
+            let prefLabel = "Interested";
+            let prefTone = "status-active";
+
+            if(undeliverable){
+                prefLabel = "Unavailable";
+                prefTone = "status-inactive";
+            }else if(unsubscribed){
+                prefLabel = "Not Interested";
+                prefTone = "status-inactive";
+            }
 
             const tr = document.createElement("tr");
 
@@ -171,9 +274,7 @@
                 <td>${formatDate(client.lastVisit)}</td>
                 <td>${Number(client.totalVisits) || 0}</td>
                 <td class="ce-pref-cell">
-                    <span class="marketing-status-pill ${unsubscribed ? "status-inactive" : "status-active"}">
-                        ${unsubscribed ? "Not Interested" : "Interested"}
-                    </span>
+                    <span class="marketing-status-pill ${prefTone}">${prefLabel}</span>
                 </td>
                 <td>
                     <input type="checkbox" class="ce-action-checkbox" data-client-id="${escapeHtml(client.id)}"
@@ -209,11 +310,81 @@
         document.getElementById("ceSmsSelectedCount").textContent = label;
     }
 
+    /* ---- Archive ---- */
+
+    async function loadAndRenderArchive(){
+        await Promise.all([
+            loadAndRenderArchiveChannel("email", "ceArchiveEmailTableBody", "ceArchiveEmailEmptyState", renderEmailArchiveRow),
+            loadAndRenderArchiveChannel("sms", "ceArchiveSmsTableBody", "ceArchiveSmsEmptyState", renderSmsArchiveRow)
+        ]);
+    }
+
+    async function loadAndRenderArchiveChannel(channel, tbodyId, emptyStateId, rowRenderer){
+        const tbody = document.getElementById(tbodyId);
+        const emptyState = document.getElementById(emptyStateId);
+
+        try{
+            const snapshot = await firebase.firestore()
+                .collection(SENT_LOG_COLLECTION)
+                .where("channel", "==", channel)
+                .orderBy("sentAt", "desc")
+                .limit(100)
+                .get();
+
+            tbody.innerHTML = "";
+            emptyState.classList.toggle("d-none", !snapshot.empty);
+
+            snapshot.forEach(function(doc){
+                tbody.insertAdjacentHTML("beforeend", rowRenderer(doc.data()));
+            });
+        }catch(error){
+            console.error(`Failed to load ${channel} sent log:`, error);
+            tbody.innerHTML = "";
+            emptyState.classList.remove("d-none");
+        }
+    }
+
+    function renderEmailArchiveRow(entry){
+        return `
+            <tr>
+                <td>${formatDateTime(entry.sentAt)}</td>
+                <td>${escapeHtml(entry.subject || "—")}</td>
+                <td>${Number(entry.totalRecipients) || 0}</td>
+                <td>${Number(entry.successCount) || 0}</td>
+                <td>${Number(entry.failCount) || 0}</td>
+                <td>${escapeHtml(entry.sentBy || "—")}</td>
+            </tr>
+        `;
+    }
+
+    function renderSmsArchiveRow(entry){
+        const preview = String(entry.message || "").slice(0, 80);
+
+        return `
+            <tr>
+                <td>${formatDateTime(entry.sentAt)}</td>
+                <td>${escapeHtml(preview)}${preview.length < String(entry.message || "").length ? "…" : ""}</td>
+                <td>${Number(entry.totalRecipients) || 0}</td>
+                <td>${Number(entry.successCount) || 0}</td>
+                <td>${Number(entry.failCount) || 0}</td>
+                <td>${escapeHtml(entry.sentBy || "—")}</td>
+            </tr>
+        `;
+    }
+
+    function toggleArchiveSection(toggleId, bodyId){
+        const toggle = document.getElementById(toggleId);
+        const body = document.getElementById(bodyId);
+        const expanded = toggle.classList.toggle("expanded");
+
+        body.classList.toggle("d-none", !expanded);
+    }
+
     function initDefaultSelection(){
         // "By default nakacheck" — every eligible client starts selected.
         selectedClientIds = new Set(
             clients.filter(function(client){
-                const hasEmail = Boolean(normalizeEmail(client.email)) && !isUnsubscribed(client);
+                const hasEmail = Boolean(normalizeEmail(client.email)) && !isUnsubscribed(client) && !isUndeliverable(client);
                 const hasMobile = Boolean(String(client.contactNumber || "").trim());
                 return hasEmail || hasMobile;
             }).map(function(client){ return client.id; })
@@ -227,8 +398,16 @@
 
         document.getElementById("ceTabEmailBtn").classList.toggle("active", tab === "email");
         document.getElementById("ceTabSmsBtn").classList.toggle("active", tab === "sms");
+        document.getElementById("ceTabArchiveBtn").classList.toggle("active", tab === "archive");
         document.getElementById("cePanelEmail").classList.toggle("d-none", tab !== "email");
         document.getElementById("cePanelSms").classList.toggle("d-none", tab !== "sms");
+        document.getElementById("cePanelArchive").classList.toggle("d-none", tab !== "archive");
+        document.getElementById("ceClientsCard").classList.toggle("d-none", tab === "archive");
+
+        if(tab === "archive" && !archiveLoaded){
+            archiveLoaded = true;
+            loadAndRenderArchive();
+        }
 
         renderClientsTable();
     }
@@ -428,6 +607,23 @@
                 allResults.push(...response.data.results);
                 renderSendStatus(statusId, allResults, "email(s)");
             }
+
+            const failedEmails = allResults.filter(function(r){ return !r.ok; }).map(function(r){ return r.email; });
+
+            await markUndeliverable(failedEmails);
+
+            await logSentBatch({
+                channel: "email",
+                subject: subject,
+                message: message,
+                attachmentName: attachmentName || "",
+                totalRecipients: recipients.length,
+                successCount: allResults.filter(function(r){ return r.ok; }).length,
+                failCount: failedEmails.length
+            });
+
+            archiveLoaded = false;
+            renderClientsTable();
         }catch(error){
             console.error("Failed to send marketing email blast:", error);
             renderSendError(statusId, "Could not send the email blast. Reason: " + (error?.message || "Unknown error"));
@@ -503,6 +699,16 @@
                 allResults.push(...response.data.results);
                 renderSendStatus(statusId, allResults, "SMS message(s)");
             }
+
+            await logSentBatch({
+                channel: "sms",
+                message: message,
+                totalRecipients: recipients.length,
+                successCount: allResults.filter(function(r){ return r.ok; }).length,
+                failCount: allResults.filter(function(r){ return !r.ok; }).length
+            });
+
+            archiveLoaded = false;
         }catch(error){
             console.error("Failed to send marketing SMS blast:", error);
             renderSendError(statusId, "Could not send the SMS blast. Reason: " + (error?.message || "Unknown error"));
@@ -517,6 +723,15 @@
     function wireEvents(){
         document.getElementById("ceTabEmailBtn").addEventListener("click", function(){ setActiveTab("email"); });
         document.getElementById("ceTabSmsBtn").addEventListener("click", function(){ setActiveTab("sms"); });
+        document.getElementById("ceTabArchiveBtn").addEventListener("click", function(){ setActiveTab("archive"); });
+
+        document.getElementById("ceArchiveEmailToggle").addEventListener("click", function(){
+            toggleArchiveSection("ceArchiveEmailToggle", "ceArchiveEmailBody");
+        });
+
+        document.getElementById("ceArchiveSmsToggle").addEventListener("click", function(){
+            toggleArchiveSection("ceArchiveSmsToggle", "ceArchiveSmsBody");
+        });
 
         document.getElementById("ceClientSearch").addEventListener("input", function(event){
             searchTerm = event.target.value.trim().toLowerCase();
@@ -579,7 +794,7 @@
         wireEvents();
         updateSmsCharCount();
 
-        await Promise.all([loadClients(), loadUnsubscribes()]);
+        await Promise.all([loadClients(), loadUnsubscribes(), loadUndeliverable()]);
 
         initDefaultSelection();
         renderClientsTable();

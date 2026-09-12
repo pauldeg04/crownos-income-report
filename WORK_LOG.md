@@ -11,6 +11,44 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-12 — Client Engagement: Archive tab + auto-flag undeliverable emails
+
+**Requested by:** User — wanted (1) a third "Archive" tab logging every Email Sent / SMS Sent
+blast in two collapsible tables so the page doesn't get crowded, and (2) any email that fails to
+send to automatically flip that client's status and grey out their Action checkbox, same
+mechanism as unsubscribe.
+
+**Change:**
+- New Firestore collection `marketingSentLog` — one doc per completed blast (all its batches
+  combined): channel, subject/message, attachmentName (email), totalRecipients, successCount,
+  failCount, sentAt, sentBy. Written by `logSentBatch()` in
+  [`marketing-client-engagement.js`](marketing-client-engagement.js) right after a send finishes
+  (both `handleSendEmail` and `handleSendSms`).
+- New Firestore collection `marketingUndeliverable` (doc ID = lowercased email, same shape as
+  `marketingUnsubscribes`) — `markUndeliverable()` writes every address `sendMarketingEmailBlast`
+  reported `ok:false` for here automatically, no button needed. SMS failures are **not** recorded
+  here — a bad email says nothing about whether the client's mobile number still works, so SMS
+  eligibility is untouched (per the request: "lahat ng unsuccessful **email** sent").
+- Preference now has three states: <em>Interested</em> (default), <em>Not Interested</em>
+  (unsubscribed), <em>Unavailable</em> (undeliverable) — `isEligibleForActiveTab()` greys out the
+  Action checkbox on the Email tab for either of the last two; the SMS tab is unaffected by
+  `Unavailable`.
+- New "Archive" tab (`marketing-client-engagement.html`) with two
+  `.marketing-collapse-toggle`/`.marketing-collapse-body` sections (collapsed by default, same
+  pattern as Ads Monitoring's History section) — Email Sent and SMS Sent tables, each querying
+  `marketingSentLog` (`where channel ==`, `orderBy sentAt desc`, `limit 100`). Switching to this
+  tab hides the client list card (not relevant there) and lazy-loads the two tables once.
+- [`firestore.indexes.json`](firestore.indexes.json) — composite index on `marketingSentLog`
+  (`channel` asc, `sentAt` desc), required for that query.
+- [`firestore.rules`](firestore.rules) — read/create rules for both new collections (same
+  open-to-any-authenticated-user, gated-in-the-UI pattern as `marketingCampaigns`).
+- [`manual.html`](manual.html) — Client Engagement section documents the Archive tab and the new
+  Unavailable status.
+
+**Status:** Pushed to GitHub and fully deployed (hosting, Firestore rules, Firestore indexes).
+
+---
+
 ## 2026-09-12 — Client Engagement: fix "deadline-exceeded" on large sends
 
 **Requested by:** Bug report — sending to 2087 clients failed with "Could not send the email

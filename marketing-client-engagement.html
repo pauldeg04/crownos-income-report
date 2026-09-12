@@ -69,6 +69,9 @@
                 <li class="nav-item" role="presentation">
                     <button type="button" class="nav-link" id="ceTabSmsBtn" role="tab" data-ce-tab="sms">SMS</button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button type="button" class="nav-link" id="ceTabArchiveBtn" role="tab" data-ce-tab="archive">Archive</button>
+                </li>
             </ul>
 
             <!-- Email tab -->
@@ -121,10 +124,63 @@
                 <div class="mt-2" id="ceSmsSendStatus"></div>
             </div>
 
+            <!-- Archive tab -->
+            <div id="cePanelArchive" class="ce-tab-panel pt-3 d-none">
+
+                <button type="button" class="marketing-collapse-toggle" id="ceArchiveEmailToggle">
+                    <span>Email Sent</span>
+                    <span class="marketing-collapse-chevron" aria-hidden="true">▸</span>
+                </button>
+
+                <div class="marketing-collapse-body d-none" id="ceArchiveEmailBody">
+                    <div class="table-responsive">
+                        <table class="table marketing-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Sent</th>
+                                    <th>Subject</th>
+                                    <th>Recipients</th>
+                                    <th>Sent</th>
+                                    <th>Failed</th>
+                                    <th>Sent By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ceArchiveEmailTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="empty-state d-none" id="ceArchiveEmailEmptyState">No email blasts sent yet.</div>
+                </div>
+
+                <button type="button" class="marketing-collapse-toggle mt-3" id="ceArchiveSmsToggle">
+                    <span>SMS Sent</span>
+                    <span class="marketing-collapse-chevron" aria-hidden="true">▸</span>
+                </button>
+
+                <div class="marketing-collapse-body d-none" id="ceArchiveSmsBody">
+                    <div class="table-responsive">
+                        <table class="table marketing-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Sent</th>
+                                    <th>Message</th>
+                                    <th>Recipients</th>
+                                    <th>Sent</th>
+                                    <th>Failed</th>
+                                    <th>Sent By</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ceArchiveSmsTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="empty-state d-none" id="ceArchiveSmsEmptyState">No SMS blasts sent yet.</div>
+                </div>
+
+            </div>
+
         </div>
     </div>
 
-    <div class="card shadow-sm border-0">
+    <div class="card shadow-sm border-0" id="ceClientsCard">
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                 <h5 class="fw-bold text-primary mb-0">Clients</h5>
