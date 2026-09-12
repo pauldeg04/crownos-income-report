@@ -11,6 +11,28 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-12 — Client Engagement: image attachments embed inline as a poster
+
+**Requested by:** User — after seeing a preview, wanted an attached poster to show large,
+immediately, inside the email itself, instead of the client having to open/download a separate
+attachment to see it.
+
+**Change:**
+- [`functions/index.js`](functions/index.js) — `sendMarketingEmailBlast` now checks the
+  attachment's file extension; a JPG/PNG/GIF/WEBP is attached with a `cid` and
+  `buildMarketingEmailHtml` renders it as a full-width `<img src="cid:...">` right at the top of
+  the message body, so it's visible the instant the email opens (same technique the existing
+  confirmation email already uses for its crown-mark logo). Any other file type (PDF, etc.) still
+  attaches the old way, as a plain attachment.
+- [`marketing-client-engagement.html`](marketing-client-engagement.html) — added a hint under the
+  Attachment field explaining the image-vs-other-file behavior.
+- [`manual.html`](manual.html) — Client Engagement section updated to describe it.
+
+**Status:** Not yet pushed/deployed — bundling with the still-outstanding functions/rules deploy
+from the Client Engagement entry below.
+
+---
+
 ## 2026-09-12 — Marketing: new Client Engagement page (promo Email/SMS blast)
 
 **Requested by:** User — wanted a new item under Marketing's Daily Report, "Client Engagement,"

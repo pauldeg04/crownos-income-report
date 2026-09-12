@@ -1536,8 +1536,18 @@ function buildUnsubscribeUrl(email, secretValue){
     );
 }
 
-function buildMarketingEmailHtml({ clientName, message, unsubscribeUrl }){
+/* posterCid, when set, is the Content-ID of an image attached to the same
+   sendMail() call (see sendMarketingEmailBlast below) — embedding it as
+   cid:<id> instead of a remote URL means it renders full-size in the
+   email body itself as soon as the message opens, the same way the
+   confirmation email's crown-mark logo already does, rather than sitting
+   behind a separate attachment a client has to open. */
+function buildMarketingEmailHtml({ clientName, message, unsubscribeUrl, posterCid }){
     const messageHtml = escapeHtml(message).replace(/\n/g, "<br>");
+
+    const posterHtml = posterCid
+        ? `<img src="cid:${posterCid}" alt="Promo" width="456" style="display:block;width:100%;max-width:456px;border-radius:12px;margin:0 0 20px;">`
+        : "";
 
     return `
 <!doctype html>
@@ -1560,6 +1570,7 @@ function buildMarketingEmailHtml({ clientName, message, unsubscribeUrl }){
 
 <tr>
     <td style="padding:32px;">
+        ${posterHtml}
         <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;">Hi ${escapeHtml(clientName) || "there"},</p>
         <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;line-height:1.7;">${messageHtml}</p>
     </td>
@@ -1631,6 +1642,14 @@ exports.sendMarketingEmailBlast = onCall(
         const attachmentUrl = String(data.attachmentUrl || "").trim();
         const attachmentName = String(data.attachmentName || "attachment").trim();
 
+        /* An image attachment (the common case — a promo poster/flyer) is
+           embedded inline in the email body via cid: so it shows full-size
+           the moment the email opens, with no separate download/open step.
+           Anything else (a PDF, for example) stays a plain attachment,
+           same as before. */
+        const isImageAttachment = /\.(jpe?g|png|gif|webp)$/i.test(attachmentName);
+        const posterCid = attachmentUrl && isImageAttachment ? "marketingPoster" : "";
+
         const mailer = buildMailer();
         const secretValue = EMAIL_PASSWORD.value();
         const results = [];
@@ -1644,9 +1663,13 @@ exports.sendMarketingEmailBlast = onCall(
                     to: recipient.email,
                     subject: subject,
                     text: `Hi ${recipient.name || "there"},\n\n${message}\n\n---\nUnsubscribe: ${unsubscribeUrl}`,
-                    html: buildMarketingEmailHtml({ clientName: recipient.name, message, unsubscribeUrl }),
+                    html: buildMarketingEmailHtml({ clientName: recipient.name, message, unsubscribeUrl, posterCid }),
                     attachments: attachmentUrl
-                        ? [{ filename: attachmentName, path: attachmentUrl }]
+                        ? [{
+                            filename: attachmentName,
+                            path: attachmentUrl,
+                            cid: posterCid || undefined
+                        }]
                         : []
                 });
 
