@@ -249,6 +249,59 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    /* Tech Support — Maintenance requests (Inventory > Tech Support).
+       Same shape/guard as leaveRequests above, but with the
+       "Request Submitted / Processing / Done" ladder instead of
+       "Pending / Processing / Approved / Declined" — gated to Tech
+       Support/Admin in the CrownOS UI (inventory-techsupport.js), since
+       "Tech Support" isn't a custom claim any more than "Team Leader" is. */
+    match /maintenanceRequests/{requestId} {
+      allow create: if request.auth != null &&
+        request.resource.data.requesterEmail == request.auth.token.email &&
+        request.resource.data.status == 'Request Submitted';
+      allow get, list: if request.auth != null;
+      allow update: if request.auth != null && (
+        (resource.data.status == 'Request Submitted' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'processingAt', 'processingBy']) &&
+          request.resource.data.status == 'Processing')
+        ||
+        (resource.data.status == 'Processing' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'doneAt', 'doneBy', 'remarks']) &&
+          request.resource.data.status == 'Done')
+        ||
+        (resource.data.requesterEmail == request.auth.token.email &&
+          resource.data.status in ['Request Submitted', 'Processing'] &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelReason']) &&
+          request.resource.data.status == 'Canceled')
+      );
+      allow delete: if false;
+    }
+
+    /* Tech Support — Marketing Collaterals requests (Inventory > Tech
+       Support). Same ladder/guard as maintenanceRequests above; "Done" is
+       written when Tech Support/Admin clicks "Send Stock". */
+    match /collateralsRequests/{requestId} {
+      allow create: if request.auth != null &&
+        request.resource.data.requesterEmail == request.auth.token.email &&
+        request.resource.data.status == 'Request Submitted';
+      allow get, list: if request.auth != null;
+      allow update: if request.auth != null && (
+        (resource.data.status == 'Request Submitted' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'processingAt', 'processingBy']) &&
+          request.resource.data.status == 'Processing')
+        ||
+        (resource.data.status == 'Processing' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'doneAt', 'doneBy']) &&
+          request.resource.data.status == 'Done')
+        ||
+        (resource.data.requesterEmail == request.auth.token.email &&
+          resource.data.status in ['Request Submitted', 'Processing'] &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'cancelReason']) &&
+          request.resource.data.status == 'Canceled')
+      );
+      allow delete: if false;
+    }
+
     /* Staff duty roster, one doc per (branch, date, staffAccount). Create
        is intentionally open to any authenticated user for the same
        "Team Leader isn't a custom claim" reason as leaveRequests above —

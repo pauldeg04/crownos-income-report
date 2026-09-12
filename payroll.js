@@ -550,7 +550,8 @@ function getAllStaffAccounts(){
     return CrownAuth.getUsers().filter(function(user){
         return (
             user.status === "Active" &&
-            user.role !== "Admin"
+            user.role !== "Admin" &&
+            user.role !== "Tech Support"
         );
     });
 }

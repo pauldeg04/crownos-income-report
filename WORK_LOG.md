@@ -11,6 +11,72 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-12 — Inventory > Tech Support (Maintenance/Collaterals) + new Tech Support role
+
+**Requested by:** User — wanted a request desk under Inventory for maintenance help and
+marketing collateral stock, plus a new "Tech Support" account type to fulfill those requests
+without giving that account the run of the rest of CrownOS.
+
+**New page:** [`inventory-techsupport.html`](inventory-techsupport.html) /
+[`inventory-techsupport.css`](inventory-techsupport.css) /
+[`inventory-techsupport.js`](inventory-techsupport.js) — two tabs, same tab-controller idiom as
+`staff-management.js`:
+
+- **Maintenance** — Subject, Description, Deadline, Branch, and optional multiple attachments
+  (uploaded to Firebase Storage, never base64 — same `ref.put()` pattern as
+  `petty-cash.js`'s `uploadPettyCashAttachment`). Table: Date, Subject, Description, Deadline,
+  Remarks, Status, Action (View).
+- **Collaterals** — fixed item catalog (Flyers, Welcome Card, Temporary Loyalty Card, Loyalty
+  Card, Giveaways, Bottled Water Sticker) with a repeatable "+ Add another item" line (same
+  pattern as `inventory-branches.js`'s `addRequestLine`), plus one Branch/Deadline per request.
+  Table: Date, Items, Deadline, Status, Action (View).
+
+Both use the `leave-requests.js` status-ladder pattern — Firestore-only collections
+(`maintenanceRequests`, `collateralsRequests`), no localStorage mirror — but with
+**Request Submitted → Processing → Done** instead of leave's Pending/Approved/Declined:
+opening a request's View modal (Admin/Tech Support only) flips it to Processing automatically;
+Maintenance is finished via a **"Mark as Done" checkbox** inside the modal (per explicit
+request, not a button elsewhere), Collaterals via a **"Send Stock"** button. The requester can
+Cancel their own request while it's still Request Submitted or Processing. Every submission
+notifies Admin, Executive Assistant, and Tech Support accounts via
+`CrownClientNotifications.broadcast()`.
+
+**New role — "Tech Support":**
+- [`account-settings.html`](account-settings.html) — added the role option and a note on its
+  restricted access next to the role picker.
+- [`access-control.js`](access-control.js) `PAGE_ACCESS` — added `"Tech Support"` to
+  `home.html` (landing page — required, otherwise login would redirect-loop), `manual.html`,
+  `inventory-warehouse.html` (view), `account-settings.html`, `bulletin-board.html`, and
+  `staff-management.html`; added a new `inventory-techsupport.html` entry open to every role
+  (everyone can submit a request).
+- [`sidebar.js`](sidebar.js) — new "Tech Support" menu item under the Inventory section, added
+  the role to Warehouse/Bulletin Board/Staff Management/Dashboard/Account Settings/User Manual,
+  and added notification-type routing + page-title entries for the new pages.
+- [`staff-management.js`](staff-management.js) — hides the Staff Schedule, Incident Report, and
+  Payroll tab buttons for a Tech Support account (no existing per-tab role precedent existed, so
+  this is a new small role check in `selectTab()`'s init code); defaults to the Leave Request
+  tab instead of Staff Schedule for that role.
+- [`clock-widget.js`](clock-widget.js) — Tech Support no longer sees the clock in/out card
+  (extended the existing Admin exclusion).
+- [`payroll.js`](payroll.js) — `getAllStaffAccounts()` now also excludes Tech Support, so the
+  role can never land in a payroll group even if a branch is later assigned to the account.
+
+**Rules:**
+- [`firestore.rules`](firestore.rules) — added `maintenanceRequests` and `collateralsRequests`
+  matches, copied from the existing `leaveRequests` guard with the renamed status ladder.
+- [`storage.rules`](storage.rules) — added a blanket-authenticated
+  `maintenanceAttachments/{branch}/{fileName}` rule (same posture as `memoPosters` — every role
+  submits, and Tech Support/Admin/EA all need to read the files back).
+
+**Manual:** [`manual.html`](manual.html) updated — Chapter 15 renamed and given a new
+"Tech Support — Maintenance and Collaterals" section, the Roles chapter's access matrix gained a
+Tech Support column (all 30 rows), and the sidebar/section-summary tables mention the new page.
+
+**Status:** Code changed locally. **Deploying `firestore:rules` and `storage:rules` in addition
+to `hosting` this time** — the new collections/paths won't work in production without them.
+
+---
+
 ## 2026-09-12 — Inventory Settings: new categories (Add Ons, Marketing Collaterals)
 
 **Requested by:** User — wanted two new item categories available in Inventory Settings.

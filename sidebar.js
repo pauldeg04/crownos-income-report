@@ -95,6 +95,7 @@
         "201 Files": "🗂",
         "Bulletin Board": "📌",
         "Staff Management": "🧑‍💼",
+        "Tech Support": "🛠",
         "Ads Monitoring": "📣",
         "Monitoring Summary": "📈",
         "Daily Report": "📋",
@@ -107,7 +108,7 @@
         {
             label: "Dashboard",
             href: "home.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device"]
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support"]
         },
 
         { section: "Operations" },
@@ -161,13 +162,13 @@
         {
             label: "Bulletin Board",
             href: "bulletin-board.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device"]
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support"]
         },
 
         {
             label: "Staff Management",
             href: "staff-management.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent"]
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Tech Support"]
         },
 
         /* Team Leader gets the full team table entirely through
@@ -216,7 +217,7 @@
         {
             label: "Warehouse",
             href: "inventory-warehouse.html",
-            roles: ["Admin"]
+            roles: ["Admin", "Tech Support"]
         },
 
         {
@@ -230,6 +231,12 @@
             label: "Inventory Settings",
             href: "inventory-items.html",
             roles: ["Admin"]
+        },
+
+        {
+            label: "Tech Support",
+            href: "inventory-techsupport.html",
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support"]
         },
 
         { section: "Compliance" },
@@ -311,7 +318,7 @@
         {
             label: "Account Settings",
             href: "account-settings.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent"],
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Tech Support"],
             sub: true
         },
 
@@ -371,7 +378,7 @@
         {
             label: "User Manual",
             href: "manual.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device"],
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support"],
             sub: true
         }
     ];
@@ -1420,7 +1427,9 @@
         attendance: "attendance.html",
         memo: "bulletin-board.html?tab=memo",
         announcement: "bulletin-board.html?tab=announcement",
-        "booking-request": "booking-requests.html"
+        "booking-request": "booking-requests.html",
+        "tech-support-maintenance": "inventory-techsupport.html?tab=maintenance",
+        "tech-support-collaterals": "inventory-techsupport.html?tab=collaterals"
     };
 
     function getNotificationDestination(type){
@@ -1492,6 +1501,7 @@
             "inventory-warehouse.html": "Warehouse",
             "inventory-branches.html": "Branches",
             "inventory-items.html": "Inventory Settings",
+            "inventory-techsupport.html": "Tech Support",
             "admin-announcement.html": "Announcement",
             "memos.html": "Memo",
             "staff-schedule.html": "Staff Schedule",

@@ -72,6 +72,15 @@ service firebase.storage {
         request.auth.token.role in ['Admin', 'Marketing Agent'];
     }
 
+    // Maintenance request supporting files uploaded from
+    // inventory-techsupport.js's Maintenance tab (uploadMaintenanceAttachment()).
+    // Blanket-authenticated, same posture as memoPosters — every role can
+    // submit a request and Tech Support/Admin/Executive Assistant all need
+    // to read the attachments, so role scoping isn't useful here.
+    match /maintenanceAttachments/{branch}/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+
     // Announcement poster images uploaded from admin-announcement.js /
     // bulletin-board.js's announcement editor (uploadAnnouncementPoster()).
     // Same read/write split as the announcement Firestore collection.

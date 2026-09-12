@@ -198,7 +198,7 @@
                                 <li>
                                     <a href="#ch-inventory">
                                         <span class="manual-ch">15</span>
-                                        <span>Warehouse and Branches</span>
+                                        <span>Warehouse, Branches, and Tech Support</span>
                                     </a>
                                 </li>
                             </ol>
@@ -558,7 +558,7 @@
         </tr>
         <tr>
           <td><strong>Inventory</strong></td>
-          <td>Warehouse · Branches · Inventory Settings</td>
+          <td>Warehouse · Branches · Inventory Settings · Tech Support (Maintenance, Collaterals)</td>
         </tr>
         <tr>
           <td><strong>Summary Reports</strong></td>
@@ -593,7 +593,7 @@
   <h2><span class="h2-num">Chapter 4</span>Roles and Access</h2>
 
   <p>
-    CrownOS has six types of user. Your role decides what you can see and do.
+    CrownOS has seven types of user. Your role decides what you can see and do.
   </p>
 
   <dl class="deflist">
@@ -614,6 +614,14 @@
 
     <dt>Branch Device</dt>
     <dd>A shared login for a branch tablet. Dashboard, Client Database, and Scheduling only.</dd>
+
+    <dt>Tech Support</dt>
+    <dd>
+      Processes Maintenance and Collaterals requests. Access is limited to
+      Warehouse, Tech Support, Account Settings, Bulletin Board, and Staff
+      Management (Staff Schedule, Incident Report, and Payroll tabs are
+      hidden). No clock in/out, and never included in a payroll group.
+    </dd>
   </dl>
 
   <h3>Access matrix</h3>
@@ -636,39 +644,40 @@
           <th class="ctr">Therapist</th>
           <th class="ctr">Marketing</th>
           <th class="ctr">Branch Device</th>
+          <th class="ctr">Tech Support</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td>Dashboard</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td></tr>
-        <tr><td>Daily Income Report</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Therapist Sales</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Sales Invoice Summary</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Client Database</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr yes">●</td></tr>
-        <tr><td>Scheduling</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr yes">●</td></tr>
-        <tr><td>Booking Requests</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>201 Files (Admin Hub)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Bulletin Board (Admin Hub)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td></tr>
-        <tr><td>Staff Management (Admin Hub)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
-        <tr><td>Daily Monitoring Sheet (Admin Hub) <span class="text-muted">— team view for Team Leader too, via auto-grant; everyone else gets their own history only</span></td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td></tr>
-        <tr><td>Ads Monitoring</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
-        <tr><td>Monitoring Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
-        <tr><td>Daily Report</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
-        <tr><td>Client Engagement</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
-        <tr><td>BIR Compliance Desk</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Inventory (all pages)</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Statistics</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Petty Cash</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Monthly Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Expenses Report</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Cash Flow</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Share Holder Report</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Loyalty Card Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Product Sales Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Voucher Masterlist</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Attendance</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Master Lists (Services, Products, Therapist, Branches)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
-        <tr><td>Account Settings</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
-        <tr><td>System Health / Database</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Dashboard</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td></tr>
+        <tr><td>Daily Income Report</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Therapist Sales</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Sales Invoice Summary</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Client Database</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
+        <tr><td>Scheduling</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
+        <tr><td>Booking Requests</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>201 Files (Admin Hub)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Bulletin Board (Admin Hub)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td></tr>
+        <tr><td>Staff Management (Admin Hub)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr yes">●<span class="text-muted"> (Schedule/Incident/Payroll tabs hidden)</span></td></tr>
+        <tr><td>Daily Monitoring Sheet (Admin Hub) <span class="text-muted">— team view for Team Leader too, via auto-grant; everyone else gets their own history only</span></td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
+        <tr><td>Ads Monitoring</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Monitoring Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Daily Report</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Client Engagement</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>BIR Compliance Desk</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Inventory (all pages)</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr yes">●<span class="text-muted"> (Warehouse + Tech Support only)</span></td></tr>
+        <tr><td>Statistics</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Petty Cash</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Monthly Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Expenses Report</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Cash Flow</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Share Holder Report</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Loyalty Card Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Product Sales Summary</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Voucher Masterlist</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Attendance</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Master Lists (Services, Products, Therapist, Branches)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Account Settings</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr yes">●</td></tr>
+        <tr><td>System Health / Database</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
       </tbody>
     </table>
   </div>
@@ -1900,13 +1909,14 @@ Meal Allowance     none for these roles</div>
 </div>
 
 <section id="ch-inventory">
-  <h2><span class="h2-num">Chapter 15</span>Warehouse and Branches</h2>
+  <h2><span class="h2-num">Chapter 15</span>Warehouse, Branches, and Tech Support</h2>
 
   <ul class="roleline">
-    <li><span class="pill pill-role">Admin only</span></li>
+    <li><span class="pill pill-role">Admin</span></li>
+    <li><span class="pill pill-role">Tech Support — Warehouse and Tech Support pages only</span></li>
   </ul>
 
-  <p>Three pages make up inventory, and they are used in sequence.</p>
+  <p>Four pages make up inventory. Inventory Settings, Warehouse, and Branches are used in sequence; Tech Support is a separate request desk (see below).</p>
 
   <h3>Inventory Settings — the master list</h3>
 
@@ -2049,6 +2059,43 @@ Branch receives    →  it is added to the branch's Available Stock</div>
       request it from the warehouse.
     </p>
   </div>
+
+  <h3>Tech Support — Maintenance and Collaterals</h3>
+
+  <p>
+    A request desk with two tabs, open to every role for submitting a request.
+    Only <strong>Admin</strong> and <strong>Tech Support</strong> accounts see
+    the "All Requests" table and can act on them.
+  </p>
+
+  <dl class="deflist">
+    <dt>Maintenance tab</dt>
+    <dd>
+      Request help with equipment, facilities, or IT issues: Branch,
+      Deadline, Subject, Description, and optional attachments (photos,
+      PDFs). Tracked in a table showing Date, Subject, Description,
+      Deadline, Remarks, Status, and a <strong>View</strong> action.
+    </dd>
+
+    <dt>Collaterals tab</dt>
+    <dd>
+      Request marketing collaterals — Flyers, Welcome Card, Temporary
+      Loyalty Card, Loyalty Card, Giveaways, or Bottled Water Sticker.
+      Use <strong>+ Add another item</strong> to request several at once,
+      each with its own Quantity and optional Description, plus one
+      Branch and Deadline for the whole request.
+    </dd>
+  </dl>
+
+  <div class="formula">Request Submitted   →  requester submits, Tech Support/Admin/Executive Assistant are notified
+Processing           →  Tech Support or Admin opens View (status updates automatically)
+Done                 →  Maintenance: tick "Mark as Done" inside View
+                         Collaterals: click "Send Stock" inside View</div>
+
+  <p>
+    The requester can <strong>Cancel</strong> their own request while it is
+    still Request Submitted or Processing.
+  </p>
 </section>
 
 <!-- ================= PART FOUR ================= -->

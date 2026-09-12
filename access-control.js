@@ -40,7 +40,8 @@
             "Receptionist",
             "Therapist",
             "Marketing Agent",
-            "Branch Device"
+            "Branch Device",
+            "Tech Support"
         ],
 
         "index.html": [
@@ -168,7 +169,8 @@
             "Executive Assistant",
             "Receptionist",
             "Therapist",
-            "Marketing Agent"
+            "Marketing Agent",
+            "Tech Support"
         ],
 
         /* Read-only reference page — every role, including Branch Device. */
@@ -178,7 +180,8 @@
             "Receptionist",
             "Therapist",
             "Marketing Agent",
-            "Branch Device"
+            "Branch Device",
+            "Tech Support"
         ],
 
         "attendance.html": [
@@ -192,7 +195,22 @@
         ],
 
         "inventory-warehouse.html": [
-            "Admin"
+            "Admin",
+            "Tech Support"
+        ],
+
+        /* Tech Support's request desk (Maintenance / Collaterals tabs) —
+           every role can submit a request; who can process it (Tech
+           Support/Admin) is gated inside inventory-techsupport.js itself,
+           same pattern as leave-requests.js's isApprover. */
+        "inventory-techsupport.html": [
+            "Admin",
+            "Executive Assistant",
+            "Receptionist",
+            "Therapist",
+            "Marketing Agent",
+            "Branch Device",
+            "Tech Support"
         ],
 
         "inventory-branches.html": [
@@ -251,15 +269,20 @@
             "Receptionist",
             "Therapist",
             "Marketing Agent",
-            "Branch Device"
+            "Branch Device",
+            "Tech Support"
         ],
 
+        /* Tech Support also gets this page, but with the Staff Schedule,
+           Incident Report, and Payroll tabs hidden — see the role check in
+           staff-management.js's selectTab()/init code. */
         "staff-management.html": [
             "Admin",
             "Executive Assistant",
             "Receptionist",
             "Therapist",
-            "Marketing Agent"
+            "Marketing Agent",
+            "Tech Support"
         ],
 
         "marketing-ads-daily.html": [
