@@ -985,3 +985,49 @@
         selectTab(requestedTab || "announcement");
     });
 })();
+
+/* ==========================================================================
+   Image lightbox — tap/click a memo (or announcement) poster to expand it,
+   since posters render at card width and small text can be unreadable.
+   ========================================================================== */
+
+(function(){
+    document.addEventListener("DOMContentLoaded", function(){
+        const backdrop = document.getElementById("imageLightboxBackdrop");
+        const img = document.getElementById("imageLightboxImg");
+        const closeBtn = document.getElementById("imageLightboxCloseBtn");
+
+        if(!backdrop || !img || !closeBtn){
+            return;
+        }
+
+        function openLightbox(src){
+            img.src = src;
+            backdrop.classList.remove("d-none");
+        }
+
+        function closeLightbox(){
+            backdrop.classList.add("d-none");
+            img.removeAttribute("src");
+        }
+
+        document.addEventListener("click", function(e){
+            const target = e.target.closest(".memo-poster, .announcement-poster");
+            if(target){
+                openLightbox(target.src);
+            }
+        });
+
+        closeBtn.addEventListener("click", closeLightbox);
+        backdrop.addEventListener("click", function(e){
+            if(e.target === backdrop){
+                closeLightbox();
+            }
+        });
+        document.addEventListener("keydown", function(e){
+            if(e.key === "Escape"){
+                closeLightbox();
+            }
+        });
+    });
+})();

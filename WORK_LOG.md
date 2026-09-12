@@ -4,6 +4,29 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-12 — Bulletin Board: click/tap a memo or announcement poster to expand it
+
+**Requested by:** User — poster images in Memo (and Announcement) cards render at card width,
+and small text in the image can be too small to read; wanted tapping/clicking the image to
+expand it.
+
+**Change:**
+- [`bulletin-board.html`](bulletin-board.html) — added an image lightbox modal
+  (`#imageLightboxBackdrop` / `#imageLightboxImg`) with a close button, appended once at the end
+  of the page.
+- [`memos.css`](memos.css) — `.image-lightbox-*` styling for the modal, and `cursor:zoom-in` on
+  `.memo-poster`.
+- [`admin-announcement.css`](admin-announcement.css) — `cursor:zoom-in` on `.announcement-poster`
+  to match.
+- [`bulletin-board.js`](bulletin-board.js) — a `document`-level delegated click listener opens
+  the lightbox for any `.memo-poster` or `.announcement-poster` image (covers cards rendered
+  after the initial load, e.g. inbox/sent lists and the archive list); closes on the × button,
+  a backdrop click, or Escape.
+
+**Status:** Pushed to GitHub and deployed to Firebase Hosting (crownos-5f03d).
+
+---
+
 ## 2026-09-11 — Daily Monitoring Sheet PDF export: same color coding as the on-screen pills
 
 **Requested by:** User — wanted the Attendance / Uniform & Grooming / Name Tags / Walkie Talkie /
