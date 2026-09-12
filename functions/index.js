@@ -1606,6 +1606,44 @@ function requireMarketingRole(request){
     }
 }
 
+/* A client list can run into the thousands, and sending one email/SMS at
+   a time (the old behavior) took long enough on a large list to blow
+   past both this function's own timeoutSeconds and the callable client's
+   default 70s deadline — that's the "deadline-exceeded" error a 2000+
+   recipient send used to hit. marketing-client-engagement.js now splits
+   a large recipient list into MARKETING_BATCH_MAX-sized calls itself
+   (see BATCH_SIZE there), so this only ever needs to get through one
+   batch quickly — which runWithConcurrency does by working
+   `concurrency` recipients at a time instead of strictly one-by-one. */
+const MARKETING_BATCH_MAX = 150;
+
+function requireBatchSizeWithinLimit(recipients){
+    if(recipients.length > MARKETING_BATCH_MAX){
+        throw new HttpsError(
+            "invalid-argument",
+            `Too many recipients in one call (${recipients.length}). Send in batches of ${MARKETING_BATCH_MAX} or fewer.`
+        );
+    }
+}
+
+async function runWithConcurrency(items, concurrency, worker){
+    const results = new Array(items.length);
+    let nextIndex = 0;
+
+    async function runWorker(){
+        while(nextIndex < items.length){
+            const current = nextIndex++;
+            results[current] = await worker(items[current]);
+        }
+    }
+
+    await Promise.all(
+        Array.from({ length: Math.min(concurrency, items.length) }, runWorker)
+    );
+
+    return results;
+}
+
 exports.sendMarketingEmailBlast = onCall(
     { secrets: [EMAIL_PASSWORD], timeoutSeconds: 300 },
     async (request) => {
@@ -1624,7 +1662,6 @@ exports.sendMarketingEmailBlast = onCall(
                     };
                 })
                 .filter(function(recipient){ return recipient.email.length > 0; })
-                .slice(0, 500)
             : [];
 
         if(!subject){
@@ -1639,6 +1676,8 @@ exports.sendMarketingEmailBlast = onCall(
             throw new HttpsError("invalid-argument", "At least one recipient is required.");
         }
 
+        requireBatchSizeWithinLimit(recipients);
+
         const attachmentUrl = String(data.attachmentUrl || "").trim();
         const attachmentName = String(data.attachmentName || "attachment").trim();
 
@@ -1652,9 +1691,8 @@ exports.sendMarketingEmailBlast = onCall(
 
         const mailer = buildMailer();
         const secretValue = EMAIL_PASSWORD.value();
-        const results = [];
 
-        for(const recipient of recipients){
+        const results = await runWithConcurrency(recipients, 8, async function(recipient){
             try{
                 const unsubscribeUrl = buildUnsubscribeUrl(recipient.email, secretValue);
 
@@ -1673,12 +1711,12 @@ exports.sendMarketingEmailBlast = onCall(
                         : []
                 });
 
-                results.push({ email: recipient.email, ok: true });
+                return { email: recipient.email, ok: true };
             }catch(error){
                 console.error("Marketing email failed for", recipient.email, error);
-                results.push({ email: recipient.email, ok: false, error: error.message || "Unknown error" });
+                return { email: recipient.email, ok: false, error: error.message || "Unknown error" };
             }
-        }
+        });
 
         return { ok: true, results };
     }
@@ -1721,16 +1759,15 @@ exports.sendMarketingSmsBlast = onCall(
             ? data.recipients
                 .map(function(recipient){ return String(recipient?.mobile || "").trim(); })
                 .filter(function(mobile){ return mobile.length > 0; })
-                .slice(0, 500)
             : [];
 
         if(recipients.length === 0){
             throw new HttpsError("invalid-argument", "At least one recipient is required.");
         }
 
-        const results = [];
+        requireBatchSizeWithinLimit(recipients);
 
-        for(const mobile of recipients){
+        const results = await runWithConcurrency(recipients, 5, async function(mobile){
             try{
                 const response = await fetch("https://api.semaphore.co/api/v4/messages", {
                     method: "POST",
@@ -1755,12 +1792,12 @@ exports.sendMarketingSmsBlast = onCall(
                     throw new Error(result?.message || JSON.stringify(result));
                 }
 
-                results.push({ mobile: mobile, ok: true });
+                return { mobile: mobile, ok: true };
             }catch(error){
                 console.error("Marketing SMS failed for", mobile, error);
-                results.push({ mobile: mobile, ok: false, error: error.message || "Unknown error" });
+                return { mobile: mobile, ok: false, error: error.message || "Unknown error" };
             }
-        }
+        });
 
         return { ok: true, results };
     }

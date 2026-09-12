@@ -26,12 +26,36 @@
      160-char-per-segment counter and blocks sending past 3 segments
      (480 chars), and refuses a message containing a link, since Smart
      silently drops SMS containing a URL from this sender.
+
+   Batching a large send:
+     sendMarketingEmailBlast/sendMarketingSmsBlast refuse more than
+     MARKETING_BATCH_MAX (150 — see functions/index.js) recipients in one
+     call, and even under that cap, sending one-by-one on a list of a
+     couple thousand clients used to blow past both the function's own
+     timeout and the callable client's default 70s deadline ("could not
+     send... deadline-exceeded"). So a send here always goes out in
+     BATCH_SIZE-sized calls, one batch at a time, with the button showing
+     "Sending batch X of Y..." — each batch itself completes quickly
+     because the Cloud Function works its recipients with concurrency,
+     not strictly one-by-one.
    ========================================================================== */
 
 (function(){
     const UNSUBSCRIBE_COLLECTION = "marketingUnsubscribes";
     const SMS_SEGMENT_LENGTH = 160;
     const SMS_MAX_SEGMENTS = 3;
+    const BATCH_SIZE = 100;
+    const CALLABLE_TIMEOUT_MS = 120000;
+
+    function chunkArray(items, size){
+        const chunks = [];
+
+        for(let i = 0; i < items.length; i += size){
+            chunks.push(items.slice(i, i + size));
+        }
+
+        return chunks;
+    }
 
     let clients = [];
     let unsubscribedEmails = new Set();
@@ -384,17 +408,26 @@
                 attachmentName = pendingAttachment.name;
             }
 
-            sendBtn.textContent = "Sending...";
+            const batches = chunkArray(recipients, BATCH_SIZE);
+            const callable = firebase.functions().httpsCallable("sendMarketingEmailBlast", { timeout: CALLABLE_TIMEOUT_MS });
+            const allResults = [];
 
-            const response = await firebase.functions().httpsCallable("sendMarketingEmailBlast")({
-                subject: subject,
-                message: message,
-                recipients: recipients,
-                attachmentUrl: attachmentUrl,
-                attachmentName: attachmentName
-            });
+            for(let i = 0; i < batches.length; i++){
+                sendBtn.textContent = batches.length > 1
+                    ? `Sending batch ${i + 1} of ${batches.length}...`
+                    : "Sending...";
 
-            renderSendStatus(statusId, response.data.results, "email(s)");
+                const response = await callable({
+                    subject: subject,
+                    message: message,
+                    recipients: batches[i],
+                    attachmentUrl: attachmentUrl,
+                    attachmentName: attachmentName
+                });
+
+                allResults.push(...response.data.results);
+                renderSendStatus(statusId, allResults, "email(s)");
+            }
         }catch(error){
             console.error("Failed to send marketing email blast:", error);
             renderSendError(statusId, "Could not send the email blast. Reason: " + (error?.message || "Unknown error"));
@@ -451,15 +484,25 @@
 
         const sendBtn = document.getElementById("ceSendSmsBtn");
         sendBtn.disabled = true;
-        sendBtn.textContent = "Sending...";
 
         try{
-            const response = await firebase.functions().httpsCallable("sendMarketingSmsBlast")({
-                message: message,
-                recipients: recipients
-            });
+            const batches = chunkArray(recipients, BATCH_SIZE);
+            const callable = firebase.functions().httpsCallable("sendMarketingSmsBlast", { timeout: CALLABLE_TIMEOUT_MS });
+            const allResults = [];
 
-            renderSendStatus(statusId, response.data.results, "SMS message(s)");
+            for(let i = 0; i < batches.length; i++){
+                sendBtn.textContent = batches.length > 1
+                    ? `Sending batch ${i + 1} of ${batches.length}...`
+                    : "Sending...";
+
+                const response = await callable({
+                    message: message,
+                    recipients: batches[i]
+                });
+
+                allResults.push(...response.data.results);
+                renderSendStatus(statusId, allResults, "SMS message(s)");
+            }
         }catch(error){
             console.error("Failed to send marketing SMS blast:", error);
             renderSendError(statusId, "Could not send the SMS blast. Reason: " + (error?.message || "Unknown error"));

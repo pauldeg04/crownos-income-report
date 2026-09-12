@@ -3311,6 +3311,14 @@ Branch receives    →  it is added to the branch's Available Stock</div>
     SMS Credits — with a note if the message runs past one 160-character
     segment, since the actual cost then runs higher than the estimate.
   </p>
+
+  <p>
+    A large send goes out in batches of 100 automatically — the button
+    shows <span class="ui">Sending batch 2 of 12...</span> while it works,
+    and the result summary below fills in as each batch finishes rather
+    than only at the very end. This is what keeps a send to a big client
+    list from timing out.
+  </p>
 </section>
 
 <!-- ================= PART EIGHT ================= -->

@@ -11,6 +11,40 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-12 — Client Engagement: fix "deadline-exceeded" on large sends
+
+**Requested by:** Bug report — sending to 2087 clients failed with "Could not send the email
+blast. Reason: deadline-exceeded". `sendMarketingEmailBlast`/`sendMarketingSmsBlast` sent one
+recipient at a time in a single function invocation; at that scale it ran well past both the
+function's own timeout and the callable client's default 70s deadline — and the function was
+also silently truncating anything past the first 500 recipients before that, so even a successful
+run would have quietly dropped everyone after #500.
+
+**Change:**
+- [`functions/index.js`](functions/index.js) — added `runWithConcurrency()` and switched both
+  blast functions to work recipients with concurrency (8 for email, 5 for SMS) instead of strictly
+  one-by-one. Removed the silent `.slice(0, 500)` truncation; added `requireBatchSizeWithinLimit()`
+  which now throws a clear `invalid-argument` error instead if a single call is handed more than
+  `MARKETING_BATCH_MAX` (150) recipients — the real fix for scale is batching from the client (see
+  below), this is just a guardrail so a bug elsewhere fails loudly instead of silently dropping
+  recipients again.
+- [`marketing-client-engagement.js`](marketing-client-engagement.js) — `handleSendEmail`/
+  `handleSendSms` now split the recipient list into batches of 100 (`BATCH_SIZE`) and call the
+  Cloud Function once per batch, sequentially, updating the Send button to "Sending batch X of
+  Y..." and the results panel after each batch completes rather than only at the end. Also passes
+  an explicit 120s timeout to `httpsCallable` (the SDK default is 70s).
+- [`manual.html`](manual.html) — Client Engagement section now describes batch sending.
+
+**Note for the user:** batching fixes the app-side timeout, but the actual GoDaddy SMTP account
+(`info@crownheadspa.com`, used for booking confirmations too) may have its own daily/hourly
+sending-volume limit — a 2000+ recipient blast could still get throttled or bounced by GoDaddy
+itself. Worth checking GoDaddy's sending limits for the current plan, or trying a smaller batch
+first, before relying on this for very large lists.
+
+**Status:** Pushed to GitHub and fully deployed (hosting + functions).
+
+---
+
 ## 2026-09-12 — Client Engagement: confirmation window before sending
 
 **Requested by:** User — wanted a confirm/cancel step before Send Email/Send SMS actually fires,
