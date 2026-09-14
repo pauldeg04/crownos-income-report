@@ -11,6 +11,27 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-14 (5) — Feature: Reset button on Inventory Settings
+
+**Requested by:** Admin wanted a way to zero out inventory stock for the Warehouse and/or
+selected Branches without deleting the item list itself.
+
+**What was added:** A **Reset** button next to **+ Add Item** on
+[`inventory-items.html`](inventory-items.html), visible to Admin only. Clicking it opens a modal
+listing the Warehouse and every Branch (from the branch master list) with a checkbox next to
+each. **Cancel**/**Reset** at the bottom; Reset without a location checked shows a validation
+message instead of proceeding. Confirming a selection pops a second dialog —
+"Are you sure you want to clear inventory?" with **No**/**Yes** — and Yes sets every item's `qty`
+to `0` in the checked location(s) only (Warehouse via `crownWarehouseStock`, Branches via
+`crownBranchStock`), leaving the item list and unchecked locations untouched.
+
+**Files touched:** [`inventory-items.html`](inventory-items.html),
+[`inventory-items.js`](inventory-items.js), [`manual.html`](manual.html).
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app
+
+---
+
 ## 2026-09-14 (4) — Fix: Acknowledge rule erroring on missing `acknowledged` field
 
 **Reported by:** After (3) below was deployed, Acknowledge still failed with the same

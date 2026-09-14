@@ -112,6 +112,14 @@
             >
                 + Add Item
             </button>
+
+            <button
+                type="button"
+                class="btn btn-outline-danger d-none"
+                id="resetInventoryBtn"
+            >
+                Reset
+            </button>
         </div>
 
     </div>
@@ -369,6 +377,118 @@
                 </button>
             </div>
 
+        </div>
+
+    </div>
+
+</div>
+
+<div
+    class="inv-modal-backdrop d-none"
+    id="resetModalBackdrop"
+>
+
+    <div class="inv-modal">
+
+        <div class="inv-modal-header">
+            <div>
+                <p class="modal-eyebrow">
+                    Danger Zone
+                </p>
+
+                <h3>
+                    Reset Inventory
+                </h3>
+            </div>
+
+            <button
+                type="button"
+                class="modal-close-btn"
+                id="closeResetModalBtn"
+                aria-label="Close"
+            >
+                ×
+            </button>
+        </div>
+
+        <div class="inv-modal-body">
+
+            <p class="text-muted">
+                Select the Warehouse and/or Branches to clear. Every item's
+                stock in the selected locations will be reset to zero.
+            </p>
+
+            <div id="resetLocationsList"></div>
+
+            <div
+                class="inv-error-note d-none"
+                id="resetLocationsWarning"
+            >
+                Please select at least one location.
+            </div>
+
+        </div>
+
+        <div class="inv-modal-footer">
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="cancelResetModalBtn"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-danger"
+                id="confirmResetModalBtn"
+            >
+                Reset
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+<div
+    class="inv-modal-backdrop d-none"
+    id="resetConfirmBackdrop"
+>
+
+    <div class="inv-modal">
+
+        <div class="inv-modal-header">
+            <div>
+                <h3>
+                    Are you sure you want to clear inventory?
+                </h3>
+            </div>
+        </div>
+
+        <div class="inv-modal-body">
+            <p class="text-muted mb-0">
+                This will reset every item's stock to zero in the location(s)
+                you selected. This cannot be undone.
+            </p>
+        </div>
+
+        <div class="inv-modal-footer">
+            <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="resetConfirmNoBtn"
+            >
+                No
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-danger"
+                id="resetConfirmYesBtn"
+            >
+                Yes
+            </button>
         </div>
 
     </div>

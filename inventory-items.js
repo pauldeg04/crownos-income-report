@@ -1,6 +1,35 @@
 let items = [];
 let editingItemId = null;
 let selectedServices = [];
+let currentUser = null;
+
+const BRANCH_MASTER_KEY = "crownBranchMasterList";
+const WAREHOUSE_LOCATION = "Warehouse";
+
+/* Mirrors the branch-name normalization used across the other inventory
+   pages (see scheduling.js) — the master list may hold plain strings or
+   { name, ... } objects depending on when the branch was created. */
+function getBranchNames(){
+    let parsed;
+
+    try{
+        parsed = JSON.parse(localStorage.getItem(BRANCH_MASTER_KEY) || "[]");
+    }catch(error){
+        parsed = [];
+    }
+
+    if(!Array.isArray(parsed)){
+        return [];
+    }
+
+    return parsed
+        .map(function(branch){
+            return typeof branch === "string"
+                ? branch
+                : String(branch?.name || "");
+        })
+        .filter(Boolean);
+}
 
 /* script.js owns the peso() every other page formats money with, but it is
    not loaded on the inventory pages — this matches its output. */
@@ -22,6 +51,11 @@ function readItemCost(value){
 
 document.addEventListener("DOMContentLoaded", function(){
     items = CrownInventory.getItems();
+    currentUser = window.CrownAuth?.getCurrentUser?.() || null;
+
+    document
+        .getElementById("resetInventoryBtn")
+        .classList.toggle("d-none", currentUser?.role !== "Admin");
 
     attachEvents();
     populateCategoryFilter();
@@ -33,6 +67,46 @@ function attachEvents(){
     document
         .getElementById("addItemBtn")
         .addEventListener("click", openAddModal);
+
+    document
+        .getElementById("resetInventoryBtn")
+        .addEventListener("click", openResetModal);
+
+    document
+        .getElementById("closeResetModalBtn")
+        .addEventListener("click", closeResetModal);
+
+    document
+        .getElementById("cancelResetModalBtn")
+        .addEventListener("click", closeResetModal);
+
+    document
+        .getElementById("confirmResetModalBtn")
+        .addEventListener("click", handleConfirmResetClick);
+
+    document
+        .getElementById("resetModalBackdrop")
+        .addEventListener("click", function(event){
+            if(event.target === this){
+                closeResetModal();
+            }
+        });
+
+    document
+        .getElementById("resetConfirmNoBtn")
+        .addEventListener("click", closeResetConfirm);
+
+    document
+        .getElementById("resetConfirmYesBtn")
+        .addEventListener("click", performInventoryReset);
+
+    document
+        .getElementById("resetConfirmBackdrop")
+        .addEventListener("click", function(event){
+            if(event.target === this){
+                closeResetConfirm();
+            }
+        });
 
     document
         .getElementById("closeModalBtn")
@@ -449,6 +523,125 @@ function deleteItem(){
 
     closeModal();
     renderItems();
+}
+
+function openResetModal(){
+    const locations =
+        [WAREHOUSE_LOCATION].concat(getBranchNames());
+
+    const list =
+        document.getElementById("resetLocationsList");
+
+    list.innerHTML =
+        locations
+            .map(function(location, index){
+                return `
+                    <div class="form-check">
+                        <input
+                            class="form-check-input reset-location-checkbox"
+                            type="checkbox"
+                            value="${CrownInventory.escapeHtml(location)}"
+                            id="resetLoc${index}"
+                        >
+                        <label class="form-check-label" for="resetLoc${index}">
+                            ${CrownInventory.escapeHtml(location)}
+                        </label>
+                    </div>
+                `;
+            })
+            .join("");
+
+    document
+        .getElementById("resetLocationsWarning")
+        .classList.add("d-none");
+
+    document
+        .getElementById("resetModalBackdrop")
+        .classList.remove("d-none");
+
+    document.body.classList.add("modal-open");
+}
+
+function closeResetModal(){
+    document
+        .getElementById("resetModalBackdrop")
+        .classList.add("d-none");
+
+    document.body.classList.remove("modal-open");
+}
+
+function getCheckedResetLocations(){
+    return Array
+        .from(document.querySelectorAll(".reset-location-checkbox"))
+        .filter(function(checkbox){
+            return checkbox.checked;
+        })
+        .map(function(checkbox){
+            return checkbox.value;
+        });
+}
+
+function handleConfirmResetClick(){
+    if(getCheckedResetLocations().length === 0){
+        document
+            .getElementById("resetLocationsWarning")
+            .classList.remove("d-none");
+        return;
+    }
+
+    document
+        .getElementById("resetConfirmBackdrop")
+        .classList.remove("d-none");
+}
+
+function closeResetConfirm(){
+    document
+        .getElementById("resetConfirmBackdrop")
+        .classList.add("d-none");
+}
+
+function performInventoryReset(){
+    const locations = getCheckedResetLocations();
+
+    if(locations.length === 0){
+        closeResetConfirm();
+        closeResetModal();
+        return;
+    }
+
+    if(locations.includes(WAREHOUSE_LOCATION)){
+        const warehouseRows =
+            CrownInventory.getWarehouseStock();
+
+        warehouseRows.forEach(function(row){
+            row.qty = 0;
+        });
+
+        CrownInventory.saveWarehouseStock(warehouseRows);
+    }
+
+    const branchLocations =
+        locations.filter(function(location){
+            return location !== WAREHOUSE_LOCATION;
+        });
+
+    if(branchLocations.length > 0){
+        const branchRows =
+            CrownInventory.getBranchStock();
+
+        branchRows.forEach(function(row){
+            if(branchLocations.includes(row.branch)){
+                row.qty = 0;
+            }
+        });
+
+        CrownInventory.saveBranchStock(branchRows);
+    }
+
+    closeResetConfirm();
+    closeResetModal();
+
+    alert("Inventory reset successfully.");
 }
 
 function showModal(){
