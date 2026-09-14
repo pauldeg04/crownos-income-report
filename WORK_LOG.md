@@ -11,7 +11,33 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
-## 2026-09-14 — Fix: Incident Report list sometimes failing to load for Admin/EA/Team Leader
+## 2026-09-14 (2) — Fix: Incident Report "View" crashing inside Staff Management tab
+
+**Reported by:** Admin account still couldn't open a submitted incident report after the fix
+below — confirmed via browser console: `Uncaught TypeError: Cannot read properties of null
+(reading 'classList') at openView (incident-report.js:119)`.
+
+**Root cause:** The Incident Report feature has two copies of its markup — the standalone
+[`incident-report.html`](incident-report.html) page, and an embedded tab panel inside
+[`staff-management.html`](staff-management.html) (which is what the Incident Report tab under
+Staff Management actually loads, per the User Manual). The embedded copy's view-modal footer
+was missing the `incidentAcknowledgeBtn` button entirely — only the standalone page had it.
+`incident-report.js`'s `openView()` unconditionally does
+`document.getElementById("incidentAcknowledgeBtn").classList...`, so for an Admin account
+(which always hits that branch) it threw before ever un-hiding the modal — the "View" button
+looked like it did nothing. Also found the embedded copy's table `<thead>` was missing the
+"Status" column present in the row markup `renderTable()` generates, throwing the header out
+of alignment with the data (visible as a misaligned "Pending" column in the screenshot).
+
+**Fix applied:** Added the missing `incidentAcknowledgeBtn` button and the missing "Status"
+`<th>` to `staff-management.html`'s embedded Incident Report tab, matching
+`incident-report.html`.
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app
+
+---
+
+## 2026-09-14 (1) — Fix: Incident Report list sometimes failing to load for Admin/EA/Team Leader
 
 **Reported by:** Admin account couldn't open/view submitted incident reports.
 
