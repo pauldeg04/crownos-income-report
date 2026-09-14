@@ -11,6 +11,28 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-14 (3) — Fix: Incident Report "Acknowledge" always failing (Firestore rules)
+
+**Reported by:** After the View-crash fix below, Admin could open a report but clicking
+**Acknowledge** always showed "Unable to acknowledge this report. Please try again."
+
+**Root cause:** [`firestore.rules`](firestore.rules)'s `incidentReports` match block had
+`allow update, delete: if false;` — a leftover from before the Acknowledge feature (which does
+a `.update()` to set `acknowledged`/`acknowledgedBy*`) was added to
+[`incident-report.js`](incident-report.js). The UI feature was fully built, but the rules were
+never updated to allow the write, so every acknowledgment was rejected server-side.
+
+**Fix applied:** Added an `allow update` clause scoped tightly to the acknowledgment action
+only: caller must have the `Admin` custom-claim role, the report must not already be
+acknowledged, and the write may only touch the four acknowledgment fields (setting
+`acknowledged` to `true`). Matches this file's existing pattern (`request.auth.token.role ==
+'Admin'`) used for `memoGroups` etc.
+
+**Deployed:** `firebase deploy --only firestore:rules,hosting` → live at
+https://crownos-5f03d.web.app
+
+---
+
 ## 2026-09-14 (2) — Fix: Incident Report "View" crashing inside Staff Management tab
 
 **Reported by:** Admin account still couldn't open a submitted incident report after the fix

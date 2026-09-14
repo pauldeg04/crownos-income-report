@@ -241,12 +241,20 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    /* Incident reports. Submit-only log, no workflow/status. */
+    /* Incident reports. Submit-only log, no approve/decline workflow — but
+       an Admin can flip the one-way "acknowledged" read receipt (see
+       incident-report.js acknowledgeReport()). */
     match /incidentReports/{reportId} {
       allow create: if request.auth != null &&
         request.resource.data.reportedByEmail == request.auth.token.email;
       allow get, list: if request.auth != null;
-      allow update, delete: if false;
+      allow update: if request.auth != null &&
+        request.auth.token.role == 'Admin' &&
+        resource.data.acknowledged != true &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['acknowledged', 'acknowledgedByAccount', 'acknowledgedByName', 'acknowledgedAt']) &&
+        request.resource.data.acknowledged == true;
+      allow delete: if false;
     }
 
     /* Tech Support — Maintenance requests (Inventory > Tech Support).
