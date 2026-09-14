@@ -177,14 +177,12 @@
                 .collection(COLLECTION)
                 .orderBy("submittedAt", "desc")
                 .limit(200)
-                .get()
-                .then(function(snapshot){
+                .onSnapshot(function(snapshot){
                     reportsCache = snapshot.docs.map(function(doc){
                         return Object.assign({ id: doc.id }, doc.data());
                     });
                     renderTable();
-                })
-                .catch(function(error){
+                }, function(error){
                     console.error("Unable to load incident reports:", error);
                 });
         }

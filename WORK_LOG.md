@@ -11,6 +11,29 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-14 — Fix: Incident Report list sometimes failing to load for Admin/EA/Team Leader
+
+**Reported by:** Admin account couldn't open/view submitted incident reports.
+
+**Root cause:** [`incident-report.js`](incident-report.js) loaded the `incidentReports`
+Submitted Reports table with a one-time `.get()` fired on `DOMContentLoaded`. `CrownAuth`'s
+session (used for the role check) is read synchronously from `localStorage`, but Firebase
+Auth's own session restore is asynchronous (reads from IndexedDB). If the `.get()` query went
+out before Firebase Auth finished restoring, `request.auth` was still null at that instant, so
+the Firestore rule `allow get, list: if request.auth != null` (see
+[`firestore.rules`](firestore.rules)) denied it — silently, since the failure only hit
+`console.error`. The table just stayed empty/never populated, with no visible error to the
+user.
+
+**Fix applied:** Switched the query from `.get()` to `.onSnapshot()`, matching the pattern
+already used for the equivalently role-gated `memoGroups` listener in
+[`bulletin-board.js`](bulletin-board.js). A snapshot listener automatically retries once the
+auth token becomes available, instead of failing once and giving up.
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app
+
+---
+
 ## 2026-09-12 — Inventory > Tech Support (Maintenance/Collaterals) + new Tech Support role
 
 **Requested by:** User — wanted a request desk under Inventory for maintenance help and
