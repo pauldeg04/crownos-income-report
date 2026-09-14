@@ -11,6 +11,26 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-14 (4) — Fix: Acknowledge rule erroring on missing `acknowledged` field
+
+**Reported by:** After (3) below was deployed, Acknowledge still failed with the same
+"Missing or insufficient permissions" — confirmed unchanged even after the user logged out and
+back in (ruling out a stale role claim).
+
+**Root cause:** A freshly-submitted incident report never has an `acknowledged` field at all
+(it's only added by `acknowledgeReport()`). The rule from (3) read it with direct dot access —
+`resource.data.acknowledged != true` — and in Firestore rules, dot-accessing a map key that
+doesn't exist *throws*, which the engine treats as the whole rule evaluating to false
+(permission denied), regardless of the caller's role.
+
+**Fix applied:** Changed to `resource.data.get('acknowledged', false) != true`, which supplies
+a default instead of throwing when the field is absent.
+
+**Deployed:** `firebase deploy --only firestore:rules,hosting` → live at
+https://crownos-5f03d.web.app
+
+---
+
 ## 2026-09-14 (3) — Fix: Incident Report "Acknowledge" always failing (Firestore rules)
 
 **Reported by:** After the View-crash fix below, Admin could open a report but clicking
