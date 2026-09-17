@@ -11,6 +11,26 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-17 — Fix: Therapist's own schedule list wasn't in day order
+
+**Reported by:** Therapist-view "duty schedule for the week" list (Staff Management → Staff
+Schedule) showed days out of order — e.g. WED, MON, FRI, THURS, SUN, SAT, TUE instead of
+Mon–Sun.
+
+**Root cause:** [`collectOwnItems()`](staff-schedule.js) built the list by walking Opening rows,
+then Closing rows, then Rest Day rows, and within each, by therapist row before day — so the
+order it produced depended on which row/section a given day happened to be entered under, not
+on the day itself.
+
+**Fix applied:** `collectOwnItems()` now tags each item with its weekday index and sorts the
+combined list before returning it; `renderOwnWeek()` re-sorts again after merging items across
+a therapist's multiple allowed branches, so the list always reads Monday → Sunday regardless of
+input order.
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app
+
+---
+
 ## 2026-09-14 (5) — Feature: Reset button on Inventory Settings
 
 **Requested by:** Admin wanted a way to zero out inventory stock for the Warehouse and/or

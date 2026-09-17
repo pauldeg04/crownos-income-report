@@ -594,14 +594,14 @@
 
             DAY_KEYS.forEach(function(day, i){
                 if(section.receptionist?.[day] === currentUser.account){
-                    items.push({ day: DAY_LABELS[i], role: (sectionKey === "opening" ? "Opening" : "Closing") + " — Receptionist" });
+                    items.push({ day: DAY_LABELS[i], dayIndex: i, role: (sectionKey === "opening" ? "Opening" : "Closing") + " — Receptionist" });
                 }
             });
 
             (section.therapists || []).forEach(function(row){
                 DAY_KEYS.forEach(function(day, i){
                     if(row[day] === currentUser.account){
-                        items.push({ day: DAY_LABELS[i], role: (sectionKey === "opening" ? "Opening" : "Closing") + " — Therapist" });
+                        items.push({ day: DAY_LABELS[i], dayIndex: i, role: (sectionKey === "opening" ? "Opening" : "Closing") + " — Therapist" });
                     }
                 });
             });
@@ -610,10 +610,12 @@
         (Array.isArray(grid.restDay) ? grid.restDay : (grid.restDay ? [grid.restDay] : [])).forEach(function(row){
             DAY_KEYS.forEach(function(day, i){
                 if(row[day] === currentUser.account){
-                    items.push({ day: DAY_LABELS[i], role: "Rest Day" });
+                    items.push({ day: DAY_LABELS[i], dayIndex: i, role: "Rest Day" });
                 }
             });
         });
+
+        items.sort(function(a, b){ return a.dayIndex - b.dayIndex; });
 
         return items;
     }
@@ -636,6 +638,8 @@
                     items.push.apply(items, collectOwnItems(doc.data()));
                 }
             });
+
+            items.sort(function(a, b){ return a.dayIndex - b.dayIndex; });
 
             const list = document.getElementById("scheduleOwnList");
             const empty = document.getElementById("scheduleOwnEmpty");
