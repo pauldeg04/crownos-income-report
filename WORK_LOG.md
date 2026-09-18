@@ -11,6 +11,34 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-18 (6) — Feature: "Add to Schedule" button on Payday Sale slots
+
+**Requested by:** Admin — once a Payday Sale slot has a real client interested, wanted a quick
+way to turn it into an actual appointment on Scheduling without retyping everything.
+
+**What was added:** In [`marketing-payday-sale.html`](marketing-payday-sale.html)'s Edit Payday
+Sale Slot pop-up, a new **Add to Schedule** button next to **Delete**. Clicking it opens
+[`scheduling.html`](scheduling.html) with its Add Appointment modal already open and filled in —
+Branch, Date, Bed, Start Time, Client Name, Mobile, Email, Services, Therapist, and Notes all
+carried over from the slot's current form fields (including any unsaved edit made just before
+clicking). Companions are **not** carried over. The Payday Sale slot itself is left untouched —
+this only pre-fills Scheduling's form, it doesn't delete or mark the slot as converted, so the
+same slot can be sent again if the staff member backs out without saving on Scheduling.
+
+**How it works:** [`marketing-payday-sale.js`](marketing-payday-sale.js)'s new `addToSchedule()`
+builds a URL query string (`scheduling.html?fromPaydaySale=1&branch=...&date=...&bed=...&...`)
+and navigates there. [`scheduling.js`](scheduling.js) has a new `openNewModalFromPaydaySale()`,
+called from `DOMContentLoaded` when `fromPaydaySale` is present in the URL — same idea as the
+existing `?fromRequest=<id>` handling for public-website booking requests, but simpler: no
+Firestore doc to fetch or claim, since every field is already in the URL.
+
+**Files touched:** `marketing-payday-sale.html`, `marketing-payday-sale.js`, `scheduling.js`,
+`manual.html` (new paragraph under Payday Sale).
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-18 (5) — Feature: Payday Sale grid shows real Scheduling bookings as occupied
 
 **Requested by:** Admin — wanted the Payday Sale grid to reflect actual Scheduling bookings so a

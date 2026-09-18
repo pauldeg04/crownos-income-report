@@ -155,6 +155,7 @@
         document.getElementById("cancelPaydayModalBtn").addEventListener("click", closeModal);
         document.getElementById("savePaydayModalBtn").addEventListener("click", saveSlot);
         document.getElementById("deletePaydaySlotBtn").addEventListener("click", deleteSlot);
+        document.getElementById("addToScheduleBtn").addEventListener("click", addToSchedule);
 
         document.getElementById("paydayModalBackdrop")
             .addEventListener("click", function(event){
@@ -1688,6 +1689,7 @@
         document.getElementById("paydayModalModeLabel").textContent = "New Sale Slot";
         document.getElementById("paydayModalTitle").textContent = "Add Payday Sale Slot";
         document.getElementById("deletePaydaySlotBtn").classList.add("d-none");
+        document.getElementById("addToScheduleBtn").classList.add("d-none");
         document.getElementById("savePaydayModalBtn").textContent = "Save Slot";
 
         document.getElementById("paydayModalBed").innerHTML = buildBedOptionsHtml(branch, bed);
@@ -1738,6 +1740,7 @@
         document.getElementById("paydayModalStartTime").value = item.startTime || "";
 
         document.getElementById("deletePaydaySlotBtn").classList.remove("d-none");
+        document.getElementById("addToScheduleBtn").classList.remove("d-none");
         document.getElementById("savePaydayModalBtn").textContent = "Update Slot";
 
         updateSelectedSlotLabel();
@@ -1986,6 +1989,43 @@
             closeModal();
             renderPaydaySale();
         });
+    }
+
+    /* Sends this slot's current form fields to Scheduling's Add Appointment
+       modal (see openNewModalFromPaydaySale() in scheduling.js) so staff
+       can turn a Payday Sale slot into a real appointment without retyping
+       it. Reads straight from the open form (not the saved currentDoc
+       entry), so any edit made in this modal before clicking is carried
+       over even if it was never saved here. Companions aren't carried
+       over — add them again on the Scheduling side if needed. The
+       Payday Sale slot itself is left exactly as-is; nothing here deletes
+       or marks it converted. */
+    function addToSchedule(){
+        if(!currentDoc || !selectedBed){
+            alert("Please select a bed before sending this to Schedule.");
+            return;
+        }
+
+        const services =
+            getSelectedServiceObjects()
+                .map(function(service){ return service.name; })
+                .join("|");
+
+        const params = new URLSearchParams({
+            fromPaydaySale: "1",
+            branch: currentDoc.branch,
+            date: currentDoc.date,
+            bed: String(selectedBed),
+            startTime: selectedStartTime || "",
+            client: document.getElementById("paydayModalClient").value.trim(),
+            mobile: document.getElementById("paydayModalMobile").value.trim(),
+            email: document.getElementById("paydayModalEmail").value.trim(),
+            services: services,
+            therapist: document.getElementById("paydayModalTherapist").value,
+            notes: document.getElementById("paydayModalNotes").value.trim()
+        });
+
+        location.href = "scheduling.html?" + params.toString();
     }
 
     /* ---- Block this date ---- */

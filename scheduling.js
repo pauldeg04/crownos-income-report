@@ -76,6 +76,13 @@ document.addEventListener("DOMContentLoaded", async function(){
         openNewModalFromBookingRequest(requestId);
     }
 
+    const paydaySaleParams =
+        new URLSearchParams(location.search);
+
+    if(paydaySaleParams.get("fromPaydaySale")){
+        openNewModalFromPaydaySale(paydaySaleParams);
+    }
+
     /* firebase-sync.js's realtime listener writes an incoming remote
        change straight into localStorage and fires this event — without
        listening for it, a schedule created/edited on one device was
@@ -3023,6 +3030,86 @@ async function openNewModalFromBookingRequest(requestId){
     pendingRequestId = requestId;
 
     /* Drop the query param so refreshing the page doesn't reopen the
+       same prefilled modal. */
+    history.replaceState(null, "", location.pathname);
+}
+
+/* Opened from marketing-payday-sale.js's "Add to Schedule" button — unlike
+   openNewModalFromBookingRequest() above, there's no Firestore doc to fetch
+   or claim: the Payday Sale slot's own fields are carried straight over in
+   the URL's query params (nothing more than what "Add Appointment" already
+   asks for), and this only pre-fills the modal — the Payday Sale slot
+   itself is untouched, so the same slot can be sent over again if the
+   staff member cancels out of this modal without saving. */
+function openNewModalFromPaydaySale(params){
+    const branchName =
+        params.get("branch") || "";
+
+    const date =
+        params.get("date") || "";
+
+    const matchedBranch =
+        getBranches().find(function(branch){
+            return branch.name === branchName;
+        });
+
+    if(!matchedBranch){
+        alert(
+            "This Payday Sale slot's branch (\"" + branchName + "\") isn't set up " +
+            "in this system, so it can't be opened automatically."
+        );
+
+        history.replaceState(null, "", location.pathname);
+        return;
+    }
+
+    document.getElementById("scheduleBranch").value = branchName;
+    localStorage.setItem(SELECTED_BRANCH_KEY, branchName);
+    document.getElementById("scheduleDate").value = date;
+
+    /* Same reasoning as openNewModalFromBookingRequest() above — the
+       global toolbar independently re-pushes its own stored branch/date
+       a moment after load, so it needs to be told about this branch/date
+       too or it'll silently revert what was just set. */
+    const toolbarBranch = document.getElementById("sidebarDashboardBranch");
+    if(toolbarBranch){
+        toolbarBranch.value = branchName;
+    }
+
+    const toolbarDate = document.getElementById("sidebarDashboardDate");
+    if(toolbarDate){
+        toolbarDate.value = date;
+    }
+
+    localStorage.setItem("crownGlobalDate", date);
+
+    renderSchedule();
+
+    const bed =
+        Number(params.get("bed")) || null;
+
+    openNewModal(bed, params.get("startTime") || "");
+
+    document.getElementById("modalClient").value = params.get("client") || "";
+    document.getElementById("modalMobile").value = params.get("mobile") || "";
+    document.getElementById("modalEmail").value = params.get("email") || "";
+
+    const services =
+        (params.get("services") || "").split("|").filter(Boolean);
+
+    resetModalServices(services);
+
+    document.getElementById("modalNotes").value = params.get("notes") || "";
+
+    /* openNewModal() above already populated #modalTherapist's options
+       for this branch via loadTherapistOptions() — just select the one
+       carried over, if it's still a valid option. */
+    document.getElementById("modalTherapist").value = params.get("therapist") || "";
+
+    updateSelectedSlotLabel();
+    updateModalPreview();
+
+    /* Drop the query params so refreshing the page doesn't reopen the
        same prefilled modal. */
     history.replaceState(null, "", location.pathname);
 }
