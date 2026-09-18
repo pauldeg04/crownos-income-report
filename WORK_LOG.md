@@ -11,6 +11,20 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-18 (2) — Tweak: renamed the Dashboard's "Present" stat to "Therapist"
+
+**Requested by:** Admin, right after the Therapist Status feature below shipped — the label next
+to Scheduled read "Present", clearer as "Therapist" (the box still shows the same count: how many
+of today's scheduled therapists are currently clocked in).
+
+**What changed:** [`home.html`](home.html)'s stat box label, and the matching wording in
+[`manual.html`](manual.html)'s new "Therapist Status" section. No id/behavior change —
+`therapistPresentCount` and `dashboard.js`'s logic are untouched.
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app
+
+---
+
 ## 2026-09-18 — Feature: Therapist Status box on the Dashboard
 
 **Requested by:** Admin wanted to see, at a glance, which of the day's scheduled therapists are
