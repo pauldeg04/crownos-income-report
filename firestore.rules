@@ -379,6 +379,18 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null;
     }
 
+    /* Marketing / Payday Sale (see marketing-payday-sale.js) — one doc per
+       branch per day holding that day's block-this-date flag, per-bed
+       availability+time-range, and the sale slots placed on the grid.
+       Not connected to scheduling.js/crownSchedule_* — a separate,
+       marketing-controlled availability set meant to be read later by
+       the public website. Same open-to-any-authenticated-user,
+       gated-in-the-UI pattern as marketingCampaigns above. */
+    match /paydaySale/{docId} {
+      allow get, list: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
+    }
+
     /* Client-writable notification feed for Admin Hub broadcasts
        (Announcement publish, Memo send) — kept separate from the
        Cloud-Function-only /staffNotifications above so that collection's

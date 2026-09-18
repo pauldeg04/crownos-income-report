@@ -1,0 +1,29 @@
+/* Crown Head Spa — Marketing / Payday Sale
+   Small additions on top of scheduling.css's timeline grid (reused as-is
+   for the Branch/Date/Bed layout — see marketing-payday-sale.html). */
+
+.bed-availability-time-row{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    font-size:10px;
+}
+
+.bed-availability-time-row input[type="time"]{
+    width:66px;
+    padding:2px 4px;
+    font-size:10px;
+    border:1px solid rgba(255,255,255,0.35);
+    border-radius:4px;
+    background:rgba(255,255,255,0.12);
+    color:#fff;
+}
+
+.bed-availability-time-row input[type="time"]:disabled{
+    opacity:0.45;
+    cursor:not-allowed;
+}
+
+.bed-availability-time-row span{
+    color:rgba(255,255,255,0.75);
+}

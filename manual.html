@@ -318,7 +318,7 @@
                                 <li>
                                     <a href="#ch-marketing">
                                         <span class="manual-ch">31</span>
-                                        <span>Ads Monitoring, Monitoring Summary, Daily Report, and Client Engagement</span>
+                                        <span>Ads Monitoring, Monitoring Summary, Daily Report, Client Engagement, and Payday Sale</span>
                                     </a>
                                 </li>
                             </ol>
@@ -3230,7 +3230,7 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
 </div>
 
 <section id="ch-marketing">
-  <h2><span class="h2-num">Chapter 31</span>Ads Monitoring, Monitoring Summary, Daily Report, and Client Engagement</h2>
+  <h2><span class="h2-num">Chapter 31</span>Ads Monitoring, Monitoring Summary, Daily Report, Client Engagement, and Payday Sale</h2>
 
   <ul class="roleline">
     <li><span class="pill pill-role">Admin</span></li>
@@ -3499,6 +3499,43 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
     stays queued for a retry (the same batch tries again the next day)
     instead of being wrongly marked <em>Unavailable</em> — clients who
     already received it are never sent to twice.
+  </p>
+
+  <h3>Payday Sale</h3>
+
+  <p>
+    A branch/bed grid for the Payday Sale campaign, used to control what
+    the public Crown Head Spa website will later show as available for
+    the sale. It looks like the <a href="#ch-scheduling">Branch
+    Schedule</a> grid, but it is a completely separate, marketing-only
+    data set — it does not read or write anything on the Scheduling page,
+    and placing or removing a slot here never touches an actual client
+    appointment.
+  </p>
+
+  <p>
+    Pick a Branch and Date from the top toolbar (same pickers used
+    everywhere else in CrownOS), then work with one column per bed:
+  </p>
+
+  <ul class="checklist">
+    <li><strong>Block this date</strong> — hides the whole branch from
+      Payday Sale booking on that date; add an optional Reason.</li>
+    <li><strong>Available</strong> checkbox (top of each bed's column) —
+      turns that bed on/off for the sale on this date. Unchecking it also
+      disables that bed's time range below and blocks new slots from
+      being placed in it.</li>
+    <li><strong>From / To</strong> time range (under each bed's Available
+      checkbox) — the hours that bed is offered for the sale on this
+      date.</li>
+    <li>Click an empty spot in a bed's column to add a Payday Sale slot
+      at that time (Start Time, End Time, and an optional internal Note);
+      click an existing slot to edit or delete it.</li>
+  </ul>
+
+  <p>
+    Every change saves immediately — there is no separate Save button for
+    the grid itself, only inside the slot pop-up.
   </p>
 </section>
 

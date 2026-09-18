@@ -305,6 +305,11 @@
             "Marketing Agent"
         ],
 
+        "marketing-payday-sale.html": [
+            "Admin",
+            "Marketing Agent"
+        ],
+
         /* Team Leader access (the full team table) is granted through
            extraAccess, not a role listed here — see
            TEAM_LEADER_AUTO_ACCESS_PAGES above. Every other role listed

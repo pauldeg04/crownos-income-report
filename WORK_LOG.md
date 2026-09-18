@@ -11,6 +11,45 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-18 (3) — Feature: Payday Sale page under Marketing
+
+**Requested by:** Admin — wants a marketing-controlled availability grid for the Payday Sale
+campaign, structured like the Scheduling page (Branch picker, Date picker with prev/next day,
+one column per bed) but entirely separate from actual appointment scheduling. Meant to eventually
+feed the public Crown Head Spa website (not built yet — "will work on it soon").
+
+**What was added:** A new **Payday Sale** page under the Marketing menu —
+[`marketing-payday-sale.html`](marketing-payday-sale.html),
+[`marketing-payday-sale.js`](marketing-payday-sale.js),
+[`marketing-payday-sale.css`](marketing-payday-sale.css). Visible to Admin and Marketing Agent
+accounts. Per branch/date: a **Block this date** checkbox + reason (same pattern as Scheduling),
+and one column per bed with an **Available** checkbox and a **From/To** time range controlling
+when that bed is offered for the sale. Clicking an empty spot in a bed's timeline places a Payday
+Sale slot (Start/End time + optional note); clicking an existing slot opens it for edit/delete —
+same click-to-place interaction as the Scheduling grid, reusing `scheduling.css`'s timeline
+styles.
+
+**How it works:** New Firestore collection `paydaySale`, one doc per branch per day
+(`{branchSlug}_{date}`) holding `blocked`/`blockReason`, `beds: {bedNumber: {available, from,
+to}}`, and `slots: [{id, bed, startTime, endTime, note, createdBy, createdAt}]`. Written directly
+from the page (no localStorage/appData mirroring), same pattern as `marketingDailyReports`. Does
+**not** read or write `crownSchedule_*`, `crownBlockedDates`, or `crownUnavailableBeds` — fully
+independent of the Scheduling page's data. Branch/bed count sourced the same way Scheduling reads
+them (`crownBranchMasterList` filtered by `CrownAuth.getAllowedBranches()`). Branch/Date picker
+UI reuses the global header toolbar via the same hidden `#scheduleBranch`/`#scheduleDate`
+elements convention as `scheduling.html`.
+
+**Files touched:** `marketing-payday-sale.html`, `marketing-payday-sale.js`,
+`marketing-payday-sale.css`, `sidebar.js` (new menu item + icon + page title),
+`access-control.js` (new `PAGE_ACCESS` entry), `firestore.rules` (new `paydaySale` collection,
+open to any authenticated user, gated in the UI), `manual.html` (new "Payday Sale" section under
+Chapter 31).
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app.
+Firestore rules deployed separately via `firebase deploy --only firestore:rules`.
+
+---
+
 ## 2026-09-18 (2) — Tweak: renamed the Dashboard's "Present" stat to "Therapist"
 
 **Requested by:** Admin, right after the Therapist Status feature below shipped — the label next

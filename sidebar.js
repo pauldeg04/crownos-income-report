@@ -100,6 +100,7 @@
         "Monitoring Summary": "📈",
         "Daily Report": "📋",
         "Client Engagement": "💌",
+        "Payday Sale": "💸",
         "BIR Compliance Desk": "🧾",
         "Daily Monitoring Sheet": "✅"
     };
@@ -210,6 +211,13 @@
             label: "Client Engagement",
             href: "marketing-client-engagement.html",
             roles: ["Admin", "Marketing Agent"]
+        },
+
+        {
+            label: "Payday Sale",
+            href: "marketing-payday-sale.html",
+            roles: ["Admin", "Marketing Agent"],
+            branchRequired: true
         },
 
         { section: "Inventory" },
@@ -1514,6 +1522,7 @@
             "marketing-ads-summary.html": "Monitoring Summary",
             "marketing-daily-report.html": "Daily Report",
             "marketing-client-engagement.html": "Client Engagement",
+            "marketing-payday-sale.html": "Payday Sale",
             "bir-compliance.html": "BIR Compliance Desk",
             "daily-monitoring.html": "Daily Monitoring Sheet"
         };
