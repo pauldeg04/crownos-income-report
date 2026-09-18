@@ -449,6 +449,8 @@ function applyBranchState(){
         document.getElementById("scheduleSubtitle").textContent =
             "Select a branch to display its schedule.";
 
+        watchTherapistRoster(null, null);
+
         return;
     }
 
@@ -575,6 +577,7 @@ function renderSchedule(branch){
 
     renderScheduleHeader(branch.beds, schedule);
     renderScheduleBody(branch, schedule, selectedDate);
+    watchTherapistRoster(branch.name, selectedDate);
 }
 
 function getNextScheduleText(schedule, selectedDate){
@@ -1443,3 +1446,263 @@ function refreshOpenScheduleDetailContext(){
         renderScheduleDetailTimerButton();
     }
 }
+
+/* ==========================================================================
+   Therapist Status — who's scheduled today, and who's currently clocked in
+
+   Roster = the Opening/Closing Therapist slots in Staff Schedule
+   (staff-schedule.js's staffScheduleGrids/{slug(branch)}_{weekMonday}),
+   the same source daily-monitoring.js reads for "who's on duty" — not a
+   second roster invented here, just filtered to Therapist slots only
+   (the Receptionist slot is excluded since this box is Therapist-
+   specific).
+
+   Presence = an attendance entry (crownAttendanceLog, see attendance.js
+   / clock-widget.js) for that account today with clockInAt set and
+   clockOutAt still empty — a Clock In/Out, not an account login.
+   ========================================================================== */
+
+const THERAPIST_GRID_COLLECTION = "staffScheduleGrids";
+const THERAPIST_ATTENDANCE_KEY = "crownAttendanceLog";
+const THERAPIST_USER_ACCOUNTS_KEY = "crownUserAccounts";
+const THERAPIST_STATUS_DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+let therapistStatusGridUnsub = null;
+let therapistStatusRoster = [];
+
+function therapistStatusSlug(value){
+    return String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+function therapistStatusMondayOf(dateValue){
+    const date = new Date(dateValue + "T00:00:00");
+    const day = date.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    date.setDate(date.getDate() + diff);
+
+    return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0")
+    ].join("-");
+}
+
+function therapistStatusDayKeyOf(dateValue){
+    const jsDay = new Date(dateValue + "T00:00:00").getDay();
+    return THERAPIST_STATUS_DAY_KEYS[(jsDay + 6) % 7];
+}
+
+function getTherapistUserAccounts(){
+    try{
+        const raw = localStorage.getItem(THERAPIST_USER_ACCOUNTS_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    }catch(error){
+        return [];
+    }
+}
+
+function getTherapistDisplayNameByAccount(account){
+    const user =
+        getTherapistUserAccounts().find(function(item){
+            return item.account === account;
+        });
+
+    return (user && user.nickname) || account;
+}
+
+function getTherapistAttendanceLog(){
+    try{
+        const raw = localStorage.getItem(THERAPIST_ATTENDANCE_KEY);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    }catch(error){
+        return [];
+    }
+}
+
+/* Currently clocked in = an entry for this account/date with a
+   clockInAt and no clockOutAt yet — same rule clock-widget.js uses to
+   decide the signed-in user's own "Clocked In" state. */
+function isTherapistClockedIn(account, date){
+    return getTherapistAttendanceLog().some(function(entry){
+        return (
+            entry.account === account &&
+            entry.date === date &&
+            entry.clockInAt &&
+            !entry.clockOutAt
+        );
+    });
+}
+
+function buildTherapistRosterFromGrid(gridData, date){
+    const dayKey = therapistStatusDayKeyOf(date);
+    const accounts = [];
+
+    function collectSlots(slots){
+        (slots || []).forEach(function(dayMap){
+            const account = dayMap && dayMap[dayKey];
+
+            if(account){
+                accounts.push(account);
+            }
+        });
+    }
+
+    collectSlots(gridData?.opening?.therapists);
+    collectSlots(gridData?.closing?.therapists);
+
+    const seen = new Set();
+    const roster = [];
+
+    accounts.forEach(function(account){
+        if(seen.has(account)){
+            return;
+        }
+
+        seen.add(account);
+
+        roster.push({
+            account: account,
+            name: getTherapistDisplayNameByAccount(account)
+        });
+    });
+
+    roster.sort(function(a, b){
+        return a.name.localeCompare(b.name);
+    });
+
+    return roster;
+}
+
+function renderTherapistStatusList(date){
+    const listEl = document.getElementById("therapistStatusList");
+    const emptyEl = document.getElementById("therapistStatusEmpty");
+    const presentCountEl = document.getElementById("therapistPresentCount");
+    const headerCountEl = document.getElementById("therapistStatusHeaderCount");
+
+    if(!listEl){
+        return;
+    }
+
+    const roster = therapistStatusRoster;
+
+    const presentCount =
+        roster.filter(function(therapist){
+            return isTherapistClockedIn(therapist.account, date);
+        }).length;
+
+    if(presentCountEl){
+        presentCountEl.textContent = presentCount;
+    }
+
+    if(headerCountEl){
+        headerCountEl.textContent =
+            presentCount + " of " + roster.length + " present";
+    }
+
+    if(roster.length === 0){
+        listEl.innerHTML = "";
+        listEl.classList.add("d-none");
+
+        if(emptyEl){
+            emptyEl.classList.remove("d-none");
+        }
+
+        return;
+    }
+
+    if(emptyEl){
+        emptyEl.classList.add("d-none");
+    }
+
+    listEl.classList.remove("d-none");
+
+    listEl.innerHTML = roster.map(function(therapist){
+        const clockedIn = isTherapistClockedIn(therapist.account, date);
+
+        return `
+            <li class="therapist-status-item">
+                <span class="status-dot ${clockedIn ? "status-dot-in" : "status-dot-out"}"></span>
+                <span class="therapist-status-name">${escapeHtml(therapist.name)}</span>
+                <span class="therapist-status-label ${clockedIn ? "status-label-in" : "status-label-out"}">
+                    ${clockedIn ? "Clocked In" : "Not Clocked In"}
+                </span>
+            </li>
+        `;
+    }).join("");
+}
+
+/* Re-subscribes to the Staff Schedule grid doc for the branch/week
+   currently on screen — same doc staff-schedule.js writes to — so an
+   Opening/Closing roster change, or switching branch/date on the bed
+   timeline above, updates this box without a manual reload. */
+function watchTherapistRoster(branchName, date){
+    if(therapistStatusGridUnsub){
+        therapistStatusGridUnsub();
+        therapistStatusGridUnsub = null;
+    }
+
+    const cardEl = document.getElementById("therapistStatusCard");
+
+    if(!branchName || !date){
+        therapistStatusRoster = [];
+        renderTherapistStatusList(date || getTodayDateString());
+
+        if(cardEl){
+            cardEl.classList.add("d-none");
+        }
+
+        return;
+    }
+
+    if(cardEl){
+        cardEl.classList.remove("d-none");
+    }
+
+    if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
+        therapistStatusRoster = [];
+        renderTherapistStatusList(date);
+        return;
+    }
+
+    const docId =
+        therapistStatusSlug(branchName) + "_" + therapistStatusMondayOf(date);
+
+    therapistStatusGridUnsub =
+        firebase.firestore()
+            .collection(THERAPIST_GRID_COLLECTION)
+            .doc(docId)
+            .onSnapshot(function(doc){
+                therapistStatusRoster =
+                    buildTherapistRosterFromGrid(
+                        doc.exists ? doc.data() : null,
+                        date
+                    );
+
+                renderTherapistStatusList(date);
+            }, function(error){
+                console.error("Unable to watch the Staff Schedule roster:", error);
+            });
+}
+
+/* crownAttendanceLog and crownUserAccounts are mirrored into
+   localStorage by firebase-sync.js's generic listener, the same way
+   attendance.js relies on — a Clock In/Out anywhere just needs this box
+   to re-render, not re-fetch the roster. */
+window.addEventListener("crownCloudUpdate", function(event){
+    const keys = event.detail?.keys || [];
+
+    if(!keys.includes(THERAPIST_ATTENDANCE_KEY) && !keys.includes(THERAPIST_USER_ACCOUNTS_KEY)){
+        return;
+    }
+
+    const sidebarDate = document.getElementById("sidebarDashboardDate");
+
+    const selectedDate =
+        sidebarDate?.value ||
+        document.getElementById("scheduleDate").value ||
+        getTodayDateString();
+
+    renderTherapistStatusList(selectedDate);
+});

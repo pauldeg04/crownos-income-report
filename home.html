@@ -145,6 +145,11 @@
                         <strong id="scheduledCount">0</strong>
                     </div>
 
+                    <div>
+                        <span>Present</span>
+                        <strong id="therapistPresentCount">0</strong>
+                    </div>
+
                     <div class="next-schedule-summary">
                         <span>Next Schedule</span>
                         <strong id="nextSchedule">—</strong>
@@ -201,6 +206,30 @@
                     <div class="timeline-body" id="scheduleBody"></div>
                 </div>
             </div>
+
+        </section>
+
+        <section class="therapist-status-card d-none" id="therapistStatusCard">
+
+            <div class="therapist-status-header">
+                <div>
+                    <h3>Therapist Status</h3>
+                    <p>Who's scheduled and who's clocked in for today.</p>
+                </div>
+
+                <span class="therapist-status-header-count" id="therapistStatusHeaderCount">
+                    0 of 0 present
+                </span>
+            </div>
+
+            <div
+                class="therapist-status-empty"
+                id="therapistStatusEmpty"
+            >
+                No therapist is scheduled for this branch today.
+            </div>
+
+            <ul class="therapist-status-list d-none" id="therapistStatusList"></ul>
 
         </section>
 

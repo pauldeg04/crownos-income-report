@@ -581,6 +581,129 @@ body.modal-open{
 
 
 /* ==========================================================================
+   Dashboard — Therapist Status
+   ========================================================================== */
+
+.therapist-status-card{
+    margin-top:20px;
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-radius:18px;
+    box-shadow:var(--shadow-card);
+    overflow:hidden;
+}
+
+.therapist-status-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:24px;
+    padding:22px 24px;
+    border-bottom:1px solid var(--border-light);
+}
+
+.therapist-status-header h3{
+    margin:0;
+    color:var(--navy);
+    font-size:20px;
+    font-weight:900;
+}
+
+.therapist-status-header p{
+    margin:5px 0 0;
+    color:var(--muted);
+    font-size:13px;
+}
+
+.therapist-status-header-count{
+    flex-shrink:0;
+    padding:8px 14px;
+    color:var(--navy);
+    font-size:13px;
+    font-weight:900;
+    white-space:nowrap;
+    background:var(--gold);
+    border-radius:999px;
+}
+
+.therapist-status-empty{
+    padding:36px 24px;
+    color:var(--muted);
+    text-align:center;
+}
+
+.therapist-status-list{
+    display:flex;
+    flex-direction:column;
+    list-style:none;
+    margin:0;
+    padding:6px 0;
+}
+
+.therapist-status-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:13px 24px;
+    border-bottom:1px solid var(--border-light);
+}
+
+.therapist-status-item:last-child{
+    border-bottom:none;
+}
+
+.status-dot{
+    flex-shrink:0;
+    width:10px;
+    height:10px;
+    border-radius:50%;
+}
+
+.status-dot-in{
+    background:#1F9254;
+    box-shadow:0 0 0 4px rgba(31,146,84,.15);
+}
+
+.status-dot-out{
+    background:#D2453A;
+    box-shadow:0 0 0 4px rgba(210,69,58,.12);
+}
+
+.therapist-status-name{
+    flex:1;
+    min-width:0;
+    color:var(--navy);
+    font-size:14px;
+    font-weight:700;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.therapist-status-label{
+    flex-shrink:0;
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.03em;
+}
+
+.status-label-in{
+    color:#1F9254;
+}
+
+.status-label-out{
+    color:#D2453A;
+}
+
+@media(max-width:768px){
+    .therapist-status-header{
+        align-items:stretch;
+        flex-direction:column;
+    }
+}
+
+
+/* ==========================================================================
    Dashboard — Clock In / Clock Out Widget
    ========================================================================== */
 

@@ -11,6 +11,37 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-18 — Feature: Therapist Status box on the Dashboard
+
+**Requested by:** Admin wanted to see, at a glance, which of the day's scheduled therapists are
+actually present — not just how many appointments are booked.
+
+**What was added:** On [`home.html`](home.html) (the Dashboard), next to the existing
+**Scheduled** count in the Branch Schedule card header, a new **Present** count shows how many
+of today's scheduled therapists are currently clocked in. Below the timeline, a new
+**Therapist Status** card lists every therapist on the Opening/Closing roster for the selected
+branch and day (the same roster from Staff Management → Staff Schedule), each with a status
+dot — green "Clocked In" or red "Not Clocked In" (not yet clocked in today, or already clocked
+out).
+
+**How it works:** [`dashboard.js`](dashboard.js)'s new `watchTherapistRoster()` subscribes with
+`onSnapshot` to the same `staffScheduleGrids/{branch}_{weekMonday}` doc `staff-schedule.js`
+writes, filtered to the Opening/Closing **Therapist** slots only (Receptionist excluded).
+Presence is read from `crownAttendanceLog` in localStorage (mirrored in by `firebase-sync.js`,
+same key `attendance.js`/`clock-widget.js` use) — clocked in = an entry for that account/date
+with `clockInAt` set and no `clockOutAt` yet. This is a Clock In/Out status, not an account
+login. Both the roster (via the live `onSnapshot`) and the presence dots (via the existing
+`crownCloudUpdate` event on `crownAttendanceLog`/`crownUserAccounts`) update without a reload.
+
+**Files touched:** `home.html` (new Present stat + Therapist Status card markup),
+`dashboard.css` (new `.therapist-status-*` / `.status-dot-*` styles), `dashboard.js` (roster
+fetch, presence lookup, rendering, live listeners), `manual.html` (new "Therapist Status"
+section under Chapter 5).
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app
+
+---
+
 ## 2026-09-17 — Fix: Therapist's own schedule list wasn't in day order
 
 **Reported by:** Therapist-view "duty schedule for the week" list (Staff Management → Staff
