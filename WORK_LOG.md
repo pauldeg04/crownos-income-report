@@ -11,6 +11,35 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-18 (5) — Feature: Payday Sale grid shows real Scheduling bookings as occupied
+
+**Requested by:** Admin — wanted the Payday Sale grid to reflect actual Scheduling bookings so a
+bed already used by a real appointment can't also get a Payday Sale slot placed on top of it.
+Explicitly view/edit-only-on-Scheduling: no client details, no click-through, just occupancy.
+
+**What changed:** [`marketing-payday-sale.js`](marketing-payday-sale.js) now reads (read-only)
+the same `crownSchedule_<branch>_<date>` localStorage bucket Scheduling itself uses, for the
+currently selected branch/date. Any bed/time already booked there — status other than
+"Cancelled" — now shows on the Payday Sale grid as a plain grey **Scheduled** block (new
+"Already Scheduled" legend entry): no client name, no click handler, not editable. Clicking that
+time in the grid no longer opens "Add Payday Sale Slot", and saving a slot (main or companion)
+is blocked if it overlaps a real appointment's bed/time or the therapist is already assigned
+there — same conflict logic as slot-vs-slot, just with the real schedule folded into the same
+pool. The grid also listens for `crownCloudUpdate` so a booking made on Scheduling from another
+device reflects here without a manual reload.
+
+**What's still true:** this page never writes to `crownSchedule_*` — Scheduling is completely
+unaffected. To view or edit the actual appointment behind a "Scheduled" block, staff still have
+to go to the Scheduling page itself.
+
+**Files touched:** `marketing-payday-sale.js`, `marketing-payday-sale.css` (new
+`.actual-schedule-block`/`.legend-scheduled` styles), `marketing-payday-sale.html` (legend entry),
+`manual.html` (updated the conflict-checking paragraph).
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-18 (4) — Tweak: Payday Sale slot form now matches Add Appointment
 
 **Requested by:** Admin, right after the Payday Sale page (below) shipped — wanted the slot

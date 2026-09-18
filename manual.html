@@ -3550,10 +3550,15 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
   </p>
 
   <p>
-    Bed and Therapist conflicts are checked only against other Payday
-    Sale slots on this same branch/date — never against real Scheduling
-    appointments. An unavailable bed (Available unchecked) can't receive
-    a new slot until it's turned back on.
+    Bed and Therapist conflicts are checked against other Payday Sale
+    slots on this same branch/date, an unavailable bed (Available
+    unchecked), <strong>and</strong> real Scheduling appointments for
+    that same bed/time. A bed already booked on the Scheduling page shows
+    on this grid as a plain grey <strong>Scheduled</strong> block —
+    read-only, no client name or other detail, and not clickable — it
+    only exists so a Payday Sale slot can't be placed on top of a real
+    appointment. To see or edit the actual appointment, use the
+    <a href="#ch-scheduling">Scheduling</a> page.
   </p>
 </section>
 

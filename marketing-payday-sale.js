@@ -21,12 +21,21 @@
    slot form intentionally mirrors scheduling.js's Add/Edit Appointment
    modal (client, contact info, services, therapist, bed, time,
    status, companions, notes) field-for-field, but this page is NOT
-   wired to scheduling.js/crownSchedule_* — it's a separate,
+   wired to scheduling.js/crownSchedule_* for writing — it's a separate,
    marketing-controlled availability set meant to be read later by the
    public website. Deliberately dropped from the ported modal:
    booking-hold/capacity checks, the send-SMS/email-confirmation popup,
    and Client Database sync — none of those apply to a sale slot that
    isn't a real appointment yet.
+
+   One read-only exception: the grid also reads (never writes)
+   scheduling.js's own crownSchedule_<branch>_<date> localStorage bucket,
+   so beds already booked on the real Scheduling page show as occupied
+   here too — no click-to-add on that time, and saving a Payday Sale
+   slot is blocked from overlapping one. Rendered as a plain "Scheduled"
+   block with no client details and no click handler — see
+   renderActualScheduleBlocks() — since marketing only needs to know the
+   bed is taken, not view or edit the real appointment.
    ========================================================================== */
 
 (function(){
@@ -35,6 +44,7 @@
     const SERVICE_MASTER_KEY = "crownServiceMasterList";
     const THERAPIST_MASTER_KEY = "crownTherapistMasterList";
     const SELECTED_BRANCH_KEY = "crownSelectedBranch";
+    const SCHEDULE_PREFIX = "crownSchedule_";
     const SCHEDULE_PX_PER_MINUTE = 1.5;
     const SCHEDULE_PX_PER_HOUR = SCHEDULE_PX_PER_MINUTE * 60;
 
@@ -56,6 +66,21 @@
         await loadClientOptions();
         attachEvents();
         renderPaydaySale();
+
+        /* firebase-sync.js's realtime listener writes an incoming remote
+           change straight into localStorage and fires this event — a real
+           appointment created/edited on the Scheduling page elsewhere
+           should re-occupy this grid without waiting for a manual
+           reload. Same pattern as scheduling.js's own listener. */
+        window.addEventListener("crownCloudUpdate", function(event){
+            const keys = event.detail?.keys || [];
+
+            if(keys.some(function(key){ return key.startsWith(SCHEDULE_PREFIX); })){
+                if(currentDoc){
+                    renderBody(getSelectedBranch());
+                }
+            }
+        });
     });
 
     function attachEvents(){
@@ -391,6 +416,25 @@
         return slug + "_" + date;
     }
 
+    /* Read-only mirror of scheduling.js's getSchedules() / getStorageKey()
+       — same localStorage key (crownSchedule_<branch>_<date>), never
+       written to from this page. Only status !== "Cancelled" entries
+       actually occupy a bed. */
+    function getActualSchedules(branchName, date){
+        try{
+            const key = SCHEDULE_PREFIX + branchName + "_" + date;
+            const saved = localStorage.getItem(key);
+            const parsed = saved ? JSON.parse(saved) : [];
+
+            return (Array.isArray(parsed) ? parsed : []).filter(function(item){
+                return item.status !== "Cancelled";
+            });
+        }catch(error){
+            console.error("Unable to load actual schedules:", error);
+            return [];
+        }
+    }
+
     /* ---- Load / save the current branch+date doc ---- */
 
     function defaultDoc(branch, date){
@@ -631,6 +675,8 @@
             return item.status !== "Cancelled";
         });
 
+        const actualSchedules = getActualSchedules(branch.name, date);
+
         const timeCol = document.createElement("div");
         timeCol.className = "timeline-time-col";
         timeCol.style.height = totalHeight + "px";
@@ -660,6 +706,10 @@
                 return Number(slot.bed) === bed;
             });
 
+            const bedActualSchedules = actualSchedules.filter(function(item){
+                return Number(item.bed) === bed;
+            });
+
             col.addEventListener("click", function(event){
                 if(bedIsUnavailable){
                     return;
@@ -670,7 +720,7 @@
                 const rawMinutes = opening + Math.floor(offsetY / SCHEDULE_PX_PER_MINUTE);
                 const slotStart = Math.floor(rawMinutes / 10) * 10;
 
-                const occupied = bedSlots.some(function(slot){
+                const occupied = bedSlots.concat(bedActualSchedules).some(function(slot){
                     return (
                         slotStart >= timeToMinutes(slot.startTime) &&
                         slotStart < timeToMinutes(slot.endTime)
@@ -724,6 +774,30 @@
                 });
 
                 col.appendChild(button);
+            });
+
+            /* Real Scheduling appointments — read-only occupancy marker,
+               no client details and no click handler (see
+               getActualSchedules() above). Just tells marketing the bed
+               is already taken at this time. */
+            bedActualSchedules.forEach(function(item){
+                const itemStart = timeToMinutes(item.startTime);
+                const itemEnd = timeToMinutes(item.endTime);
+                const clampedStart = Math.max(itemStart, opening);
+                const clampedEnd = Math.min(itemEnd, closing);
+
+                if(clampedEnd <= clampedStart){
+                    return;
+                }
+
+                const block = document.createElement("div");
+                block.className = "actual-schedule-block";
+                block.style.top = ((clampedStart - opening) * SCHEDULE_PX_PER_MINUTE) + "px";
+                block.style.height = ((clampedEnd - clampedStart) * SCHEDULE_PX_PER_MINUTE) + "px";
+                block.title = "Already scheduled — " + formatTimeRange(item.startTime, item.endTime);
+                block.textContent = "Scheduled";
+
+                col.appendChild(block);
             });
 
             body.appendChild(col);
@@ -1286,7 +1360,21 @@
             }
         }
 
-        return scheduled.concat(unavailableBlocks);
+        /* Real Scheduling appointments (read-only, see getActualSchedules)
+           — a Payday Sale slot can't be placed on top of an actual
+           booking, same bed/therapist conflict shape as everything else
+           in this pool. */
+        const actualSchedules =
+            getActualSchedules(currentDoc.branch, currentDoc.date).map(function(item){
+                return {
+                    bed: item.bed,
+                    therapist: item.therapist,
+                    startTime: item.startTime,
+                    endTime: item.endTime
+                };
+            });
+
+        return scheduled.concat(unavailableBlocks, actualSchedules);
     }
 
     function poolHasConflict(bed, startTime, endTime, pool){
