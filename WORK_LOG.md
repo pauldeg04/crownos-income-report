@@ -11,6 +11,36 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-18 (4) — Tweak: Payday Sale slot form now matches Add Appointment
+
+**Requested by:** Admin, right after the Payday Sale page (below) shipped — wanted the slot
+pop-up to collect the same information as Scheduling's Add Appointment modal, including
+companions, instead of just a Start/End time + Note.
+
+**What changed:** [`marketing-payday-sale.html`](marketing-payday-sale.html)'s slot pop-up was
+rebuilt to match Scheduling's Add Appointment modal field-for-field — Client Name, Mobile
+Number, Email Address, Services (+ Add Service, duration-driven End Time/Duration readouts),
+Therapist, Bed, Start Time, Status, Notes, and full **+ Add Companion** support (its own
+services/therapist/bed/start time, with the same bed-availability recommendation and
+overlap-warning behavior as Scheduling). The Date field mirrors the page's branch/date toolbar
+and is not independently editable — moving a slot to a different day means switching dates up
+there first, not inside the pop-up (this page's `paydaySale` doc is one Firestore doc per
+branch+date, so a cross-date move would mean writing to two docs — deliberately left out for
+now).
+
+**What was deliberately left out** (present in Scheduling's modal, not needed here): the pending
+web-booking-hold/branch-capacity checks, the send-SMS/email-confirmation pop-up, and
+auto-registering the client into the Client Database — none of those apply to a sale slot that
+isn't a real appointment. Bed/Therapist conflict checks only look at other Payday Sale slots for
+that same branch/date, never at real `crownSchedule_*` appointments.
+
+**Files touched:** `marketing-payday-sale.html`, `marketing-payday-sale.js`, `manual.html`
+(expanded the Payday Sale section).
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-18 (3) — Feature: Payday Sale page under Marketing
 
 **Requested by:** Admin — wants a marketing-controlled availability grid for the Payday Sale

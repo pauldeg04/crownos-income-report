@@ -155,7 +155,7 @@
 
 <div class="schedule-modal-backdrop d-none" id="paydayModalBackdrop">
 
-    <div class="schedule-modal" role="dialog" aria-modal="true" style="max-width:420px;">
+    <div class="schedule-modal" role="dialog" aria-modal="true">
 
         <div class="schedule-modal-header">
             <div>
@@ -179,23 +179,183 @@
 
             <div class="row g-3">
 
-                <div class="col-6">
-                    <label class="form-label">Start Time</label>
-                    <input type="time" id="paydaySlotStartTime" class="form-control" step="60">
+                <div class="col-12">
+                    <label class="form-label">
+                        Client Name *
+                    </label>
+
+                    <input
+                        type="text"
+                        id="paydayModalClient"
+                        class="form-control"
+                        list="paydayClientOptions"
+                        placeholder="Type or select client"
+                        autocomplete="off"
+                    >
+
+                    <datalist id="paydayClientOptions"></datalist>
                 </div>
 
-                <div class="col-6">
-                    <label class="form-label">End Time</label>
-                    <input type="time" id="paydaySlotEndTime" class="form-control" step="60">
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Mobile Number
+                        <small class="text-muted fw-normal">(for SMS confirmation)</small>
+                    </label>
+
+                    <input
+                        type="tel"
+                        id="paydayModalMobile"
+                        class="form-control"
+                        placeholder="09XXXXXXXXX"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Email Address
+                        <small class="text-muted fw-normal">(for email confirmation)</small>
+                    </label>
+
+                    <input
+                        type="email"
+                        id="paydayModalEmail"
+                        class="form-control"
+                        placeholder="client@email.com"
+                        autocomplete="off"
+                    >
                 </div>
 
                 <div class="col-12">
                     <label class="form-label">
-                        Note
-                        <small class="text-muted fw-normal">(optional — shown internally only)</small>
+                        Services *
                     </label>
 
-                    <input type="text" id="paydaySlotNote" class="form-control" maxlength="120" placeholder="e.g. 30% off all services">
+                    <div id="paydayModalServicesList" class="modal-services-list"></div>
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-success btn-sm mt-2"
+                        id="paydayAddServiceBtn"
+                    >
+                        + Add Service
+                    </button>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">
+                        Therapist
+                        <small class="text-muted fw-normal">(optional — leave blank for advance bookings)</small>
+                    </label>
+
+                    <select
+                        id="paydayModalTherapist"
+                        class="form-select"
+                    >
+                        <option value="">
+                            To be Assigned
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">
+                        Date
+                    </label>
+
+                    <input
+                        type="date"
+                        id="paydayModalDate"
+                        class="form-control"
+                        disabled
+                        title="Switch dates from the Branch/Date picker above to move slots to a different day."
+                    >
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">
+                        Bed
+                    </label>
+
+                    <select
+                        id="paydayModalBed"
+                        class="form-select"
+                    ></select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">
+                        Start Time
+                    </label>
+
+                    <input
+                        type="time"
+                        id="paydayModalStartTime"
+                        class="form-control"
+                        step="60"
+                    >
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">
+                        End Time
+                    </label>
+
+                    <div class="modal-readout" id="paydayModalEndTime">
+                        —
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Status
+                    </label>
+
+                    <select
+                        id="paydayModalStatus"
+                        class="form-select"
+                    >
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Walk-in">Walk-in</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Duration
+                    </label>
+
+                    <div class="modal-readout" id="paydayModalDuration">
+                        —
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div id="paydayModalCompanionsList" class="modal-companions-list"></div>
+
+                    <button
+                        type="button"
+                        class="btn btn-outline-success btn-sm"
+                        id="paydayAddCompanionBtn"
+                    >
+                        + Add Companion
+                    </button>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">
+                        Notes
+                    </label>
+
+                    <textarea
+                        id="paydayModalNotes"
+                        class="form-control"
+                        rows="2"
+                        placeholder="Special requests or reminders"
+                    ></textarea>
                 </div>
 
             </div>
