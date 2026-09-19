@@ -11,6 +11,24 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-20 — Payday Sale page: Payday Sale Portal / Voucher List tabs
+
+**Requested by:** Admin — two tabs on the Payday Sale page: Payday Sale Portal (the existing page) and a new Voucher List in the same format as the Voucher Masterlist, showing only Payday Sale vouchers.
+
+**What changed:**
+- [`marketing-payday-sale.html`](marketing-payday-sale.html) / [`.js`](marketing-payday-sale.js) / [`.css`](marketing-payday-sale.css): tab bar (`initPageTabs()`, remembered per session). Everything that was on the page is now inside the **Payday Sale Portal** tab, unchanged. The **Voucher List** tab has the Voucher Masterlist's tiles, search, status filter and table (same element ids and `list-vouchers.css`), and loads `list-vouchers.js`, `voucher-print.js` and jsPDF so Download PDF / Void / Reactivate work the same.
+- [`list-vouchers.js`](list-vouchers.js): optional `window.CROWN_VOUCHER_LIST_FILTER` hook so an embedding page can show a subset (the Masterlist itself is unchanged and still lists every voucher). The Payday tab sets it to `entry.tier === "Payday"`.
+- [`script.js`](script.js): a "Payday Sale voucher" is an ordinary `crownVoucherRegistry` entry with tier **Payday**. Services ticked Available for Payday (with a Payday Sale Price) now appear in the Add Sale voucher generator and the "Voucher — …" product list as "… (Payday)", valued at the Payday Sale Price, so there is a way to issue them.
+- [`manual.html`](manual.html): tab description added.
+
+**Note:** the Voucher List fills as Payday vouchers are issued from the Daily Income Report; orders on the public page are still handled through Voucher Request → Plot on Grid (no voucher is auto-issued yet).
+
+**Files touched:** `marketing-payday-sale.html/.js/.css`, `list-vouchers.js`, `script.js`, `manual.html`.
+
+**Deployed:** `firebase deploy --only hosting` → https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-19 (11) — Voucher holds shown on the CrownOS Payday Sale grid
 
 **Requested by:** Admin — the client's held card (with its countdown) on the public page should also show on the CrownOS Payday Sale grid.

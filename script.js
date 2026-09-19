@@ -593,6 +593,24 @@ function getVoucherItems(){
         });
       });
 
+  /* Payday Sale vouchers: any service ticked "Available for Payday" can be
+     issued as a voucher at its Payday Sale Price. They're ordinary registry
+     entries with tier "Payday" — the Payday Sale page's Voucher List tab
+     shows exactly those. */
+  const paydayServices =
+    getServices()
+      .filter(function(item){
+        return item.availableForPayday === true && Number(item.paydaySalePrice) > 0;
+      })
+      .map(function(item){
+        return {
+          itemType: "Service",
+          name: item.name,
+          tier: "Payday",
+          voucherValue: Number(item.paydaySalePrice) || 0
+        };
+      });
+
   const products =
     getProducts()
       .filter(function(item){
@@ -607,7 +625,7 @@ function getVoucherItems(){
         };
       });
 
-  return services.concat(products);
+  return services.concat(paydayServices, products);
 }
 
 function getVoucherItemKey(item){
@@ -688,8 +706,27 @@ function getProducts(){
         });
       });
 
+  const paydayVoucherProducts =
+    getServices()
+      .filter(function(service){
+        return service.availableForPayday === true && Number(service.paydaySalePrice) > 0;
+      })
+      .map(function(service){
+        return {
+          id: `SERVICE-VOUCHER:${service.name}:Payday`,
+          name: `Voucher — ${service.name} (Payday)`,
+          sourceServiceName: service.name,
+          voucherTier: "Payday",
+          sellingPrice: Number(service.paydaySalePrice) || 0,
+          voucherValue: Number(service.paydaySalePrice) || 0,
+          status: "Active",
+          productKind: "Service Voucher",
+          virtualProduct: true
+        };
+      });
+
   return physicalProducts
-    .concat(serviceVoucherProducts)
+    .concat(serviceVoucherProducts, paydayVoucherProducts)
     .sort(function(a, b){
       return a.name.localeCompare(b.name);
     });

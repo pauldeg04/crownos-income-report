@@ -187,9 +187,19 @@ function statusBadge(status){
 }
 
 function renderVoucherList(){
+    /* Pages that embed this list (e.g. the Payday Sale page's Voucher List
+       tab) can set window.CROWN_VOUCHER_LIST_FILTER to show only some
+       vouchers; the Voucher Masterlist itself shows all of them. */
+    const listFilter =
+        typeof window.CROWN_VOUCHER_LIST_FILTER === "function"
+            ? window.CROWN_VOUCHER_LIST_FILTER
+            : null;
+
     const registry =
         getRegistry()
-            .slice()
+            .filter(function(entry){
+                return !listFilter || listFilter(entry);
+            })
             .sort(function(a, b){
                 return String(b.issuedAt || "")
                     .localeCompare(String(a.issuedAt || ""));

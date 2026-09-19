@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="shared.css">
 <link rel="stylesheet" href="sidebar.css">
 <link rel="stylesheet" href="scheduling.css">
+<link rel="stylesheet" href="list-vouchers.css">
 <link rel="stylesheet" href="marketing-payday-sale.css">
 
 <script>if(!localStorage.getItem("crownSelectedBranch")){location.href="home.html";}</script>
@@ -55,6 +56,18 @@
 
         </div>
     </div>
+
+    <div class="payday-page-tabs" role="tablist">
+        <button type="button" class="payday-page-tab active" id="paydayTabPortal" data-payday-tab="portal" role="tab">
+            Payday Sale Portal
+        </button>
+
+        <button type="button" class="payday-page-tab" id="paydayTabVouchers" data-payday-tab="vouchers" role="tab">
+            Voucher List
+        </button>
+    </div>
+
+    <div id="paydayPortalPanel">
 
     <div class="schedule-controls-card">
         <!-- Branch and Date are selected from the global header toolbar
@@ -192,6 +205,112 @@
             <div class="timeline-grid">
                 <div class="timeline-header" id="paydayHead"></div>
                 <div class="timeline-body" id="paydayBody"></div>
+            </div>
+        </div>
+
+    </div>
+
+    </div><!-- /#paydayPortalPanel -->
+
+    <div id="paydayVoucherPanel" class="d-none">
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+
+                <div class="page-heading">
+                    <div>
+                        <h3 class="fw-bold text-primary mb-0">Voucher List</h3>
+                        <p class="text-muted mb-0">
+                            Vouchers issued from the Payday Sale — same list and actions as the Voucher Masterlist, Payday only.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="voucher-summary-tiles">
+                    <div class="voucher-tile">
+                        <span>Total Issued</span>
+                        <strong id="tileTotal">0</strong>
+                        <small id="tileTotalValue">₱0.00</small>
+                    </div>
+
+                    <div class="voucher-tile voucher-tile-active">
+                        <span>Active (Unredeemed)</span>
+                        <strong id="tileActive">0</strong>
+                        <small id="tileActiveValue">₱0.00</small>
+                    </div>
+
+                    <div class="voucher-tile voucher-tile-redeemed">
+                        <span>Redeemed</span>
+                        <strong id="tileRedeemed">0</strong>
+                        <small id="tileRedeemedValue">₱0.00</small>
+                    </div>
+
+                    <div class="voucher-tile voucher-tile-cancelled">
+                        <span>Voided</span>
+                        <strong id="tileCancelled">0</strong>
+                        <small id="tileCancelledValue">₱0.00</small>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+
+                <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+                    <div class="d-flex flex-wrap gap-2 align-items-end">
+                        <div>
+                            <label class="form-label fw-bold mb-1">Search</label>
+                            <input
+                                type="text"
+                                id="voucherSearch"
+                                class="form-control"
+                                placeholder="Voucher # or client name"
+                                autocomplete="off"
+                            >
+                        </div>
+
+                        <div>
+                            <label class="form-label fw-bold mb-1">Status</label>
+                            <select id="voucherStatusFilter" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="expired">Expired</option>
+                                <option value="redeemed">Redeemed</option>
+                                <option value="cancelled">Voided</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="voucher-count-box">
+                        Showing: <strong id="voucherShownCount">0</strong>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table voucher-list-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Voucher #</th>
+                                <th>Item</th>
+                                <th>Value</th>
+                                <th>Client</th>
+                                <th>Issued</th>
+                                <th>Status</th>
+                                <th>Redemption</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="voucherListBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="empty-state d-none" id="voucherEmptyState">
+                    No Payday Sale vouchers yet. Vouchers issued from the Daily Income Report with the
+                    Payday price will appear here automatically.
+                </div>
+
             </div>
         </div>
 
@@ -428,6 +547,17 @@
 
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="voucher-font-cinzel.js"></script>
+<script src="voucher-print.js"></script>
+<script>
+    /* The Voucher List tab reuses list-vouchers.js (the Voucher Masterlist's
+       own script) and only shows vouchers issued at the Payday price. */
+    window.CROWN_VOUCHER_LIST_FILTER = function(entry){
+        return entry.tier === "Payday";
+    };
+</script>
+<script src="list-vouchers.js"></script>
 <script src="marketing-payday-sale.js"></script>
 <script src="sidebar.js"></script>
 

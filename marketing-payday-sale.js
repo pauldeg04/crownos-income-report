@@ -67,6 +67,7 @@
         attachEvents();
         renderPaydaySale();
         startBookingRequestsListener();
+        initPageTabs();
 
         /* firebase-sync.js's realtime listener writes an incoming remote
            change straight into localStorage and fires this event — a real
@@ -167,6 +168,44 @@
         document.addEventListener("keydown", function(event){
             if(event.key === "Escape"){ closeModal(); }
         });
+    }
+
+    /* Two tabs: Payday Sale Portal (the grid + voucher requests) and
+       Voucher List (list-vouchers.js, filtered to Payday vouchers). The
+       chosen tab is remembered for the session. */
+    function initPageTabs(){
+        const tabs = document.querySelectorAll("[data-payday-tab]");
+
+        function show(name){
+            document.getElementById("paydayPortalPanel").classList.toggle("d-none", name !== "portal");
+            document.getElementById("paydayVoucherPanel").classList.toggle("d-none", name !== "vouchers");
+
+            tabs.forEach(function(tab){
+                tab.classList.toggle("active", tab.dataset.paydayTab === name);
+            });
+
+            try{
+                sessionStorage.setItem("crownPaydayTab", name);
+            }catch(error){
+                /* remembering the tab is a nicety only */
+            }
+        }
+
+        tabs.forEach(function(tab){
+            tab.addEventListener("click", function(){
+                show(tab.dataset.paydayTab);
+            });
+        });
+
+        let saved = "portal";
+
+        try{
+            saved = sessionStorage.getItem("crownPaydayTab") || "portal";
+        }catch(error){
+            saved = "portal";
+        }
+
+        show(saved === "vouchers" ? "vouchers" : "portal");
     }
 
     function createId(){
