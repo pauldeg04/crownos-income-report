@@ -717,6 +717,10 @@
                 return Number(item.bed) === bed;
             });
 
+            const bedHeld = heldRangesFor(branch.name, date).filter(function(item){
+                return item.bed === bed;
+            });
+
             col.addEventListener("click", function(event){
                 if(bedIsUnavailable){
                     return;
@@ -727,7 +731,7 @@
                 const rawMinutes = opening + Math.floor(offsetY / SCHEDULE_PX_PER_MINUTE);
                 const slotStart = Math.floor(rawMinutes / 10) * 10;
 
-                const occupied = bedSlots.concat(bedActualSchedules).some(function(slot){
+                const occupied = bedSlots.concat(bedActualSchedules, bedHeld).some(function(slot){
                     return (
                         slotStart >= timeToMinutes(slot.startTime) &&
                         slotStart < timeToMinutes(slot.endTime)
@@ -805,6 +809,41 @@
                 block.textContent = "Scheduled";
 
                 col.appendChild(block);
+            });
+
+            /* Voucher orders on hold from the public Payday Sale page — same
+               card + countdown the public calendar shows. Clicking one opens
+               Plot on Grid for that order. */
+            bedHeld.forEach(function(item){
+                const heldStart = Math.max(timeToMinutes(item.startTime), opening);
+                const heldEnd = Math.min(timeToMinutes(item.endTime), closing);
+
+                if(heldEnd <= heldStart){
+                    return;
+                }
+
+                const card = document.createElement("button");
+                card.type = "button";
+                card.className = "payday-held-card";
+                card.style.top = ((heldStart - opening) * SCHEDULE_PX_PER_MINUTE) + "px";
+                card.style.height = ((heldEnd - heldStart) * SCHEDULE_PX_PER_MINUTE) + "px";
+                card.title =
+                    "Voucher on hold — " + item.client + " (G" + item.guest + ", " + item.serviceName + "). " +
+                    "Click to plot it on the grid.";
+
+                card.innerHTML = `
+                    <strong>${escapeHtml(item.client)}</strong>
+                    <span>G${item.guest} · ${escapeHtml(item.serviceName)}</span>
+                    <small class="payday-held-timer" data-expires="${item.expiresAt}">${formatCountdown(item.expiresAt - Date.now())}</small>
+                `;
+
+                card.addEventListener("click", function(event){
+                    event.stopPropagation();
+                    const request = paydayRequests.find(function(entry){ return entry.id === item.requestId; });
+                    if(request){ plotVoucherRequest(request); }
+                });
+
+                col.appendChild(card);
             });
 
             body.appendChild(col);
@@ -1347,6 +1386,49 @@
         };
     }
 
+    /* Unexpired, still-pending voucher orders for this branch/date, one
+       entry per guest/bed. `exceptRequestId` leaves out an order being
+       plotted right now so it doesn't block itself. */
+    function heldRangesFor(branchName, date, exceptRequestId){
+        const now = Date.now();
+        const ranges = [];
+
+        paydayRequests.forEach(function(request){
+            const expiresAt = holdExpiresAtMs(request);
+
+            if(
+                request.branch !== branchName ||
+                request.date !== date ||
+                request.id === exceptRequestId ||
+                !expiresAt ||
+                expiresAt <= now
+            ){
+                return;
+            }
+
+            const hold = request.paydayHold || {};
+
+            holdGuests(request).forEach(function(guest){
+                const assignment = (hold.assignments || []).find(function(item){
+                    return Number(item.bed) === guest.bed;
+                });
+
+                ranges.push({
+                    requestId: request.id,
+                    client: request.clientName || "Guest",
+                    guest: guest.guest,
+                    serviceName: guest.serviceName,
+                    bed: guest.bed,
+                    startTime: hold.startTime,
+                    endTime: (assignment && assignment.endTime) || hold.endTime,
+                    expiresAt: expiresAt
+                });
+            });
+        });
+
+        return ranges;
+    }
+
     function getPersistedConflictPool(){
         const branch = getSelectedBranch();
 
@@ -1386,7 +1468,14 @@
                 };
             });
 
-        return scheduled.concat(unavailableBlocks, actualSchedules);
+        /* Another client's voucher hold counts as occupied too, so a
+           different slot can't be plotted on top of it. */
+        const heldBlocks =
+            heldRangesFor(currentDoc.branch, currentDoc.date, pendingVoucherRequestId).map(function(item){
+                return { bed: item.bed, startTime: item.startTime, endTime: item.endTime };
+            });
+
+        return scheduled.concat(unavailableBlocks, actualSchedules, heldBlocks);
     }
 
     function poolHasConflict(bed, startTime, endTime, pool){
@@ -2136,7 +2225,7 @@
     function tickVoucherTimers(){
         let expired = false;
 
-        document.querySelectorAll("#paydayRequestsBody [data-expires]").forEach(function(el){
+        document.querySelectorAll("#paydayRequestsBody [data-expires], .payday-held-timer").forEach(function(el){
             const remaining = Number(el.dataset.expires) - Date.now();
 
             if(remaining <= 0){
@@ -2148,6 +2237,15 @@
 
         if(expired){
             renderBookingRequests();
+        }
+    }
+
+    /* Keep the held cards on the grid in step with the request list. */
+    function refreshHeldCards(){
+        const branch = getSelectedBranch();
+
+        if(currentDoc && branch){
+            renderBody(branch);
         }
     }
 
@@ -2168,6 +2266,7 @@
         });
 
         count.textContent = rows.length;
+        refreshHeldCards();
         empty.classList.toggle("d-none", rows.length > 0);
 
         body.innerHTML = rows.map(function(request){

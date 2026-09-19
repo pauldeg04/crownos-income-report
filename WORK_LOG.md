@@ -11,6 +11,16 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-19 (11) — Voucher holds shown on the CrownOS Payday Sale grid
+
+**Requested by:** Admin — the client's held card (with its countdown) on the public page should also show on the CrownOS Payday Sale grid.
+
+**What changed:** [`marketing-payday-sale.js`](marketing-payday-sale.js) draws each unexpired pending voucher order on the grid as an amber **Voucher On Hold** card on every guest's bed (client, guest's service, live mm:ss countdown, sized to that guest's service length) — same look as the public calendar. Clicking a card runs Plot on Grid for that order. Held beds also count as occupied: no click-to-add on them and the slot conflict check treats them as taken (except the order currently being plotted). Cards refresh live with the request list and disappear when the timer ends. New legend entry; styles in [`marketing-payday-sale.css`](marketing-payday-sale.css) / [`.html`](marketing-payday-sale.html); [`manual.html`](manual.html) updated.
+
+**Deployed:** `firebase deploy --only hosting` → https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-19 (10) — Voucher orders no longer go to Operations > Booking Requests
 
 **Requested by:** Admin — a voucher order from the public Payday Sale page should go straight to the Payday Sale page only.
