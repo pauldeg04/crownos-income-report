@@ -11,6 +11,23 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-19 (8) — Feature: Payday "Order Voucher" with 1-hour hold + Voucher Request table
+
+**Requested by:** Admin — clients on the public Payday Sale page order a voucher; their chosen slot is held for 1 hour (countdown from 59:59) for everyone to see, and the marketing agent must plot it in CrownOS before it runs out, otherwise the slot is released. The CrownOS table is renamed from Booking Request to Voucher Request.
+
+**Backend ([`functions/index.js`](functions/index.js)):**
+- New callable `submitPaydayVoucherOrder`: validates (email required, service must be Available for Payday, max 3 companions), then in a transaction re-checks that enough beds are free for the whole service duration (Payday Sale slots, real Scheduling appointments, bed availability windows, and other clients' unexpired holds), assigns the beds (chosen bed first, companions on the nearest other beds) and writes a `bookingRequests` doc (`source: "payday-promo"`, `guests`, `paydayPrice`, `paydayHold {startTime, endTime, beds[], expiresAt = now + 60 min}`).
+- `getPaydaySaleAvailability` now also returns each bed's active `held` ranges (with expiry) from those pending, unexpired requests.
+- `expireStaleBookingRequests` (every 15 min) also marks a payday request `expired` once its hold has run out; availability ignores an expired hold immediately either way.
+
+**CrownOS ([`marketing-payday-sale.js`](marketing-payday-sale.js) / [`.html`](marketing-payday-sale.html)):** the table is now **Voucher Request** with Guests / Beds and a live **Expires In** countdown; expired rows drop out. New **Plot on Grid** opens the slot form prefilled from the order (guest on the first held bed, one companion card per extra bed), and saving it marks the request `converted` (existing rule allows this) which releases the hold. A failed slot save now keeps the form open instead of closing it.
+
+**Files touched:** `functions/index.js`, `marketing-payday-sale.js`, `marketing-payday-sale.html`, `manual.html`.
+
+**Deployed:** `firebase deploy --only functions,hosting`.
+
+---
+
 ## 2026-09-19 (7) — getPaydaySaleServices also returns the Regular price
 
 **Requested by:** Website Payday Sale page shows the original price struck out beside the Payday price (see Website WORK_LOG). [`functions/index.js`](functions/index.js): `getPaydaySaleServices` now includes `regularPrice` per service. No CrownOS UI change.

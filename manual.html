@@ -3567,16 +3567,22 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
   </p>
 
   <p>
-    Above the grid, a <strong>Booking Requests</strong> table lists the
-    pending requests sent from the public Payday Sale page (the unlisted
-    link given to clients) for the selected branch — Date, Time, Client,
-    Service, Contact, Notes and when it was submitted, updating live.
-    <span class="ui">View Date</span> jumps the grid below to that
-    request's branch and date so you can see which beds are open;
-    <span class="ui">Add to Schedule</span> opens the Scheduling page's
-    normal request flow to turn it into a real appointment. Requests are
-    declined or given remarks from <a href="#ch-booking">Booking
-    Requests</a> as usual.
+    Above the grid, the <strong>Voucher Request</strong> table lists the
+    voucher orders sent from the public Payday Sale page (the unlisted link
+    given to clients) for the selected branch — Date and Time, Client,
+    Service, Guests / Beds, Contact, Notes, and an <strong>Expires In</strong>
+    countdown. Each order <strong>holds its beds for 1 hour</strong>: for
+    that hour everyone who opens the public page sees those beds as "On
+    hold" with a live 59:59 countdown. Press <span class="ui">Plot on
+    Grid</span> to open the slot form already filled in from the order (the
+    guest on the first held bed, one card per companion on the other held
+    beds, same time and service) and save it — the request then leaves the
+    table and the plotted slot keeps those beds occupied. If nobody plots it
+    before the timer ends, the request expires and the beds become
+    available to other clients again. <span class="ui">View Date</span>
+    just jumps the grid to that request's date. Requests are declined or
+    given remarks from <a href="#ch-booking">Booking Requests</a> as
+    usual.
   </p>
 
   <p>

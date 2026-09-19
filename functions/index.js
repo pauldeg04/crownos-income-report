@@ -486,6 +486,51 @@ function paydaySaleDocId(branchName, date){
     return slug + "_" + date;
 }
 
+/* A Payday Sale "voucher order" reserves the client's chosen time for one
+   hour (PAYDAY_HOLD_MINUTES) so nobody else can take those beds while the
+   marketing agent in CrownOS plots it on the Payday Sale grid. The hold
+   lives on the bookingRequests doc itself (source "payday-promo",
+   paydayHold: {startTime, endTime, beds[], expiresAt}) — no separate
+   collection — and stops counting as soon as it expires, is plotted
+   (status "converted") or is declined. */
+const PAYDAY_HOLD_MINUTES = 60;
+const PAYDAY_PROMO_SOURCE = "payday-promo";
+
+function readPaydayHold(data, nowMs){
+    const hold = data && data.paydayHold;
+
+    if(
+        !data ||
+        data.source !== PAYDAY_PROMO_SOURCE ||
+        data.status !== "pending" ||
+        !hold ||
+        !hold.expiresAt ||
+        hold.expiresAt.toMillis() <= nowMs
+    ){
+        return null;
+    }
+
+    return {
+        startTime: hold.startTime,
+        endTime: hold.endTime,
+        beds: Array.isArray(hold.beds) ? hold.beds.map(Number) : [],
+        expiresAtMs: hold.expiresAt.toMillis()
+    };
+}
+
+async function getActivePaydayHolds(branchName, date){
+    const snapshot = await db.collection(BOOKING_REQUESTS_COLLECTION)
+        .where("branch", "==", branchName)
+        .where("date", "==", date)
+        .get();
+
+    const now = Date.now();
+
+    return snapshot.docs
+        .map(function(doc){ return readPaydayHold(doc.data(), now); })
+        .filter(Boolean);
+}
+
 /* Backs the unlisted public Payday Promo page (payday-promo.html) — a
    view-only calendar of which beds are open for the Payday Sale campaign,
    not a real booking flow. Deliberately returns only start/end time
@@ -536,9 +581,10 @@ exports.getPaydaySaleAvailability = onCall(async (request) => {
         };
     }
 
-    const [paydaySaleDoc, scheduleRaw] = await Promise.all([
+    const [paydaySaleDoc, scheduleRaw, paydayHolds] = await Promise.all([
         db.collection(PAYDAY_SALE_COLLECTION).doc(paydaySaleDocId(matchedBranch.name, date)).get(),
-        readAppDataKey(db, SCHEDULE_PREFIX + matchedBranch.name + "_" + date)
+        readAppDataKey(db, SCHEDULE_PREFIX + matchedBranch.name + "_" + date),
+        getActivePaydayHolds(matchedBranch.name, date)
     ]);
 
     const paydaySaleData = paydaySaleDoc.exists ? paydaySaleDoc.data() : {};
@@ -562,12 +608,19 @@ exports.getPaydaySaleAvailability = onCall(async (request) => {
             .map(function(item){ return { startTime: item.startTime, endTime: item.endTime }; })
             .sort(function(a, b){ return timeToMinutes(a.startTime) - timeToMinutes(b.startTime); });
 
+        const held = paydayHolds
+            .filter(function(hold){ return hold.beds.includes(bedNumber); })
+            .map(function(hold){
+                return { startTime: hold.startTime, endTime: hold.endTime, expiresAt: hold.expiresAtMs };
+            });
+
         beds.push({
             bed: bedNumber,
             available: available,
             from: (setting && setting.from) || matchedBranch.openingTime,
             to: (setting && setting.to) || matchedBranch.closingTime,
-            occupied: occupied
+            occupied: occupied,
+            held: held
         });
     }
 
@@ -581,6 +634,194 @@ exports.getPaydaySaleAvailability = onCall(async (request) => {
         beds: beds
     };
 });
+
+/* ---------- submitPaydayVoucherOrder ---------- */
+
+/* "Order Voucher" on the public Payday Sale page. Validates the order,
+   re-checks in a transaction that every guest's bed is still free for the
+   whole service (Payday Sale slots, real Scheduling appointments, other
+   clients' unexpired holds), then writes one bookingRequests doc carrying
+   a one-hour hold on those beds. CrownOS's Payday Sale "Voucher Request"
+   table reads it from there. Companions are a count only (max 3, so at
+   most 4 guests), all assumed to take the same service. */
+exports.submitPaydayVoucherOrder = onCall(async (request) => {
+    const data = request.data || {};
+    const branch = String(data.branch || "");
+    const serviceName = String(data.serviceName || "");
+    const date = String(data.date || "");
+    const startTime = String(data.startTime || "");
+    const clientName = String(data.clientName || "").trim();
+    const mobile = String(data.mobile || "").trim();
+    const email = String(data.email || "").trim();
+    const notes = String(data.notes || "").trim();
+    const companionCount = Math.min(3, Math.max(0, Math.floor(Number(data.companions) || 0)));
+    const preferredBed = Math.floor(Number(data.bed) || 0);
+
+    if(!DATE_PATTERN.test(date)){
+        throw new HttpsError("invalid-argument", "date must be YYYY-MM-DD.");
+    }
+    if(!TIME_PATTERN.test(startTime)){
+        throw new HttpsError("invalid-argument", "startTime must be HH:MM (24h).");
+    }
+    if(clientName.length < 2 || clientName.length > 80){
+        throw new HttpsError("invalid-argument", "clientName must be 2-80 characters.");
+    }
+    if(mobile.length < 7 || mobile.length > 15){
+        throw new HttpsError("invalid-argument", "mobile must be 7-15 characters.");
+    }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120){
+        throw new HttpsError("invalid-argument", "A valid email is required.");
+    }
+    if(notes.length > 400){
+        throw new HttpsError("invalid-argument", "notes is too long.");
+    }
+
+    const { dateString: today, minutesOfDay } = nowInManila();
+    if(date < today || (date === today && timeToMinutes(startTime) <= minutesOfDay)){
+        return { ok: false, reason: "no_capacity" };
+    }
+
+    const [branches, rawServices] = await Promise.all([
+        getBranches(),
+        readAppDataKey(db, SERVICE_MASTER_KEY)
+    ]);
+
+    const matchedBranch = findBranch(branches, branch);
+    if(!matchedBranch){
+        throw new HttpsError("invalid-argument", "Unknown branch.");
+    }
+
+    const service = (Array.isArray(rawServices) ? rawServices : []).find(function(item){
+        return (
+            item &&
+            typeof item === "object" &&
+            item.name === serviceName &&
+            item.status === "Active" &&
+            item.availableForPayday === true &&
+            Number(item.duration) > 0 &&
+            Number(item.paydaySalePrice) > 0
+        );
+    });
+    if(!service){
+        throw new HttpsError("invalid-argument", "That service isn't available for the Payday Sale.");
+    }
+
+    const durationMinutes = Number(service.duration);
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = startMinutes + durationMinutes;
+    const endTime = minutesToTimeValue(endMinutes);
+    const guests = 1 + companionCount;
+
+    const [paydaySaleDoc, scheduleRaw] = await Promise.all([
+        db.collection(PAYDAY_SALE_COLLECTION).doc(paydaySaleDocId(matchedBranch.name, date)).get(),
+        readAppDataKey(db, SCHEDULE_PREFIX + matchedBranch.name + "_" + date)
+    ]);
+
+    const paydaySaleData = paydaySaleDoc.exists ? paydaySaleDoc.data() : {};
+
+    if(paydaySaleData.blocked){
+        return { ok: false, reason: "date_blocked" };
+    }
+
+    const bedSettings = paydaySaleData.beds || {};
+
+    const fixedRanges = (Array.isArray(paydaySaleData.slots) ? paydaySaleData.slots : [])
+        .filter(function(slot){ return slot && slot.status !== "Cancelled"; })
+        .concat(
+            (Array.isArray(scheduleRaw) ? scheduleRaw : [])
+                .filter(function(item){ return item && item.status !== "Cancelled"; })
+        )
+        .map(function(item){
+            return { bed: Number(item.bed), startTime: item.startTime, endTime: item.endTime };
+        });
+
+    const holdsQuery = db.collection(BOOKING_REQUESTS_COLLECTION)
+        .where("branch", "==", matchedBranch.name)
+        .where("date", "==", date);
+
+    const result = await db.runTransaction(async (transaction) => {
+        const holdsSnapshot = await transaction.get(holdsQuery);
+        const now = Date.now();
+
+        const heldRanges = [];
+        holdsSnapshot.docs.forEach(function(doc){
+            const hold = readPaydayHold(doc.data(), now);
+            if(!hold) return;
+            hold.beds.forEach(function(bed){
+                heldRanges.push({ bed: bed, startTime: hold.startTime, endTime: hold.endTime });
+            });
+        });
+
+        const allRanges = fixedRanges.concat(heldRanges);
+
+        const freeBeds = [];
+        for(let bed = 1; bed <= matchedBranch.beds; bed++){
+            const setting = bedSettings[bed] || bedSettings[String(bed)] || null;
+            if(setting && setting.available === false) continue;
+
+            const from = timeToMinutes((setting && setting.from) || matchedBranch.openingTime);
+            const to = timeToMinutes((setting && setting.to) || matchedBranch.closingTime);
+            if(startMinutes < from || endMinutes > to) continue;
+
+            const clash = allRanges.some(function(range){
+                return (
+                    range.bed === bed &&
+                    startMinutes < timeToMinutes(range.endTime) &&
+                    endMinutes > timeToMinutes(range.startTime)
+                );
+            });
+            if(!clash) freeBeds.push(bed);
+        }
+
+        if(freeBeds.length < guests){
+            return { ok: false, reason: "no_capacity" };
+        }
+
+        const mainBed = freeBeds.includes(preferredBed) ? preferredBed : freeBeds[0];
+        const companionBeds = freeBeds
+            .filter(function(bed){ return bed !== mainBed; })
+            .sort(function(a, b){ return Math.abs(a - mainBed) - Math.abs(b - mainBed) || a - b; })
+            .slice(0, companionCount);
+
+        const beds = [mainBed].concat(companionBeds);
+        const requestRef = db.collection(BOOKING_REQUESTS_COLLECTION).doc();
+        const expiresAt = admin.firestore.Timestamp.fromMillis(now + PAYDAY_HOLD_MINUTES * 60 * 1000);
+
+        transaction.set(requestRef, {
+            branch: matchedBranch.name,
+            serviceName: serviceName,
+            date: date,
+            time: formatDisplayTime(startTime),
+            clientName: clientName,
+            mobile: mobile,
+            email: email,
+            notes: "[Payday Sale Promo] Guests: " + guests +
+                (companionCount > 0 ? " (1 + " + companionCount + " companion" + (companionCount === 1 ? "" : "s") + ")" : "") +
+                (notes ? ". " + notes : ""),
+            companions: [],
+            guests: guests,
+            paydayPrice: Number(service.paydaySalePrice),
+            paydayHold: {
+                startTime: startTime,
+                endTime: endTime,
+                durationMinutes: durationMinutes,
+                beds: beds,
+                expiresAt: expiresAt
+            },
+            status: "pending",
+            source: PAYDAY_PROMO_SOURCE,
+            submittedAt: admin.firestore.FieldValue.serverTimestamp(),
+            reviewedAt: null,
+            reviewedBy: "",
+            convertedScheduleId: ""
+        });
+
+        return { ok: true, beds: beds, expiresAt: expiresAt.toMillis(), startTime: startTime, endTime: endTime };
+    });
+
+    return result;
+});
+
 
 /* ---------- submitBookingRequest ---------- */
 
@@ -899,8 +1140,22 @@ exports.expireStaleBookingRequests = onSchedule(
             .where("status", "==", "pending")
             .get();
 
+        const nowMs = Date.now();
+
+        /* A Payday Sale voucher order's one-hour hold (see
+           submitPaydayVoucherOrder) also expires the request itself once
+           it runs out unplotted. Availability already ignores an expired
+           hold immediately — this only tidies the pending list. */
         const stale = snapshot.docs.filter(function(doc){
-            return String(doc.data().date || "") < todayManila;
+            const data = doc.data();
+            const holdExpiry = data.source === PAYDAY_PROMO_SOURCE && data.paydayHold && data.paydayHold.expiresAt
+                ? data.paydayHold.expiresAt.toMillis()
+                : null;
+
+            return (
+                String(data.date || "") < todayManila ||
+                (holdExpiry !== null && holdExpiry <= nowMs)
+            );
         });
 
         if(stale.length === 0) return;

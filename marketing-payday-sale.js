@@ -508,9 +508,11 @@
         return db().collection(COLLECTION)
             .doc(docId(currentDoc.branch, currentDoc.date))
             .set(currentDoc)
+            .then(function(){ return true; })
             .catch(function(error){
                 console.error("Unable to save Payday Sale doc:", error);
                 showModalMessage("danger", "Could not save — check your connection and try again.");
+                return false;
             });
     }
 
@@ -537,7 +539,7 @@
             return;
         }
 
-        loadCurrentDoc().then(function(){
+        return loadCurrentDoc().then(function(){
             emptyState.classList.add("d-none");
             wrapper.classList.remove("d-none");
 
@@ -1773,6 +1775,7 @@
         selectedSlotId = null;
         selectedBed = null;
         selectedStartTime = "";
+        pendingVoucherRequestId = null;
 
         resetModalFields();
     }
@@ -1961,9 +1964,19 @@
             return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
         });
 
-        saveCurrentDoc().then(function(){
+        const plottedRequestId = pendingVoucherRequestId;
+
+        saveCurrentDoc().then(function(saved){
+            if(saved === false){
+                return;
+            }
+
             closeModal();
             renderPaydaySale();
+
+            if(plottedRequestId){
+                markVoucherRequestPlotted(plottedRequestId, mainId);
+            }
         });
     }
 
@@ -2037,18 +2050,28 @@
         location.href = "scheduling.html?" + params.toString();
     }
 
-    /* ---- Booking requests from the public Payday Sale page ----
+    /* ---- Voucher requests from the public Payday Sale page ----
 
-       The public page (Website/payday-promo.html) submits through the same
-       submitBookingRequest Cloud Function as book.html, so these are plain
-       bookingRequests docs — the only thing marking one as Payday Sale is
-       the "[Payday Sale Promo]" tag its notes start with. Read-only here
-       apart from the shortcuts below; converting/declining still happens
-       through the normal Scheduling / Booking Requests flow. */
+       "Order Voucher" on the public page (submitPaydayVoucherOrder Cloud
+       Function) writes a bookingRequests doc with source "payday-promo"
+       and a one-hour hold on the chosen beds:
+       paydayHold {startTime, endTime, beds[], expiresAt}. This table lists
+       the ones still pending and unexpired for the selected branch. Plot on
+       Grid opens the normal slot form prefilled from the order (guest on
+       the first bed, one companion card per extra bed); saving that slot
+       marks the request "converted", which releases the hold — the plotted
+       slot itself now keeps those beds occupied. Left alone, the hold
+       simply runs out and the beds go back to other clients (the public
+       page and the scheduled cleanup both honour expiresAt). */
 
     const PROMO_TAG = "[Payday Sale Promo]";
     let paydayRequests = [];
     let requestsUnsubscribe = null;
+    let pendingVoucherRequestId = null;
+
+    function holdExpiresAtMs(request){
+        return request.paydayHold?.expiresAt?.toMillis?.() || 0;
+    }
 
     function startBookingRequestsListener(){
         if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
@@ -2062,7 +2085,10 @@
                 paydayRequests = snapshot.docs
                     .map(function(doc){ return Object.assign({ id: doc.id }, doc.data()); })
                     .filter(function(request){
-                        return String(request.notes || "").startsWith(PROMO_TAG);
+                        return (
+                            request.source === "payday-promo" ||
+                            String(request.notes || "").startsWith(PROMO_TAG)
+                        );
                     })
                     .sort(function(a, b){
                         return (a.date + a.time).localeCompare(b.date + b.time);
@@ -2070,8 +2096,10 @@
 
                 renderBookingRequests();
             }, function(error){
-                console.error("Unable to load Payday Sale booking requests:", error);
+                console.error("Unable to load Payday Sale voucher requests:", error);
             });
+
+        setInterval(tickVoucherTimers, 1000);
     }
 
     function formatRequestDate(dateString){
@@ -2084,14 +2112,27 @@
         }
     }
 
-    function formatSubmittedAt(timestamp){
-        if(!timestamp || typeof timestamp.toDate !== "function"){
-            return "—";
-        }
+    function formatCountdown(ms){
+        const secs = Math.max(0, Math.min(3599, Math.floor(ms / 1000)));
+        return String(Math.floor(secs / 60)).padStart(2, "0") + ":" + String(secs % 60).padStart(2, "0");
+    }
 
-        return timestamp.toDate().toLocaleString("en-PH", {
-            month: "short", day: "numeric", hour: "numeric", minute: "2-digit"
+    function tickVoucherTimers(){
+        let expired = false;
+
+        document.querySelectorAll("#paydayRequestsBody [data-expires]").forEach(function(el){
+            const remaining = Number(el.dataset.expires) - Date.now();
+
+            if(remaining <= 0){
+                expired = true;
+            }
+
+            el.textContent = formatCountdown(remaining);
         });
+
+        if(expired){
+            renderBookingRequests();
+        }
     }
 
     function renderBookingRequests(){
@@ -2099,29 +2140,41 @@
         const empty = document.getElementById("paydayRequestsEmpty");
         const count = document.getElementById("paydayRequestCount");
         const branchName = document.getElementById("scheduleBranch").value;
+        const now = Date.now();
 
         const rows = paydayRequests.filter(function(request){
-            return !branchName || request.branch === branchName;
+            const expiresAt = holdExpiresAtMs(request);
+
+            return (
+                (!branchName || request.branch === branchName) &&
+                (!expiresAt || expiresAt > now)
+            );
         });
 
         count.textContent = rows.length;
         empty.classList.toggle("d-none", rows.length > 0);
 
         body.innerHTML = rows.map(function(request){
-            const notes = String(request.notes || "").slice(PROMO_TAG.length).trim();
+            const notes = String(request.notes || "").startsWith(PROMO_TAG)
+                ? String(request.notes).slice(PROMO_TAG.length).trim()
+                : String(request.notes || "");
+
+            const beds = (request.paydayHold?.beds || []).join(", ");
+            const expiresAt = holdExpiresAtMs(request);
 
             return `
                 <tr>
                     <td>${escapeHtml(formatRequestDate(request.date))}</td>
-                    <td>${escapeHtml(request.time || "")}</td>
+                    <td>${escapeHtml(request.time || "")}${request.paydayHold ? "<br><small>" + escapeHtml(formatTimeRange(request.paydayHold.startTime, request.paydayHold.endTime)) + "</small>" : ""}</td>
                     <td>${escapeHtml(request.clientName || "")}</td>
-                    <td>${escapeHtml(request.serviceName || "")}</td>
+                    <td>${escapeHtml(request.serviceName || "")}${request.paydayPrice ? "<br><small>₱" + Number(request.paydayPrice).toLocaleString("en-PH") + " each</small>" : ""}</td>
+                    <td>${escapeHtml(String(request.guests || 1))} guest${(request.guests || 1) === 1 ? "" : "s"}${beds ? "<br><small>Bed " + escapeHtml(beds) + "</small>" : ""}</td>
                     <td>${escapeHtml(request.mobile || "")}${request.email ? "<br>" + escapeHtml(request.email) : ""}</td>
                     <td>${escapeHtml(notes || "—")}</td>
-                    <td>${escapeHtml(formatSubmittedAt(request.submittedAt))}</td>
+                    <td>${expiresAt ? `<strong data-expires="${expiresAt}">${formatCountdown(expiresAt - now)}</strong>` : "—"}</td>
                     <td class="text-nowrap">
+                        <button type="button" class="btn btn-sm btn-success" data-request-plot="${escapeHtml(request.id)}">Plot on Grid</button>
                         <button type="button" class="btn btn-sm btn-outline-secondary" data-request-view="${escapeHtml(request.id)}">View Date</button>
-                        <button type="button" class="btn btn-sm btn-outline-primary" data-request-schedule="${escapeHtml(request.id)}">Add to Schedule</button>
                     </td>
                 </tr>
             `;
@@ -2134,9 +2187,10 @@
             });
         });
 
-        body.querySelectorAll("[data-request-schedule]").forEach(function(button){
+        body.querySelectorAll("[data-request-plot]").forEach(function(button){
             button.addEventListener("click", function(){
-                location.href = "scheduling.html?fromRequest=" + encodeURIComponent(button.dataset.requestSchedule);
+                const request = paydayRequests.find(function(item){ return item.id === button.dataset.requestPlot; });
+                if(request){ plotVoucherRequest(request); }
             });
         });
     }
@@ -2144,8 +2198,9 @@
     /* Jumps the grid below to the request's branch/date. Same three-way
        sync scheduling.js's openNewModalFromBookingRequest() does: the
        hidden page inputs, the global toolbar, and the stored global date
-       — otherwise the toolbar re-pushes its old values a moment later. */
-    function showRequestDate(request){
+       — otherwise the toolbar re-pushes its old values a moment later.
+       Resolves once the day's data has loaded. */
+    function showRequestDate(request, skipScroll){
         document.getElementById("scheduleBranch").value = request.branch;
         localStorage.setItem(SELECTED_BRANCH_KEY, request.branch);
         document.getElementById("scheduleDate").value = request.date;
@@ -2158,10 +2213,80 @@
 
         localStorage.setItem("crownGlobalDate", request.date);
 
-        renderPaydaySale();
+        const loaded = renderPaydaySale();
         renderBookingRequests();
 
-        document.getElementById("paydayGridTitle").scrollIntoView({ behavior: "smooth", block: "start" });
+        if(!skipScroll){
+            document.getElementById("paydayGridTitle").scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        return loaded;
+    }
+
+    /* Opens the slot form prefilled from a voucher order: guest on the
+       first held bed, and one unnamed-guest card per companion on the
+       other held beds, same time and service. Saving marks the request
+       converted (see markVoucherRequestPlotted) — cancelling leaves it
+       pending until its hold runs out. */
+    async function plotVoucherRequest(request){
+        const hold = request.paydayHold || {};
+        const beds = Array.isArray(hold.beds) && hold.beds.length > 0 ? hold.beds.map(Number) : [];
+        const startTime = hold.startTime || "";
+
+        await showRequestDate(request, true);
+
+        if(!startTime || beds.length === 0){
+            alert("This request has no held bed/time to plot. Use View Date and place it manually.");
+            return;
+        }
+
+        openNewModal(beds[0], startTime);
+
+        if(document.getElementById("paydayModalBackdrop").classList.contains("d-none")){
+            return;
+        }
+
+        pendingVoucherRequestId = request.id;
+
+        document.getElementById("paydayModalClient").value = request.clientName || "";
+        document.getElementById("paydayModalMobile").value = request.mobile || "";
+        document.getElementById("paydayModalEmail").value = request.email || "";
+        document.getElementById("paydayModalNotes").value =
+            String(request.notes || "").replace(PROMO_TAG, "").trim();
+
+        resetModalServices(request.serviceName ? [request.serviceName] : []);
+
+        modalCompanions = beds.slice(1).map(function(bed, index){
+            return {
+                id: createId(),
+                name: (request.clientName || "Guest") + " – Companion " + (index + 1),
+                therapist: "",
+                bed: String(bed),
+                startTime: startTime,
+                services: [{ id: createId(), name: request.serviceName || "" }]
+            };
+        });
+
+        renderCompanions();
+        updateCompanionOfHints();
+        updateModalPreview();
+    }
+
+    async function markVoucherRequestPlotted(requestId, slotId){
+        try{
+            await db().collection("bookingRequests").doc(requestId).update({
+                status: "converted",
+                reviewedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                reviewedBy: currentUserAccount(),
+                convertedScheduleId: slotId
+            });
+        }catch(error){
+            console.error("Unable to mark voucher request plotted:", error);
+            alert(
+                "The slot was saved, but the voucher request couldn't be marked as plotted " +
+                "(someone may have already handled it). It will expire on its own."
+            );
+        }
     }
 
     /* ---- Block this date ---- */
