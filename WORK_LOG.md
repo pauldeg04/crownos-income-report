@@ -11,6 +11,24 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-19 — Tweak: Payday Sale grid's "Time" corner cell now matches bed header height
+
+**Requested by:** Admin — the "Time" corner cell (top-left of the grid) stayed fixed at
+scheduling.css's 48px while each bed's header column grew taller (label + Available checkbox +
+From/To time range), so "Time" looked shorter than the bed headers next to it.
+
+**What changed:** [`marketing-payday-sale.css`](marketing-payday-sale.css) drops the fixed
+`height:48px` scheduling.css sets on `.timeline-header-cell.timeline-corner` for this page only,
+letting it fall back to the grid row's default stretch behavior (`.timeline-header` is a
+`display:grid` row) so it always matches whatever height the tallest bed header needs — no
+magic number to keep in sync if the bed header grows again later.
+
+**Files touched:** `marketing-payday-sale.css`.
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-18 (6) — Feature: "Add to Schedule" button on Payday Sale slots
 
 **Requested by:** Admin — once a Payday Sale slot has a real client interested, wanted a quick
