@@ -31,6 +31,20 @@ through edits.
 
 ---
 
+## 2026-09-19 (4) — Feature: Booking Requests table above the Payday Sale calendar
+
+**Requested by:** Admin — a booking request view on the Payday Sale page, above the calendar, for requests coming from the public Payday Sale page.
+
+**What was added:** [`marketing-payday-sale.html`](marketing-payday-sale.html) has a new **Booking Requests** card above the grid: pending requests for the selected branch that came from the public promo page (Date, Time, Client, Service, Contact, Notes, Submitted), with a live Pending count. **View Date** jumps the grid to that request's branch/date; **Add to Schedule** opens `scheduling.html?fromRequest=<id>`, the existing request-conversion flow.
+
+**How it works:** [`marketing-payday-sale.js`](marketing-payday-sale.js) `startBookingRequestsListener()` runs an `onSnapshot` on `bookingRequests` where `status == "pending"` and keeps only docs whose notes start with `[Payday Sale Promo]` (the tag the public page prepends — no backend change). Re-rendered on branch change. Read-only otherwise: declining/remarks still live on the Booking Requests page. No rules change (`bookingRequests` list is already open to authenticated staff).
+
+**Files touched:** `marketing-payday-sale.html`, `marketing-payday-sale.js`, `manual.html`.
+
+**Deployed:** `firebase deploy --only hosting` → https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-19 (3) — Feature: new Cloud Function for the public Payday Sale promo page
 
 **Requested by:** Admin — wanted an unlisted page on the public Crown Head Spa website

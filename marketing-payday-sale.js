@@ -66,6 +66,7 @@
         await loadClientOptions();
         attachEvents();
         renderPaydaySale();
+        startBookingRequestsListener();
 
         /* firebase-sync.js's realtime listener writes an incoming remote
            change straight into localStorage and fires this event — a real
@@ -93,6 +94,7 @@
                 }
 
                 renderPaydaySale();
+                renderBookingRequests();
             });
 
         document.getElementById("scheduleDate")
@@ -2026,6 +2028,133 @@
         });
 
         location.href = "scheduling.html?" + params.toString();
+    }
+
+    /* ---- Booking requests from the public Payday Sale page ----
+
+       The public page (Website/payday-promo.html) submits through the same
+       submitBookingRequest Cloud Function as book.html, so these are plain
+       bookingRequests docs — the only thing marking one as Payday Sale is
+       the "[Payday Sale Promo]" tag its notes start with. Read-only here
+       apart from the shortcuts below; converting/declining still happens
+       through the normal Scheduling / Booking Requests flow. */
+
+    const PROMO_TAG = "[Payday Sale Promo]";
+    let paydayRequests = [];
+    let requestsUnsubscribe = null;
+
+    function startBookingRequestsListener(){
+        if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
+            return;
+        }
+
+        requestsUnsubscribe = db()
+            .collection("bookingRequests")
+            .where("status", "==", "pending")
+            .onSnapshot(function(snapshot){
+                paydayRequests = snapshot.docs
+                    .map(function(doc){ return Object.assign({ id: doc.id }, doc.data()); })
+                    .filter(function(request){
+                        return String(request.notes || "").startsWith(PROMO_TAG);
+                    })
+                    .sort(function(a, b){
+                        return (a.date + a.time).localeCompare(b.date + b.time);
+                    });
+
+                renderBookingRequests();
+            }, function(error){
+                console.error("Unable to load Payday Sale booking requests:", error);
+            });
+    }
+
+    function formatRequestDate(dateString){
+        try{
+            return new Date(dateString + "T00:00:00").toLocaleDateString("en-PH", {
+                month: "short", day: "numeric", year: "numeric"
+            });
+        }catch(error){
+            return dateString;
+        }
+    }
+
+    function formatSubmittedAt(timestamp){
+        if(!timestamp || typeof timestamp.toDate !== "function"){
+            return "—";
+        }
+
+        return timestamp.toDate().toLocaleString("en-PH", {
+            month: "short", day: "numeric", hour: "numeric", minute: "2-digit"
+        });
+    }
+
+    function renderBookingRequests(){
+        const body = document.getElementById("paydayRequestsBody");
+        const empty = document.getElementById("paydayRequestsEmpty");
+        const count = document.getElementById("paydayRequestCount");
+        const branchName = document.getElementById("scheduleBranch").value;
+
+        const rows = paydayRequests.filter(function(request){
+            return !branchName || request.branch === branchName;
+        });
+
+        count.textContent = rows.length;
+        empty.classList.toggle("d-none", rows.length > 0);
+
+        body.innerHTML = rows.map(function(request){
+            const notes = String(request.notes || "").slice(PROMO_TAG.length).trim();
+
+            return `
+                <tr>
+                    <td>${escapeHtml(formatRequestDate(request.date))}</td>
+                    <td>${escapeHtml(request.time || "")}</td>
+                    <td>${escapeHtml(request.clientName || "")}</td>
+                    <td>${escapeHtml(request.serviceName || "")}</td>
+                    <td>${escapeHtml(request.mobile || "")}${request.email ? "<br>" + escapeHtml(request.email) : ""}</td>
+                    <td>${escapeHtml(notes || "—")}</td>
+                    <td>${escapeHtml(formatSubmittedAt(request.submittedAt))}</td>
+                    <td class="text-nowrap">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-request-view="${escapeHtml(request.id)}">View Date</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-request-schedule="${escapeHtml(request.id)}">Add to Schedule</button>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+
+        body.querySelectorAll("[data-request-view]").forEach(function(button){
+            button.addEventListener("click", function(){
+                const request = paydayRequests.find(function(item){ return item.id === button.dataset.requestView; });
+                if(request){ showRequestDate(request); }
+            });
+        });
+
+        body.querySelectorAll("[data-request-schedule]").forEach(function(button){
+            button.addEventListener("click", function(){
+                location.href = "scheduling.html?fromRequest=" + encodeURIComponent(button.dataset.requestSchedule);
+            });
+        });
+    }
+
+    /* Jumps the grid below to the request's branch/date. Same three-way
+       sync scheduling.js's openNewModalFromBookingRequest() does: the
+       hidden page inputs, the global toolbar, and the stored global date
+       — otherwise the toolbar re-pushes its old values a moment later. */
+    function showRequestDate(request){
+        document.getElementById("scheduleBranch").value = request.branch;
+        localStorage.setItem(SELECTED_BRANCH_KEY, request.branch);
+        document.getElementById("scheduleDate").value = request.date;
+
+        const toolbarBranch = document.getElementById("sidebarDashboardBranch");
+        if(toolbarBranch){ toolbarBranch.value = request.branch; }
+
+        const toolbarDate = document.getElementById("sidebarDashboardDate");
+        if(toolbarDate){ toolbarDate.value = request.date; }
+
+        localStorage.setItem("crownGlobalDate", request.date);
+
+        renderPaydaySale();
+        renderBookingRequests();
+
+        document.getElementById("paydayGridTitle").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     /* ---- Block this date ---- */

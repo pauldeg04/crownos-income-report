@@ -83,6 +83,48 @@
         </div>
     </div>
 
+    <div class="schedule-grid-card payday-requests-card">
+
+        <div class="schedule-grid-header">
+            <div>
+                <h3>Booking Requests</h3>
+
+                <p>
+                    Pending requests sent from the public Payday Sale page, for the selected branch.
+                </p>
+            </div>
+
+            <div class="schedule-control-summary">
+                <span>Pending</span>
+                <strong id="paydayRequestCount">0</strong>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle upcoming-schedule-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Client</th>
+                        <th>Service</th>
+                        <th>Contact</th>
+                        <th>Notes</th>
+                        <th>Submitted</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody id="paydayRequestsBody"></tbody>
+            </table>
+        </div>
+
+        <div class="empty-state d-none" id="paydayRequestsEmpty">
+            No pending Payday Sale requests for this branch.
+        </div>
+
+    </div>
+
     <div class="schedule-grid-card">
 
         <div class="schedule-grid-header">
