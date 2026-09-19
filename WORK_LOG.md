@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-20 (2) — Fix: Voucher Request table stayed empty (listener attached before sign-in)
+
+**Reported by:** Admin, after a test order on the public page: the order was created (its hold showed on the public calendar) but nothing appeared in the Voucher Request table.
+
+**Cause:** [`marketing-payday-sale.js`](marketing-payday-sale.js) attached its `paydayVoucherRequests` listener immediately on page load. The Firestore rules require a signed-in user, and a listener attached before CrownOS's cloud sign-in completes is rejected once and never retried. `booking-requests.js` avoids this by waiting for `CrownCloud.waitForInitialSync()` first; this page didn't.
+
+**Fix:** `startBookingRequestsListener()` now waits for `CrownCloud.waitForInitialSync(12000)` before listening and retries every 5 s if the listener errors. A still-unexpired test order will now show up; one whose hour has passed has expired and won't.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-09-20 — Payday Sale page: Payday Sale Portal / Voucher List tabs
 
 **Requested by:** Admin — two tabs on the Payday Sale page: Payday Sale Portal (the existing page) and a new Voucher List in the same format as the Voucher Masterlist, showing only Payday Sale vouchers.

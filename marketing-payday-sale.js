@@ -2223,26 +2223,48 @@
         });
     }
 
-    function startBookingRequestsListener(){
+    /* Waits for CrownOS's cloud sign-in first (same as booking-requests.js):
+       these Firestore rules need an authenticated user, and a listener
+       attached before sign-in finishes is rejected once and never retried —
+       which left the Voucher Request table permanently empty. If it still
+       errors, retry after a few seconds. */
+    async function startBookingRequestsListener(){
         if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
             return;
         }
 
-        requestsUnsubscribe = db()
-            .collection("paydayVoucherRequests")
-            .where("status", "==", "pending")
-            .onSnapshot(function(snapshot){
-                paydayRequests = snapshot.docs
-                    .map(function(doc){ return Object.assign({ id: doc.id }, doc.data()); })
-                    .sort(function(a, b){
-                        return (a.date + a.time).localeCompare(b.date + b.time);
-                    });
+        try{
+            if(window.CrownCloud?.isAvailable?.()){
+                await window.CrownCloud.waitForInitialSync(12000);
+            }
+        }catch(error){
+            console.warn("Cloud sync wait failed, listening anyway:", error);
+        }
 
-                renderBookingRequests();
-            }, function(error){
-                console.error("Unable to load Payday Sale voucher requests:", error);
-            });
+        function attach(){
+            if(requestsUnsubscribe){
+                requestsUnsubscribe();
+                requestsUnsubscribe = null;
+            }
 
+            requestsUnsubscribe = db()
+                .collection("paydayVoucherRequests")
+                .where("status", "==", "pending")
+                .onSnapshot(function(snapshot){
+                    paydayRequests = snapshot.docs
+                        .map(function(doc){ return Object.assign({ id: doc.id }, doc.data()); })
+                        .sort(function(a, b){
+                            return (a.date + a.time).localeCompare(b.date + b.time);
+                        });
+
+                    renderBookingRequests();
+                }, function(error){
+                    console.error("Unable to load Payday Sale voucher requests, retrying:", error);
+                    setTimeout(attach, 5000);
+                });
+        }
+
+        attach();
         setInterval(tickVoucherTimers, 1000);
     }
 
