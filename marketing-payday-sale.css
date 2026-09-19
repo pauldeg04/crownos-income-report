@@ -28,18 +28,6 @@
     color:rgba(255,255,255,0.75);
 }
 
-/* scheduling.css pins the "Time" corner cell to a fixed 48px
-   (.timeline-header-cell.timeline-corner), sized for Scheduling's
-   2-row bed header (label + Available checkbox). This page's bed
-   header has a 3rd row (the From/To time range), so it grows taller
-   than 48px — dropping the fixed height here lets the corner cell go
-   back to stretching with its grid row (the default for a
-   display:grid row, .timeline-header in scheduling.css), matching
-   whatever height the bed headers end up needing. */
-.timeline-header-cell.timeline-corner{
-    height:auto;
-}
-
 .legend-scheduled{
     width:12px;
     height:12px;

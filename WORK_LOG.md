@@ -11,6 +11,23 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-19 (2) — Tweak: same "Time" corner cell fix extended to Scheduling
+
+**Requested by:** Admin, right after the Payday Sale-only fix below shipped — wanted the same
+height-matching applied to the Scheduling page's own grid, not just Payday Sale.
+
+**What changed:** Moved the fix from `marketing-payday-sale.css` into
+[`scheduling.css`](scheduling.css) itself (`.timeline-header-cell.timeline-corner{ height:auto; }`),
+since both pages share the same timeline grid markup/CSS and Scheduling's own bed header can grow
+past 48px too (long branch/bed labels wrapping). Removed the now-redundant page-specific override
+from `marketing-payday-sale.css` — one shared rule instead of two copies.
+
+**Files touched:** `scheduling.css`, `marketing-payday-sale.css` (removed duplicate rule).
+
+**Deployed:** `firebase deploy --only hosting` → live at https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-19 — Tweak: Payday Sale grid's "Time" corner cell now matches bed header height
 
 **Requested by:** Admin — the "Time" corner cell (top-left of the grid) stayed fixed at

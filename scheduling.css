@@ -291,6 +291,14 @@ body.modal-open{
     position:sticky;
     left:0;
     z-index:6;
+    /* Drop the 48px fixed height inherited from .timeline-header-cell so
+       this stretches with its grid row (.timeline-header is a
+       display:grid row) instead — a bed header can grow past 48px (long
+       branch/bed labels wrapping, or a taller header used by another
+       page reusing this stylesheet, e.g. marketing-payday-sale.css's
+       per-bed time range), and without this the "Time" corner used to
+       stay short next to it. */
+    height:auto;
 }
 
 .timeline-header-cell:not(.timeline-corner){
