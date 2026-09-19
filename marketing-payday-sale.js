@@ -2053,8 +2053,9 @@
     /* ---- Voucher requests from the public Payday Sale page ----
 
        "Order Voucher" on the public page (submitPaydayVoucherOrder Cloud
-       Function) writes a bookingRequests doc with source "payday-promo"
-       and a one-hour hold on the chosen beds:
+       Function) writes a doc to the paydayVoucherRequests collection —
+       deliberately NOT bookingRequests, so these never appear under
+       Operations > Booking Requests — with a one-hour hold on the chosen beds:
        paydayHold {startTime, endTime, beds[], expiresAt}. This table lists
        the ones still pending and unexpired for the selected branch. Plot on
        Grid opens the normal slot form prefilled from the order (guest on
@@ -2100,17 +2101,11 @@
         }
 
         requestsUnsubscribe = db()
-            .collection("bookingRequests")
+            .collection("paydayVoucherRequests")
             .where("status", "==", "pending")
             .onSnapshot(function(snapshot){
                 paydayRequests = snapshot.docs
                     .map(function(doc){ return Object.assign({ id: doc.id }, doc.data()); })
-                    .filter(function(request){
-                        return (
-                            request.source === "payday-promo" ||
-                            String(request.notes || "").startsWith(PROMO_TAG)
-                        );
-                    })
                     .sort(function(a, b){
                         return (a.date + a.time).localeCompare(b.date + b.time);
                     });
@@ -2299,7 +2294,7 @@
 
     async function markVoucherRequestPlotted(requestId, slotId){
         try{
-            await db().collection("bookingRequests").doc(requestId).update({
+            await db().collection("paydayVoucherRequests").doc(requestId).update({
                 status: "converted",
                 reviewedAt: firebase.firestore.FieldValue.serverTimestamp(),
                 reviewedBy: currentUserAccount(),

@@ -489,12 +489,14 @@ function paydaySaleDocId(branchName, date){
 /* A Payday Sale "voucher order" reserves the client's chosen time for one
    hour (PAYDAY_HOLD_MINUTES) so nobody else can take those beds while the
    marketing agent in CrownOS plots it on the Payday Sale grid. The hold
-   lives on the bookingRequests doc itself (source "payday-promo",
-   paydayHold: {startTime, endTime, beds[], expiresAt}) — no separate
-   collection — and stops counting as soon as it expires, is plotted
+   lives on the order's own doc in the paydayVoucherRequests collection
+   (paydayHold: {startTime, endTime, assignments[], expiresAt}) — kept apart
+   from bookingRequests so voucher orders never show up in CrownOS's
+   Operations > Booking Requests page — and stops counting as soon as it expires, is plotted
    (status "converted") or is declined. */
 const PAYDAY_HOLD_MINUTES = 60;
 const PAYDAY_PROMO_SOURCE = "payday-promo";
+const PAYDAY_REQUESTS_COLLECTION = "paydayVoucherRequests";
 
 function readPaydayHold(data, nowMs){
     const hold = data && data.paydayHold;
@@ -529,7 +531,7 @@ function readPaydayHold(data, nowMs){
 }
 
 async function getActivePaydayHolds(branchName, date){
-    const snapshot = await db.collection(BOOKING_REQUESTS_COLLECTION)
+    const snapshot = await db.collection(PAYDAY_REQUESTS_COLLECTION)
         .where("branch", "==", branchName)
         .where("date", "==", date)
         .get();
@@ -656,8 +658,9 @@ exports.getPaydaySaleAvailability = onCall(async (request) => {
    all starting at the same time. Validates everything, then in a
    transaction re-checks that a full set of beds still exists (Payday Sale
    slots, real Scheduling appointments, bed availability windows, other
-   clients' unexpired holds) and writes one bookingRequests doc carrying a
-   one-hour hold on those beds. CrownOS's Payday Sale "Voucher Request"
+   clients' unexpired holds) and writes one paydayVoucherRequests doc
+   (not bookingRequests, so it never shows on Operations > Booking Requests)
+   carrying a one-hour hold on those beds. CrownOS's Payday Sale "Voucher Request"
    table reads it from there. Bed choice: the beds the page previewed
    (`beds`, aligned to guests) if they're all still free, otherwise the
    best assignment found here. */
@@ -764,7 +767,7 @@ exports.submitPaydayVoucherOrder = onCall(async (request) => {
             return { bed: Number(item.bed), startTime: item.startTime, endTime: item.endTime };
         });
 
-    const holdsQuery = db.collection(BOOKING_REQUESTS_COLLECTION)
+    const holdsQuery = db.collection(PAYDAY_REQUESTS_COLLECTION)
         .where("branch", "==", matchedBranch.name)
         .where("date", "==", date);
 
@@ -856,7 +859,7 @@ exports.submitPaydayVoucherOrder = onCall(async (request) => {
             Math.max.apply(null, assignments.map(function(item){ return timeToMinutes(item.endTime); }))
         );
 
-        const requestRef = db.collection(BOOKING_REQUESTS_COLLECTION).doc();
+        const requestRef = db.collection(PAYDAY_REQUESTS_COLLECTION).doc();
         const expiresAt = admin.firestore.Timestamp.fromMillis(now + PAYDAY_HOLD_MINUTES * 60 * 1000);
 
         const serviceSummary = assignments
@@ -872,11 +875,6 @@ exports.submitPaydayVoucherOrder = onCall(async (request) => {
             mobile: mobile,
             email: email,
             notes: "[Payday Sale Promo] Guests: " + guests.length + ". " + serviceSummary + (notes ? ". " + notes : ""),
-            /* Guests 2+ mirrored into the standard companions shape so the
-               regular Booking Requests / Scheduling flows can read them. */
-            companions: assignments.slice(1).map(function(item){
-                return { name: clientName + " – Guest " + item.guest, serviceName: item.serviceName };
-            }),
             guests: guests.length,
             paydayPrice: assignments.reduce(function(sum, item){ return sum + item.price; }, 0),
             paydayHold: {
@@ -1217,23 +1215,39 @@ exports.expireStaleBookingRequests = onSchedule(
             .where("status", "==", "pending")
             .get();
 
-        const nowMs = Date.now();
-
-        /* A Payday Sale voucher order's one-hour hold (see
-           submitPaydayVoucherOrder) also expires the request itself once
-           it runs out unplotted. Availability already ignores an expired
-           hold immediately — this only tidies the pending list. */
         const stale = snapshot.docs.filter(function(doc){
+            return String(doc.data().date || "") < todayManila;
+        });
+
+        /* Payday Sale voucher orders live in their own collection; one
+           whose one-hour hold ran out unplotted is marked expired. The
+           public page and CrownOS already ignore an expired hold the moment
+           it lapses — this only tidies the pending list. */
+        const nowMs = Date.now();
+        const paydaySnapshot = await db.collection(PAYDAY_REQUESTS_COLLECTION)
+            .where("status", "==", "pending")
+            .get();
+
+        const paydayStale = paydaySnapshot.docs.filter(function(doc){
             const data = doc.data();
-            const holdExpiry = data.source === PAYDAY_PROMO_SOURCE && data.paydayHold && data.paydayHold.expiresAt
-                ? data.paydayHold.expiresAt.toMillis()
-                : null;
+            const expiresAt = data.paydayHold && data.paydayHold.expiresAt;
 
             return (
                 String(data.date || "") < todayManila ||
-                (holdExpiry !== null && holdExpiry <= nowMs)
+                (expiresAt && expiresAt.toMillis() <= nowMs)
             );
         });
+
+        if(paydayStale.length > 0){
+            const paydayBatch = db.batch();
+            paydayStale.forEach(function(doc){
+                paydayBatch.update(doc.ref, {
+                    status: "expired",
+                    reviewedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+            });
+            await paydayBatch.commit();
+        }
 
         if(stale.length === 0) return;
 

@@ -11,6 +11,21 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-19 (10) — Voucher orders no longer go to Operations > Booking Requests
+
+**Requested by:** Admin — a voucher order from the public Payday Sale page should go straight to the Payday Sale page only.
+
+- [`functions/index.js`](functions/index.js): `submitPaydayVoucherOrder` now writes to a new `paydayVoucherRequests` collection instead of `bookingRequests` (so it no longer shows on the Booking Requests page and no longer triggers the receptionist "new booking request" notification). `getPaydaySaleAvailability` and the hold check read that collection; `expireStaleBookingRequests` also marks its unplotted, expired orders `expired`. The companions mirror is dropped.
+- [`firestore.rules`](firestore.rules): new `paydayVoucherRequests` rules — staff read; staff may only flip a pending order to `converted`/`declined`; no client create/delete.
+- [`marketing-payday-sale.js`](marketing-payday-sale.js): the Voucher Request table and Plot on Grid read/update `paydayVoucherRequests`.
+- [`manual.html`](manual.html): notes that voucher orders are not on Booking Requests.
+
+**Note:** any voucher order placed before this change is still a normal booking request in the old collection and won't appear in the Voucher Request table.
+
+**Deployed:** `firebase deploy --only firestore:rules,functions:submitPaydayVoucherOrder,functions:getPaydaySaleAvailability,functions:expireStaleBookingRequests,hosting`.
+
+---
+
 ## 2026-09-19 (9) — Voucher orders: per-guest services (Number of Guests, up to 4)
 
 **Requested by:** Admin — replace the single service + companion count with Number of Guests and a service dropdown for each guest.
