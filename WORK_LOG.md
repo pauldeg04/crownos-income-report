@@ -11,6 +11,14 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-19 (7) — getPaydaySaleServices also returns the Regular price
+
+**Requested by:** Website Payday Sale page shows the original price struck out beside the Payday price (see Website WORK_LOG). [`functions/index.js`](functions/index.js): `getPaydaySaleServices` now includes `regularPrice` per service. No CrownOS UI change.
+
+**Deployed:** `firebase deploy --only functions:getPaydaySaleServices`.
+
+---
+
 ## 2026-09-19 (6) — Feature: "Payday Voucher" price type in Add Sale
 
 **Requested by:** Admin — add Payday Voucher to the Regular/First Timer/VIP/Senior-PWD dropdown, shown only when the selected service is Available for Payday.

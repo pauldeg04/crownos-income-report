@@ -397,7 +397,8 @@ exports.getPaydaySaleServices = onCall(async () => {
                 name: service.name,
                 duration: Number(service.duration),
                 category: service.category === "Package" ? "Combo" : (service.category || ""),
-                price: Number(service.paydaySalePrice)
+                price: Number(service.paydaySalePrice),
+                regularPrice: Number(service.regularPrice) || 0
             };
         })
         .sort(function(a, b){ return a.name.localeCompare(b.name); });
