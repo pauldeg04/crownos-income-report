@@ -11,6 +11,34 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-19 (3) — Feature: new Cloud Function for the public Payday Sale promo page
+
+**Requested by:** Admin — wanted an unlisted page on the public Crown Head Spa website
+(crownheadspa.com) where a potential client can view Payday Sale bed availability (calendar-type,
+view-only) and send a booking request, without needing to log into CrownOS. That page lives in
+the separate `CrownOS/Website` project (see its own WORK_LOG.md), but the Cloud Function backing
+it lives here since this is where `paydaySale` and `crownSchedule_*` are read.
+
+**What was added:** [`functions/index.js`](functions/index.js) has a new callable,
+`getPaydaySaleAvailability({branch, date})`, next to the existing `getAvailableSlots`. For each
+bed at that branch, it returns only: whether it's offered today (Payday Sale's own Available
+toggle), its From/To time window, and a list of occupied start/end time ranges — merged from that
+branch/date's own Payday Sale slots (`paydaySale` collection) and real Scheduling appointments
+(`crownSchedule_<branch>_<date>`, read the same read-only way `getAvailableSlots` already does).
+Deliberately **never** returns a client name, mobile, email, or any other detail — same
+view-only, occupancy-only shape the CrownOS Payday Sale grid itself shows for a real Scheduling
+appointment (see the 2026-09-18 (5) entry above).
+
+**What wasn't touched:** `submitBookingRequest` — the promo page's own booking form calls it
+unmodified, exactly like `book.html` on the public site does, just with a `[Payday Sale Promo]`
+tag prepended to the notes field so staff can tell the leads apart in Booking Requests.
+
+**Files touched:** `functions/index.js`.
+
+**Deployed:** `firebase deploy --only functions:getPaydaySaleAvailability`.
+
+---
+
 ## 2026-09-19 (2) — Tweak: same "Time" corner cell fix extended to Scheduling
 
 **Requested by:** Admin, right after the Payday Sale-only fix below shipped — wanted the same

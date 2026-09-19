@@ -431,6 +431,118 @@ exports.getAvailableSlots = onCall(async (request) => {
     return { slots, durationMinutes };
 });
 
+/* ---------- getPaydaySaleAvailability ---------- */
+
+const PAYDAY_SALE_COLLECTION = "paydaySale";
+
+/* Mirrors marketing-payday-sale.js's docId() exactly — same doc id
+   scheme, same collection, so this reads the exact doc CrownOS's Payday
+   Sale page writes. */
+function paydaySaleDocId(branchName, date){
+    const slug = String(branchName || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+
+    return slug + "_" + date;
+}
+
+/* Backs the unlisted public Payday Promo page (payday-promo.html) — a
+   view-only calendar of which beds are open for the Payday Sale campaign,
+   not a real booking flow. Deliberately returns only start/end time
+   ranges per bed, never any client name/contact info: the Payday Sale
+   slots this reads (see marketing-payday-sale.js) can carry a client's
+   name/mobile/email once a marketing agent has filled them in, and none
+   of that belongs on a page anyone with the link can open.
+
+   "Occupied" here means the same thing it means on the CrownOS Payday
+   Sale grid itself (see getPersistedConflictPool() in
+   marketing-payday-sale.js) — a bed marked unavailable in that page's own
+   Available toggle, another Payday Sale slot already placed there, or a
+   real Scheduling appointment for that bed/time. Scheduling's own
+   Block Date / per-bed Available toggle (crownBlockedDates /
+   crownUnavailableBeds) are a separate concept from Payday Sale's own
+   `blocked` flag and per-bed `beds[].available`, and are intentionally
+   left out here too, for the same reason marketing-payday-sale.js never
+   folds them in either. */
+exports.getPaydaySaleAvailability = onCall(async (request) => {
+    const { branch, date } = request.data || {};
+
+    if(typeof branch !== "string" || typeof date !== "string"){
+        throw new HttpsError("invalid-argument", "branch and date are required.");
+    }
+
+    if(!DATE_PATTERN.test(date)){
+        throw new HttpsError("invalid-argument", "date must be YYYY-MM-DD.");
+    }
+
+    const branches = await getBranches();
+    const matchedBranch = findBranch(branches, branch);
+
+    if(!matchedBranch){
+        throw new HttpsError("invalid-argument", "Unknown branch.");
+    }
+
+    const { dateString: today } = nowInManila();
+
+    if(date < today){
+        return {
+            branch: matchedBranch.name,
+            date: date,
+            blocked: false,
+            blockReason: "",
+            openingTime: matchedBranch.openingTime,
+            closingTime: matchedBranch.closingTime,
+            beds: []
+        };
+    }
+
+    const [paydaySaleDoc, scheduleRaw] = await Promise.all([
+        db.collection(PAYDAY_SALE_COLLECTION).doc(paydaySaleDocId(matchedBranch.name, date)).get(),
+        readAppDataKey(db, SCHEDULE_PREFIX + matchedBranch.name + "_" + date)
+    ]);
+
+    const paydaySaleData = paydaySaleDoc.exists ? paydaySaleDoc.data() : {};
+    const bedSettings = paydaySaleData.beds || {};
+
+    const paydaySlots = (Array.isArray(paydaySaleData.slots) ? paydaySaleData.slots : [])
+        .filter(function(slot){ return slot && slot.status !== "Cancelled"; });
+
+    const scheduleEntries = (Array.isArray(scheduleRaw) ? scheduleRaw : [])
+        .filter(function(item){ return item && item.status !== "Cancelled"; });
+
+    const beds = [];
+
+    for(let bedNumber = 1; bedNumber <= matchedBranch.beds; bedNumber++){
+        const setting = bedSettings[bedNumber] || bedSettings[String(bedNumber)] || null;
+        const available = setting ? setting.available !== false : true;
+
+        const occupied = paydaySlots
+            .concat(scheduleEntries)
+            .filter(function(item){ return Number(item.bed) === bedNumber; })
+            .map(function(item){ return { startTime: item.startTime, endTime: item.endTime }; })
+            .sort(function(a, b){ return timeToMinutes(a.startTime) - timeToMinutes(b.startTime); });
+
+        beds.push({
+            bed: bedNumber,
+            available: available,
+            from: (setting && setting.from) || matchedBranch.openingTime,
+            to: (setting && setting.to) || matchedBranch.closingTime,
+            occupied: occupied
+        });
+    }
+
+    return {
+        branch: matchedBranch.name,
+        date: date,
+        blocked: !!paydaySaleData.blocked,
+        blockReason: paydaySaleData.blocked ? (paydaySaleData.blockReason || "") : "",
+        openingTime: matchedBranch.openingTime,
+        closingTime: matchedBranch.closingTime,
+        beds: beds
+    };
+});
+
 /* ---------- submitBookingRequest ---------- */
 
 exports.submitBookingRequest = onCall(async (request) => {
