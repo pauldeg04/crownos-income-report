@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-19 (6) — Feature: "Payday Voucher" price type in Add Sale
+
+**Requested by:** Admin — add Payday Voucher to the Regular/First Timer/VIP/Senior-PWD dropdown, shown only when the selected service is Available for Payday.
+
+**What changed:** [`script.js`](script.js) — new `buildPaydayVoucherOptionHtml()` adds a **Payday Voucher** option to the price-type dropdown for both the principal's and companions' service rows, only when `findService(item.name).availableForPayday === true`. `getServicePrice()` prices it at the service's `paydaySalePrice` (falls back to Regular if unset). `recalculateServiceItem()` resets a Payday Voucher row to Regular if its service is changed to a non-Payday one, and the VIP auto-override in `refreshModalVipState()` skips Payday Voucher rows so a VIP client's Payday price isn't overwritten.
+
+**Files touched:** `script.js`, `manual.html` (price-type table in Add Sale).
+
+**Deployed:** `firebase deploy --only hosting` → https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-19 (5) — Feature: Payday Sale Price + "Available for Payday" on List of Services
 
 **Requested by:** Admin — services need their own Payday Sale price, and only services flagged for Payday should be offered on the Payday Sale pages.

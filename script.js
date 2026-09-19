@@ -2618,6 +2618,7 @@ function renderModalItems(){
           <option value="Senior/PWD" ${item.priceType === "Senior/PWD" ? "selected" : ""}>
             Senior/PWD
           </option>
+          ${buildPaydayVoucherOptionHtml(item)}
         </select>
 
         <input
@@ -3362,6 +3363,8 @@ function renderModalCompanions(){
             <option value="Senior/PWD" ${item.priceType === "Senior/PWD" ? "selected" : ""}>
               Senior/PWD
             </option>
+
+            ${buildPaydayVoucherOptionHtml(item)}
           </select>
 
           <input
@@ -4005,9 +4008,30 @@ async function addModalSaleToSchedule(){
   );
 }
 
+/* "Payday Voucher" only appears in the price-type dropdown for a service
+   ticked "Available for Payday" in List of Services, and prices at that
+   service's Payday Sale Price. */
+function buildPaydayVoucherOptionHtml(item){
+  const service = findService(item.name);
+
+  if(!service || service.availableForPayday !== true){
+    return "";
+  }
+
+  return `
+    <option value="Payday Voucher" ${item.priceType === "Payday Voucher" ? "selected" : ""}>
+      Payday Voucher
+    </option>
+  `;
+}
+
 function getServicePrice(service, priceType){
   if(!service){
     return 0;
+  }
+
+  if(priceType === "Payday Voucher"){
+    return Number(service.paydaySalePrice) || Number(service.regularPrice) || 0;
   }
 
   if(priceType === "VIP"){
@@ -4029,6 +4053,13 @@ function recalculateServiceItem(item, force = false){
   if(item.isFamilyBundleItem){
     item.amount = 0;
     return;
+  }
+
+  if(
+    item.priceType === "Payday Voucher" &&
+    findService(item.name)?.availableForPayday !== true
+  ){
+    item.priceType = "Regular";
   }
 
   if(item.manualAmount && !force){
@@ -4168,7 +4199,7 @@ function refreshModalVipState(){
         })
       )
       .filter(function(item){
-        return item.itemType === "Service";
+        return item.itemType === "Service" && item.priceType !== "Payday Voucher";
       })
       .forEach(function(item){
         item.priceType = "VIP";
