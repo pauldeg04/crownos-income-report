@@ -172,6 +172,7 @@
                             <th>Voucher</th>
                             <th>Freebie</th>
                             <th>Online Booking</th>
+                            <th>Payday Sale</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
@@ -457,6 +458,30 @@
 
                     <div class="col-md-6">
                         <label class="form-label">
+                            Payday Sale Price
+                        </label>
+
+                        <div class="input-group">
+                            <span class="input-group-text">₱</span>
+
+                            <input
+                                type="number"
+                                id="paydaySalePriceInput"
+                                class="form-control"
+                                min="0"
+                                step="0.01"
+                                placeholder="0.00"
+                            >
+                        </div>
+
+                        <small>
+                            Shown on the public Payday Sale page when this
+                            service is marked Available for Payday.
+                        </small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">
                             Therapist Commission
                         </label>
 
@@ -710,6 +735,31 @@
                                 When enabled, this service will appear in the
                                 list of bookable services on the public
                                 website. Leave unchecked to keep it staff-only.
+                            </small>
+
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="voucher-availability-box">
+
+                            <label class="voucher-checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    id="paydayAvailableInput"
+                                    class="form-check-input"
+                                >
+
+                                <span>
+                                    Available for Payday
+                                </span>
+                            </label>
+
+                            <small>
+                                When enabled, this service can be chosen on the
+                                Payday Sale page (Marketing) and appears on the
+                                public Payday Sale page. Leave unchecked to keep
+                                it out of the Payday Sale.
                             </small>
 
                         </div>

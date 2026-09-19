@@ -11,6 +11,21 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-19 (5) — Feature: Payday Sale Price + "Available for Payday" on List of Services
+
+**Requested by:** Admin — services need their own Payday Sale price, and only services flagged for Payday should be offered on the Payday Sale pages.
+
+**What changed:**
+- [`list-services.html`](list-services.html) / [`list-services.js`](list-services.js): new **Payday Sale Price** field (Pricing tab) and **Available for Payday** checkbox (Internal tab) on Add/Edit; new **Payday Sale** table column (badge + price). New fields `paydaySalePrice` / `availableForPayday`, migrated onto existing services (default 0 / false). Saving requires a price > 0 when Available for Payday is ticked.
+- [`marketing-payday-sale.js`](marketing-payday-sale.js): the slot form's service dropdowns list only Available-for-Payday services, with the Payday price in each label (a service already on a slot stays selectable so editing doesn't blank it). The old "Will choose upon arrival" option is no longer offered here.
+- [`functions/index.js`](functions/index.js): new callable `getPaydaySaleServices` returning only Active + Available-for-Payday services (name, duration, category, Payday price — no other pricing). The public promo page's treatment dropdown now loads from it (see Website WORK_LOG) instead of a hardcoded list.
+
+**Files touched:** `list-services.html`, `list-services.js`, `marketing-payday-sale.js`, `functions/index.js`, `manual.html`.
+
+**Deployed:** `firebase deploy --only hosting` and `--only functions:getPaydaySaleServices`.
+
+---
+
 ## 2026-09-19 (4) — Fix: Dashboard service timer disappearing mid-service
 
 **Requested by:** User — therapists kept reporting that a started timer would suddenly vanish

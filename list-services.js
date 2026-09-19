@@ -146,6 +146,8 @@ function migrateExistingServices(){
                     firstTimerPrice: 0,
                     vipPrice: 0,
                     seniorPwdPrice: 0,
+                    paydaySalePrice: 0,
+                    availableForPayday: false,
                     commission: 0,
                     colorTag: "Navy",
                     status: "Active",
@@ -186,6 +188,8 @@ function migrateExistingServices(){
                     Number(service.vipPrice) || 0,
                 seniorPwdPrice:
                     Number(service.seniorPwdPrice) || 0,
+                paydaySalePrice:
+                    Number(service.paydaySalePrice) || 0,
                 commission:
                     Number(
                         service.commission ??
@@ -226,6 +230,8 @@ function migrateExistingServices(){
                     service.availableForFreebies === true,
                 availableForOnlineBooking:
                     service.availableForOnlineBooking === true,
+                availableForPayday:
+                    service.availableForPayday === true,
                 internalNotes: service.internalNotes || "",
                 createdAt:
                     service.createdAt ||
@@ -242,6 +248,8 @@ function migrateExistingServices(){
                 service.voucherValueRegular === undefined ||
                 service.availableForFreebies === undefined ||
                 service.availableForOnlineBooking === undefined ||
+                service.availableForPayday === undefined ||
+                service.paydaySalePrice === undefined ||
                 service.overtimeCommission === undefined
             ){
                 changed = true;
@@ -417,6 +425,18 @@ function renderServices(){
                 ${
                     service.availableForOnlineBooking
                         ? `<span class="voucher-service-badge">Online</span>`
+                        : `
+                            <span class="voucher-not-available">
+                                —
+                            </span>
+                        `
+                }
+            </td>
+
+            <td>
+                ${
+                    service.availableForPayday
+                        ? `<span class="voucher-service-badge">Payday</span> ${formatCurrency(service.paydaySalePrice)}`
                         : `
                             <span class="voucher-not-available">
                                 —
@@ -637,6 +657,9 @@ function openEditModal(serviceId){
     document.getElementById("seniorPwdPriceInput").value =
         service.seniorPwdPrice || "";
 
+    document.getElementById("paydaySalePriceInput").value =
+        service.paydaySalePrice || "";
+
     document.getElementById("commissionInput").value =
         service.commission || "";
 
@@ -669,6 +692,9 @@ function openEditModal(serviceId){
     document.getElementById("onlineBookingAvailableInput").checked =
         service.availableForOnlineBooking === true;
 
+    document.getElementById("paydayAvailableInput").checked =
+        service.availableForPayday === true;
+
     document.getElementById("internalNotesInput").value =
         service.internalNotes || "";
 
@@ -689,6 +715,7 @@ function clearForm(){
     document.getElementById("firstTimerPriceInput").value = "";
     document.getElementById("vipPriceInput").value = "";
     document.getElementById("seniorPwdPriceInput").value = "";
+    document.getElementById("paydaySalePriceInput").value = "";
     document.getElementById("commissionInput").value = "";
     document.getElementById("overtimeCommissionInput").value = "";
     document.getElementById("colorTagInput").value = "Navy";
@@ -699,6 +726,7 @@ function clearForm(){
     document.getElementById("voucherValueVipInput").value = "";
     document.getElementById("freebieAvailableInput").checked = false;
     document.getElementById("onlineBookingAvailableInput").checked = false;
+    document.getElementById("paydayAvailableInput").checked = false;
     document.getElementById("internalNotesInput").value = "";
 
     toggleVoucherValueField();
@@ -793,6 +821,12 @@ function saveService(){
     const seniorPwdPrice =
         Number(document.getElementById("seniorPwdPriceInput").value) || 0;
 
+    const paydaySalePrice =
+        Number(document.getElementById("paydaySalePriceInput").value) || 0;
+
+    const availableForPayday =
+        document.getElementById("paydayAvailableInput").checked;
+
     const commission =
         Number(document.getElementById("commissionInput").value) || 0;
 
@@ -827,10 +861,17 @@ function saveService(){
         regularPrice < 0 ||
         firstTimerPrice < 0 ||
         vipPrice < 0 ||
-        seniorPwdPrice < 0
+        seniorPwdPrice < 0 ||
+        paydaySalePrice < 0
     ){
         alert("Prices cannot be negative.");
         activateTab("general");
+        return;
+    }
+
+    if(availableForPayday && paydaySalePrice <= 0){
+        alert("Please enter a Payday Sale Price for a service that is Available for Payday.");
+        activateTab("pricing");
         return;
     }
 
@@ -903,6 +944,7 @@ function saveService(){
         firstTimerPrice: firstTimerPrice,
         vipPrice: vipPrice,
         seniorPwdPrice: seniorPwdPrice,
+        paydaySalePrice: paydaySalePrice,
         commission: commission,
         overtimeCommission: overtimeCommission,
         colorTag:
@@ -928,6 +970,7 @@ function saveService(){
                 : 0,
         availableForFreebies: availableForFreebies,
         availableForOnlineBooking: availableForOnlineBooking,
+        availableForPayday: availableForPayday,
         internalNotes:
             document
                 .getElementById("internalNotesInput")

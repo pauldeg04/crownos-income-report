@@ -299,13 +299,15 @@
 
             return parsed.map(function(service){
                 if(typeof service === "string"){
-                    return { id: createId(), name: service, duration: inferDuration(service) };
+                    return { id: createId(), name: service, duration: inferDuration(service), availableForPayday: false, paydaySalePrice: 0 };
                 }
 
                 return {
                     id: service.id || createId(),
                     name: service.name || "",
-                    duration: Number(service.duration) || 0
+                    duration: Number(service.duration) || 0,
+                    availableForPayday: service.availableForPayday === true,
+                    paydaySalePrice: Number(service.paydaySalePrice) || 0
                 };
             });
         }catch(error){
@@ -819,17 +821,22 @@
     function buildServiceOptionsHtml(selectedName){
         let html = '<option value="">Select Service</option>';
 
-        html += `
-            <option value="${escapeHtml(WILL_CHOOSE_SERVICE_NAME)}" ${WILL_CHOOSE_SERVICE_NAME === selectedName ? "selected" : ""}>
-                ${escapeHtml(WILL_CHOOSE_SERVICE_NAME)} (${WILL_CHOOSE_SERVICE_DURATION} mins)
-            </option>
-        `;
+        /* Only services ticked "Available for Payday" in List of Services
+           are offered here. A service already saved on a slot that has
+           since been un-ticked stays selectable so editing that slot
+           doesn't silently blank its service. */
+        getServices().filter(function(service){
+            return service.availableForPayday || service.name === selectedName;
+        }).forEach(function(service){
+            const price =
+                service.availableForPayday && service.paydaySalePrice > 0
+                    ? " — ₱" + service.paydaySalePrice.toLocaleString("en-PH")
+                    : "";
 
-        getServices().forEach(function(service){
             const label =
-                service.duration > 0
+                (service.duration > 0
                     ? `${service.name} (${service.duration} mins)`
-                    : `${service.name} (Duration not set)`;
+                    : `${service.name} (Duration not set)`) + price;
 
             html += `
                 <option value="${escapeHtml(service.name)}" ${service.name === selectedName ? "selected" : ""}>

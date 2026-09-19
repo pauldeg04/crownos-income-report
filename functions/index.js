@@ -367,6 +367,44 @@ exports.getBookableServices = onCall(async () => {
     return { services };
 });
 
+/* ---------- getPaydaySaleServices ---------- */
+
+/* Backs the treatment dropdown on the unlisted public Payday Sale page
+   (Website/payday-promo.html). Only services ticked "Available for
+   Payday" in CrownOS List of Services (and Active, with a duration and a
+   Payday Sale Price) are returned — name, duration, category and that one
+   price; never commission or any other pricing tier. Independent of
+   getBookableServices: a service can be Payday-only, online-only, both,
+   or neither. */
+exports.getPaydaySaleServices = onCall(async () => {
+    const raw = await readAppDataKey(db, SERVICE_MASTER_KEY);
+    const list = Array.isArray(raw) ? raw : [];
+
+    const services = list
+        .filter(function(service){
+            return (
+                service &&
+                typeof service === "object" &&
+                service.status === "Active" &&
+                service.availableForPayday === true &&
+                service.name &&
+                Number(service.duration) > 0 &&
+                Number(service.paydaySalePrice) > 0
+            );
+        })
+        .map(function(service){
+            return {
+                name: service.name,
+                duration: Number(service.duration),
+                category: service.category === "Package" ? "Combo" : (service.category || ""),
+                price: Number(service.paydaySalePrice)
+            };
+        })
+        .sort(function(a, b){ return a.name.localeCompare(b.name); });
+
+    return { services };
+});
+
 /* ---------- getGoogleReviews ---------- */
 
 /* Backs the public testimonials page (see googleReviews.js). */
