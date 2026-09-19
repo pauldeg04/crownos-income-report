@@ -3727,6 +3727,48 @@ async function saveSchedule(){
     let previousMainEntry = null;
     let previousCompanionEntries = [];
 
+    /* The Dashboard's service timer (dashboard.js) lives on the
+       appointment entry itself. This save rebuilds the entry from the
+       form, so without carrying these fields over, ANY edit made while a
+       service is running (status change, notes, a companion tweak...)
+       silently wiped the countdown off the Dashboard. Companions get a
+       fresh id on every save, so they're matched by client + bed. */
+    const TIMER_FIELDS = [
+        "timerStatus",
+        "timerStartedAt",
+        "timerDurationSeconds",
+        "timerStoppedAt",
+        "actualDurationSeconds"
+    ];
+
+    function carryOverTimerFields(entry, previous){
+        if(!previous){
+            return;
+        }
+
+        TIMER_FIELDS.forEach(function(field){
+            if(previous[field] !== undefined){
+                entry[field] = previous[field];
+            }
+        });
+    }
+
+    function preserveTimers(){
+        carryOverTimerFields(scheduleData, previousMainEntry);
+
+        companionEntries.forEach(function(entry){
+            carryOverTimerFields(
+                entry,
+                previousCompanionEntries.find(function(previous){
+                    return (
+                        previous.client === entry.client &&
+                        Number(previous.bed) === Number(entry.bed)
+                    );
+                })
+            );
+        });
+    }
+
     /* mutateFn re-runs the SAME bed/therapist conflict checks already
        done above, but against `current` (the fresh, just-read-inside-
        the-transaction array) instead of the possibly-stale localStorage
@@ -3787,6 +3829,8 @@ async function saveSchedule(){
                     return item.companionOf === mainId;
                 });
 
+            preserveTimers();
+
             const next =
                 current.filter(function(item){
                     return (
@@ -3834,6 +3878,8 @@ async function saveSchedule(){
             schedules.filter(function(item){
                 return item.companionOf === mainId;
             });
+
+        preserveTimers();
 
         schedules =
             schedules.filter(function(item){

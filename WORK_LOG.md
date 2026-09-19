@@ -11,6 +11,26 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-19 (4) — Fix: Dashboard service timer disappearing mid-service
+
+**Requested by:** User — therapists kept reporting that a started timer would suddenly vanish
+from the Dashboard after a few minutes.
+
+**Root cause:** The timer lives on the appointment entry itself (`timerStatus`, `timerStartedAt`,
+`timerDurationSeconds`, ...). Saving an appointment in Scheduling (`saveSchedule()` in
+[`scheduling.js`](scheduling.js)) rebuilds the entry from the form, which dropped those fields —
+so any edit made while a service was running (status, notes, etc., typically by the front desk)
+wiped the countdown. Companion entries also get a new `id` on every save, so they lost theirs too.
+
+**Fix:** [`scheduling.js`](scheduling.js) now carries the timer fields over from the previous
+entry (main by id, companions by client + bed) in both the transactional save and the offline
+fallback save. The [`manual.html`](manual.html) Service Timer section notes it keeps running
+through edits.
+
+**Not covered:** timers already wiped before this deploy can't be recovered.
+
+---
+
 ## 2026-09-19 (3) — Feature: new Cloud Function for the public Payday Sale promo page
 
 **Requested by:** Admin — wanted an unlisted page on the public Crown Head Spa website
