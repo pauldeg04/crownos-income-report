@@ -510,10 +510,20 @@ function readPaydayHold(data, nowMs){
         return null;
     }
 
+    /* One entry per guest: {bed, startTime, endTime}. Each guest can have
+       a different service, so each bed is held for its own length. Older
+       orders (before per-guest services) only stored beds[] + one shared
+       endTime — treated as the same range on every bed. */
+    const assignments = Array.isArray(hold.assignments) && hold.assignments.length > 0
+        ? hold.assignments.map(function(item){
+            return { bed: Number(item.bed), startTime: hold.startTime, endTime: item.endTime };
+        })
+        : (Array.isArray(hold.beds) ? hold.beds : []).map(function(bed){
+            return { bed: Number(bed), startTime: hold.startTime, endTime: hold.endTime };
+        });
+
     return {
-        startTime: hold.startTime,
-        endTime: hold.endTime,
-        beds: Array.isArray(hold.beds) ? hold.beds.map(Number) : [],
+        assignments: assignments,
         expiresAtMs: hold.expiresAt.toMillis()
     };
 }
@@ -608,11 +618,14 @@ exports.getPaydaySaleAvailability = onCall(async (request) => {
             .map(function(item){ return { startTime: item.startTime, endTime: item.endTime }; })
             .sort(function(a, b){ return timeToMinutes(a.startTime) - timeToMinutes(b.startTime); });
 
-        const held = paydayHolds
-            .filter(function(hold){ return hold.beds.includes(bedNumber); })
-            .map(function(hold){
-                return { startTime: hold.startTime, endTime: hold.endTime, expiresAt: hold.expiresAtMs };
+        const held = [];
+        paydayHolds.forEach(function(hold){
+            hold.assignments.forEach(function(item){
+                if(item.bed === bedNumber){
+                    held.push({ startTime: item.startTime, endTime: item.endTime, expiresAt: hold.expiresAtMs });
+                }
             });
+        });
 
         beds.push({
             bed: bedNumber,
@@ -637,25 +650,30 @@ exports.getPaydaySaleAvailability = onCall(async (request) => {
 
 /* ---------- submitPaydayVoucherOrder ---------- */
 
-/* "Order Voucher" on the public Payday Sale page. Validates the order,
-   re-checks in a transaction that every guest's bed is still free for the
-   whole service (Payday Sale slots, real Scheduling appointments, other
-   clients' unexpired holds), then writes one bookingRequests doc carrying
-   a one-hour hold on those beds. CrownOS's Payday Sale "Voucher Request"
-   table reads it from there. Companions are a count only (max 3, so at
-   most 4 guests), all assumed to take the same service. */
+/* "Order Voucher" on the public Payday Sale page. The order has 1-4
+   guests (guest 1 is the person ordering), each with their own Payday
+   service — so each guest needs a bed free for THEIR service's length,
+   all starting at the same time. Validates everything, then in a
+   transaction re-checks that a full set of beds still exists (Payday Sale
+   slots, real Scheduling appointments, bed availability windows, other
+   clients' unexpired holds) and writes one bookingRequests doc carrying a
+   one-hour hold on those beds. CrownOS's Payday Sale "Voucher Request"
+   table reads it from there. Bed choice: the beds the page previewed
+   (`beds`, aligned to guests) if they're all still free, otherwise the
+   best assignment found here. */
 exports.submitPaydayVoucherOrder = onCall(async (request) => {
     const data = request.data || {};
     const branch = String(data.branch || "");
-    const serviceName = String(data.serviceName || "");
     const date = String(data.date || "");
     const startTime = String(data.startTime || "");
     const clientName = String(data.clientName || "").trim();
     const mobile = String(data.mobile || "").trim();
     const email = String(data.email || "").trim();
     const notes = String(data.notes || "").trim();
-    const companionCount = Math.min(3, Math.max(0, Math.floor(Number(data.companions) || 0)));
-    const preferredBed = Math.floor(Number(data.bed) || 0);
+
+    const guestInputs = (Array.isArray(data.guests) ? data.guests : [])
+        .map(function(guest){ return String(guest && guest.serviceName || "").trim(); });
+    const preferredBeds = (Array.isArray(data.beds) ? data.beds : []).map(function(bed){ return Math.floor(Number(bed) || 0); });
 
     if(!DATE_PATTERN.test(date)){
         throw new HttpsError("invalid-argument", "date must be YYYY-MM-DD.");
@@ -675,6 +693,9 @@ exports.submitPaydayVoucherOrder = onCall(async (request) => {
     if(notes.length > 400){
         throw new HttpsError("invalid-argument", "notes is too long.");
     }
+    if(guestInputs.length < 1 || guestInputs.length > 4){
+        throw new HttpsError("invalid-argument", "1 to 4 guests are allowed.");
+    }
 
     const { dateString: today, minutesOfDay } = nowInManila();
     if(date < today || (date === today && timeToMinutes(startTime) <= minutesOfDay)){
@@ -691,26 +712,34 @@ exports.submitPaydayVoucherOrder = onCall(async (request) => {
         throw new HttpsError("invalid-argument", "Unknown branch.");
     }
 
-    const service = (Array.isArray(rawServices) ? rawServices : []).find(function(item){
-        return (
-            item &&
-            typeof item === "object" &&
-            item.name === serviceName &&
-            item.status === "Active" &&
-            item.availableForPayday === true &&
-            Number(item.duration) > 0 &&
-            Number(item.paydaySalePrice) > 0
-        );
-    });
-    if(!service){
-        throw new HttpsError("invalid-argument", "That service isn't available for the Payday Sale.");
-    }
+    const serviceList = Array.isArray(rawServices) ? rawServices : [];
 
-    const durationMinutes = Number(service.duration);
+    const guests = guestInputs.map(function(serviceName, index){
+        const service = serviceList.find(function(item){
+            return (
+                item &&
+                typeof item === "object" &&
+                item.name === serviceName &&
+                item.status === "Active" &&
+                item.availableForPayday === true &&
+                Number(item.duration) > 0 &&
+                Number(item.paydaySalePrice) > 0
+            );
+        });
+
+        if(!service){
+            throw new HttpsError("invalid-argument", "Guest " + (index + 1) + "'s service isn't available for the Payday Sale.");
+        }
+
+        return {
+            guest: index + 1,
+            serviceName: service.name,
+            durationMinutes: Number(service.duration),
+            price: Number(service.paydaySalePrice)
+        };
+    });
+
     const startMinutes = timeToMinutes(startTime);
-    const endMinutes = startMinutes + durationMinutes;
-    const endTime = minutesToTimeValue(endMinutes);
-    const guests = 1 + companionCount;
 
     const [paydaySaleDoc, scheduleRaw] = await Promise.all([
         db.collection(PAYDAY_SALE_COLLECTION).doc(paydaySaleDocId(matchedBranch.name, date)).get(),
@@ -743,69 +772,118 @@ exports.submitPaydayVoucherOrder = onCall(async (request) => {
         const holdsSnapshot = await transaction.get(holdsQuery);
         const now = Date.now();
 
-        const heldRanges = [];
+        const allRanges = fixedRanges.slice();
         holdsSnapshot.docs.forEach(function(doc){
             const hold = readPaydayHold(doc.data(), now);
             if(!hold) return;
-            hold.beds.forEach(function(bed){
-                heldRanges.push({ bed: bed, startTime: hold.startTime, endTime: hold.endTime });
-            });
+            hold.assignments.forEach(function(item){ allRanges.push(item); });
         });
 
-        const allRanges = fixedRanges.concat(heldRanges);
-
-        const freeBeds = [];
-        for(let bed = 1; bed <= matchedBranch.beds; bed++){
+        /* Can this bed take a stay of `durationMinutes` from the start time? */
+        function bedFits(bed, durationMinutes){
             const setting = bedSettings[bed] || bedSettings[String(bed)] || null;
-            if(setting && setting.available === false) continue;
+            if(setting && setting.available === false) return false;
 
             const from = timeToMinutes((setting && setting.from) || matchedBranch.openingTime);
             const to = timeToMinutes((setting && setting.to) || matchedBranch.closingTime);
-            if(startMinutes < from || endMinutes > to) continue;
+            const endMinutes = startMinutes + durationMinutes;
+            if(startMinutes < from || endMinutes > to) return false;
 
-            const clash = allRanges.some(function(range){
+            return !allRanges.some(function(range){
                 return (
                     range.bed === bed &&
                     startMinutes < timeToMinutes(range.endTime) &&
                     endMinutes > timeToMinutes(range.startTime)
                 );
             });
-            if(!clash) freeBeds.push(bed);
         }
 
-        if(freeBeds.length < guests){
+        const allBeds = [];
+        for(let bed = 1; bed <= matchedBranch.beds; bed++) allBeds.push(bed);
+
+        /* The previewed beds win if every one still fits. */
+        let chosen = null;
+        if(
+            preferredBeds.length === guests.length &&
+            new Set(preferredBeds).size === guests.length &&
+            preferredBeds.every(function(bed, index){
+                return bed >= 1 && bed <= matchedBranch.beds && bedFits(bed, guests[index].durationMinutes);
+            })
+        ){
+            chosen = preferredBeds;
+        }
+
+        /* Otherwise search for any full assignment (at most 4 guests, so a
+           plain backtrack is instant). Guest 1 gets the lowest bed that
+           lets everyone else still fit. */
+        if(!chosen){
+            const picked = [];
+
+            const place = function(index){
+                if(index === guests.length) return true;
+
+                for(let i = 0; i < allBeds.length; i++){
+                    const bed = allBeds[i];
+                    if(picked.includes(bed) || !bedFits(bed, guests[index].durationMinutes)) continue;
+
+                    picked.push(bed);
+                    if(place(index + 1)) return true;
+                    picked.pop();
+                }
+
+                return false;
+            };
+
+            if(place(0)) chosen = picked.slice();
+        }
+
+        if(!chosen){
             return { ok: false, reason: "no_capacity" };
         }
 
-        const mainBed = freeBeds.includes(preferredBed) ? preferredBed : freeBeds[0];
-        const companionBeds = freeBeds
-            .filter(function(bed){ return bed !== mainBed; })
-            .sort(function(a, b){ return Math.abs(a - mainBed) - Math.abs(b - mainBed) || a - b; })
-            .slice(0, companionCount);
+        const assignments = guests.map(function(guest, index){
+            return {
+                guest: guest.guest,
+                bed: chosen[index],
+                serviceName: guest.serviceName,
+                durationMinutes: guest.durationMinutes,
+                endTime: minutesToTimeValue(startMinutes + guest.durationMinutes),
+                price: guest.price
+            };
+        });
 
-        const beds = [mainBed].concat(companionBeds);
+        const latestEnd = minutesToTimeValue(
+            Math.max.apply(null, assignments.map(function(item){ return timeToMinutes(item.endTime); }))
+        );
+
         const requestRef = db.collection(BOOKING_REQUESTS_COLLECTION).doc();
         const expiresAt = admin.firestore.Timestamp.fromMillis(now + PAYDAY_HOLD_MINUTES * 60 * 1000);
 
+        const serviceSummary = assignments
+            .map(function(item){ return "Guest " + item.guest + ": " + item.serviceName; })
+            .join("; ");
+
         transaction.set(requestRef, {
             branch: matchedBranch.name,
-            serviceName: serviceName,
+            serviceName: assignments[0].serviceName,
             date: date,
             time: formatDisplayTime(startTime),
             clientName: clientName,
             mobile: mobile,
             email: email,
-            notes: "[Payday Sale Promo] Guests: " + guests +
-                (companionCount > 0 ? " (1 + " + companionCount + " companion" + (companionCount === 1 ? "" : "s") + ")" : "") +
-                (notes ? ". " + notes : ""),
-            companions: [],
-            guests: guests,
-            paydayPrice: Number(service.paydaySalePrice),
+            notes: "[Payday Sale Promo] Guests: " + guests.length + ". " + serviceSummary + (notes ? ". " + notes : ""),
+            /* Guests 2+ mirrored into the standard companions shape so the
+               regular Booking Requests / Scheduling flows can read them. */
+            companions: assignments.slice(1).map(function(item){
+                return { name: clientName + " – Guest " + item.guest, serviceName: item.serviceName };
+            }),
+            guests: guests.length,
+            paydayPrice: assignments.reduce(function(sum, item){ return sum + item.price; }, 0),
             paydayHold: {
                 startTime: startTime,
-                endTime: endTime,
-                durationMinutes: durationMinutes,
-                beds: beds,
+                endTime: latestEnd,
+                beds: chosen,
+                assignments: assignments,
                 expiresAt: expiresAt
             },
             status: "pending",
@@ -816,12 +894,11 @@ exports.submitPaydayVoucherOrder = onCall(async (request) => {
             convertedScheduleId: ""
         });
 
-        return { ok: true, beds: beds, expiresAt: expiresAt.toMillis(), startTime: startTime, endTime: endTime };
+        return { ok: true, assignments: assignments, expiresAt: expiresAt.toMillis(), startTime: startTime };
     });
 
     return result;
 });
-
 
 /* ---------- submitBookingRequest ---------- */
 

@@ -2073,6 +2073,27 @@
         return request.paydayHold?.expiresAt?.toMillis?.() || 0;
     }
 
+    /* One entry per guest: {guest, bed, serviceName}. Orders placed with
+       per-guest services carry paydayHold.assignments; older single-service
+       orders only have beds[] and one serviceName. */
+    function holdGuests(request){
+        const hold = request.paydayHold || {};
+
+        if(Array.isArray(hold.assignments) && hold.assignments.length > 0){
+            return hold.assignments.map(function(item){
+                return {
+                    guest: item.guest,
+                    bed: Number(item.bed),
+                    serviceName: item.serviceName || request.serviceName || ""
+                };
+            });
+        }
+
+        return (Array.isArray(hold.beds) ? hold.beds : []).map(function(bed, index){
+            return { guest: index + 1, bed: Number(bed), serviceName: request.serviceName || "" };
+        });
+    }
+
     function startBookingRequestsListener(){
         if(!window.firebase || !firebase.apps || firebase.apps.length === 0){
             return;
@@ -2159,7 +2180,7 @@
                 ? String(request.notes).slice(PROMO_TAG.length).trim()
                 : String(request.notes || "");
 
-            const beds = (request.paydayHold?.beds || []).join(", ");
+            const guestList = holdGuests(request);
             const expiresAt = holdExpiresAtMs(request);
 
             return `
@@ -2167,8 +2188,12 @@
                     <td>${escapeHtml(formatRequestDate(request.date))}</td>
                     <td>${escapeHtml(request.time || "")}${request.paydayHold ? "<br><small>" + escapeHtml(formatTimeRange(request.paydayHold.startTime, request.paydayHold.endTime)) + "</small>" : ""}</td>
                     <td>${escapeHtml(request.clientName || "")}</td>
-                    <td>${escapeHtml(request.serviceName || "")}${request.paydayPrice ? "<br><small>₱" + Number(request.paydayPrice).toLocaleString("en-PH") + " each</small>" : ""}</td>
-                    <td>${escapeHtml(String(request.guests || 1))} guest${(request.guests || 1) === 1 ? "" : "s"}${beds ? "<br><small>Bed " + escapeHtml(beds) + "</small>" : ""}</td>
+                    <td>${
+                        guestList.length > 1
+                            ? guestList.map(function(item){ return "<small>G" + item.guest + ":</small> " + escapeHtml(item.serviceName); }).join("<br>")
+                            : escapeHtml(request.serviceName || "")
+                    }${request.paydayPrice ? "<br><small>Total ₱" + Number(request.paydayPrice).toLocaleString("en-PH") + "</small>" : ""}</td>
+                    <td>${escapeHtml(String(request.guests || 1))} guest${(request.guests || 1) === 1 ? "" : "s"}${guestList.length ? "<br><small>" + guestList.map(function(item){ return "G" + item.guest + " → Bed " + item.bed; }).join("<br>") + "</small>" : ""}</td>
                     <td>${escapeHtml(request.mobile || "")}${request.email ? "<br>" + escapeHtml(request.email) : ""}</td>
                     <td>${escapeHtml(notes || "—")}</td>
                     <td>${expiresAt ? `<strong data-expires="${expiresAt}">${formatCountdown(expiresAt - now)}</strong>` : "—"}</td>
@@ -2223,24 +2248,24 @@
         return loaded;
     }
 
-    /* Opens the slot form prefilled from a voucher order: guest on the
-       first held bed, and one unnamed-guest card per companion on the
-       other held beds, same time and service. Saving marks the request
+    /* Opens the slot form prefilled from a voucher order: Guest 1 on their
+       held bed, and one card per extra guest on theirs, same time, each
+       with that guest's own service. Saving marks the request
        converted (see markVoucherRequestPlotted) — cancelling leaves it
        pending until its hold runs out. */
     async function plotVoucherRequest(request){
         const hold = request.paydayHold || {};
-        const beds = Array.isArray(hold.beds) && hold.beds.length > 0 ? hold.beds.map(Number) : [];
+        const guestList = holdGuests(request);
         const startTime = hold.startTime || "";
 
         await showRequestDate(request, true);
 
-        if(!startTime || beds.length === 0){
+        if(!startTime || guestList.length === 0){
             alert("This request has no held bed/time to plot. Use View Date and place it manually.");
             return;
         }
 
-        openNewModal(beds[0], startTime);
+        openNewModal(guestList[0].bed, startTime);
 
         if(document.getElementById("paydayModalBackdrop").classList.contains("d-none")){
             return;
@@ -2254,16 +2279,16 @@
         document.getElementById("paydayModalNotes").value =
             String(request.notes || "").replace(PROMO_TAG, "").trim();
 
-        resetModalServices(request.serviceName ? [request.serviceName] : []);
+        resetModalServices(guestList[0].serviceName ? [guestList[0].serviceName] : []);
 
-        modalCompanions = beds.slice(1).map(function(bed, index){
+        modalCompanions = guestList.slice(1).map(function(item){
             return {
                 id: createId(),
-                name: (request.clientName || "Guest") + " – Companion " + (index + 1),
+                name: (request.clientName || "Guest") + " – Guest " + item.guest,
                 therapist: "",
-                bed: String(bed),
+                bed: String(item.bed),
                 startTime: startTime,
-                services: [{ id: createId(), name: request.serviceName || "" }]
+                services: [{ id: createId(), name: item.serviceName }]
             };
         });
 

@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-19 (9) — Voucher orders: per-guest services (Number of Guests, up to 4)
+
+**Requested by:** Admin — replace the single service + companion count with Number of Guests and a service dropdown for each guest.
+
+- [`functions/index.js`](functions/index.js): `submitPaydayVoucherOrder` now takes `guests: [{serviceName}]` (1–4; each must be Available for Payday) and optionally the previewed `beds`. Each guest needs a bed free for **their own** service's length, all starting at the same time; the previewed beds are used if all still fit, otherwise a backtracking search assigns them. The hold stores `paydayHold.assignments` (guest, bed, service, end time, price) so each bed is held for its own duration; `getPaydaySaleAvailability` / `readPaydayHold` read that (older single-service holds still work). Guests 2+ are also mirrored into the request's standard `companions`.
+- [`marketing-payday-sale.js`](marketing-payday-sale.js): Voucher Request rows list each guest's service and bed; **Plot on Grid** prefills Guest 1 plus one card per extra guest with that guest's own service and bed.
+- [`manual.html`](manual.html): Voucher Request paragraph updated.
+
+**Deployed:** `firebase deploy --only functions:submitPaydayVoucherOrder,functions:getPaydaySaleAvailability,hosting`.
+
+---
+
 ## 2026-09-19 (8) — Feature: Payday "Order Voucher" with 1-hour hold + Voucher Request table
 
 **Requested by:** Admin — clients on the public Payday Sale page order a voucher; their chosen slot is held for 1 hour (countdown from 59:59) for everyone to see, and the marketing agent must plot it in CrownOS before it runs out, otherwise the slot is released. The CrownOS table is renamed from Booking Request to Voucher Request.
