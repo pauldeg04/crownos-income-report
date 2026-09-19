@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-20 (3) — Voucher Request table now shows every branch
+
+**Reported by:** Admin — placed another test order, completed the form and pressed Order Voucher, but the Voucher Request table was still empty.
+
+**Findings:** both test orders did reach the server (they show as holds on the public calendar for Biñan on Sep 25). The table only listed orders for the branch selected in the CrownOS toolbar, so an order for another branch looked like it never arrived.
+
+**Fix ([`marketing-payday-sale.js`](marketing-payday-sale.js) / [`.html`](marketing-payday-sale.html)):** the table now lists every order for the branches the account can see, with the branch shown under the date, and the Pending count covers all of them. If the listener ever fails, the table says so ("Couldn't load voucher requests (permission-denied) — retrying…") instead of just looking empty. Drawing the held cards on the grid now happens after the table and can no longer blank it if it errors. Plot on Grid / View Date switch to the order's branch and date as before.
+
+**Deployed:** `firebase deploy --only hosting` → https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-20 (2) — Fix: Voucher Request table stayed empty (listener attached before sign-in)
 
 **Reported by:** Admin, after a test order on the public page: the order was created (its hold showed on the public calendar) but nothing appeared in the Voucher Request table.

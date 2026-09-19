@@ -2197,6 +2197,7 @@
     let paydayRequests = [];
     let requestsUnsubscribe = null;
     let pendingVoucherRequestId = null;
+    let requestsError = "";
 
     function holdExpiresAtMs(request){
         return request.paydayHold?.expiresAt?.toMillis?.() || 0;
@@ -2251,6 +2252,7 @@
                 .collection("paydayVoucherRequests")
                 .where("status", "==", "pending")
                 .onSnapshot(function(snapshot){
+                    requestsError = "";
                     paydayRequests = snapshot.docs
                         .map(function(doc){ return Object.assign({ id: doc.id }, doc.data()); })
                         .sort(function(a, b){
@@ -2260,6 +2262,8 @@
                     renderBookingRequests();
                 }, function(error){
                     console.error("Unable to load Payday Sale voucher requests, retrying:", error);
+                    requestsError = error && error.code ? error.code : "error";
+                    renderBookingRequests();
                     setTimeout(attach, 5000);
                 });
         }
@@ -2314,21 +2318,27 @@
         const body = document.getElementById("paydayRequestsBody");
         const empty = document.getElementById("paydayRequestsEmpty");
         const count = document.getElementById("paydayRequestCount");
-        const branchName = document.getElementById("scheduleBranch").value;
         const now = Date.now();
+
+        /* Every branch the account may see — not just the branch selected in
+           the toolbar, or an order for another branch looks like it never
+           arrived. */
+        const allowedBranches = window.CrownAuth?.getAllowedBranches?.() || null;
 
         const rows = paydayRequests.filter(function(request){
             const expiresAt = holdExpiresAtMs(request);
 
             return (
-                (!branchName || request.branch === branchName) &&
+                (!allowedBranches || allowedBranches.includes(request.branch)) &&
                 (!expiresAt || expiresAt > now)
             );
         });
 
         count.textContent = rows.length;
-        refreshHeldCards();
         empty.classList.toggle("d-none", rows.length > 0);
+        empty.textContent = requestsError
+            ? "Couldn't load voucher requests (" + requestsError + ") — retrying…"
+            : "No active voucher requests.";
 
         body.innerHTML = rows.map(function(request){
             const notes = String(request.notes || "").startsWith(PROMO_TAG)
@@ -2340,7 +2350,7 @@
 
             return `
                 <tr>
-                    <td>${escapeHtml(formatRequestDate(request.date))}</td>
+                    <td>${escapeHtml(formatRequestDate(request.date))}<br><small>${escapeHtml(request.branch || "")}</small></td>
                     <td>${escapeHtml(request.time || "")}${request.paydayHold ? "<br><small>" + escapeHtml(formatTimeRange(request.paydayHold.startTime, request.paydayHold.endTime)) + "</small>" : ""}</td>
                     <td>${escapeHtml(request.clientName || "")}</td>
                     <td>${
@@ -2373,6 +2383,13 @@
                 if(request){ plotVoucherRequest(request); }
             });
         });
+
+        /* After the table, so a problem drawing the grid can never blank it. */
+        try{
+            refreshHeldCards();
+        }catch(error){
+            console.error("Unable to draw held voucher cards:", error);
+        }
     }
 
     /* Jumps the grid below to the request's branch/date. Same three-way
