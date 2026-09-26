@@ -9,10 +9,10 @@
    cannot edit an inspection — only the account with teamLeader === true
    can.
 
-   The Staff column reads the Opening/Closing roster straight out of
+   The Staff column reads the Closing roster straight out of
    staffScheduleGrids (see staff-schedule.js) instead of duplicating a
    second "who's on duty" list — a branch/date shows nobody here until
-   it has an Opening or Closing assignment in Staff Schedule.
+   it has a Closing assignment in Staff Schedule.
    ========================================================================== */
 
 (function(){
@@ -163,7 +163,7 @@
 
     /* Staff considered "on duty" for a branch/date are whoever the Staff
        Schedule (Staff Management → Staff Schedule tab) has in the
-       Opening or Closing row for that day — the roster the Team Leader
+       Closing row for that day — the roster the Team Leader
        and Admin/EA already build there, not a second one duplicated
        here. See staff-schedule.js for the grid's shape:
        staffScheduleGrids/{slug(branch)}_{weekStartDate}. */
@@ -196,9 +196,7 @@
                 }
             }
 
-            collect(grid.opening?.receptionist);
-            (grid.opening?.therapists || []).forEach(collect);
-            collect(grid.closing?.receptionist);
+            (grid.closing?.receptionists || []).forEach(collect);
             (grid.closing?.therapists || []).forEach(collect);
 
             const seen = new Set();

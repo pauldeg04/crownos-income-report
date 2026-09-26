@@ -309,7 +309,7 @@
 }
 
 /* Collapsible History / Upcoming banners — a full-width bar with the
-   label boxed at the right end, echoing the OPENING/CLOSING/REST DAY
+   label boxed at the right end, echoing the CLOSING/REST DAY
    section bands above but in a neutral tone so they read as "more below"
    rather than another schedule section. */
 .schedule-collapse-band{

@@ -11,6 +11,16 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-26 — Staff Schedule: removed Opening table, Closing now has two Receptionist rows
+
+**Requested by:** Admin — remove the Opening Schedule table, and add a second Receptionist so the remaining table has Receptionist 1 and Receptionist 2.
+
+**Change ([`staff-schedule.js`](staff-schedule.js) / [`staff-schedule.html`](staff-schedule.html) / [`staff-management.html`](staff-management.html)):** the Opening table is gone from the Current Week card, the read-only View modal, and the Create/Edit modal (on both the Staff Schedule page and the Staff Schedule tab inside Staff Management, which share the same markup and script). The Closing table's single "Receptionist" row is now two fixed rows, "Receptionist 1" and "Receptionist 2" — no Add/Remove on these two, same as before. View Today's Schedule, a Therapist's own weekly list, the Therapist Status box on the Dashboard, and the Daily Monitoring roster all read from the Closing section only now. Older schedule docs that still have an `opening` section or a single `closing.receptionist` field keep displaying correctly — they're normalized to the new shape on read, nothing needed re-saving.
+
+**Deployed:** `firebase deploy --only hosting` → https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-20 (3) — Voucher Request table now shows every branch
 
 **Reported by:** Admin — placed another test order, completed the form and pressed Order Voucher, but the Voucher Request table was still empty.

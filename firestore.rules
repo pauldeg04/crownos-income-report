@@ -342,7 +342,7 @@ service cloud.firestore {
         request.auth.token.role in ['Admin', 'Executive Assistant'];
     }
 
-    /* Weekly Staff Schedule grid (Opening/Closing/Line Up rows per
+    /* Weekly Staff Schedule grid (Closing/Line Up rows per
        branch+week, see staff-schedule.js) — one doc per (branch,
        weekStartDate). Create/update is intentionally open to any
        authenticated user for the same "Team Leader isn't a custom claim"

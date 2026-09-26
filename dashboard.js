@@ -1450,11 +1450,11 @@ function refreshOpenScheduleDetailContext(){
 /* ==========================================================================
    Therapist Status — who's scheduled today, and who's currently clocked in
 
-   Roster = the Opening/Closing Therapist slots in Staff Schedule
+   Roster = the Closing Therapist slots in Staff Schedule
    (staff-schedule.js's staffScheduleGrids/{slug(branch)}_{weekMonday}),
    the same source daily-monitoring.js reads for "who's on duty" — not a
    second roster invented here, just filtered to Therapist slots only
-   (the Receptionist slot is excluded since this box is Therapist-
+   (the Receptionist slots are excluded since this box is Therapist-
    specific).
 
    Presence = an attendance entry (crownAttendanceLog, see attendance.js
@@ -1549,7 +1549,6 @@ function buildTherapistRosterFromGrid(gridData, date){
         });
     }
 
-    collectSlots(gridData?.opening?.therapists);
     collectSlots(gridData?.closing?.therapists);
 
     const seen = new Set();
@@ -1634,8 +1633,8 @@ function renderTherapistStatusList(date){
 }
 
 /* Re-subscribes to the Staff Schedule grid doc for the branch/week
-   currently on screen — same doc staff-schedule.js writes to — so an
-   Opening/Closing roster change, or switching branch/date on the bed
+   currently on screen — same doc staff-schedule.js writes to — so a
+   Closing roster change, or switching branch/date on the bed
    timeline above, updates this box without a manual reload. */
 function watchTherapistRoster(branchName, date){
     if(therapistStatusGridUnsub){

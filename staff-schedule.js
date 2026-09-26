@@ -5,8 +5,7 @@
    collection "staffScheduleGrids":
      {
        branch, weekStartDate, label,
-       opening: { receptionist: {mon..sun}, therapists: [{mon..sun}, ...] },
-       closing: { receptionist: {mon..sun}, therapists: [{mon..sun}, ...] },
+       closing: { receptionists: [{mon..sun}, {mon..sun}], therapists: [{mon..sun}, ...] },
        restDay: [{mon..sun}, ...],
        notes
      }
@@ -28,9 +27,9 @@
     const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
     const DAY_LABELS = ["MON", "TUE", "WED", "THURS", "FRI", "SAT", "SUN"];
 
-    const CURRENT_IDS = { opening: "scheduleCurrentOpeningTable", closing: "scheduleCurrentClosingTable", rest: "scheduleCurrentRestTable", notes: "scheduleCurrentNotesTable" };
-    const VIEW_IDS = { opening: "scheduleViewOpeningTable", closing: "scheduleViewClosingTable", rest: "scheduleViewRestTable", notes: "scheduleViewNotesTable" };
-    const EDIT_IDS = { opening: "scheduleEditOpeningTable", closing: "scheduleEditClosingTable", rest: "scheduleEditRestTable", notes: "scheduleEditNotesTable" };
+    const CURRENT_IDS = { closing: "scheduleCurrentClosingTable", rest: "scheduleCurrentRestTable", notes: "scheduleCurrentNotesTable" };
+    const VIEW_IDS = { closing: "scheduleViewClosingTable", rest: "scheduleViewRestTable", notes: "scheduleViewNotesTable" };
+    const EDIT_IDS = { closing: "scheduleEditClosingTable", rest: "scheduleEditRestTable", notes: "scheduleEditNotesTable" };
 
     let currentUser = null;
     let effectiveRole = null;
@@ -122,19 +121,29 @@
         return {
             branch,
             weekStartDate: weekStart,
-            opening: { receptionist: emptyDayMap(), therapists: [emptyDayMap()] },
-            closing: { receptionist: emptyDayMap(), therapists: [emptyDayMap()] },
+            closing: { receptionists: [emptyDayMap(), emptyDayMap()], therapists: [emptyDayMap()] },
             restDay: [emptyDayMap()],
             notes: ""
         };
     }
 
+    /* Older grid docs (saved before the Opening table was removed and
+       Closing moved from a single "receptionist" map to a two-person
+       "receptionists" array) are migrated to the current shape in place
+       so History/View still renders them correctly. */
     function normalizeGrid(grid){
-        if(!grid.opening){ grid.opening = { receptionist: emptyDayMap(), therapists: [emptyDayMap()] }; }
-        if(!grid.closing){ grid.closing = { receptionist: emptyDayMap(), therapists: [emptyDayMap()] }; }
+        if(!grid.closing){ grid.closing = { receptionists: [emptyDayMap(), emptyDayMap()], therapists: [emptyDayMap()] }; }
+
+        if(!Array.isArray(grid.closing.receptionists) || grid.closing.receptionists.length === 0){
+            grid.closing.receptionists = grid.closing.receptionist ? [grid.closing.receptionist] : [];
+        }
+
+        while(grid.closing.receptionists.length < 2){
+            grid.closing.receptionists.push(emptyDayMap());
+        }
+
         if(grid.restDay && !Array.isArray(grid.restDay)){ grid.restDay = [grid.restDay]; }
         if(!Array.isArray(grid.restDay) || grid.restDay.length === 0){ grid.restDay = [emptyDayMap()]; }
-        if(!Array.isArray(grid.opening.therapists) || grid.opening.therapists.length === 0){ grid.opening.therapists = [emptyDayMap()]; }
         if(!Array.isArray(grid.closing.therapists) || grid.closing.therapists.length === 0){ grid.closing.therapists = [emptyDayMap()]; }
         return grid;
     }
@@ -188,7 +197,10 @@
         html += `<tr><th colspan="${editable ? 9 : 8}" class="schedule-section-title">${sectionKey.toUpperCase()}</th></tr>`;
         html += dayHeaderRow(weekStart, editable);
 
-        html += `<tr><td class="schedule-row-label">Receptionist</td>${dayCells(branch, section.receptionist, sectionKey + ".receptionist", editable)}${editable ? '<td class="schedule-remove-col"></td>' : ""}</tr>`;
+        (section.receptionists || []).forEach(function(row, i){
+            const label = "Receptionist " + (i + 1);
+            html += `<tr><td class="schedule-row-label">${escapeHtml(label)}</td>${dayCells(branch, row, sectionKey + ".receptionists." + i, editable)}${editable ? '<td class="schedule-remove-col"></td>' : ""}</tr>`;
+        });
 
         (section.therapists || []).forEach(function(row, i){
             const label = section.therapists.length > 1 ? "Therapist " + (i + 1) : "Therapist";
@@ -224,7 +236,6 @@
     }
 
     function renderTablesInto(ids, grid, branch, weekStart, editable){
-        document.getElementById(ids.opening).innerHTML = buildSectionTable(grid.opening, "opening", branch, editable, weekStart);
         document.getElementById(ids.closing).innerHTML = buildSectionTable(grid.closing, "closing", branch, editable, weekStart);
 
         document.getElementById(ids.rest).innerHTML =
@@ -332,27 +343,22 @@
        staff group chat. */
     function collectTodayItems(grid, day){
         const items = [];
+        const section = grid.closing;
 
-        ["opening", "closing"].forEach(function(sectionKey){
-            const section = grid[sectionKey];
-
-            if(!section){
-                return;
-            }
-
-            const label = sectionKey === "opening" ? "Opening" : "Closing";
-
-            if(section.receptionist?.[day]){
-                items.push({ role: label + " — Receptionist", name: staffLabel(section.receptionist[day]) });
-            }
+        if(section){
+            (section.receptionists || []).forEach(function(row, i){
+                if(row[day]){
+                    items.push({ role: "Receptionist " + (i + 1), name: staffLabel(row[day]) });
+                }
+            });
 
             (section.therapists || []).forEach(function(row, i){
                 if(row[day]){
                     const therapistLabel = section.therapists.length > 1 ? "Therapist " + (i + 1) : "Therapist";
-                    items.push({ role: label + " — " + therapistLabel, name: staffLabel(row[day]) });
+                    items.push({ role: therapistLabel, name: staffLabel(row[day]) });
                 }
             });
-        });
+        }
 
         (Array.isArray(grid.restDay) ? grid.restDay : (grid.restDay ? [grid.restDay] : [])).forEach(function(row){
             if(row[day]){
@@ -491,8 +497,8 @@
 
             const section = editState.grid[path[0]];
 
-            if(path[1] === "receptionist"){
-                section.receptionist[day] = field.value.trim();
+            if(path[1] === "receptionists"){
+                section.receptionists[Number(path[2])][day] = field.value.trim();
             }else if(path[1] === "therapists"){
                 section.therapists[Number(path[2])][day] = field.value.trim();
             }
@@ -584,28 +590,25 @@
 
     function collectOwnItems(grid){
         const items = [];
+        const section = grid.closing;
 
-        ["opening", "closing"].forEach(function(sectionKey){
-            const section = grid[sectionKey];
-
-            if(!section){
-                return;
-            }
-
-            DAY_KEYS.forEach(function(day, i){
-                if(section.receptionist?.[day] === currentUser.account){
-                    items.push({ day: DAY_LABELS[i], dayIndex: i, role: (sectionKey === "opening" ? "Opening" : "Closing") + " — Receptionist" });
-                }
-            });
-
-            (section.therapists || []).forEach(function(row){
-                DAY_KEYS.forEach(function(day, i){
+        if(section){
+            (section.receptionists || []).forEach(function(row, i){
+                DAY_KEYS.forEach(function(day, di){
                     if(row[day] === currentUser.account){
-                        items.push({ day: DAY_LABELS[i], dayIndex: i, role: (sectionKey === "opening" ? "Opening" : "Closing") + " — Therapist" });
+                        items.push({ day: DAY_LABELS[di], dayIndex: di, role: "Receptionist " + (i + 1) });
                     }
                 });
             });
-        });
+
+            (section.therapists || []).forEach(function(row){
+                DAY_KEYS.forEach(function(day, di){
+                    if(row[day] === currentUser.account){
+                        items.push({ day: DAY_LABELS[di], dayIndex: di, role: "Therapist" });
+                    }
+                });
+            });
+        }
 
         (Array.isArray(grid.restDay) ? grid.restDay : (grid.restDay ? [grid.restDay] : [])).forEach(function(row){
             DAY_KEYS.forEach(function(day, i){
