@@ -362,7 +362,10 @@ function getServices(){
             return {
                 id: service.id || createId(),
                 name: service.name || "",
-                duration: Number(service.duration) || 0
+                duration: Number(service.duration) || 0,
+                archived:
+                    service.status === "Archived" ||
+                    (!service.status && service.active === false)
             };
         });
     }catch(error){
@@ -482,7 +485,14 @@ function buildServiceOptionsHtml(selectedName){
         </option>
     `;
 
+    /* Archived services stay in getServices() so existing bookings still
+       resolve their duration, but are hidden from the picker — unless this
+       row already has one selected (editing an older booking). */
     getServices().forEach(function(service){
+        if(service.archived && service.name !== selectedName){
+            return;
+        }
+
         const label =
             service.duration > 0
                 ? `${service.name} (${service.duration} mins)`

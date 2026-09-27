@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-27 — Scheduling: archived services hidden from the service picker
+
+**Reported by:** Admin — services set to Archived in List of Services still showed up in the Scheduling service dropdown.
+
+**Cause:** Scheduling's `getServices()` read the service list but dropped the Status field, so it couldn't tell archived services apart.
+
+**Fix ([`scheduling.js`](scheduling.js)):** services now carry an `archived` flag (Status "Archived", or the older `active: false`), and the service dropdowns in the booking modal and companion cards skip them. Archived services stay in the lookup list, so existing bookings still get their duration, and if a booking being edited already uses an archived service, that one option stays visible so the row doesn't blank out. Manual note under "Archive rather than delete" updated.
+
+**Deployed:** `firebase deploy --only hosting` → https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-26 — Staff Schedule: removed Opening table, Closing now has two Receptionist rows
 
 **Requested by:** Admin — remove the Opening Schedule table, and add a second Receptionist so the remaining table has Receptionist 1 and Receptionist 2.
