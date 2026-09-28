@@ -540,8 +540,10 @@ function getServices(){
         status: item?.status || (item?.active === false ? "Archived" : "Active")
       };
     })
+    /* Services ticked "Available for Payday" stay sellable even when
+       archived, so Payday Sale-only services can still be rung up. */
     .filter(function(item){
-      return item.name && item.status === "Active";
+      return item.name && (item.status === "Active" || item.availableForPayday === true);
     })
     .sort(function(a, b){
       return a.name.localeCompare(b.name);

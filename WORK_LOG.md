@@ -11,6 +11,16 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-27 (2) — Archived Payday Sale services still offered in Scheduling and Add Sale
+
+**Requested by:** Admin — services with "Available for Payday" ticked should be visible in Scheduling and Add Sale.
+
+**Change ([`scheduling.js`](scheduling.js) / [`script.js`](script.js)):** a service with Available for Payday ticked is no longer treated as archived by the Scheduling service picker or by Add Sale's service list, even if its Status is Archived. Payday Sale-only services can be kept archived (off the regular list) and still be booked and sold. Services without the Payday tick behave as before. Manual note under "Archive rather than delete" updated.
+
+**Deployed:** `firebase deploy --only hosting` → https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-27 — Scheduling: archived services hidden from the service picker
 
 **Reported by:** Admin — services set to Archived in List of Services still showed up in the Scheduling service dropdown.

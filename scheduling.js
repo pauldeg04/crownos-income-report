@@ -363,9 +363,13 @@ function getServices(){
                 id: service.id || createId(),
                 name: service.name || "",
                 duration: Number(service.duration) || 0,
+                /* Payday Sale services stay offered even when archived. */
                 archived:
-                    service.status === "Archived" ||
-                    (!service.status && service.active === false)
+                    service.availableForPayday !== true &&
+                    (
+                        service.status === "Archived" ||
+                        (!service.status && service.active === false)
+                    )
             };
         });
     }catch(error){
