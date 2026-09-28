@@ -76,8 +76,12 @@ function getSelectedCashflowBranch(){
 document.addEventListener("DOMContentLoaded", function(){
     setCurrentCashflowMonth();
     document.getElementById("branchReadout").textContent = getSelectedCashflowBranch();
+    populateCashflowBranchSelect();
     loadCashflowEntries();
     wireCashflowModalEvents();
+
+    document.getElementById("cashflowBranchSelect")
+        .addEventListener("change", function(){ switchCashflowBranch(this.value); });
 
     document.getElementById("addCashflowEntryBtn")
         .addEventListener("click", function(){ openCashflowModal(null); });
@@ -153,6 +157,41 @@ document.addEventListener("DOMContentLoaded", function(){
         }
     });
 });
+
+function populateCashflowBranchSelect(){
+    let select = document.getElementById("cashflowBranchSelect");
+    let user = window.CrownAuth?.getCurrentUser?.();
+    let branches = window.CrownAuth?.getAllowedBranches?.(user) || [];
+    let current = getSelectedCashflowBranch();
+
+    if(current && !branches.includes(current)){
+        branches = [current, ...branches];
+    }
+
+    select.innerHTML = branches
+        .map(branch => `<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`)
+        .join("");
+    select.value = current;
+}
+
+/* Goes through the header toolbar's own switcher when it's there, so the
+   toolbar, sidebar card and this page all change together (its change
+   handler saves the branch and fires crownGlobalFiltersChanged, which
+   reloads the entries). */
+function switchCashflowBranch(branch){
+    if(!branch || branch === loadedCashflowBranch) return;
+
+    let toolbarSelect = document.getElementById("sidebarDashboardBranch");
+
+    if(toolbarSelect && Array.from(toolbarSelect.options).some(option => option.value === branch)){
+        toolbarSelect.value = branch;
+        toolbarSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    }else{
+        localStorage.setItem(CASHFLOW_BRANCH_KEY, branch);
+        document.getElementById("cashflowDateFilter").value = "";
+        loadCashflowEntries();
+    }
+}
 
 /* Waits while the Add/Edit modal is open — closeCashflowModal() calls this
    again, after the entry has been saved to the branch it was loaded from. */
@@ -813,6 +852,7 @@ function loadCashflowEntries(){
     loadedCashflowBranch = branch;
     loadedCashflowMonth = month;
     document.getElementById("branchReadout").textContent = branch;
+    document.getElementById("cashflowBranchSelect").value = branch;
 
     if(branch && month){
         let saved = localStorage.getItem(getCashflowStorageKey(branch, month));

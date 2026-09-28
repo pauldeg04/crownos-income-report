@@ -52,12 +52,12 @@
             </div>
 
             <div class="row g-3 mb-2">
-                <!-- Branch is now shown in the header toolbar, so this
-                     readout duplicated it — hidden, not deleted, since
-                     cashflow.js still writes to #branchReadout. -->
-                <div class="col-md-4 d-none">
-                    <label class="form-label fw-bold">Branch</label>
-                    <div class="branch-readout" id="branchReadout">—</div>
+                <!-- In-page branch picker, kept in step with the header
+                     toolbar's branch switcher (see cashflow.js). -->
+                <div class="col-md-4">
+                    <label class="form-label fw-bold" for="cashflowBranchSelect">Branch</label>
+                    <select id="cashflowBranchSelect" class="form-select"></select>
+                    <div class="d-none" id="branchReadout">—</div>
                 </div>
 
                 <div class="col-md-4">

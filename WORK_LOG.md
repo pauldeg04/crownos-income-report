@@ -11,6 +11,16 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-28 (2) — Cash Flow: Branch selector on the page
+
+**Requested by:** User — a branch selector inside the Cash Flow page itself, so it's always clear which branch is being edited.
+
+**Change ([`cashflow.html`](cashflow.html) / [`cashflow.js`](cashflow.js)):** the hidden Branch readout is now a visible **Branch** dropdown next to Month, listing the account's allowed branches (`CrownAuth.getAllowedBranches`). Picking a branch goes through the header toolbar's own switcher (sets `crownSelectedBranch`, fires `crownGlobalFiltersChanged`), so header, sidebar card and page stay in step; switching from the header updates the dropdown too. Falls back to setting the branch directly if the toolbar isn't there. Manual note added under Cash Flow. Verified in a jsdom harness (pick in page → toolbar + entries follow; switch in toolbar → dropdown + entries follow).
+
+**Deployed:** `firebase deploy --only hosting` → https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-28 — Cash Flow: Biñan/Calamba mixing again (other tab / Back button)
 
 **Reported by:** User — "nagmimix na naman ang cashflow ng binan at calamba."
