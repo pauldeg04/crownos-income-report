@@ -129,23 +129,12 @@ document.addEventListener("DOMContentLoaded", function(){
         loadCashflowEntries();
     });
 
-    /* Branch changed outside this page (another tab, or this page restored
-       from the back/forward cache after switching branch elsewhere) —
-       reload so the table, readout and toolbar all match the new branch. */
-    window.addEventListener("storage", function(event){
-        if(event.key === CASHFLOW_BRANCH_KEY){
-            resyncCashflowIfBranchChanged();
-        }
-    });
-
-    window.addEventListener("pageshow", resyncCashflowIfBranchChanged);
-    window.addEventListener("focus", resyncCashflowIfBranchChanged);
-
-    document.addEventListener("visibilitychange", function(){
-        if(!document.hidden){
-            resyncCashflowIfBranchChanged();
-        }
-    });
+    /* sidebar.js's branch guard reloads this page when the branch changes
+       outside it; hold that while the Add/Edit modal is open so a typed
+       entry isn't lost (it saves to the loaded branch, then reloads). */
+    window.crownBranchGuardBusy = function(){
+        return !document.getElementById("cashflowModalBackdrop").classList.contains("d-none");
+    };
 
     /* Cloud data for this branch/month arrived after the page loaded (or
        another device edited it) — re-read so the next save doesn't write
@@ -193,13 +182,17 @@ function switchCashflowBranch(branch){
     }
 }
 
-/* Waits while the Add/Edit modal is open — closeCashflowModal() calls this
-   again, after the entry has been saved to the branch it was loaded from. */
+/* Called when the Add/Edit modal closes (after the entry was saved to the
+   branch it was loaded from), and before opening it on a stale page. */
 function resyncCashflowIfBranchChanged(){
     if(getSelectedCashflowBranch() === loadedCashflowBranch) return;
-    if(!document.getElementById("cashflowModalBackdrop").classList.contains("d-none")) return;
+    if(window.crownBranchGuardBusy?.()) return;
 
-    location.reload();
+    if(window.CrownBranchGuard){
+        window.CrownBranchGuard.reload();
+    }else{
+        location.reload();
+    }
 }
 
 function setCurrentCashflowMonth(){

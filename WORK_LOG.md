@@ -11,6 +11,29 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-28 (3) — Branch guard on every page (no more branch mixing from other tabs / Back)
+
+**Requested by:** User — asked whether records can still mix between branches anywhere, then asked for a full fix.
+
+**Audit:** `crownSelectedBranch` is read at save time by nearly every branch-scoped page (Daily Income Report, Expenses Report, Petty Cash, Scheduling, Loyalty Card / Product Sales, Share Holder, Monthly Report, Marketing Daily Report, Clients, Inventory, Payday Sale…). It's shared by all tabs and survives back/forward-cache restores, so the Cash Flow bug from earlier today existed on all of them. Also, only some pages (Cash Flow, Expenses, Petty Cash, Monthly Report, Inventory Branches, Daily Monitoring, Invoice Report) listened for the header branch switcher; the rest relied on `syncGlobalToolbarToPage` poking page inputs.
+
+**Fix — one shared guard in [`sidebar.js`](sidebar.js)** (loaded on every page with a branch):
+- Remembers the branch the page is on (`pageBranch`). Branch writes made by the page itself (Scheduling / Payday Sale jump-to-request, Dashboard, List of Branches rename, Cash Flow's picker) are tracked through a `Storage.prototype.setItem/removeItem` wrapper chained after firebase-sync's, so they don't count as outside changes.
+- On `storage` (another tab), `pageshow` (Back/forward restore), `focus` and tab-visible, if the stored branch differs from `pageBranch` the page reloads — after `CrownCloud.flushNow()`, so a save still in firebase-sync's 600 ms debounce isn't dropped.
+- The header branch switcher now reloads the page instead of swapping branch in place, so pages that never re-read their data on a branch change can't keep showing/saving the old branch.
+- `syncGlobalToolbarToPage` refuses to run on a stale page (it used to be able to hand the outside branch to a page that still had the old branch's form open) and defers to the guard.
+- Opt-out hook `window.crownBranchGuardBusy()` + `CrownBranchGuard.check()/reload()`; Cash Flow uses it to hold the reload while its Add/Edit modal is open (entry saves to the loaded branch, then reloads). Cash Flow's own per-page listeners from entry (1) were removed in favour of the guard, and its post-save reload now flushes cloud writes first (the entry (1) version called `location.reload()` directly, which could drop the last push).
+
+**Trade-off:** two tabs can no longer sit on different branches — switching in one moves the other too. Noted in the manual (Chapter on logging in) with the advice to use separate devices/browsers for side-by-side branches.
+
+**Verified:** jsdom harness with real `cashflow.html` + `cashflow.js` + `sidebar.js`: other-tab switch → flush then reload; Back restore → reload; in-page branch write → no reload; nothing changed + focus → no reload; modal open during outside switch → held, entry saved to Biñan, Calamba untouched, then reload; opening the modal on a stale page → reload instead.
+
+**Not covered:** records that are already mixed in the live data — the user needs to sort those out. Two people editing the same page/branch/month on different devices can still overwrite each other (lost edit, not branch mixing).
+
+**Deployed:** `firebase deploy --only hosting` → https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-28 (2) — Cash Flow: Branch selector on the page
 
 **Requested by:** User — a branch selector inside the Cash Flow page itself, so it's always clear which branch is being edited.

@@ -7,6 +7,88 @@
     const BRANCH_KEY = "crownSelectedBranch";
     const COLLAPSE_KEY = "crownSidebarCollapsed";
 
+    /* ---------- Branch guard ----------
+       crownSelectedBranch is shared by every tab and survives a
+       back/forward-cache restore, but most pages read it again at SAVE
+       time. So a page left open on Biñan while the branch was switched to
+       Calamba elsewhere (another tab, or another page then Back) would
+       write its Biñan data into Calamba's keys — the Cash Flow mix-ups.
+       This remembers the branch the page is on, and reloads the page the
+       moment the branch changes outside it, before anything can be saved.
+       Branch changes made BY this page (its own branch picker, Scheduling
+       / Payday Sale's jump-to-request) are tracked, not treated as
+       outside changes. A page can hold the reload while a form is open by
+       setting window.crownBranchGuardBusy = () => true/false, then call
+       CrownBranchGuard.check() when the form closes. */
+    let pageBranch = localStorage.getItem(BRANCH_KEY) || "";
+    let branchGuardReloading = false;
+
+    const guardedSetItem = Storage.prototype.setItem;
+    const guardedRemoveItem = Storage.prototype.removeItem;
+
+    Storage.prototype.setItem = function(key, value){
+        guardedSetItem.call(this, key, value);
+
+        if(this === window.localStorage && key === BRANCH_KEY){
+            pageBranch = String(value);
+        }
+    };
+
+    Storage.prototype.removeItem = function(key){
+        guardedRemoveItem.call(this, key);
+
+        if(this === window.localStorage && key === BRANCH_KEY){
+            pageBranch = "";
+        }
+    };
+
+    /* Flush queued cloud writes first — a plain reload inside
+       firebase-sync's debounce window could drop the last save. */
+    function reloadForBranchChange(){
+        if(branchGuardReloading){
+            return;
+        }
+
+        branchGuardReloading = true;
+
+        Promise.resolve()
+            .then(function(){ return window.CrownCloud?.flushNow?.(); })
+            .catch(function(){})
+            .then(function(){ location.reload(); });
+    }
+
+    function checkBranchGuard(){
+        if((localStorage.getItem(BRANCH_KEY) || "") === pageBranch){
+            return;
+        }
+
+        if(window.crownBranchGuardBusy?.()){
+            return;
+        }
+
+        reloadForBranchChange();
+    }
+
+    window.addEventListener("storage", function(event){
+        if(event.key === BRANCH_KEY || event.key === null){
+            checkBranchGuard();
+        }
+    });
+
+    window.addEventListener("pageshow", checkBranchGuard);
+    window.addEventListener("focus", checkBranchGuard);
+
+    document.addEventListener("visibilitychange", function(){
+        if(!document.hidden){
+            checkBranchGuard();
+        }
+    });
+
+    window.CrownBranchGuard = {
+        check: checkBranchGuard,
+        reload: reloadForBranchChange
+    };
+
     /* Quiet substitute for the old daily backup popup: a dot on
        "System Health / Database" instead of an interrupting modal
        on every login. */
@@ -1075,8 +1157,11 @@
                     );
                 }
 
-                syncGlobalToolbarToPage(currentPage);
-                notifyDashboard();
+                /* Reload rather than asking the page to swap branch in
+                   place: not every page re-reads its data on a branch
+                   change, and one that doesn't would keep showing (and
+                   then saving) the old branch's data. */
+                reloadForBranchChange();
             }
         );
 
@@ -1531,6 +1616,14 @@
     }
 
     function syncGlobalToolbarToPage(currentPage){
+        /* Branch changed outside this page — don't hand the new branch to
+           the page in place (a form open on the old branch would then save
+           into the new one); let the guard reload it instead. */
+        if((localStorage.getItem(BRANCH_KEY) || "") !== pageBranch){
+            checkBranchGuard();
+            return;
+        }
+
         const toolbarBranch =
             document.getElementById("sidebarDashboardBranch");
 
