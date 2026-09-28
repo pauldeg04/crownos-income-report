@@ -11,6 +11,24 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-28 — Cash Flow: Biñan/Calamba mixing again (other tab / Back button)
+
+**Reported by:** User — "nagmimix na naman ang cashflow ng binan at calamba."
+
+**Cause:** the 2026-08-06 fix only covered switching branch *on the Cash Flow page itself* (`crownGlobalFiltersChanged`). `saveCashflowEntries()` still built its storage key from `crownSelectedBranch` at save time, and that value is shared by every tab and survives a back/forward-cache restore. So: Cash Flow open on Biñan → branch switched to Calamba in another tab (or on another page, then Back) → the Cash Flow page still shows Biñan, and the next Add/Edit/Delete wrote Biñan's whole list into `crownCashflow_Calamba_<month>`. The Add to Expenses Report sync used the same live value.
+
+**Fix ([`cashflow.js`](cashflow.js)):** the page remembers the branch/month it loaded (`loadedCashflowBranch` / `loadedCashflowMonth`) and every save, delete and Expenses sync writes back to that key only. When the branch changes outside the page (`storage` event, `pageshow`, focus, tab becoming visible) it reloads itself on the new branch; if the Add/Edit modal is open it waits until the modal closes (the entry is saved to the branch it was opened on first). Opening the modal on a stale page reloads instead. Also listens to `crownCloudUpdate` for its own key, so cloud data arriving after page load isn't overwritten by a stale list on the next save. Manual note added under Cash Flow.
+
+**Verified:** jsdom harness running the real `cashflow.html` markup + `cashflow.js` — other-tab switch with no event (modal refuses to open, page reloads, Calamba key untouched), switch while modal open (entry saved to Biñan, Calamba untouched, then reload), and the existing in-page toolbar switch (loads Calamba, saves to Calamba).
+
+**Data:** not checked — existing mixed entries in the live data need to be sorted out by the user (the code can't tell which branch a duplicated entry really belongs to).
+
+**Same pattern still in:** `petty-cash.js` and `expenses-report.js` (save-time branch lookup) — flagged as a follow-up, not changed here.
+
+**Deployed:** `firebase deploy --only hosting` → https://crownos-5f03d.web.app.
+
+---
+
 ## 2026-09-27 (2) — Archived Payday Sale services still offered in Scheduling and Add Sale
 
 **Requested by:** Admin — services with "Available for Payday" ticked should be visible in Scheduling and Add Sale.

@@ -60,6 +60,15 @@ const CASHFLOW_EXPENSE_PREFIX = "crownExpenses_";
 let cashflowEntries = [];
 let activeCashflowEntryId = null;
 
+/* The branch/month cashflowEntries was actually loaded from. Saves always
+   go back to this key, never to whatever crownSelectedBranch says at save
+   time — that value is shared by every tab and can change underneath this
+   page (another tab's branch switcher, or a Back-button restore of this
+   page after switching branch elsewhere), which is how Biñan's entries
+   kept ending up written into Calamba's key. */
+let loadedCashflowBranch = "";
+let loadedCashflowMonth = "";
+
 function getSelectedCashflowBranch(){
     return localStorage.getItem(CASHFLOW_BRANCH_KEY) || "";
 }
@@ -115,7 +124,44 @@ document.addEventListener("DOMContentLoaded", function(){
         document.getElementById("cashflowDateFilter").value = "";
         loadCashflowEntries();
     });
+
+    /* Branch changed outside this page (another tab, or this page restored
+       from the back/forward cache after switching branch elsewhere) —
+       reload so the table, readout and toolbar all match the new branch. */
+    window.addEventListener("storage", function(event){
+        if(event.key === CASHFLOW_BRANCH_KEY){
+            resyncCashflowIfBranchChanged();
+        }
+    });
+
+    window.addEventListener("pageshow", resyncCashflowIfBranchChanged);
+    window.addEventListener("focus", resyncCashflowIfBranchChanged);
+
+    document.addEventListener("visibilitychange", function(){
+        if(!document.hidden){
+            resyncCashflowIfBranchChanged();
+        }
+    });
+
+    /* Cloud data for this branch/month arrived after the page loaded (or
+       another device edited it) — re-read so the next save doesn't write
+       back a stale list over it. */
+    window.addEventListener("crownCloudUpdate", function(event){
+        let keys = event.detail?.keys || [];
+        if(keys.includes(getCashflowStorageKey(loadedCashflowBranch, loadedCashflowMonth))){
+            loadCashflowEntries();
+        }
+    });
 });
+
+/* Waits while the Add/Edit modal is open — closeCashflowModal() calls this
+   again, after the entry has been saved to the branch it was loaded from. */
+function resyncCashflowIfBranchChanged(){
+    if(getSelectedCashflowBranch() === loadedCashflowBranch) return;
+    if(!document.getElementById("cashflowModalBackdrop").classList.contains("d-none")) return;
+
+    location.reload();
+}
 
 function setCurrentCashflowMonth(){
     let monthInput = document.getElementById("month");
@@ -125,10 +171,8 @@ function setCurrentCashflowMonth(){
     monthInput.value = `${year}-${month}`;
 }
 
-function getCashflowStorageKey(){
-    let branch = getSelectedCashflowBranch() || "NoBranch";
-    let month = document.getElementById("month").value || "NoMonth";
-    return CASHFLOW_PREFIX + branch + "_" + month;
+function getCashflowStorageKey(branch, month){
+    return CASHFLOW_PREFIX + (branch || "NoBranch") + "_" + (month || "NoMonth");
 }
 
 function escapeHtml(value){
@@ -466,8 +510,13 @@ function applyCashflowTypeUI(type, preserveAccount){
 }
 
 function openCashflowModal(entryId){
-    let branch = getSelectedCashflowBranch();
-    let month = document.getElementById("month").value;
+    if(getSelectedCashflowBranch() !== loadedCashflowBranch){
+        resyncCashflowIfBranchChanged();
+        return;
+    }
+
+    let branch = loadedCashflowBranch;
+    let month = loadedCashflowMonth;
 
     if(!branch || !month){
         alert("Please select branch and month first.");
@@ -506,11 +555,12 @@ function openCashflowModal(entryId){
 function closeCashflowModal(){
     document.getElementById("cashflowModalBackdrop").classList.add("d-none");
     activeCashflowEntryId = null;
+    resyncCashflowIfBranchChanged();
 }
 
 function saveCashflowEntryFromModal(){
-    let branch = getSelectedCashflowBranch();
-    let month = document.getElementById("month").value;
+    let branch = loadedCashflowBranch;
+    let month = loadedCashflowMonth;
 
     if(!branch || !month){
         alert("Please select branch and month first.");
@@ -747,12 +797,12 @@ function syncCashflowEntryToExpenses(entry, previousEntry, branch, month){
    ========================================================================== */
 
 function saveCashflowEntries(){
-    let branch = getSelectedCashflowBranch();
-    let month = document.getElementById("month").value;
+    if(!loadedCashflowBranch || !loadedCashflowMonth) return;
 
-    if(!branch || !month) return;
-
-    localStorage.setItem(getCashflowStorageKey(), JSON.stringify(cashflowEntries));
+    localStorage.setItem(
+        getCashflowStorageKey(loadedCashflowBranch, loadedCashflowMonth),
+        JSON.stringify(cashflowEntries)
+    );
 }
 
 function loadCashflowEntries(){
@@ -760,9 +810,12 @@ function loadCashflowEntries(){
     let month = document.getElementById("month").value;
 
     cashflowEntries = [];
+    loadedCashflowBranch = branch;
+    loadedCashflowMonth = month;
+    document.getElementById("branchReadout").textContent = branch;
 
     if(branch && month){
-        let saved = localStorage.getItem(getCashflowStorageKey());
+        let saved = localStorage.getItem(getCashflowStorageKey(branch, month));
 
         if(saved){
             let parsed = JSON.parse(saved);
