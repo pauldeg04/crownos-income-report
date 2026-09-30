@@ -474,7 +474,11 @@
        cloud, then gets overwritten by the next login's pull. Intercept
        same-page-app link clicks and flush first, then navigate. */
     document.addEventListener("click", function(event){
-        if(pendingKeys.size === 0 && !window.CrownStore?.hasPendingWrites?.()){
+        if(
+            pendingKeys.size === 0 &&
+            !window.CrownStore?.hasPendingWrites?.() &&
+            !window.CrownActivityLog?.hasPending?.()
+        ){
             return;
         }
 
@@ -522,7 +526,10 @@
     }
 
     function flushLocalStore(){
-        return window.CrownStore ? window.CrownStore.flush() : Promise.resolve();
+        return Promise.all([
+            window.CrownStore ? window.CrownStore.flush() : null,
+            window.CrownActivityLog ? window.CrownActivityLog.flush() : null
+        ]);
     }
 
     /* Applies one already-reconstructed key's value locally — either into

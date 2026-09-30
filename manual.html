@@ -40,6 +40,7 @@
     <script type="text/crown-deferred" src="pwa-register.js"></script>
     <script type="text/crown-deferred" src="client-store.js"></script>
     <script type="text/crown-deferred" src="firebase-sync.js"></script>
+    <script type="text/crown-deferred" src="activity-log.js"></script>
     <script type="text/crown-deferred" src="access-control.js"></script>
     <script type="text/crown-deferred" src="notifications.js"></script>
     <script type="text/crown-deferred" src="push-notifications.js"></script>
@@ -577,7 +578,7 @@
         </tr>
         <tr>
           <td><strong>Settings</strong></td>
-          <td>Account Settings · Attendance · List of Services · Voucher Masterlist · List of Products · List of Therapist · List of Branches · System Health / Database</td>
+          <td>Account Settings · Attendance · List of Services · Voucher Masterlist · List of Products · List of Therapist · List of Branches · System Health / Database · Activity Log</td>
         </tr>
       </tbody>
     </table>
@@ -695,6 +696,7 @@
         <tr><td>Master Lists (Services, Products, Therapist, Branches)</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
         <tr><td>Account Settings</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr yes">●</td></tr>
         <tr><td>System Health / Database</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Activity Log</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
       </tbody>
     </table>
   </div>
@@ -2779,6 +2781,30 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
     <li><strong>If two people edit the same thing</strong> — the last one to save wins. So it is best not to have two people fixing the same day at once.</li>
     <li><strong>Always log out</strong> — logging out makes sure your last changes reach the cloud before you leave.</li>
   </ul>
+
+  <h3 id="activity-log">Activity Log</h3>
+
+  <ul class="roleline"><li><span class="pill pill-role">Admin only</span></li></ul>
+
+  <p>
+    <span class="ui">Settings &rsaquo; Activity Log</span> shows who did what in
+    CrownOS, one day at a time, newest first. It updates live while open.
+  </p>
+
+  <ul>
+    <li><strong>Daily Income</strong> is logged action by action: <em>Added to list</em>, <em>Added &amp; settled</em>, <em>Settled</em>, <em>Edited</em> (with what changed, e.g. <em>Amount: 850 → 900</em>), <em>Deleted</em>, and <em>Cleared day</em> — each with the client, services, amount and payment, and the account that did it. So you can see, for example, that Receptionist A added a client to the list and Admin B settled it later.</li>
+    <li><strong>Every other page</strong> is logged automatically whenever it saves a change — e.g. <em>Petty Cash · Added: Taxi (₱250)</em>, or <em>List of Services · Edited: Crown Serenity — price: 850 → 900</em>. Passwords are never shown, only that one was changed.</li>
+    <li>Filter by <strong>User</strong>, <strong>Branch</strong>, <strong>Module</strong>, or type in <strong>Search</strong> (a client name, item, or action). Use ‹ › or the date box to change the day.</li>
+    <li>Click a row to see its details (the full list of what changed and the page it came from).</li>
+    <li><span class="ui">Export CSV</span> downloads the rows currently shown, for Excel or Google Sheets.</li>
+  </ul>
+
+  <div class="warn">
+    Entries <strong>cannot be edited or deleted</strong> by anyone, and are
+    kept for <strong>90 days</strong>, then removed automatically. Export a
+    CSV if you need to keep a day longer. Activity from before
+    30 September 2026 was not recorded.
+  </div>
 </section>
 
 <!-- ================= PART SIX ================= -->

@@ -1,0 +1,123 @@
+/* ==========================================================================
+   CrownOS — Activity Log
+   ========================================================================== */
+
+.page-eyebrow{
+    margin:0 0 6px;
+    color:var(--green);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+}
+
+.activity-filters{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+    gap:12px;
+    align-items:end;
+}
+
+.activity-filters .form-label{
+    margin-bottom:4px;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+}
+
+.activity-toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    margin:16px 0 12px;
+}
+
+.activity-table th{
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    white-space:nowrap;
+}
+
+.activity-row{
+    cursor:pointer;
+}
+
+.activity-row td{
+    vertical-align:top;
+}
+
+.activity-time{
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+}
+
+.activity-user strong{
+    display:block;
+}
+
+.activity-user small,
+.activity-meta{
+    color:var(--muted);
+}
+
+.activity-action{
+    display:inline-block;
+    margin-right:6px;
+    padding:1px 8px;
+    border-radius:999px;
+    background:rgba(11,24,73,.08);
+    color:#0B1849;
+    font-size:11px;
+    font-weight:800;
+}
+
+.activity-action.settle{
+    background:rgba(25,135,84,.14);
+    color:#146c43;
+}
+
+.activity-action.delete{
+    background:rgba(220,53,69,.12);
+    color:#b02a37;
+}
+
+.activity-details{
+    display:none;
+    margin:8px 0 0;
+    padding-left:0;
+    list-style:none;
+    font-size:13px;
+}
+
+.activity-row.open .activity-details{
+    display:block;
+}
+
+.activity-details li{
+    padding:2px 0;
+    overflow-wrap:anywhere;
+}
+
+@media (max-width: 576px){
+    .activity-table thead{
+        display:none;
+    }
+
+    .activity-table tr{
+        display:block;
+        padding:10px 0;
+        border-bottom:1px solid var(--border-light);
+    }
+
+    .activity-table td{
+        display:block;
+        padding:2px 0;
+        border:0;
+    }
+}

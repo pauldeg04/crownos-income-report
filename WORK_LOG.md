@@ -11,6 +11,30 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-30 (2) — Activity Log (who did what)
+
+**Requested by:** User — daily activity logs for tracing, e.g. user A adds a sale to the list, user B settles it later. Decisions: log everything automatically, Admin-only viewing, keep 90 days.
+
+**Storage:** Firestore collection `activityLog`, one document per activity — deliberately not a synced `crown*` key (a growing shared blob is what overflowed Safari's localStorage, see the entry below). Fields: `day` (device-local YYYY-MM-DD), `clientTime`, `ts` (server time), `account`/`name`/`role` (from the CrownOS session), `uid`/`email` (Firebase login), `branch`, `page`, `module`, `action`, `summary` (≤300 chars), `details` (≤8 lines), `ref`, `expireAt`.
+
+**Rules ([`firestore.rules`](firestore.rules)):** any signed-in user may *create* entries, but only as themselves (`uid`/`email` must match their token, `ts` must be server time, fixed field list and size limits). Only `role == 'Admin'` may read. Update/delete denied for everyone. **TTL:** `fieldOverrides` in [`firestore.indexes.json`](firestore.indexes.json) turns on a TTL policy for `activityLog.expireAt` (set to +90 days on write), so Firestore deletes old entries itself.
+
+**Recording — [`activity-log.js`](activity-log.js)** (loaded after firebase-sync.js on all pages):
+- *Automatic:* `crown-store.js` now has `CrownStore.onLocalWrite(listener)`, which reports edits made on this page only (not cloud updates or other tabs). Writes to one key within 1.5 s are merged; the before/after JSON is compared: arrays of objects with an `id` → Added / Edited (with field changes, e.g. `amount: 500 → 600`) / Removed, labelled by the first of client/name/title/description/… plus an amount if any; `{rows: [...]}` objects are diffed on the list; other objects list changed fields. Empty-to-empty and timestamp-only changes are skipped. Field names matching pass/hash/pin/token/secret never show values. Key prefix → module name table (Petty Cash, Scheduling, Account Settings, …). Ignored: UI-state keys (`crownGlobalDate`, sidebar collapse, Payday tab, push prompts), `crownNotifications`, `crownBackupMetadata`, `crownDutyLog` (duplicate of attendance).
+- *Explicit:* `CrownActivityLog.log({module, action, summary, details, branch, ref})`. Daily Income ([`script.js`](script.js)) logs **Added to list / Added & settled / Settled / Edited (field-by-field) / Deleted / Cleared day** with client – services (+companions) – ₱net (payment). On the Daily Income page `crownDailySales_*` and `crownStockAudit` (a sale side effect) are left out of the automatic path — each tab saves its whole sales list, so a tab that was behind would otherwise look like it deleted someone else's sale. Other pages that touch those keys (e.g. renaming a branch) still auto-log.
+- Backup restore ([`data-protection.js`](data-protection.js)) runs under `withoutAutoLog()` and logs one "Restored backup" entry.
+- Sending: `firestore().collection("activityLog").add()` (queued by Firestore persistence if offline); entries made before Firebase sign-in wait for it. `CrownCloud.flushNow()` and the link-click flush also flush pending log entries. On localhost nothing is sent (logged to console / `window.__crownActivityLocal`).
+
+**Viewing — [`activity-log.html`](activity-log.html) + [`activity-log-page.js`](activity-log-page.js) + `activity-log.css`:** Settings › Activity Log (Admin only in sidebar and `PAGE_ACCESS`, and excluded from Additional Access). One day at a time (‹ › / date), live `onSnapshot` on `day ==`, newest first; filters User / Branch / Module / Search are applied on the loaded day; click a row for details; Export CSV of the shown rows. Waits for `CrownCloud.waitForInitialSync` so the refreshed Admin role claim is on the token before reading.
+
+**Manual:** new "Activity Log" section in Chapter 23, plus the role table and Settings menu list.
+
+**Verified (local server; nothing sent to Firestore on localhost):** describer on sample data (added + edited with field change; password change shows "password changed" without values; `{rows}` removal); a real Petty Cash write auto-logged as "Petty Cash · Added: Taxi (₱250)" with branch from the key; `crownGlobalDate` ignored; no entries from simply opening Home, Daily Income, Scheduling, Account Settings, Warehouse, Petty Cash; Daily Income add → settle → edit (Amount 850 → 900; Remarks) → delete, and add → settle → Clear day, each logged once with the right action and no Stock Audit noise; Activity Log page loads, sidebar link shows, filter row fits beside the sidebar.
+
+**Not verified locally:** Firestore rules accepting a real entry and Admin reading it (needs production sign-in) — checked after deploy, see below.
+
+---
+
 ## 2026-09-30 — Synced data moved from localStorage to IndexedDB (Safari showing old data)
 
 **Reported by:** User — Safari says "Synced to Cloud" but doesn't show the updates Chrome shows.

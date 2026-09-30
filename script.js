@@ -5195,6 +5195,11 @@ function removeSaleFromStockAudit(saleId){
    real consequences of a finalized sale, so they only run once settled;
    an ongoing/unpaid entry still registers the client record either way. */
 async function persistModalSaleData(saleData, validItems){
+  const previousSale =
+    editingSaleId
+      ? salesRows.find(function(sale){ return sale.id === editingSaleId; }) || null
+      : null;
+
   if(editingSaleId){
     salesRows =
       salesRows.map(function(sale){
@@ -5243,6 +5248,15 @@ async function persistModalSaleData(saleData, validItems){
 
   saveDailySales();
   transactionalSyncSaleRow(saleData.id, saleData);
+
+  if(!previousSale){
+    logSaleActivity(saleData.settled ? "Added & settled" : "Added to list", saleData);
+  }else if(previousSale.settled === false && saleData.settled){
+    logSaleActivity("Settled", saleData, describeSaleEditForActivityLog(previousSale, saleData));
+  }else{
+    logSaleActivity("Edited", saleData, describeSaleEditForActivityLog(previousSale, saleData));
+  }
+
   renderSalesTable();
   updateSummary();
   updateSalesRecord();
@@ -5306,6 +5320,59 @@ function calculateStoredSaleNet(sale){
     0,
     gross - Math.min(gross, voucher)
   );
+}
+
+/* Activity Log (see activity-log.js) — Daily Income logs its own
+   actions explicitly instead of through the automatic key diff, since
+   each tab saves its whole sales list and a tab whose list was behind
+   would otherwise look like it deleted someone else's sale. */
+function describeSaleForActivityLog(sale){
+  const items =
+    (sale?.services || [])
+      .map(function(item){ return item?.name; })
+      .filter(Boolean);
+
+  const companions =
+    (sale?.companions || []).length;
+
+  const payment =
+    sale?.payment ||
+    (sale?.payments || []).map(function(entry){ return entry.method; }).filter(Boolean).join(", ");
+
+  return [
+    sale?.client || "(no client)",
+    items.join(", ") + (companions ? " + " + companions + " companion" + (companions === 1 ? "" : "s") : ""),
+    "₱" + calculateStoredSaleNet(sale).toLocaleString("en-PH", { maximumFractionDigits: 2 }) +
+      (payment ? " (" + payment + ")" : "")
+  ].filter(Boolean).join(" – ");
+}
+
+function logSaleActivity(action, sale, details){
+  window.CrownActivityLog?.log({
+    module: "Daily Income",
+    action: action,
+    summary: action + ": " + describeSaleForActivityLog(sale),
+    details: details || [],
+    branch: getSelectedBranch() || "",
+    ref: getStorageKey() + "#" + (sale?.id || "")
+  });
+}
+
+function describeSaleEditForActivityLog(before, after){
+  const checks = [
+    ["Client", before?.client, after?.client],
+    ["Time", before?.startTime, after?.startTime],
+    ["Therapist", before?.therapist, after?.therapist],
+    ["Services", (before?.services || []).map(function(i){ return i.name; }).join(", "), (after?.services || []).map(function(i){ return i.name; }).join(", ")],
+    ["Companions", (before?.companions || []).length, (after?.companions || []).length],
+    ["Amount", calculateStoredSaleNet(before), calculateStoredSaleNet(after)],
+    ["Payment", before?.payment, after?.payment],
+    ["Remarks", before?.remarks, after?.remarks]
+  ];
+
+  return checks
+    .filter(function(check){ return String(check[1] ?? "") !== String(check[2] ?? ""); })
+    .map(function(check){ return check[0] + ": " + (check[1] || "—") + " → " + (check[2] || "—"); });
 }
 
 function getCompanionSaleSubtotal(companion, sale){
@@ -6515,6 +6582,7 @@ function settleSaleRow(saleId){
 
   saveDailySales();
   transactionalSyncSaleRow(sale.id, sale);
+  logSaleActivity("Settled", sale);
   renderSalesTable();
   updateSummary();
   updateSalesRecord();
@@ -6568,6 +6636,11 @@ function deleteSale(saleId){
 
   saveDailySales();
   transactionalSyncSaleRow(saleId, null);
+
+  if(sale){
+    logSaleActivity(sale.settled === false ? "Deleted ongoing transaction" : "Deleted sale", sale);
+  }
+
   renderSalesTable();
   updateSummary();
   updateSalesRecord();
@@ -7326,6 +7399,16 @@ function clearDailySales(){
 
   salesRows.forEach(function(sale){
     removeSaleFromStockAudit(sale.id);
+  });
+
+  window.CrownActivityLog?.log({
+    module: "Daily Income",
+    action: "Cleared day",
+    summary: "Cleared all " + salesRows.length + " sale(s) for " + getSelectedBranch() + " – " +
+      document.getElementById("date").value,
+    details: salesRows.slice(0, 8).map(function(sale){ return "− " + describeSaleForActivityLog(sale); }),
+    branch: getSelectedBranch() || "",
+    ref: getStorageKey()
   });
 
   localStorage.removeItem(getStorageKey());

@@ -150,6 +150,24 @@
         return keys;
     }
 
+    /* Edits made on THIS page (not cloud updates, not other tabs) —
+       activity-log.js listens here to record who changed what. */
+    const localWriteListeners = [];
+
+    function notifyLocalWrite(key, oldValue, newValue){
+        if(oldValue === newValue){
+            return;
+        }
+
+        localWriteListeners.forEach(function(listener){
+            try{
+                listener(key, oldValue, newValue);
+            }catch(error){
+                console.error("CrownStore: local-write listener failed.", error);
+            }
+        });
+    }
+
     /* ---------- Storage.prototype overrides ---------- */
 
     Storage.prototype.getItem = function(key){
@@ -173,6 +191,7 @@
         if(useMem(this, key)){
             value = String(value);
             const isNew = !mem.has(key);
+            notifyLocalWrite(key, isNew ? null : mem.get(key), value);
             mem.set(key, value);
 
             if(isNew){
@@ -200,6 +219,10 @@
         key = String(key);
 
         if(useMem(this, key)){
+            if(mem.has(key)){
+                notifyLocalWrite(key, mem.get(key), null);
+            }
+
             if(mem.delete(key)){
                 invalidateKeys();
             }
@@ -920,6 +943,9 @@
         isManaged: isManaged,
         applyRemote: applyRemote,
         flush: flush,
+        onLocalWrite: function(listener){
+            localWriteListeners.push(listener);
+        },
         hasPendingWrites: function(){
             return pendingWrites.size > 0 || inflightWrites.size > 0;
         },

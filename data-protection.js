@@ -524,19 +524,38 @@ async function performRestore(){
             }
         }
 
-        keysToRemove.forEach(function(key){
-            localStorage.removeItem(key);
-        });
-
-        Object.entries(
-            selectedBackup.data
-        ).forEach(function([key, value]){
-            if(value === null){
+        const applyRestore = function(){
+            keysToRemove.forEach(function(key){
                 localStorage.removeItem(key);
-            }else{
-                localStorage.setItem(key, value);
-            }
-        });
+            });
+
+            Object.entries(
+                selectedBackup.data
+            ).forEach(function([key, value]){
+                if(value === null){
+                    localStorage.removeItem(key);
+                }else{
+                    localStorage.setItem(key, value);
+                }
+            });
+        };
+
+        /* One Activity Log entry for the whole restore, not one per key. */
+        if(window.CrownActivityLog){
+            await window.CrownActivityLog.withoutAutoLog(applyRestore);
+
+            window.CrownActivityLog.log({
+                module: "System Health",
+                action: "Restored backup",
+                summary: "Restored backup: " + selectedBackupName,
+                details: [
+                    Object.keys(selectedBackup.data).length + " data keys replaced"
+                ],
+                ref: selectedBackupName
+            });
+        }else{
+            applyRestore();
+        }
 
         addHistoryEntry({
             type: "Restore",

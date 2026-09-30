@@ -491,6 +491,36 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    /* Activity Log (activity-log.js writes, activity-log.html reads).
+       Any signed-in staff member may add entries, but only as
+       themselves — uid/email must match their own Firebase login, so an
+       entry can't be written in someone else's name. Only Admin can read.
+       Entries are append-only: nobody (Admin included) can edit or delete
+       one from the app. They expire after 90 days via the TTL policy on
+       expireAt (firestore.indexes.json). */
+    match /activityLog/{entryId} {
+      allow create: if request.auth != null &&
+        request.resource.data.keys().hasOnly([
+          'day', 'clientTime', 'account', 'name', 'role', 'branch', 'page',
+          'module', 'action', 'summary', 'details', 'ref',
+          'uid', 'email', 'ts', 'expireAt'
+        ]) &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.email == request.auth.token.email &&
+        request.resource.data.ts == request.time &&
+        request.resource.data.day is string &&
+        request.resource.data.summary is string &&
+        request.resource.data.summary.size() <= 300 &&
+        request.resource.data.details is list &&
+        request.resource.data.details.size() <= 8 &&
+        request.resource.data.expireAt is timestamp;
+
+      allow get, list: if request.auth != null &&
+        request.auth.token.role == 'Admin';
+
+      allow update, delete: if false;
+    }
+
     /* One doc per registered device push token (doc ID = the token
        itself), written by push-notifications.js on opt-in. A user may
        only manage tokens addressed to their own recipientEmail; the

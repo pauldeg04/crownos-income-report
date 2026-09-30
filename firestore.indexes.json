@@ -4,34 +4,65 @@
             "collectionGroup": "scheduleHolds",
             "queryScope": "COLLECTION",
             "fields": [
-                { "fieldPath": "status", "order": "ASCENDING" },
-                { "fieldPath": "expiresAt", "order": "ASCENDING" }
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "expiresAt",
+                    "order": "ASCENDING"
+                }
             ]
         },
         {
             "collectionGroup": "dailyMonitoring",
             "queryScope": "COLLECTION",
             "fields": [
-                { "fieldPath": "staffAccount", "order": "ASCENDING" },
-                { "fieldPath": "date", "order": "ASCENDING" }
+                {
+                    "fieldPath": "staffAccount",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "date",
+                    "order": "ASCENDING"
+                }
             ]
         },
         {
             "collectionGroup": "marketingSentLog",
             "queryScope": "COLLECTION",
             "fields": [
-                { "fieldPath": "channel", "order": "ASCENDING" },
-                { "fieldPath": "sentAt", "order": "DESCENDING" }
+                {
+                    "fieldPath": "channel",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "sentAt",
+                    "order": "DESCENDING"
+                }
             ]
         },
         {
             "collectionGroup": "marketingScheduledSends",
             "queryScope": "COLLECTION",
             "fields": [
-                { "fieldPath": "status", "order": "ASCENDING" },
-                { "fieldPath": "nextRunAt", "order": "ASCENDING" }
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "nextRunAt",
+                    "order": "ASCENDING"
+                }
             ]
         }
     ],
-    "fieldOverrides": []
+    "fieldOverrides": [
+        {
+            "collectionGroup": "activityLog",
+            "fieldPath": "expireAt",
+            "ttl": true,
+            "indexes": []
+        }
+    ]
 }

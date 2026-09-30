@@ -461,6 +461,13 @@
             sub: true
         },
 
+        {
+            label: "Activity Log",
+            href: "activity-log.html",
+            roles: ["Admin"],
+            sub: true
+        },
+
         /* Reference page, open to every role — a Therapist or Branch Device
            needs the manual as much as an Admin does. No branchRequired: it
            reads no branch data, so it must stay reachable before a branch is
@@ -1607,6 +1614,7 @@
             "list-therapists.html": "List of Therapists",
             "list-branches.html": "List of Branches",
             "data-protection.html": "System Health / Database",
+            "activity-log.html": "Activity Log",
             "attendance.html": "Attendance",
             "payroll.html": "Payroll",
             "list-vouchers.html": "Voucher Masterlist",

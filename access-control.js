@@ -15,6 +15,7 @@
        listed in PAGE_ACCESS may open them. */
     const EXTRA_ACCESS_EXCLUDED_PAGES = [
         "data-protection.html",
+        "activity-log.html",
         "cashflow.html"
     ];
 
@@ -161,6 +162,10 @@
         ],
 
         "data-protection.html": [
+            "Admin"
+        ],
+
+        "activity-log.html": [
             "Admin"
         ],
 
