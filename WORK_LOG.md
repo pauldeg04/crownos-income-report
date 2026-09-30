@@ -31,7 +31,11 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 **Verified (local server; nothing sent to Firestore on localhost):** describer on sample data (added + edited with field change; password change shows "password changed" without values; `{rows}` removal); a real Petty Cash write auto-logged as "Petty Cash · Added: Taxi (₱250)" with branch from the key; `crownGlobalDate` ignored; no entries from simply opening Home, Daily Income, Scheduling, Account Settings, Warehouse, Petty Cash; Daily Income add → settle → edit (Amount 850 → 900; Remarks) → delete, and add → settle → Clear day, each logged once with the right action and no Stock Audit noise; Activity Log page loads, sidebar link shows, filter row fits beside the sidebar.
 
-**Not verified locally:** Firestore rules accepting a real entry and Admin reading it (needs production sign-in) — checked after deploy, see below.
+**After deploy (production):** TTL policy confirmed live (`firebase firestore:indexes` → `activityLog.expireAt ttl: true`). Activity Log page opened in Chrome as admin: Admin read allowed (no permission error), "0 activities" — nothing had been recorded yet.
+
+**Not verified:** Firestore accepting a real entry under the new create rule — deliberately didn't write a test entry into the permanent log. User asked to do one normal action (e.g. add a sale to the list, then settle it) and check it appears.
+
+**Deployed:** `firebase deploy --only firestore:rules,firestore:indexes,hosting` → https://crownos-5f03d.web.app (commit `1e961d8`).
 
 ---
 
