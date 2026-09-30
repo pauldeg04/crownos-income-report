@@ -24,7 +24,9 @@ Running log of changes made to the CrownOS system, newest entry on top.
 - [`sidebar.js`](sidebar.js): sync status treats a missing `firebase.auth` as "⚠ No Cloud Connection" instead of throwing, so the sidebar always builds.
 - [`push-notifications.js`](push-notifications.js): `firebase.auth()` call guarded.
 
-**Verified:** local server simulating the bad copy (empty file first, real SDK on retry): warning logged, `firebase.auth` defined, `CrownCloud.isAvailable()` true, sidebar built. Production check after deploy below.
+**Verified:** local server simulating the bad copy (empty file first, real SDK on retry): warning logged, `firebase.auth` defined, `CrownCloud.isAvailable()` true, sidebar built. **After deploy:** the same broken Safari tab, navigated back to `home.html`, now shows the toolbar, full sidebar (incl. Activity Log), "☁ Synced to Cloud", 5 therapists / "5 of 6 present". `_diag.html` and `_safari-harness.html` return 404.
+
+**Deployed:** `firebase deploy --only hosting` → https://crownos-5f03d.web.app (commit `c4ceec3`).
 
 ---
 
