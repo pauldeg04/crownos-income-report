@@ -132,7 +132,7 @@ const CROWN_PUSH_PROMPTED_KEY = "crownPushPrompted";
    per browser (crownPushPrompted persists the outcome either way, so a
    dismissal/deny isn't re-asked on every login); on every later load where
    permission is already granted, it just keeps the token fresh. */
-firebase.auth().onAuthStateChanged(function(user){
+window.firebase?.auth?.().onAuthStateChanged(function(user){
     if(!user){
         return;
     }

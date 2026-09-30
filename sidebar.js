@@ -772,7 +772,8 @@
             if(
                 !window.firebase ||
                 !firebase.apps ||
-                firebase.apps.length === 0
+                firebase.apps.length === 0 ||
+                !firebase.auth
             ){
                 syncStatus.className =
                     "app-sidebar-sync-status offline";

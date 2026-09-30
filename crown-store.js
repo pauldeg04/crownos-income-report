@@ -898,12 +898,59 @@
         });
     }
 
+    /* The Firebase SDK <script> tags in <head> load straight from the CDN
+       and aren't deferred. If one of them fails — seen in Safari, where a
+       tab kept a bad cached copy of firebase-auth-compat.js across
+       reloads — firebase.auth (etc.) is simply missing: firebase-sync
+       drops to offline mode, the sidebar throws while building, and the
+       page shows stale data with no menu. Check each SDK part the page
+       asked for and fetch any missing one again, bypassing the cache,
+       before the page's own scripts start. */
+    const FIREBASE_PARTS = [
+        ["firebase-app-compat.js", function(){ return !!window.firebase; }],
+        ["firebase-auth-compat.js", function(){ return !!window.firebase?.auth; }],
+        ["firebase-firestore-compat.js", function(){ return !!window.firebase?.firestore; }],
+        ["firebase-functions-compat.js", function(){ return !!window.firebase?.functions; }],
+        ["firebase-storage-compat.js", function(){ return !!window.firebase?.storage; }],
+        ["firebase-messaging-compat.js", function(){ return !!window.firebase?.messaging; }]
+    ];
+
+    function loadScript(src){
+        return new Promise(function(resolve){
+            const script = document.createElement("script");
+            script.src = src;
+            script.onload = function(){ resolve(true); };
+            script.onerror = function(){ resolve(false); };
+            document.head.appendChild(script);
+        });
+    }
+
+    async function repairFirebaseSdk(){
+        /* In order — every part needs firebase-app first. */
+        for(const [fileName, isLoaded] of FIREBASE_PARTS){
+            const tag = document.querySelector('script[src*="/firebasejs/"][src$="' + fileName + '"]');
+
+            if(!tag || isLoaded()){
+                continue;
+            }
+
+            console.warn("CrownStore: " + fileName + " did not load — retrying without the cache.");
+
+            await loadScript(tag.src + "?retry=" + Date.now());
+
+            if(!isLoaded()){
+                console.error("CrownStore: " + fileName + " still missing after a retry.");
+            }
+        }
+    }
+
     async function startPage(){
         await readyPromise;
         reportStatus();
 
         /* Every deferred <script> is in the DOM once parsing is done. */
         await whenDomParsed();
+        await repairFirebaseSdk();
 
         document.addEventListener = patchedAdd(nativeDocAdd);
         document.removeEventListener = patchedRemove(nativeDocRemove);

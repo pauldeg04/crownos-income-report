@@ -11,6 +11,23 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-30 (3) — Safari tab with no sidebar: Firebase Auth SDK didn't load; now self-repairs
+
+**Reported by:** User — Safari again: Dashboard shows but no sidebar, no top toolbar, no therapists ("hindi complete").
+
+**Found:** only that one Safari tab was affected — a new Safari window on the same Mac loaded everything (sidebar, Activity Log link, Synced to Cloud, 5 therapists). In the broken tab `firebase.auth` was `undefined` while `firebase.firestore`/`messaging` were fine: the tab was reusing a bad cached copy of `firebase-auth-compat.js` (resource timing showed it served from cache; loading the same URL again with a cache-busting query defined `firebase.auth` normally). It survived reloads of that tab. With no `firebase.auth`: `firebase-sync.js` fell back to its offline stub (no cloud pull), `push-notifications.js:135` threw, and the sidebar's DOMContentLoaded handler threw at `firebase.auth().currentUser` after adding `with-app-sidebar` but before appending the sidebar/toolbar. Not caused by today's storage or Activity Log changes (the SDK `<script>` tags in `<head>` weren't touched) — but the failure mode was silent and total.
+
+**How it was diagnosed:** Safari's console isn't reachable from here, so a temporary `_diag.html` (loads `home.html` in a same-origin iframe and prints console errors + state as page text) was deployed, read in the broken tab, then deleted. A local-only `_safari-harness.html` with a seeding option was also uploaded by those hosting deploys for a few minutes; both are removed by this deploy.
+
+**Fix:**
+- [`crown-store.js`](crown-store.js) `repairFirebaseSdk()`: before starting the page's deferred scripts, checks each Firebase SDK part the page's `<head>` asked for (app, auth, firestore, functions, storage, messaging); any that is missing is loaded again with `?retry=<timestamp>` (bypasses the bad cache), in order.
+- [`sidebar.js`](sidebar.js): sync status treats a missing `firebase.auth` as "⚠ No Cloud Connection" instead of throwing, so the sidebar always builds.
+- [`push-notifications.js`](push-notifications.js): `firebase.auth()` call guarded.
+
+**Verified:** local server simulating the bad copy (empty file first, real SDK on retry): warning logged, `firebase.auth` defined, `CrownCloud.isAvailable()` true, sidebar built. Production check after deploy below.
+
+---
+
 ## 2026-09-30 (2) — Activity Log (who did what)
 
 **Requested by:** User — daily activity logs for tracing, e.g. user A adds a sale to the list, user B settles it later. Decisions: log everything automatically, Admin-only viewing, keep 90 days.
