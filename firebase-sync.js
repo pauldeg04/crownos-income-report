@@ -474,7 +474,7 @@
        cloud, then gets overwritten by the next login's pull. Intercept
        same-page-app link clicks and flush first, then navigate. */
     document.addEventListener("click", function(event){
-        if(pendingKeys.size === 0){
+        if(pendingKeys.size === 0 && !window.CrownStore?.hasPendingWrites?.()){
             return;
         }
 
@@ -503,11 +503,27 @@
         clearTimeout(flushTimer);
 
         flushPending().finally(function(){
-            location.href = href;
+            flushLocalStore().finally(function(){
+                location.href = href;
+            });
         });
     }, true);
 
     /* ---------- Incoming: Firestore → localStorage ---------- */
+
+    function applyRemoteValue(key, value){
+        if(window.CrownStore){
+            window.CrownStore.applyRemote(key, value);
+        }else if(value === null){
+            nativeRemoveItem.call(localStorage, key);
+        }else{
+            nativeSetItem.call(localStorage, key, value);
+        }
+    }
+
+    function flushLocalStore(){
+        return window.CrownStore ? window.CrownStore.flush() : Promise.resolve();
+    }
 
     /* Applies one already-reconstructed key's value locally — either into
        localStorage, or for CLIENT_MASTER_LIST_KEY, into CrownClientStore's
@@ -552,9 +568,11 @@
                 return false;
             }
 
+            /* Goes through CrownStore (see crown-store.js) so the value is
+               saved to IndexedDB without being queued for a push back up. */
             if(result.deleted){
                 if(localStorage.getItem(key) !== null){
-                    nativeRemoveItem.call(localStorage, key);
+                    applyRemoteValue(key, null);
                     return true;
                 }
 
@@ -562,7 +580,7 @@
             }
 
             if(localStorage.getItem(key) !== result.value){
-                nativeSetItem.call(localStorage, key, result.value);
+                applyRemoteValue(key, result.value);
                 return true;
             }
 
@@ -1048,11 +1066,11 @@
         resetOtherUserCloudLogin: resetOtherUserCloudLogin,
         flushNow: function(){
             if(isLocalTestEnv){
-                return Promise.resolve();
+                return flushLocalStore();
             }
 
             clearTimeout(flushTimer);
-            return flushPending();
+            return flushPending().then(flushLocalStore, flushLocalStore);
         },
         /* client-store.js calls this after saving a genuine local edit to
            the client list, since that key bypasses the normal

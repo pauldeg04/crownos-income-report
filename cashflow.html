@@ -24,14 +24,15 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
-    <script src="firebase-init.js"></script>
-    <script src="pwa-register.js"></script>
-    <script src="client-store.js"></script>
-    <script src="firebase-sync.js"></script>
-    <script src="access-control.js"></script>
-    <script src="notifications.js"></script>
-    <script src="push-notifications.js"></script>
-<script src="crownos-theme.js"></script>
+    <script src="crown-store.js"></script>
+    <script type="text/crown-deferred" src="firebase-init.js"></script>
+    <script type="text/crown-deferred" src="pwa-register.js"></script>
+    <script type="text/crown-deferred" src="client-store.js"></script>
+    <script type="text/crown-deferred" src="firebase-sync.js"></script>
+    <script type="text/crown-deferred" src="access-control.js"></script>
+    <script type="text/crown-deferred" src="notifications.js"></script>
+    <script type="text/crown-deferred" src="push-notifications.js"></script>
+<script type="text/crown-deferred" src="crownos-theme.js"></script>
 </head>
 
 <body>
@@ -306,9 +307,9 @@
     </div>
 </div>
 
-<script src="cashflow.js"></script>
-<script src="sidebar.js"></script>
-<script>
+<script type="text/crown-deferred" src="cashflow.js"></script>
+<script type="text/crown-deferred" src="sidebar.js"></script>
+<script type="text/crown-deferred">
 (function(){
     var DENOMINATIONS = [1000, 500, 200, 100, 50, 20, 20, 10, 5, 1];
     var STORAGE_KEY = "crownMoneyCounterCounts";
@@ -378,7 +379,7 @@
     render();
 })();
 </script>
-<script>
+<script type="text/crown-deferred">
 (function(){
     var CASHFLOW_VIEW_TABS = [["cashflow", "Cashflow"], ["moneyCounter", "Money Counter"]];
     var currentCashflowTab = CASHFLOW_VIEW_TABS[0][0];

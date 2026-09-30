@@ -35,13 +35,14 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
-    <script src="firebase-init.js"></script>
-    <script src="pwa-register.js"></script>
-    <script src="client-store.js"></script>
-    <script src="firebase-sync.js"></script>
-    <script src="access-control.js"></script>
-    <script src="notifications.js"></script>
-    <script src="push-notifications.js"></script>
+    <script src="crown-store.js"></script>
+    <script type="text/crown-deferred" src="firebase-init.js"></script>
+    <script type="text/crown-deferred" src="pwa-register.js"></script>
+    <script type="text/crown-deferred" src="client-store.js"></script>
+    <script type="text/crown-deferred" src="firebase-sync.js"></script>
+    <script type="text/crown-deferred" src="access-control.js"></script>
+    <script type="text/crown-deferred" src="notifications.js"></script>
+    <script type="text/crown-deferred" src="push-notifications.js"></script>
 </head>
 
 <body>
@@ -587,6 +588,12 @@
   <dl class="deflist">
     <dt>☁ Synced to Cloud</dt>
     <dd>Normal. You are connected, and everything you do is saved to the shared database.</dd>
+
+    <dt>⚠ Device storage unavailable — data may be outdated</dt>
+    <dd>This browser could not open its local database (for example, a private window with storage blocked), so it is using the old, smaller storage. On Safari that can mean the newest records don't appear. Close private browsing, or use another browser, and report it if it keeps showing.</dd>
+
+    <dt>⚠ Saving on this device failed — retrying</dt>
+    <dd>A save could not be written to this device's local database (usually the device is almost out of free space). CrownOS keeps retrying. Free up some storage on the device; the message clears by itself once a save succeeds.</dd>
 
     <dt>🧪 Local Test</dt>
     <dd>Only ever used by the developer on a test machine. If you see this at a branch, report it immediately — nothing is being saved.</dd>
@@ -2707,6 +2714,15 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
     <strong>Version</strong>.
   </p>
 
+  <p>
+    <strong>Storage Used</strong> is the size of the CrownOS data kept on this
+    device. Since 30 September 2026 it lives in the browser's device database
+    instead of the old ~5 MB browser storage, so the card reads
+    "Stored in the device database — no 5 MB limit". Safari (Mac, iPhone,
+    iPad) used to stop taking new records once that 5 MB was full, which is
+    why it could show older data than Chrome.
+  </p>
+
   <h3>Backup — every day</h3>
 
   <ol class="steps">
@@ -3952,6 +3968,17 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
   </details>
 
   <details>
+    <summary>Safari (or an iPhone/iPad) shows older records than Chrome.</summary>
+    <p>
+      Fixed on 30 September 2026 — Safari's storage used to fill up and quietly
+      stop taking new records. Reload the page once; the first load after the
+      update moves this device's data to the new storage. If it still looks
+      old, check the sidebar: any ⚠ message there means this device can't keep
+      the data locally — see <em>Sidebar indicators</em>.
+    </p>
+  </details>
+
+  <details>
     <summary>The internet dropped mid-shift.</summary>
     <p>
       Carry on working. Your changes queue up and send automatically when the
@@ -4013,9 +4040,9 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
     &uarr; Contents
 </button>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="manual.js"></script>
+<script type="text/crown-deferred" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="text/crown-deferred" src="manual.js"></script>
 
-<script src="sidebar.js"></script>
+<script type="text/crown-deferred" src="sidebar.js"></script>
 </body>
 </html>

@@ -729,10 +729,14 @@ function refreshSystemHealth(){
     document.getElementById("storageHealth").textContent =
         formatBytes(size);
 
+    /* The 4 MB warning was about localStorage's ~5 MB cap, which no longer
+       applies once the data lives in IndexedDB (see crown-store.js). */
     document.getElementById("storageHealthNote").textContent =
-        size < 4 * 1024 * 1024
-            ? "Storage level is normal"
-            : "Storage is becoming large";
+        window.CrownStore?.mode?.() === "idb"
+            ? "Stored in the device database — no 5 MB limit"
+            : size < 4 * 1024 * 1024
+                ? "Storage level is normal"
+                : "Storage is becoming large";
 
     try{
         const metadata =

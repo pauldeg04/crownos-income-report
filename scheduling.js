@@ -2599,7 +2599,9 @@ function getAllScheduleGroups(){
 
     const groups = [];
 
-    Object.keys(localStorage).forEach(function(key){
+    /* Not Object.keys(localStorage) — synced keys live in CrownStore
+       (crown-store.js), which only answers through key()/length. */
+    (window.CrownStore ? window.CrownStore.keys() : Object.keys(localStorage)).forEach(function(key){
         const parsedKey =
             parseScheduleStorageKey(key);
 

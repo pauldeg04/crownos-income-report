@@ -11,6 +11,34 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-09-30 — Synced data moved from localStorage to IndexedDB (Safari showing old data)
+
+**Reported by:** User — Safari says "Synced to Cloud" but doesn't show the updates Chrome shows.
+
+**Cause:** the shared dataset in localStorage had reached ~2.77 M characters (~5.5 MB as UTF-16; biggest keys `crownAttendanceLog` 318K, `crownStockAudit` 258K, `crownNotifications` 87K, `crownWarehouseLog` 67K, plus Cash Flow / Daily Sales per month). Safari caps localStorage at ~5 MB per site. Once full, `applyKeyToLocalStorage()` in `firebase-sync.js` caught the QuotaExceededError per key and skipped it (console only), so new records never landed on Safari. The sidebar's "☁ Synced to Cloud" only checks that a Firebase user is signed in, so it kept saying synced. (Couldn't read Safari's console directly — "Allow JavaScript from Apple Events" is off — but the size measured in Chrome is over Safari's cap.)
+
+**Considered:** compressing values in localStorage (tested on the real data: 2.74M → 540K chars, 5×) as the low-risk option; the user chose the full move to IndexedDB.
+
+**Change:**
+- New [`crown-store.js`](crown-store.js), loaded first on every page. Every synced `crown*` key (same rule as firebase-sync's `shouldSync`, minus `crownClientMasterList`, which already has its own IndexedDB store) now lives in IndexedDB database `crownLocalStore`, with an in-memory copy. `Storage.prototype.getItem/setItem/removeItem/key/length/clear` are overridden underneath firebase-sync's and sidebar's wrappers, so no page code changed. Device-local keys (login session, selected branch) and non-crown keys stay in real localStorage.
+- **Script gating:** because pages read their data synchronously the moment they run, all 45 HTML pages now mark every `<script>` after `crown-store.js` as `type="text/crown-deferred"`. `crown-store.js` starts them in original order (async=false, inline ones via blob URLs) only after the store has loaded and the DOM is parsed, holds their `DOMContentLoaded`/`load` listeners and calls them afterwards, and keeps `<body>` hidden until then (10 s safety reveal). A page can therefore never start with empty data and write it back over the cloud.
+- **Migration:** first load copies all managed keys from localStorage into IndexedDB and sets `__crownStoreMigratedAt`. The old localStorage copies are **left in place for 3 days** and then deleted — a tab still running the old code (opened before the deploy, never navigated) keeps using them, and deleting them under it could let it read an empty list and push that to the cloud. The new code never reads them again.
+- **Durability:** writes go to IndexedDB in one transaction per task. Anything still unconfirmed on `pagehide`/tab hidden goes into a small `__crownStoreJournal` in localStorage and is replayed on the next load (and cleared once the writes finish, so it can't replay over newer saves). `CrownCloud.flushNow()` and firebase-sync's link-click flush now also wait for pending IndexedDB writes.
+- **Other tabs:** a `BroadcastChannel("crownStore")` passes local edits to other open CrownOS tabs (fires `crownCloudUpdate`), since each tab now has its own in-memory copy.
+- [`firebase-sync.js`](firebase-sync.js): cloud values are applied via `CrownStore.applyRemote()` (saved to IndexedDB, not queued for a push back up).
+- `scheduling.js` / `script.js`: the two `Object.keys(localStorage)` loops use `CrownStore.keys()` (Object.keys can't see the overridden storage).
+- [`sidebar.js`](sidebar.js): status now shows "⚠ Device storage unavailable — data may be outdated" if IndexedDB can't be opened (falls back to old localStorage behaviour) and "⚠ Saving on this device failed — retrying" on write errors, instead of "Synced to Cloud".
+- [`data-protection.js`](data-protection.js): Storage Used note says "Stored in the device database — no 5 MB limit" instead of the old 4 MB warning.
+- Manual: new sidebar indicators, Storage Used note (Chapter 23), and a troubleshooting entry for Safari showing older records.
+
+**Verified (local server, Chromium; cloud pushes are off on localhost):** old-style localStorage data migrates into IndexedDB with copies kept; new writes win over the kept copies after reload; copies deleted once `__crownStoreMigratedAt` is >3 days old, device-local keys untouched; journal replay; write-then-immediate-reload persists; cross-tab update + `crownCloudUpdate`; `applyRemote` saves to IndexedDB; all 45 pages load, reveal and build the sidebar with no JS errors (only the expected Firestore permission errors from not being signed in); login page's DOMContentLoaded redirect works; adding a branch through the List of Branches UI survives reload. IndexedDB read of 2.9 M chars / 407 keys: ~10 ms. Safari (WebKit) smoke test: local login page loads and reveals normally.
+
+**Not verified:** a real Firebase pull/push through the new store (needs a signed-in session on production) — check after deploy.
+
+**Deployed:** see below.
+
+---
+
 ## 2026-09-28 (3) — Branch guard on every page (no more branch mixing from other tabs / Back)
 
 **Requested by:** User — asked whether records can still mix between branches anywhere, then asked for a full fix.

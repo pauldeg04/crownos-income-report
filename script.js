@@ -5536,7 +5536,9 @@ async function syncClientDatabaseFromSales(){
     return client;
   }
 
-  Object.keys(localStorage)
+  /* Not Object.keys(localStorage) — synced keys live in CrownStore
+     (crown-store.js), which only answers through key()/length. */
+  (window.CrownStore ? window.CrownStore.keys() : Object.keys(localStorage))
     .filter(function(key){
       return key.startsWith(STORAGE_PREFIX);
     })

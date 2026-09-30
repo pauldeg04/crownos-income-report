@@ -776,6 +776,24 @@
                 return;
             }
 
+            /* "Synced to Cloud" below only means signed in. If this device
+               can't keep the data locally (see crown-store.js), say so —
+               otherwise it looks synced while showing old records. */
+            const storeMode =
+                window.CrownStore?.mode?.();
+
+            if(storeMode === "native" || window.CrownStore?.lastError?.()){
+                syncStatus.className =
+                    "app-sidebar-sync-status offline";
+
+                syncStatus.textContent =
+                    storeMode === "native"
+                        ? "⚠ Device storage unavailable — data may be outdated"
+                        : "⚠ Saving on this device failed — retrying";
+
+                return;
+            }
+
             /* Local dev server / opened straight from disk — firebase-sync.js
                still pulls (so this screen shows real data) but has disabled
                every outgoing path, so nothing typed here reaches the live
@@ -813,6 +831,8 @@
         if(window.firebase?.auth){
             firebase.auth().onAuthStateChanged(renderSyncStatus);
         }
+
+        window.addEventListener("crownStoreStatus", renderSyncStatus);
 
         const logoutButton =
             document.createElement("button");

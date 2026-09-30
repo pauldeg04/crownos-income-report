@@ -25,13 +25,14 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
-<script src="firebase-init.js"></script>
-<script src="pwa-register.js"></script>
-<script src="client-store.js"></script>
-<script src="firebase-sync.js"></script>
-<script src="access-control.js"></script>
-<script src="notifications.js"></script>
-<script src="push-notifications.js"></script>
+<script src="crown-store.js"></script>
+<script type="text/crown-deferred" src="firebase-init.js"></script>
+<script type="text/crown-deferred" src="pwa-register.js"></script>
+<script type="text/crown-deferred" src="client-store.js"></script>
+<script type="text/crown-deferred" src="firebase-sync.js"></script>
+<script type="text/crown-deferred" src="access-control.js"></script>
+<script type="text/crown-deferred" src="notifications.js"></script>
+<script type="text/crown-deferred" src="push-notifications.js"></script>
 </head>
 
 <body>
@@ -547,19 +548,19 @@
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="voucher-font-cinzel.js"></script>
-<script src="voucher-print.js"></script>
-<script>
+<script type="text/crown-deferred" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script type="text/crown-deferred" src="voucher-font-cinzel.js"></script>
+<script type="text/crown-deferred" src="voucher-print.js"></script>
+<script type="text/crown-deferred">
     /* The Voucher List tab reuses list-vouchers.js (the Voucher Masterlist's
        own script) and only shows vouchers issued at the Payday price. */
     window.CROWN_VOUCHER_LIST_FILTER = function(entry){
         return entry.tier === "Payday";
     };
 </script>
-<script src="list-vouchers.js"></script>
-<script src="marketing-payday-sale.js"></script>
-<script src="sidebar.js"></script>
+<script type="text/crown-deferred" src="list-vouchers.js"></script>
+<script type="text/crown-deferred" src="marketing-payday-sale.js"></script>
+<script type="text/crown-deferred" src="sidebar.js"></script>
 
 </body>
 </html>
