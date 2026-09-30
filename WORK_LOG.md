@@ -33,9 +33,11 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 **Verified (local server, Chromium; cloud pushes are off on localhost):** old-style localStorage data migrates into IndexedDB with copies kept; new writes win over the kept copies after reload; copies deleted once `__crownStoreMigratedAt` is >3 days old, device-local keys untouched; journal replay; write-then-immediate-reload persists; cross-tab update + `crownCloudUpdate`; `applyRemote` saves to IndexedDB; all 45 pages load, reveal and build the sidebar with no JS errors (only the expected Firestore permission errors from not being signed in); login page's DOMContentLoaded redirect works; adding a branch through the List of Branches UI survives reload. IndexedDB read of 2.9 M chars / 407 keys: ~10 ms. Safari (WebKit) smoke test: local login page loads and reveals normally.
 
-**Not verified:** a real Firebase pull/push through the new store (needs a signed-in session on production) — check after deploy.
+**After deploy (production):** Chrome (signed in as admin) migrated 412 keys into IndexedDB, mode `idb`, "☁ Synced to Cloud"; all 529 managed keys compared equal to a fresh server read of `appData`. Safari reloaded: dashboard now shows 30 September and current attendance (was stuck on 28 September), no storage warning.
 
-**Deployed:** see below.
+**Not verified:** a save going *up* to the cloud through the new store — deliberately didn't write test data to production. User asked to do one normal save and check it appears in the other browser.
+
+**Deployed:** `firebase deploy --only hosting` → https://crownos-5f03d.web.app (commit `002121c`).
 
 ---
 
