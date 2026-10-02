@@ -535,3 +535,219 @@ function printCrownVoucher(voucher){
 
     downloadCrownVoucherPdf([voucher]);
 }
+
+/* ---- Gift Certificate as a PNG (exactly the layout, 2000 x 857 px) ----
+   Same design/coordinates as drawCrownGiftCertificate(), drawn on a canvas
+   so the file is just the certificate — no page margins — ready to lay out
+   for printing. */
+
+let crownGcFontsPromise = null;
+
+function loadCrownGcFonts(){
+    if(crownGcFontsPromise){
+        return crownGcFontsPromise;
+    }
+
+    const jobs = [];
+
+    /* Script face for "Gift Voucher" (falls back to italic serif offline). */
+    if(!document.getElementById("crownGcScriptFont")){
+        const link = document.createElement("link");
+        link.id = "crownGcScriptFont";
+        link.rel = "stylesheet";
+        link.href = "https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap";
+        document.head.appendChild(link);
+    }
+
+    jobs.push(
+        document.fonts.load('700 100px "Dancing Script"').catch(function(){})
+    );
+
+    if(typeof CROWN_VOUCHER_FONT_CINZEL_BOLD !== "undefined"){
+        try{
+            const bytes = Uint8Array.from(
+                atob(CROWN_VOUCHER_FONT_CINZEL_BOLD),
+                function(c){ return c.charCodeAt(0); }
+            );
+            const face = new FontFace("CinzelDecoCanvas", bytes.buffer, { weight: "700" });
+            jobs.push(face.load().then(function(f){ document.fonts.add(f); }).catch(function(){}));
+        }catch(error){}
+    }
+
+    /* Never hang the download on a slow font request. */
+    crownGcFontsPromise = Promise.race([
+        Promise.all(jobs),
+        new Promise(function(resolve){ setTimeout(resolve, 3000); })
+    ]);
+
+    return crownGcFontsPromise;
+}
+
+function loadCrownGcLogo(){
+    return new Promise(function(resolve){
+        const img = new Image();
+        img.onload = function(){ resolve(img); };
+        img.onerror = function(){ resolve(null); };
+        img.src = "crown-mark.png";
+    });
+}
+
+async function renderCrownGiftCertificateCanvas(gc){
+    await loadCrownGcFonts();
+    const logo = await loadCrownGcLogo();
+
+    const W = 2000;
+    const H = 857;
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+
+    const tier = CROWN_GC_TIERS[Number(gc.value)] || CROWN_GC_TIERS[300];
+    const rgb = function(c){ return `rgb(${c[0]},${c[1]},${c[2]})`; };
+    const gold = rgb(tier.base);
+    const sans = '"Montserrat", "Helvetica Neue", Helvetica, Arial, sans-serif';
+
+    ctx.fillStyle = "#363636";
+    ctx.fillRect(0, 0, W, H);
+
+    /* Side panel gradient. */
+    const grad = ctx.createLinearGradient(1500, 0, 2000, 0);
+    grad.addColorStop(0, rgb(tier.stops[0]));
+    grad.addColorStop(0.5, rgb(tier.stops[1]));
+    grad.addColorStop(1, rgb(tier.stops[2]));
+    ctx.fillStyle = grad;
+    ctx.fillRect(1500, 0, 500, H);
+
+    /* Bottom lines. */
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 760, W, 11);
+    const lineGrad = ctx.createLinearGradient(0, 0, W, 0);
+    lineGrad.addColorStop(0, rgb(tier.stops[0]));
+    lineGrad.addColorStop(0.5, rgb(tier.stops[1]));
+    lineGrad.addColorStop(1, rgb(tier.stops[0]));
+    ctx.fillStyle = lineGrad;
+    ctx.fillRect(0, 782, W, 12);
+
+    /* Value circle. */
+    ctx.beginPath();
+    ctx.arc(1551, 508, 282, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.strokeStyle = gold;
+    ctx.lineWidth = 26;
+    ctx.beginPath();
+    ctx.arc(1551, 508, 256, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(1551, 508, 238, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(1551, 508, 238, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#363636";
+    ctx.font = `800 150px ${sans}`;
+    ctx.fillText("₱" + (Number(gc.value) || 0), 1551, 525);
+    ctx.font = `400 78px ${sans}`;
+    ctx.fillText("VALUE", 1551, 612);
+
+    /* Logo: crown icon + wordmark. */
+    if(logo){
+        ctx.drawImage(logo, 160, 20, 120, 120);
+    }
+    ctx.fillStyle = "#ffffff";
+    ctx.font = '700 84px "CinzelDecoCanvas", "Times New Roman", serif';
+    ctx.fillText("CROWN", 220, 120);
+    ctx.font = `400 28px ${sans}`;
+    if("letterSpacing" in ctx){ ctx.letterSpacing = "8px"; }
+    ctx.fillText("HEAD SPA", 220, 152);
+    if("letterSpacing" in ctx){ ctx.letterSpacing = "0px"; }
+
+    /* Gift Voucher (gold gradient text). */
+    const textGrad = ctx.createLinearGradient(230, 0, 1050, 0);
+    textGrad.addColorStop(0, gold);
+    textGrad.addColorStop(0.5, rgb(tier.stops[1]));
+    textGrad.addColorStop(1, gold);
+    ctx.fillStyle = textGrad;
+    ctx.font = '700 230px "Dancing Script", "Brush Script MT", "Times New Roman", serif';
+    ctx.fillText("Gift Voucher", 640, 385);
+
+    /* Certificate text. */
+    const words = CROWN_GC_WORDS[Number(gc.value)] || String(gc.value);
+    ctx.font = `400 26px ${sans}`;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("This certificate entitles bearer to a choice of any packages at Crown Head Spa equivalent to", 640, 508);
+    ctx.font = `700 26px ${sans}`;
+    ctx.fillStyle = gold;
+    ctx.fillText(`${words} PESOS ONLY`, 640, 536);
+
+    ctx.font = `400 26px ${sans}`;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("No cash change is given. No responsibilities for lost gift voucher is assumed by", 640, 592);
+    ctx.font = `700 26px ${sans}`;
+    ctx.fillStyle = gold;
+    ctx.fillText("Crown Head Spa", 640, 620);
+
+    /* Code box. */
+    const boxW = 560;
+    const boxH = 70;
+    const boxX = 640 - boxW / 2;
+    const boxY = 640;
+    ctx.fillStyle = "#FFF4CF";
+    ctx.strokeStyle = gold;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(boxX, boxY, boxW, boxH, 14);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#0B1849";
+    ctx.font = '700 42px "Courier New", Courier, monospace';
+    ctx.fillText(String(gc.code || ""), 640, boxY + boxH / 2 + 14);
+
+    /* Validity. */
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `400 40px ${sans}`;
+    ctx.fillText(`valid until ${crownVoucherDateLabel(gc.expiresAt)}`, 640, 745);
+
+    /* REDEEMED / EXPIRED stamp, as on the PDF. */
+    const stamp = crownVoucherStatusStamp(gc);
+
+    if(stamp){
+        ctx.save();
+        ctx.translate(640, H / 2);
+        ctx.rotate(-12 * Math.PI / 180);
+        ctx.fillStyle = "rgba(179,38,30,0.9)";
+        ctx.font = `800 120px ${sans}`;
+        ctx.fillText(stamp.label, 0, 0);
+        if(stamp.detail){
+            ctx.font = `700 40px ${sans}`;
+            ctx.fillText(stamp.detail, 0, 55);
+        }
+        ctx.restore();
+    }
+
+    return canvas;
+}
+
+async function downloadCrownGiftCertificatePng(gc){
+    if(!gc || !gc.code){
+        return;
+    }
+
+    const canvas = await renderCrownGiftCertificateCanvas(gc);
+
+    canvas.toBlob(function(blob){
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Crown-Gift-Certificate-${gc.code}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    }, "image/png");
+}

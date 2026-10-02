@@ -165,7 +165,7 @@ function gcRow(entry, adminView){
         <td>${escapeHtml(entry.issuedBy || "—")}</td>
         <td class="voucher-action-cell">
             ${entry.status !== "cancelled"
-                ? '<button type="button" class="btn btn-sm btn-outline-primary print-btn">🖨 Download PDF</button>' : ""}
+                ? '<button type="button" class="btn btn-sm btn-outline-primary print-btn">🖼 Download PNG</button>' : ""}
             ${adminView && entry.status === "active"
                 ? '<button type="button" class="btn btn-sm btn-outline-danger void-btn">Void</button>' : ""}
             ${adminView && entry.status === "cancelled"
@@ -174,7 +174,7 @@ function gcRow(entry, adminView){
     `;
 
     row.querySelector(".print-btn")?.addEventListener("click", function(){
-        printCrownVoucher(entry);
+        downloadCrownGiftCertificatePng(entry);
     });
     row.querySelector(".void-btn")?.addEventListener("click", function(){
         voidVoucher(entry.code);

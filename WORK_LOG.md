@@ -11,6 +11,16 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-02 (2) — Gift Certificate download is now a PNG
+
+**Requested by:** User — wants the file to be only the layout (no A4 page) so it is easy to lay out for printing.
+
+**Change:** the Gift Certificate **Download PDF** button is now **Download PNG** ([`gift-certificates.js`](gift-certificates.js)). [`voucher-print.js`](voucher-print.js) `renderCrownGiftCertificateCanvas()` draws the same design on a 2000 × 857 px canvas (file = exactly the certificate); `downloadCrownGiftCertificatePng()` saves `Crown-Gift-Certificate-<code>.png`. Gold/Silver/Bronze colour coding kept. "Gift Voucher" uses Dancing Script from Google Fonts (falls back to an italic serif if offline). The PDF drawing code remains but is no longer used by the Gift Certificate tab; regular vouchers still download as PDF.
+
+**Verified:** rendered all three tiers in the browser pane; the page's download button itself wasn't clicked (needs a login session).
+
+---
+
 ## 2026-10-02 — Voucher Masterlist: Gift Certificate tab
 
 **Requested by:** User — add a Voucher / Gift Certificate tab to the Voucher Masterlist and a way to generate gift certificates.
