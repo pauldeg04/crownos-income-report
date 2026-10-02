@@ -11,6 +11,16 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-02 (5) — Fix: settling from the Ongoing list didn't redeem vouchers / gift certificates
+
+**Reported by:** User — a gift certificate used as payment was accepted, but after Settle its status stayed Active instead of Redeemed.
+
+**Cause:** the one-click **Settle** button on the Ongoing Transactions table (`settleSaleRow()` in [`script.js`](script.js)) finalized new vouchers but never called `syncVoucherRedemptions()`; only settling from the Add/Edit Sale modal did. Affected regular vouchers too, not just gift certificates.
+
+**Fix:** `settleSaleRow()` now calls `syncVoucherRedemptions(sale)`. Certificates already settled this way stay Active — they need to be fixed by hand (see the reply to the user).
+
+---
+
 ## 2026-10-02 (4) — Gift Certificates: Voided and Expired tables
 
 **Requested by:** User — one table for all voided gift certificates and another for expired, both collapsible.

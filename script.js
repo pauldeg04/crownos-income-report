@@ -6578,6 +6578,10 @@ function settleSaleRow(saleId){
   sale.settled = true;
   sale.updatedAt = new Date().toISOString();
 
+  /* Same as settling from the modal: vouchers / gift certificates used as
+     payment on this sale become Redeemed. */
+  syncVoucherRedemptions(sale);
+
   const newlyOfficialVouchers = finalizeSaleVouchers(sale);
 
   saveDailySales();
