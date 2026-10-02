@@ -11,6 +11,14 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-02 (3) — Gift Certificate PNG: crown replaces the W; font fix
+
+**Requested by:** User — the logo wasn't laid out properly; replace the "W" of CROWN with the crown icon.
+
+**Change:** [`voucher-print.js`](voucher-print.js) `renderCrownGiftCertificateCanvas()` now draws "CRO" + crown icon + "N" (measured and centred) with HEAD SPA below. Also fixed a first-download race: "Gift Voucher" used a fallback font on the first PNG of a page load because the Google Fonts stylesheet hadn't parsed yet; it now waits for it, and a thin same-colour stroke gives Dancing Script the heavier look of the design. Rendered all tiers twice in the browser pane — consistent.
+
+---
+
 ## 2026-10-02 (2) — Gift Certificate download is now a PNG
 
 **Requested by:** User — wants the file to be only the layout (no A4 page) so it is easy to lay out for printing.

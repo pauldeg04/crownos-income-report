@@ -550,18 +550,33 @@ function loadCrownGcFonts(){
 
     const jobs = [];
 
-    /* Script face for "Gift Voucher" (falls back to italic serif offline). */
-    if(!document.getElementById("crownGcScriptFont")){
-        const link = document.createElement("link");
-        link.id = "crownGcScriptFont";
-        link.rel = "stylesheet";
-        link.href = "https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap";
-        document.head.appendChild(link);
-    }
+    /* Script face for "Gift Voucher" (falls back to an italic serif offline).
+       The stylesheet must be parsed before document.fonts.load can see the
+       face, so wait for the <link> first. */
+    jobs.push(new Promise(function(resolve){
+        let link = document.getElementById("crownGcScriptFont");
 
-    jobs.push(
-        document.fonts.load('700 100px "Dancing Script"').catch(function(){})
-    );
+        if(!link){
+            link = document.createElement("link");
+            link.id = "crownGcScriptFont";
+            link.rel = "stylesheet";
+            link.href = "https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap";
+            document.head.appendChild(link);
+        }
+
+        function ready(){
+            document.fonts.load('700 230px "Dancing Script"', "Gift Voucher")
+                .catch(function(){})
+                .then(resolve);
+        }
+
+        if(link.sheet){
+            ready();
+        }else{
+            link.addEventListener("load", ready);
+            link.addEventListener("error", resolve);
+        }
+    }));
 
     if(typeof CROWN_VOUCHER_FONT_CINZEL_BOLD !== "undefined"){
         try{
@@ -594,6 +609,11 @@ function loadCrownGcLogo(){
 
 async function renderCrownGiftCertificateCanvas(gc){
     await loadCrownGcFonts();
+    /* Make sure the exact glyphs used below are ready before drawing. */
+    await Promise.race([
+        document.fonts.load('700 230px "Dancing Script"', "Gift Voucher").catch(function(){}),
+        new Promise(function(resolve){ setTimeout(resolve, 3000); })
+    ]);
     const logo = await loadCrownGcLogo();
 
     const W = 2000;
@@ -655,16 +675,25 @@ async function renderCrownGiftCertificateCanvas(gc){
     ctx.font = `400 78px ${sans}`;
     ctx.fillText("VALUE", 1551, 612);
 
-    /* Logo: crown icon + wordmark. */
-    if(logo){
-        ctx.drawImage(logo, 160, 20, 120, 120);
-    }
+    /* Logo: "CRO" + crown icon (in place of the W) + "N", then HEAD SPA. */
     ctx.fillStyle = "#ffffff";
     ctx.font = '700 84px "CinzelDecoCanvas", "Times New Roman", serif';
-    ctx.fillText("CROWN", 220, 120);
+    ctx.textAlign = "left";
+    const crownSize = 112;
+    const wCro = ctx.measureText("CRO").width;
+    const wN = ctx.measureText("N").width;
+    const logoW = wCro + crownSize + wN;
+    const logoX = 220 - logoW / 2;
+    ctx.fillText("CRO", logoX, 120);
+    if(logo){
+        /* The crown art sits in the upper ~90% of its square. */
+        ctx.drawImage(logo, logoX + wCro, 120 - crownSize * 0.9, crownSize, crownSize);
+    }
+    ctx.fillText("N", logoX + wCro + crownSize, 120);
+    ctx.textAlign = "center";
     ctx.font = `400 28px ${sans}`;
     if("letterSpacing" in ctx){ ctx.letterSpacing = "8px"; }
-    ctx.fillText("HEAD SPA", 220, 152);
+    ctx.fillText("HEAD SPA", 224, 158);
     if("letterSpacing" in ctx){ ctx.letterSpacing = "0px"; }
 
     /* Gift Voucher (gold gradient text). */
@@ -675,6 +704,12 @@ async function renderCrownGiftCertificateCanvas(gc){
     ctx.fillStyle = textGrad;
     ctx.font = '700 230px "Dancing Script", "Brush Script MT", "Times New Roman", serif';
     ctx.fillText("Gift Voucher", 640, 385);
+    /* Dancing Script comes out light on canvas; a thin same-colour stroke
+       gives it the heavier look of the design (same on every device). */
+    ctx.strokeStyle = textGrad;
+    ctx.lineWidth = 9;
+    ctx.lineJoin = "round";
+    ctx.strokeText("Gift Voucher", 640, 385);
 
     /* Certificate text. */
     const words = CROWN_GC_WORDS[Number(gc.value)] || String(gc.value);
