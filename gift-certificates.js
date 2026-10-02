@@ -201,21 +201,25 @@ window.renderGiftCertificateLists = function(){
             return String(b.issuedAt || "").localeCompare(String(a.issuedAt || ""));
         });
 
-    const issued = all.filter(function(entry){ return entry.status !== "redeemed"; });
     const used = all.filter(function(entry){ return entry.status === "redeemed"; });
+    const voided = all.filter(function(entry){ return entry.status === "cancelled"; });
+    const expired = all.filter(function(entry){ return effectiveVoucherStatus(entry) === "expired"; });
+    const issued = all.filter(function(entry){
+        return entry.status === "active" && effectiveVoucherStatus(entry) !== "expired";
+    });
 
-    const body = document.getElementById("gcListBody");
-    const usedBody = document.getElementById("gcUsedBody");
-    body.innerHTML = "";
-    usedBody.innerHTML = "";
-
-    issued.forEach(function(entry){ body.appendChild(gcRow(entry, adminView)); });
-    used.forEach(function(entry){ usedBody.appendChild(gcRow(entry, adminView)); });
-
-    document.getElementById("gcShownCount").textContent = issued.length;
-    document.getElementById("gcUsedCount").textContent = used.length;
-    document.getElementById("gcEmptyState").classList.toggle("d-none", issued.length > 0);
-    document.getElementById("gcUsedEmptyState").classList.toggle("d-none", used.length > 0);
+    [
+        ["gcList", "gcShown", issued, "gcEmptyState"],
+        ["gcUsed", "gcUsed", used, "gcUsedEmptyState"],
+        ["gcVoid", "gcVoid", voided, "gcVoidEmptyState"],
+        ["gcExpired", "gcExpired", expired, "gcExpiredEmptyState"]
+    ].forEach(function(spec){
+        const body = document.getElementById(spec[0] + "Body");
+        body.innerHTML = "";
+        spec[2].forEach(function(entry){ body.appendChild(gcRow(entry, adminView)); });
+        document.getElementById(spec[1] + "Count").textContent = spec[2].length;
+        document.getElementById(spec[3]).classList.toggle("d-none", spec[2].length > 0);
+    });
 };
 
 function gcSwitchTab(tab){
@@ -253,10 +257,12 @@ document.addEventListener("DOMContentLoaded", function(){
         window.renderGiftCertificateLists();
     });
 
-    document.getElementById("gcUsedToggle").addEventListener("click", function(){
-        const open = this.getAttribute("aria-expanded") !== "true";
-        this.setAttribute("aria-expanded", String(open));
-        document.getElementById("gcUsedWrap").classList.toggle("d-none", !open);
+    ["gcUsed", "gcVoid", "gcExpired"].forEach(function(prefix){
+        document.getElementById(prefix + "Toggle").addEventListener("click", function(){
+            const open = this.getAttribute("aria-expanded") !== "true";
+            this.setAttribute("aria-expanded", String(open));
+            document.getElementById(prefix + "Wrap").classList.toggle("d-none", !open);
+        });
     });
 
     let startTab = "voucher";

@@ -202,7 +202,7 @@
                     </div>
                 </div>
 
-                <h5 class="fw-bold text-primary mb-2">Gift Certificates</h5>
+                <h5 class="fw-bold text-primary mb-2">Active Gift Certificates</h5>
 
                 <div class="table-responsive">
                     <table class="table voucher-list-table align-middle">
@@ -228,7 +228,7 @@
             </div>
         </div>
 
-        <div class="card shadow-sm border-0">
+        <div class="card shadow-sm border-0 mb-4">
             <div class="card-body">
                 <button type="button" class="gc-collapse-toggle" id="gcUsedToggle" aria-expanded="false">
                     <span class="gc-collapse-arrow">▸</span>
@@ -256,6 +256,74 @@
 
                     <div class="empty-state d-none" id="gcUsedEmptyState">
                         No used gift certificates for this date range.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <button type="button" class="gc-collapse-toggle" id="gcVoidToggle" aria-expanded="false">
+                    <span class="gc-collapse-arrow">▸</span>
+                    Voided Gift Certificates <span class="gc-collapse-count" id="gcVoidCount">0</span>
+                </button>
+
+                <div class="d-none mt-3" id="gcVoidWrap">
+                    <div class="table-responsive">
+                        <table class="table voucher-list-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Gift Certificate No.</th>
+                                    <th>Value</th>
+                                    <th>Issued</th>
+                                    <th>Expiration Date</th>
+                                    <th>Status</th>
+                                    <th>Redemption</th>
+                                    <th>Created By</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gcVoidBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="empty-state d-none" id="gcVoidEmptyState">
+                        No voided gift certificates for this date range.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <button type="button" class="gc-collapse-toggle" id="gcExpiredToggle" aria-expanded="false">
+                    <span class="gc-collapse-arrow">▸</span>
+                    Expired Gift Certificates <span class="gc-collapse-count" id="gcExpiredCount">0</span>
+                </button>
+
+                <div class="d-none mt-3" id="gcExpiredWrap">
+                    <div class="table-responsive">
+                        <table class="table voucher-list-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Gift Certificate No.</th>
+                                    <th>Value</th>
+                                    <th>Issued</th>
+                                    <th>Expiration Date</th>
+                                    <th>Status</th>
+                                    <th>Redemption</th>
+                                    <th>Created By</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gcExpiredBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="empty-state d-none" id="gcExpiredEmptyState">
+                        No expired gift certificates for this date range.
                     </div>
                 </div>
             </div>

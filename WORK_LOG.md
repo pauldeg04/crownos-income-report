@@ -11,6 +11,14 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-02 (4) — Gift Certificates: Voided and Expired tables
+
+**Requested by:** User — one table for all voided gift certificates and another for expired, both collapsible.
+
+**Change:** [`list-vouchers.html`](list-vouchers.html) / [`gift-certificates.js`](gift-certificates.js): the main table is now **Active** only; collapsible **Used**, **Voided** and **Expired** tables (with counts) follow it. Expired = status active but past its expiry date (derived at render time, as on the Voucher tab). All four respect the From/To date filter. Reactivate remains on the Voided table (Admin). **Verified** in a seeded local harness (active/redeemed/voided/expired entries each landed in the right table with the right buttons).
+
+---
+
 ## 2026-10-02 (3) — Gift Certificate PNG: crown replaces the W; font fix
 
 **Requested by:** User — the logo wasn't laid out properly; replace the "W" of CROWN with the crown icon.
