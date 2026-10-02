@@ -11,6 +11,20 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-02 — Voucher Masterlist: Gift Certificate tab
+
+**Requested by:** User — add a Voucher / Gift Certificate tab to the Voucher Masterlist and a way to generate gift certificates.
+
+**What:** [`list-vouchers.html`](list-vouchers.html) now has two tabs. *Voucher* is the existing content, unchanged. *Gift Certificate* ([`gift-certificates.js`](gift-certificates.js)) has a generator (Amount dropdown ₱100/₱200/₱300, Quantity 1–100, Validity date picker; no client name), a From/To date filter (by Issued date) applied to both tables, the Gift Certificates table (No. | Value | Issued | Expiration Date | Status | Redemption | Created By | Action) and a collapsible Used Gift Certificates table for redeemed ones.
+
+**Storage:** same registry as vouchers (`crownVoucherRegistry`) with `kind: "giftcertificate"` and codes `GC-XXXX-XXXX`, so codes are unique across both and Void / Reactivate / cloud sync reuse the voucher code path (transactional write). The Voucher tab and the Payday list filter gift certificates out. Because it is the same registry, typing a GC code as a voucher payment in Add Sale also validates/redeems it (no value check yet).
+
+**PDF:** [`voucher-print.js`](voucher-print.js) `drawCrownGiftCertificate()` — landscape layout following the supplied Canva design (logo, Gift Voucher, certificate text with amount in words, code, valid until, value circle). Circle/side panel colour-coded: Gold ₱300, Silver ₱200, Bronze ₱100. Approximations: the full wordmark logo image isn't in the project (crown icon + "CROWN / HEAD SPA" text used) and the script font is a serif bold-italic.
+
+**Not tested in browser:** PDF rendered and checked via node/jsPDF for all three tiers; page UI was syntax-checked only.
+
+---
+
 ## 2026-09-30 (3) — Safari tab with no sidebar: Firebase Auth SDK didn't load; now self-repairs
 
 **Reported by:** User — Safari again: Dashboard shows but no sidebar, no top toolbar, no therapists ("hindi complete").

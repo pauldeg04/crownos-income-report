@@ -158,3 +158,46 @@
 .voucher-action-cell .btn{
     margin-right:4px;
 }
+
+/* ---- Voucher / Gift Certificate page tabs ---- */
+
+.voucher-page-tabs .nav-link{
+    font-weight:800;
+    color:var(--muted);
+}
+
+.voucher-page-tabs .nav-link.active{
+    color:var(--navy);
+}
+
+.gc-collapse-toggle{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    padding:0;
+    background:none;
+    border:0;
+    text-align:left;
+    font-size:1.25rem;
+    font-weight:700;
+    color:var(--navy);
+}
+
+.gc-collapse-arrow{
+    display:inline-block;
+    transition:transform .15s;
+}
+
+.gc-collapse-toggle[aria-expanded="true"] .gc-collapse-arrow{
+    transform:rotate(90deg);
+}
+
+.gc-collapse-count{
+    background:var(--brand-blue-tint);
+    border:1px solid var(--brand-blue-border);
+    border-radius:999px;
+    padding:2px 10px;
+    font-size:12px;
+    font-weight:800;
+}

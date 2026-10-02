@@ -51,7 +51,16 @@
                 </a>
             </div>
 
-            <div class="voucher-summary-tiles">
+            <ul class="nav nav-tabs voucher-page-tabs mt-3" id="voucherPageTabs" role="tablist">
+                <li class="nav-item">
+                    <button type="button" class="nav-link active" id="tabVoucherBtn" data-tab="voucher">Voucher</button>
+                </li>
+                <li class="nav-item">
+                    <button type="button" class="nav-link" id="tabGiftBtn" data-tab="gift">Gift Certificate</button>
+                </li>
+            </ul>
+
+            <div class="voucher-summary-tiles" data-pane="voucher">
                 <div class="voucher-tile">
                     <span>Total Issued</span>
                     <strong id="tileTotal">0</strong>
@@ -80,7 +89,7 @@
         </div>
     </div>
 
-    <div class="card shadow-sm border-0">
+    <div class="card shadow-sm border-0" data-pane="voucher">
         <div class="card-body">
 
             <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
@@ -139,12 +148,128 @@
         </div>
     </div>
 
+    <!-- ================= Gift Certificate tab ================= -->
+    <div id="giftPane" class="d-none">
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <h5 class="fw-bold text-primary mb-3">Generate Gift Certificate</h5>
+
+                <div class="d-flex flex-wrap gap-3 align-items-end">
+                    <div>
+                        <label class="form-label fw-bold mb-1" for="gcAmount">Amount</label>
+                        <select id="gcAmount" class="form-select">
+                            <option value="">Select Amount</option>
+                            <option value="100">₱100</option>
+                            <option value="200">₱200</option>
+                            <option value="300">₱300</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="form-label fw-bold mb-1" for="gcQuantity">Quantity</label>
+                        <input type="number" id="gcQuantity" class="form-control" min="1" max="100" step="1" value="1">
+                    </div>
+
+                    <div>
+                        <label class="form-label fw-bold mb-1" for="gcValidity">Validity (Valid Until)</label>
+                        <input type="date" id="gcValidity" class="form-control">
+                    </div>
+
+                    <button type="button" class="btn btn-primary" id="gcGenerateBtn">Generate Gift Certificate</button>
+                </div>
+
+                <div class="text-danger fw-bold mt-2 d-none" id="gcFormError"></div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+                    <div class="d-flex flex-wrap gap-2 align-items-end">
+                        <div>
+                            <label class="form-label fw-bold mb-1" for="gcFromDate">From Date</label>
+                            <input type="date" id="gcFromDate" class="form-control">
+                        </div>
+                        <div>
+                            <label class="form-label fw-bold mb-1" for="gcToDate">To Date</label>
+                            <input type="date" id="gcToDate" class="form-control">
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary" id="gcClearDates">Clear</button>
+                    </div>
+                    <div class="voucher-count-box">
+                        Showing: <strong id="gcShownCount">0</strong>
+                    </div>
+                </div>
+
+                <h5 class="fw-bold text-primary mb-2">Gift Certificates</h5>
+
+                <div class="table-responsive">
+                    <table class="table voucher-list-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Gift Certificate No.</th>
+                                <th>Value</th>
+                                <th>Issued</th>
+                                <th>Expiration Date</th>
+                                <th>Status</th>
+                                <th>Redemption</th>
+                                <th>Created By</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gcListBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="empty-state d-none" id="gcEmptyState">
+                    No gift certificates found for this date range.
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <button type="button" class="gc-collapse-toggle" id="gcUsedToggle" aria-expanded="false">
+                    <span class="gc-collapse-arrow">▸</span>
+                    Used Gift Certificates <span class="gc-collapse-count" id="gcUsedCount">0</span>
+                </button>
+
+                <div class="d-none mt-3" id="gcUsedWrap">
+                    <div class="table-responsive">
+                        <table class="table voucher-list-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Gift Certificate No.</th>
+                                    <th>Value</th>
+                                    <th>Issued</th>
+                                    <th>Expiration Date</th>
+                                    <th>Status</th>
+                                    <th>Redemption</th>
+                                    <th>Created By</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gcUsedBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="empty-state d-none" id="gcUsedEmptyState">
+                        No used gift certificates for this date range.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
 </div>
 
 <script type="text/crown-deferred" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="text/crown-deferred" src="voucher-font-cinzel.js"></script>
 <script type="text/crown-deferred" src="voucher-print.js"></script>
 <script type="text/crown-deferred" src="list-vouchers.js"></script>
+<script type="text/crown-deferred" src="gift-certificates.js"></script>
 <script type="text/crown-deferred" src="sidebar.js"></script>
 </body>
 </html>

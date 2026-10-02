@@ -198,7 +198,9 @@ function renderVoucherList(){
     const registry =
         getRegistry()
             .filter(function(entry){
-                return !listFilter || listFilter(entry);
+                /* Gift certificates live in the Gift Certificate tab. */
+                return entry.kind !== "giftcertificate" &&
+                    (!listFilter || listFilter(entry));
             })
             .sort(function(a, b){
                 return String(b.issuedAt || "")
@@ -369,6 +371,10 @@ function renderVoucherList(){
 
         tbody.appendChild(row);
     });
+
+    if(typeof window.renderGiftCertificateLists === "function"){
+        window.renderGiftCertificateLists();
+    }
 }
 
 async function voidVoucher(code){
