@@ -11,6 +11,22 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-03 (10) — Automatic nightly backup, emailed
+
+**Request:** a backup of CrownOS every day at 2 AM, sent automatically to an email address.
+
+**What was built**
+- [`functions/autoBackup.js`](functions/autoBackup.js) + `dailyBackupEmail` in [`functions/index.js`](functions/index.js): scheduled function, `0 2 * * *` Asia/Manila (us-central1). Rebuilds every synced `crown*` key from the Firestore `appData` + `appDataCashflow` chunk docs into the same JSON format as "Export Full Backup" (restorable with Data Protection → Restore), adds `birCompliance` under `cloudCollections`, gzips it, and emails `CrownOS_Full_Backup_<date>.json.gz` to jethrotech.ph@gmail.com via the existing nodemailer/`EMAIL_PASSWORD` setup (from info@crownheadspa.com).
+- On failure: writes the error to the status doc and sends a "⚠ CrownOS Daily Backup FAILED" email.
+- Status doc `systemStatus/autoBackup` (written by the function; Admin-read-only rule added to [`firestore.rules`](firestore.rules)); shown as a line under Export Full Backup in [`data-protection.html`](data-protection.html) / [`data-protection.js`](data-protection.js).
+- Manual: Chapter 23 gained "Automatic backup — every night".
+
+**Not verified:** the function had not run at deploy time (first run 2:00 AM Manila); not test-fired. Recipient is hard-coded as `AUTO_BACKUP_RECIPIENT` in `index.js`.
+
+**Deployed:** `firebase deploy --only functions:dailyBackupEmail,firestore:rules,hosting`.
+
+---
+
 ## 2026-10-03 (9) — Scheduling: search box on Upcoming Schedules and Schedule History
 
 **Requested by:** Admin — no way to search Scheduling for a client (follow-up to the Gatchalian case).

@@ -2770,6 +2770,22 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
     </p>
   </div>
 
+  <h3>Automatic backup — every night</h3>
+
+  <p>
+    Every day at <strong>2:00 AM</strong>, CrownOS makes a full backup of its
+    cloud data on its own and emails it to the registered backup address as a
+    <code>.json.gz</code> attachment. Nobody needs to be logged in. The line
+    under <span class="ui">Export Full Backup</span> shows when the last one
+    was sent, or a warning if it failed (a failure email is also sent).
+  </p>
+
+  <p>
+    To use an emailed backup, double-click the attachment to unzip it, then
+    choose the resulting <code>.json</code> file under Restore. Keep these
+    emails private — they contain client and financial data.
+  </p>
+
   <h3>Restore</h3>
 
   <ol class="steps">

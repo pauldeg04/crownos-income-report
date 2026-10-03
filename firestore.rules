@@ -521,6 +521,13 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    /* Written only by Cloud Functions (dailyBackupEmail); Admin may read. */
+    match /systemStatus/{docId} {
+      allow get, list: if request.auth != null &&
+        request.auth.token.role == 'Admin';
+      allow write: if false;
+    }
+
     /* One doc per registered device push token (doc ID = the token
        itself), written by push-notifications.js on opt-in. A user may
        only manage tokens addressed to their own recipientEmail; the

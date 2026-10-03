@@ -38,6 +38,7 @@ const {
     formatDisplayTime
 } = require("./capacity");
 const { buildGetGoogleReviews } = require("./googleReviews");
+const { runAutoBackup } = require("./autoBackup");
 
 const BRANCH_MASTER_KEY = "crownBranchMasterList";
 const SERVICE_MASTER_KEY = "crownServiceMasterList";
@@ -2883,5 +2884,21 @@ exports.sendPushOnClientNotification = onDocumentCreated(
         }
 
         await sendPushToAccount(tokenSnap.docs[0].data().account, notification.message);
+    }
+);
+
+/* Nightly 2:00 AM (Manila) full-data backup, emailed as a .json.gz — see
+   autoBackup.js. Status is written to systemStatus/autoBackup for the Data
+   Protection page. */
+const AUTO_BACKUP_RECIPIENT = "jethrotech.ph@gmail.com";
+
+exports.dailyBackupEmail = onSchedule(
+    { schedule: "0 2 * * *", timeZone: "Asia/Manila", secrets: [EMAIL_PASSWORD], timeoutSeconds: 540, memory: "512MiB" },
+    async () => {
+        await runAutoBackup({
+            db, admin, buildMailer,
+            from: BOOKING_EMAIL_FROM,
+            to: AUTO_BACKUP_RECIPIENT
+        });
     }
 );

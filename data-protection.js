@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", function(){
     attachEvents();
     refreshSystemHealth();
     renderBackupHistory();
+    loadAutoBackupStatus();
 });
 
 function enforceAdminAccess(){
@@ -1105,4 +1106,44 @@ function escapeHtml(value){
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+}
+
+
+/* Nightly 2:00 AM emailed backup — written by the dailyBackupEmail Cloud
+   Function to systemStatus/autoBackup (Admin-readable). */
+function loadAutoBackupStatus(){
+    const el = document.getElementById("autoBackupStatus");
+
+    if(!el) return;
+
+    function show(text){ el.textContent = text; }
+
+    if(!window.firebase?.auth || !firebase.firestore){
+        show("Automatic backup: runs every day at 2:00 AM and is emailed.");
+        return;
+    }
+
+    firebase.auth().onAuthStateChanged(function(user){
+        if(!user) return;
+
+        firebase.firestore().collection("systemStatus").doc("autoBackup").get()
+            .then(function(snap){
+                if(!snap.exists){
+                    show("Automatic backup: every day at 2:00 AM, emailed. No run recorded yet.");
+                    return;
+                }
+
+                const d = snap.data();
+                const when = d.at?.toDate?.().toLocaleString("en-PH") || "";
+
+                show(
+                    d.ok
+                        ? "✅ Automatic backup: last sent " + when + " to " + d.to + " (runs daily at 2:00 AM)."
+                        : "⚠ Automatic backup FAILED on " + when + ": " + (d.error || "unknown error")
+                );
+            })
+            .catch(function(){
+                show("Automatic backup: runs every day at 2:00 AM and is emailed.");
+            });
+    });
 }
