@@ -11,6 +11,22 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-03 (6) — Payroll: new Therapist attendance rules (effective 2026-09-27)
+
+- [`payroll.js`](payroll.js): Therapists (dates on/after 2026-09-27) now use staff hours 12:30pm–9:30pm.
+  Hours = clock-in to clock-out (no shift clamp). 6h+ = Basic (Daily Rate), 3 to <6h = Halfday
+  (half), <3h = nothing. Meal 1 (Meal Allowance) only if arrived by 12:30, out at/after 9:30pm and
+  full day (minute precision, no grace). Meal 2 (Overtime Meal Allowance) only if a Dashboard service
+  timer for that therapist was stopped after 9:30pm (any branch), even when late/halfday. Late and
+  Undertime don't reduce Basic. Earlier dates and all other roles unchanged. Verified against the 7
+  policy examples with a throwaway harness.
+- [`clock-widget.js`](clock-widget.js): Therapists skip the Opening/Closing picker (always Closing)
+  from 2026-09-27.
+- [`manual.html`](manual.html): Therapist pay formula updated.
+- Not changed: Overtime *Commission* cutoff still uses the Closing shift end (10:00pm).
+
+---
+
 ## 2026-10-03 (5) — Birthday promo: "Birthmonth Freebie" wording, shorter email text
 
 - [`clients.js`](clients.js) / [`functions/index.js`](functions/index.js): SMS and email subject say

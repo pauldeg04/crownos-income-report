@@ -73,6 +73,60 @@ const SHIFT_SCHEDULES = {
     Closing: { start: "13:00", end: "22:00" }
 };
 
+/* Therapist attendance rules effective 2026-09-27 (staff 12:30pm-9:30pm).
+   Hours are plain clock-in to clock-out (no shift clamp). Basic Pay needs
+   6+ hours, Halfday Pay (half of Basic) 3 to under 6, nothing under 3.
+   Meal 1 (mealAllowance): arrived by 12:30 AND out at/after 21:30 AND a
+   full (non-halfday) day. Meal 2 (otMealAllowance): a Dashboard service
+   timer was stopped after 21:30 — regardless of late/halfday. Late and
+   Undertime never reduce Basic Pay; they only forfeit Meal 1. Compared to
+   the minute, no grace period. */
+const THERAPIST_RULES_START_DATE = "2026-09-27";
+const THERAPIST_STAFF_START = "12:30";
+const THERAPIST_STAFF_END = "21:30";
+const THERAPIST_BASIC_MIN_HOURS = 6;
+const THERAPIST_HALFDAY_MIN_HOURS = 3;
+
+function usesTherapistTimeRules(role, date){
+    return role === "Therapist" && date >= THERAPIST_RULES_START_DATE;
+}
+
+function toMinuteMs(value){
+    return Math.floor(new Date(value).getTime() / 60000) * 60000;
+}
+
+/* True if any of this therapist's Dashboard service timers on `date`
+   (any branch) was stopped after the staff end time. A timer still
+   running / never stopped is not counted. */
+function therapistServedPastStaffEnd(therapistName, date){
+    if(!therapistName){
+        return false;
+    }
+
+    const cutoff =
+        new Date(`${date}T${THERAPIST_STAFF_END}:00`).getTime();
+
+    return getBranchNames().some(function(branch){
+        let schedule;
+
+        try{
+            schedule = JSON.parse(
+                localStorage.getItem("crownSchedule_" + branch + "_" + date)
+            );
+        }catch(error){
+            return false;
+        }
+
+        return (Array.isArray(schedule) ? schedule : []).some(function(item){
+            return (
+                String(item?.therapist || "").trim() === therapistName &&
+                item.timerStatus === "done" &&
+                Number(item.timerStoppedAt) > cutoff
+            );
+        });
+    });
+}
+
 function usesOvertimeShiftRule(role){
     return OVERTIME_SHIFT_ROLES.includes(role);
 }
@@ -851,8 +905,13 @@ function getDayAttendance(userId, date, branchFilter, fallbackRole){
     let hours = 0;
 
     completed.forEach(function(entry){
+        const entryRole =
+            entry.dutyRole || fallbackRole || "Therapist";
+
         const schedule =
-            SHIFT_SCHEDULES[entry.shiftType];
+            usesTherapistTimeRules(entryRole, entry.date)
+                ? null
+                : SHIFT_SCHEDULES[entry.shiftType];
 
         /* Clamp the counted clock-in to the shift's official start —
            arriving early doesn't add paid hours. Only affects entries
@@ -874,8 +933,7 @@ function getDayAttendance(userId, date, branchFilter, fallbackRole){
 
         hours += entryHours;
 
-        const role =
-            entry.dutyRole || fallbackRole || "Therapist";
+        const role = entryRole;
 
         dutyHours[role] = (dutyHours[role] || 0) + entryHours;
     });
@@ -1453,6 +1511,45 @@ function computeStaffPayroll(user, groupKey, period){
                             (totalHours - OVERTIME_SHIFT_HOURS) *
                             branchShare;
                     }
+                }else if(usesTherapistTimeRules(effectiveRole, date)){
+                    const staffStartMs =
+                        toMinuteMs(`${date}T${THERAPIST_STAFF_START}:00`);
+                    const staffEndMs =
+                        toMinuteMs(`${date}T${THERAPIST_STAFF_END}:00`);
+
+                    const isFullDay =
+                        totalHours >= THERAPIST_BASIC_MIN_HOURS;
+                    const isHalfday =
+                        !isFullDay && totalHours >= THERAPIST_HALFDAY_MIN_HOURS;
+
+                    const isLate =
+                        Boolean(dayAttendance.timeIn) &&
+                        toMinuteMs(dayAttendance.timeIn) > staffStartMs;
+                    const isUndertime =
+                        !dayAttendance.timeOut ||
+                        toMinuteMs(dayAttendance.timeOut) < staffEndMs;
+
+                    const basicPay =
+                        isFullDay
+                            ? applicableDailyRate
+                            : (isHalfday ? applicableDailyRate / 2 : 0);
+
+                    dailyRateAmount = basicPay * branchShare;
+
+                    const servedPastEnd =
+                        therapistServedPastStaffEnd(user.therapistName, date);
+
+                    let wholeDayMealAllowance = 0;
+
+                    if(isFullDay && !isLate && !isUndertime){
+                        wholeDayMealAllowance += rate.mealAllowance;
+                    }
+
+                    if(servedPastEnd){
+                        wholeDayMealAllowance += rate.otMealAllowance;
+                    }
+
+                    mealAllowanceAmount = wholeDayMealAllowance * branchShare;
                 }else{
                     dailyRateAmount = applicableDailyRate * branchShare;
 
