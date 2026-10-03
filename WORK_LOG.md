@@ -11,6 +11,13 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-03 (4) — Birthday email: VIP Birthmonth Freebie poster in the body
+
+- [`images/birthday-freebie.jpg`](images/birthday-freebie.jpg): poster (JPEG, from the PNG in
+  `CrownOS/Birthday Treat/`), served from Firebase Hosting.
+- [`functions/index.js`](functions/index.js): `buildBirthdayEmailHtml` shows the poster full-width
+  right under the header, above the greeting. SMS stays text-only. Functions + hosting redeployed.
+
 ## 2026-10-03 (3) — Birthday promo: "Birthday Treat" renamed "Birthday Freebies"
 
 - [`clients.js`](clients.js) and [`functions/index.js`](functions/index.js): SMS, email body and

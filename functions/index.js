@@ -1957,6 +1957,12 @@ function buildBirthdayEmailHtml({ clientName, message }){
 </tr>
 
 <tr>
+    <td style="padding:0;line-height:0;font-size:0;">
+        <img src="https://crownos-5f03d.web.app/images/birthday-freebie.jpg" width="520" alt="Crown Head Spa VIP Birthmonth Freebie - Just for You" style="display:block;width:100%;max-width:520px;height:auto;border:0;">
+    </td>
+</tr>
+
+<tr>
     <td style="padding:32px;">
         <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;">Hi ${escapeHtml(clientName) || "there"},</p>
         <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1c1a16;line-height:1.7;">${messageHtml}</p>
