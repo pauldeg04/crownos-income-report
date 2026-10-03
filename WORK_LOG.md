@@ -11,6 +11,13 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-03 — Birthday promo: Comfort Treat replaces Back Massage / Foot Reflex
+
+- [`clients.js`](clients.js): `BIRTHDAY_SMS_MESSAGE` and `BIRTHDAY_EMAIL_MESSAGE` now offer a
+  FREE Comfort Treat instead of the 30-Min Back Massage or Foot Reflex. No change to the
+  email template or the send functions.
+- [`manual.html`](manual.html): Birthday Celebrants section mentions the Comfort Treat offer.
+
 ## 2026-10-02 (5) — Fix: settling from the Ongoing list didn't redeem vouchers / gift certificates
 
 **Reported by:** User — a gift certificate used as payment was accepted, but after Settle its status stayed Active instead of Redeemed.
