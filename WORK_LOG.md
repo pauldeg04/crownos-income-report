@@ -11,6 +11,12 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-03 (5) — Birthday promo: "Birthmonth Freebie" wording, shorter email text
+
+- [`clients.js`](clients.js) / [`functions/index.js`](functions/index.js): SMS and email subject say
+  "Birthmonth Freebie" to match the poster; email body text shortened since the poster carries the
+  offer. [`manual.html`](manual.html) now mentions the poster. Functions + hosting redeployed.
+
 ## 2026-10-03 (4) — Birthday email: VIP Birthmonth Freebie poster in the body
 
 - [`images/birthday-freebie.jpg`](images/birthday-freebie.jpg): poster (JPEG, from the PNG in

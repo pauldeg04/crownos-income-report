@@ -1924,7 +1924,7 @@ exports.sendBirthdayEmail = onCall(
         await mailer.sendMail({
             from: `"Crown Head Spa" <${BOOKING_EMAIL_FROM}>`,
             to: email,
-            subject: "Claim your Birthday Freebies at Crown Head Spa!",
+            subject: "Claim your Birthmonth Freebie at Crown Head Spa!",
             text: `Hi ${clientName || "there"},\n\n${message}`,
             html: buildBirthdayEmailHtml({ clientName, message })
         });
