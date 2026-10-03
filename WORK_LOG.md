@@ -11,6 +11,12 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-03 (2) — Birthday promo: "Birthday Upgrade" renamed "Birthday Treat"
+
+- [`clients.js`](clients.js): SMS and email body say FREE Birthday Treat.
+- [`functions/index.js`](functions/index.js): email subject is now "Claim your FREE Birthday Treat
+  at Crown Head Spa!" (functions redeployed).
+
 ## 2026-10-03 — Birthday promo: Comfort Treat replaces Back Massage / Foot Reflex
 
 - [`clients.js`](clients.js): `BIRTHDAY_SMS_MESSAGE` and `BIRTHDAY_EMAIL_MESSAGE` now offer a
