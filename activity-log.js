@@ -532,6 +532,20 @@
 
         const where = branchAndPeriod(key);
 
+        /* A schedule bucket is one day, and the Add Appointment modal has its
+           own Date field, so say which day this save landed on — otherwise an
+           appointment booked for another date looks like it vanished. */
+        if(key.startsWith("crownSchedule_") && /^\d{4}-\d{2}-\d{2}$/.test(where.period)){
+            const dayLabel = new Date(where.period + "T00:00:00")
+                .toLocaleDateString("en-PH", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+
+            change = {
+                action: change.action,
+                summary: change.summary + " (for " + dayLabel + ")",
+                details: (change.details || []).map(function(line){ return line + " [" + dayLabel + "]"; })
+            };
+        }
+
         send({
             module: moduleForKey(key),
             action: change.action,

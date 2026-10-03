@@ -11,6 +11,21 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-03 (8) — Activity Log shows the appointment date for Scheduling entries
+
+**Reported by:** Admin — Lois's 1:28 PM Scheduling entry (Gatchalian, Melissa + De Jesus, Ma Sheryll,
+Calamba) was in the Activity Log but not on the Schedule page.
+
+**Finding:** The save went through (no later removal, only Lois edited Scheduling that day). The
+Add Appointment modal has its own Date field, so the likely cause is it was saved to a different
+day than the one being viewed — but the log never recorded the day, so it couldn't be proven.
+
+**Change ([`activity-log.js`](activity-log.js)):** for `crownSchedule_<branch>_<date>` keys, the
+summary now ends with "(for Sun, Oct 4, 2026)" and each detail line with "[Sun, Oct 4, 2026]".
+[`manual.html`](manual.html) Activity Log section updated. Entries before this change have no date.
+
+---
+
 ## 2026-10-03 (7) — Opening shift retired; Overtime Commission cutoff 9:30pm
 
 - [`clock-widget.js`](clock-widget.js): no Opening/Closing picker for anyone — clock-in is always
