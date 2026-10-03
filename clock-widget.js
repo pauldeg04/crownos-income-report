@@ -520,16 +520,9 @@ async function handleClockAction(){
             .map(function(entry){ return entry.shiftType; })
             .find(Boolean) || "";
 
-    /* Opening shift was retired for Therapists (operating hours 1pm-10pm,
-       staff 12:30pm-9:30pm) from 2026-09-27 — no picker, always Closing. */
-    if(todayShiftType){
-        await performClockIn(user, todayShiftType);
-    }else if(user.role === "Therapist" && today >= "2026-09-27"){
-        await performClockIn(user, "Closing");
-    }else{
-        pendingClockInUser = user;
-        showShiftPicker();
-    }
+    /* Opening shift was retired for everyone (operating hours 1pm-10pm)
+       from 2026-09-27 — no picker, always Closing. */
+    await performClockIn(user, todayShiftType || "Closing");
 }
 
 function showShiftPicker(){

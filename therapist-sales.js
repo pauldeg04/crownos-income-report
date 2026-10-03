@@ -574,8 +574,12 @@ function extractTherapistServices(
             const shiftType =
                 shiftTypeFor(date);
 
+            /* From 2026-09-27 staff end at 9:30pm (mirrors payroll.js's
+               getCommissionShiftEnd). */
             const shiftEndTime =
-                THERAPIST_SALES_SHIFT_SCHEDULES[shiftType]?.end || "";
+                (shiftType === "Closing" && date >= "2026-09-27")
+                    ? "21:30"
+                    : (THERAPIST_SALES_SHIFT_SCHEDULES[shiftType]?.end || "");
 
             const commissionRate =
                 CrownCommission.getServiceCommissionRate(

@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-03 (7) — Opening shift retired; Overtime Commission cutoff 9:30pm
+
+- [`clock-widget.js`](clock-widget.js): no Opening/Closing picker for anyone — clock-in is always
+  tagged Closing (an existing same-day tag is still reused).
+- [`payroll.js`](payroll.js) and [`therapist-sales.js`](therapist-sales.js): Overtime Commission
+  cutoff for Closing is 9:30pm on dates from 2026-09-27 (10:00pm before). Opening stays in
+  `SHIFT_SCHEDULES` so old records still compute.
+- [`attendance.html`](attendance.html): manual-correction Opening option relabeled "retired – old
+  records only" so editing an old entry doesn't blank it. [`manual.html`](manual.html) updated.
+
+---
+
 ## 2026-10-03 (6) — Payroll: new Therapist attendance rules (effective 2026-09-27)
 
 - [`payroll.js`](payroll.js): Therapists (dates on/after 2026-09-27) now use staff hours 12:30pm–9:30pm.

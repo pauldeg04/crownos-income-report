@@ -127,6 +127,16 @@ function therapistServedPastStaffEnd(therapistName, date){
     });
 }
 
+/* Overtime Commission cutoff: staff end at 9:30pm from 2026-09-27
+   (was the Closing shift's 10:00pm). Earlier dates keep the old end. */
+function getCommissionShiftEnd(shiftType, date){
+    if(shiftType === "Closing" && date >= THERAPIST_RULES_START_DATE){
+        return THERAPIST_STAFF_END;
+    }
+
+    return SHIFT_SCHEDULES[shiftType]?.end || "";
+}
+
 function usesOvertimeShiftRule(role){
     return OVERTIME_SHIFT_ROLES.includes(role);
 }
@@ -1028,7 +1038,7 @@ function getDayCommission(therapistName, date, branchFilter, shiftType){
         getServiceMasterMeta();
 
     const shiftEndTime =
-        SHIFT_SCHEDULES[shiftType]?.end || "";
+        getCommissionShiftEnd(shiftType, date);
 
     let total = 0;
 
