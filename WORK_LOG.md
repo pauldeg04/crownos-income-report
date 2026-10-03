@@ -11,6 +11,12 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-03 (3) — Birthday promo: "Birthday Treat" renamed "Birthday Freebies"
+
+- [`clients.js`](clients.js) and [`functions/index.js`](functions/index.js): SMS, email body and
+  email subject now say "Birthday Freebies" (the redundant "FREE" before it was dropped;
+  "FREE Comfort Treat" is unchanged). Functions redeployed.
+
 ## 2026-10-03 (2) — Birthday promo: "Birthday Upgrade" renamed "Birthday Treat"
 
 - [`clients.js`](clients.js): SMS and email body say FREE Birthday Treat.

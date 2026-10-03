@@ -328,10 +328,10 @@ function loadBranchOptions(){
    lag, not the promo-keyword filtering this was briefly swapped out
    for (see git history around 2026-09-09 for that dead end). */
 const BIRTHDAY_SMS_MESSAGE =
-    "Claim your FREE Birthday Treat! Book any service this month & get a FREE Comfort Treat. Msg us now. Happy Birthday!";
+    "Claim your Birthday Freebies! Book any service this month & get a FREE Comfort Treat. Msg us now. Happy Birthday!";
 
 const BIRTHDAY_EMAIL_MESSAGE =
-    "Claim your FREE BIRTHDAY TREAT. Book any service during your birthday month\n" +
+    "Claim your BIRTHDAY FREEBIES. Book any service during your birthday month\n" +
     "and receive a FREE Add-On:\n" +
     "Complimentary Comfort Treat\n" +
     "Message us Now. Have an amazing birthday month! See you\n" +
