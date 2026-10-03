@@ -11,6 +11,19 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-03 (9) — Scheduling: search box on Upcoming Schedules and Schedule History
+
+**Requested by:** Admin — no way to search Scheduling for a client (follow-up to the Gatchalian case).
+
+**Change:** [`scheduling.html`](scheduling.html) / [`scheduling.js`](scheduling.js) /
+[`scheduling.css`](scheduling.css): a search box in the Upcoming Schedules card and in the Schedule
+History modal (they share one query). Matches client, companions, service, notes and contact; every
+word must match, so "melissa gatchalian" finds "Gatchalian, Melissa". Both lists were already
+limited to the selected branch — the subtitles said "every branch", now corrected.
+[`manual.html`](manual.html) updated.
+
+---
+
 ## 2026-10-03 (8) — Activity Log shows the appointment date for Scheduling entries
 
 **Reported by:** Admin — Lois's 1:28 PM Scheduling entry (Gatchalian, Melissa + De Jesus, Ma Sheryll,

@@ -60,6 +60,9 @@ let activeHoldsCache = [];
    closeModal() on cancel, or by saveSchedule() after use. */
 let pendingRequestId = null;
 
+/* Text typed into the Upcoming / History search boxes. */
+let scheduleSearchQuery = "";
+
 document.addEventListener("DOMContentLoaded", async function(){
     initializeDate();
     loadBranchOptions();
@@ -215,6 +218,16 @@ function attachEvents(){
     document
         .getElementById("showScheduleHistoryBtn")
         .addEventListener("click", openScheduleHistoryModal);
+
+    /* The two boxes (Upcoming card and History modal) share one query. */
+    ["scheduleSearchInput", "scheduleHistorySearchInput"].forEach(function(id){
+        document
+            .getElementById(id)
+            .addEventListener("input", function(){
+                scheduleSearchQuery = this.value;
+                renderUpcomingAndHistory();
+            });
+    });
 
     document
         .getElementById("closeScheduleHistoryModalBtn")
@@ -2735,9 +2748,43 @@ function getScheduleSortKey(group){
     return group.date + "T" + (group.main.startTime || "00:00");
 }
 
+function scheduleGroupMatchesSearch(group){
+    const query =
+        scheduleSearchQuery.trim().toLowerCase();
+
+    if(!query){
+        return true;
+    }
+
+    const haystack = [
+        group.main.client,
+        group.main.service,
+        group.main.notes,
+        getClientMobile(group.main.client)
+    ].concat(
+        group.companions.map(function(companion){
+            return companion.client;
+        })
+    ).join(" ").toLowerCase();
+
+    /* Every word must match, so "melissa gatchalian" still finds the
+       entry saved as "Gatchalian, Melissa". */
+    return query.split(/[\s,]+/).filter(Boolean).every(function(word){
+        return haystack.includes(word);
+    });
+}
+
 function renderUpcomingAndHistory(){
     const groups =
-        getAllScheduleGroups();
+        getAllScheduleGroups().filter(scheduleGroupMatchesSearch);
+
+    ["scheduleSearchInput", "scheduleHistorySearchInput"].forEach(function(id){
+        const input = document.getElementById(id);
+
+        if(input && input.value !== scheduleSearchQuery){
+            input.value = scheduleSearchQuery;
+        }
+    });
 
     const todayStr =
         getTodayDateString();

@@ -826,3 +826,9 @@ body.modal-open{
         display:none;
     }
 }
+
+.schedule-search-input{
+    max-width:280px;
+    margin-left:auto;
+    margin-right:12px;
+}
