@@ -11,6 +11,12 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-03 (11) — Activity Log in the nightly backup (JSON + CSV)
+
+`activityLog` added to the backup's `cloudCollections`, and attached as `CrownOS_Activity_Log_<stamp>.csv` (UTF-8 with BOM, newest first; columns ts, day, clientTime, name, account, role, branch, page, module, action, summary, details, ref, email, uid) in [`functions/autoBackup.js`](functions/autoBackup.js). Manual's automatic-backup paragraph updated. Manual "Export Full Backup" still excludes it. Not test-fired. (An earlier attempt this session failed silently — a `sed -i` error — and deployed unchanged code; this entry is the real change.) **Deployed:** `firebase deploy --only functions:dailyBackupEmail,hosting`.
+
+---
+
 ## 2026-10-03 (10) — Automatic nightly backup, emailed
 
 **Request:** a backup of CrownOS every day at 2 AM, sent automatically to an email address.

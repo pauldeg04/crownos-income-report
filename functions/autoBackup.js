@@ -5,13 +5,15 @@
    that firebase-sync.js maintains, one or more chunk docs per localStorage
    key) and rebuilds the same JSON the Data Protection page's "Export Full
    Backup" produces, so the file can be restored with that page's Restore.
-   birCompliance is not a synced key, so it is added as a separate section.
+   birCompliance and activityLog are not synced keys, so they are added as a
+   separate section (cloudCollections). The Activity Log is also attached as
+   a CSV so it can be opened in Excel / Google Sheets.
    ========================================================================== */
 
 const zlib = require("zlib");
 
 const SYNC_COLLECTIONS = ["appData", "appDataCashflow"];
-const EXTRA_COLLECTIONS = ["birCompliance"];
+const EXTRA_COLLECTIONS = ["birCompliance", "activityLog"];
 const STATUS_DOC = ["systemStatus", "autoBackup"];
 
 async function collectSyncedKeys(db){
@@ -71,6 +73,33 @@ async function collectExtra(db){
     return out;
 }
 
+const CSV_COLUMNS = [
+    "ts", "day", "clientTime", "name", "account", "role", "branch", "page",
+    "module", "action", "summary", "details", "ref", "email", "uid"
+];
+
+function csvCell(value){
+    if(value && typeof value.toDate === "function") value = value.toDate().toISOString();
+    if(Array.isArray(value)) value = value.join(" | ");
+    if(value === undefined || value === null) value = "";
+    return '"' + String(value).replace(/"/g, '""') + '"';
+}
+
+/* Newest first; BOM so Excel reads the Filipino/UTF-8 text correctly. */
+function activityLogToCsv(entries){
+    const rows = Object.values(entries || {}).sort(function(a, b){
+        const ta = a.ts && a.ts.toMillis ? a.ts.toMillis() : 0;
+        const tb = b.ts && b.ts.toMillis ? b.ts.toMillis() : 0;
+        return tb - ta;
+    });
+
+    const lines = [CSV_COLUMNS.join(",")].concat(rows.map(function(row){
+        return CSV_COLUMNS.map(function(col){ return csvCell(row[col]); }).join(",");
+    }));
+
+    return "\ufeff" + lines.join("\r\n") + "\r\n";
+}
+
 function manilaStamp(date){
     const shifted = new Date(date.getTime() + 8 * 3600 * 1000);
     return shifted.toISOString().slice(0, 19).replace("T", "_").replace(/:/g, "-");
@@ -100,9 +129,12 @@ async function runAutoBackup({ db, admin, buildMailer, from, to }){
             cloudCollections: await collectExtra(db)
         };
 
+        const logCount = Object.keys(payload.cloudCollections.activityLog || {}).length;
+
         const json = JSON.stringify(payload);
         const gz = zlib.gzipSync(Buffer.from(json, "utf8"));
-        const fileName = "CrownOS_Full_Backup_" + manilaStamp(now) + ".json.gz";
+        const stamp = manilaStamp(now);
+        const fileName = "CrownOS_Full_Backup_" + stamp + ".json.gz";
 
         await buildMailer().sendMail({
             from: '"CrownOS Backup" <' + from + ">",
@@ -111,12 +143,20 @@ async function runAutoBackup({ db, admin, buildMailer, from, to }){
             text:
                 "Automatic CrownOS backup.\n\n" +
                 "Data keys: " + keyCount + "\n" +
+                "Activity Log entries: " + logCount + " (also attached as CSV)\n" +
                 "Size: " + Math.round(json.length / 1024) + " KB (" +
                 Math.round(gz.length / 1024) + " KB compressed)\n\n" +
                 "To restore: unzip the attachment (double-click it) to get the .json file, " +
                 "then use Data Protection > Restore in CrownOS.\n" +
                 "Keep this email private — it contains client and financial data.",
-            attachments: [{ filename: fileName, content: gz, contentType: "application/gzip" }]
+            attachments: [
+                { filename: fileName, content: gz, contentType: "application/gzip" },
+                {
+                    filename: "CrownOS_Activity_Log_" + stamp + ".csv",
+                    content: activityLogToCsv(payload.cloudCollections.activityLog),
+                    contentType: "text/csv; charset=utf-8"
+                }
+            ]
         });
 
         await statusRef.set({

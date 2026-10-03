@@ -2774,8 +2774,10 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
 
   <p>
     Every day at <strong>2:00 AM</strong>, CrownOS makes a full backup of its
-    cloud data on its own and emails it to the registered backup address as a
-    <code>.json.gz</code> attachment. Nobody needs to be logged in. The line
+    cloud data on its own (including the BIR Compliance records and the Activity
+    Log) and emails it to the registered backup address as a
+    <code>.json.gz</code> attachment, plus a separate <code>.csv</code> of the
+    Activity Log that opens in Excel or Google Sheets. Nobody needs to be logged in. The line
     under <span class="ui">Export Full Backup</span> shows when the last one
     was sent, or a warning if it failed (a failure email is also sent).
   </p>
