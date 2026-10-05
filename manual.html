@@ -306,6 +306,12 @@
                                     </a>
                                 </li>
                                 <li>
+                                    <a href="#ch-budget-request">
+                                        <span class="manual-ch">29a</span>
+                                        <span>Budget Request</span>
+                                    </a>
+                                </li>
+                                <li>
                                     <a href="#ch-daily-monitoring">
                                         <span class="manual-ch">30</span>
                                         <span>Daily Monitoring Sheet</span>
@@ -3195,6 +3201,45 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
     read receipt so the person who filed it can see it was seen, not an
     approval step. Executive Assistant and Team Leader accounts can view
     reports but cannot acknowledge them.
+  </p>
+</section>
+
+<section id="ch-budget-request">
+  <h2><span class="h2-num">Chapter 29a</span>Budget Request</h2>
+
+  <ul class="roleline">
+    <li><span class="pill pill-role">Admin</span> <span class="text-muted">(sees all, decides)</span></li>
+    <li><span class="pill pill-role">Executive Assistant</span> <span class="text-muted">(own requests)</span></li>
+    <li><span class="pill pill-role">Marketing Agent</span> <span class="text-muted">(own requests)</span></li>
+    <li><span class="pill pill-role">Tech Support</span> <span class="text-muted">(own requests)</span></li>
+    <li><span class="pill pill-role">Team Leader</span> <span class="text-muted">(own requests)</span></li>
+  </ul>
+
+  <p class="text-muted">Lives in its own page in Admin Hub — <strong>Budget Request</strong>.</p>
+
+  <p>A place to ask for money for payables and to track what happened to each request.</p>
+
+  <ol class="steps">
+    <li>Press <span class="ui">Request Budget</span>.</li>
+    <li>Choose the Branch (Biñan, Calamba, or Head Office), type the Purpose (required), and pick the Deadline.</li>
+    <li>Choose the Mode of Payment: Cash, Gcash, Gotyme, or Bank Transfer. For Gcash, Gotyme, and Bank Transfer, also enter the Account Name and Account Number.</li>
+    <li>Enter the Amount, add an optional Note, then press <span class="ui">Submit</span>.</li>
+  </ol>
+
+  <p>
+    The table shows Date, Branch, Purpose, Deadline, MOP, Amount, Requested by, Note, Status, and a
+    <span class="ui">View</span> button. Use the <strong>Month</strong> picker to switch months, or the
+    <strong>Date</strong> picker to see one day (<span class="ui">Clear Date</span> returns to the month).
+    Requestors only see their own requests; Admin sees everyone's.
+  </p>
+
+  <p><strong>Status.</strong> The requestor sees <strong>Pending</strong> until Admin acts, then <strong>Declined</strong> (red) or <strong>Done</strong> (green). Admin sees an unactioned request as <strong>New Request</strong>, coloured by the Deadline: <strong>red</strong> if due today (or overdue), <strong>orange</strong> if 3 days or less away, plain black if more than 3 days.</p>
+
+  <p>
+    <strong>Admin actions.</strong> <span class="ui">View</span> opens the request details with
+    <span class="ui">Back</span> (just closes the window), <span class="ui">Decline</span>, and
+    <span class="ui">Mark as Done</span>. Mark as Done asks for an attachment as proof of payment before
+    the request becomes Done; the proof is shown as a link when the request is viewed afterward.
   </p>
 </section>
 

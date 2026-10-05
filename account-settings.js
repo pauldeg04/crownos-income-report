@@ -30,7 +30,8 @@ const EXTRA_ACCESS_PAGES = [
     { href: "marketing-ads-daily.html", label: "Ads Monitoring" },
     { href: "marketing-ads-summary.html", label: "Monitoring Summary" },
     { href: "marketing-daily-report.html", label: "Daily Report" },
-    { href: "daily-monitoring.html", label: "Daily Monitoring Sheet" }
+    { href: "daily-monitoring.html", label: "Daily Monitoring Sheet" },
+    { href: "budget-request.html", label: "Budget Request" }
 ];
 
 function applyTeamLeaderAutoAccess(){

@@ -257,6 +257,26 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    /* Budget Requests (Admin Hub). Requestors see only their own; Admin
+       sees all and may move a Pending request to Declined or Done (with
+       proof-of-payment fields). */
+    match /budgetRequests/{requestId} {
+      allow create: if request.auth != null &&
+        request.resource.data.requesterEmail == request.auth.token.email &&
+        request.resource.data.status == 'Pending';
+      allow get, list: if request.auth != null &&
+        (request.auth.token.role == 'Admin' ||
+         resource.data.requesterEmail == request.auth.token.email);
+      allow update: if request.auth != null &&
+        request.auth.token.role == 'Admin' &&
+        resource.data.status == 'Pending' &&
+        request.resource.data.status in ['Declined', 'Done'] &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'proofUrl', 'proofPath', 'proofName',
+                    'actedByAccount', 'actedByName', 'actedAt']);
+      allow delete: if false;
+    }
+
     /* Tech Support — Maintenance requests (Inventory > Tech Support).
        Same shape/guard as leaveRequests above, but with the
        "Request Submitted / Processing / Done" ladder instead of

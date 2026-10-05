@@ -11,6 +11,24 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-05 (1) — Budget Request page (Admin Hub)
+
+**Requested by:** Admin — a Budget Request menu with a request form, table, and Admin approval flow.
+
+**What was built**
+- New page [`budget-request.html`](budget-request.html) / [`budget-request.js`](budget-request.js) / [`budget-request.css`](budget-request.css): Month + Date pickers, **Request Budget** form (Branch Biñan/Calamba/Head Office, Purpose required, Deadline, MOP with Account Name/Number for Gcash/Gotyme/Bank Transfer, Amount, optional Note), and the table Date | Branch | Purpose | Deadline | MOP | Amount | Requested by | Note | Status | Action.
+- View popup with Back / Decline / Mark as Done (Admin only, Pending only). Mark as Done requires a proof-of-payment attachment (Storage `budgetRequestAttachments/`).
+- Status: requestor sees Pending → Declined (red) / Done (green); Admin sees "New Request", red if deadline is today/overdue, orange if ≤3 days, black otherwise.
+- Access: Admin, Executive Assistant, Marketing Agent, Tech Support via [`access-control.js`](access-control.js) and [`sidebar.js`](sidebar.js); Team Leader through `TEAM_LEADER_AUTO_ACCESS_PAGES` (self-heals existing Team Leader accounts) and the Additional Access list in [`account-settings.js`](account-settings.js).
+- Rules: `budgetRequests` in [`firestore.rules`](firestore.rules) (requestors read only their own; Admin reads all and may move Pending → Declined/Done), `budgetRequestAttachments` in [`storage.rules`](storage.rules).
+- Manual: new Chapter 29a.
+
+**Notes:** requestors other than Admin only see their own requests (my choice). Local testing writes to the live `budgetRequests` collection (rules block deletes, so test rows need removing in the Firebase Console). The Executive Assistant role has no approve rights, only Admin.
+
+**Deployed:** `firebase deploy --only firestore:rules,storage,hosting`.
+
+---
+
 ## 2026-10-03 (11) — Activity Log in the nightly backup (JSON + CSV)
 
 `activityLog` added to the backup's `cloudCollections`, and attached as `CrownOS_Activity_Log_<stamp>.csv` (UTF-8 with BOM, newest first; columns ts, day, clientTime, name, account, role, branch, page, module, action, summary, details, ref, email, uid) in [`functions/autoBackup.js`](functions/autoBackup.js). Manual's automatic-backup paragraph updated. Manual "Export Full Backup" still excludes it. Not test-fired. (An earlier attempt this session failed silently — a `sed -i` error — and deployed unchanged code; this entry is the real change.) **Deployed:** `firebase deploy --only functions:dailyBackupEmail,hosting`.

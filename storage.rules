@@ -81,6 +81,14 @@ service firebase.storage {
       allow read, write: if request.auth != null;
     }
 
+    // Budget Request proof-of-payment files (budget-request.js). Admin
+    // uploads when marking a request Done; the requestor needs to read it.
+    match /budgetRequestAttachments/{branch}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        request.auth.token.role == 'Admin';
+    }
+
     // Announcement poster images uploaded from admin-announcement.js /
     // bulletin-board.js's announcement editor (uploadAnnouncementPoster()).
     // Same read/write split as the announcement Firestore collection.

@@ -31,7 +31,8 @@
         "index.html",
         "statistics.html",
         "scheduling.html",
-        "daily-monitoring.html"
+        "daily-monitoring.html",
+        "budget-request.html"
     ];
 
     const PAGE_ACCESS = {
@@ -261,6 +262,14 @@
             "Receptionist",
             "Therapist",
             "Marketing Agent"
+        ],
+
+        /* Team Leader gets this through TEAM_LEADER_AUTO_ACCESS_PAGES. */
+        "budget-request.html": [
+            "Admin",
+            "Executive Assistant",
+            "Marketing Agent",
+            "Tech Support"
         ],
 
         "201-files.html": [

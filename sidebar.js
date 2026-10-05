@@ -260,6 +260,13 @@
            Therapist account, not a role this menu filter checks
            directly. Every other role listed below only ever sees their
            own personal assessment history on this page. */
+        /* Budget Request: Team Leader via extraAccess, same as above. */
+        {
+            label: "Budget Request",
+            href: "budget-request.html",
+            roles: ["Admin", "Executive Assistant", "Marketing Agent", "Tech Support"]
+        },
+
         {
             label: "Daily Monitoring Sheet",
             href: "daily-monitoring.html",
@@ -1629,6 +1636,7 @@
             "staff-schedule.html": "Staff Schedule",
             "leave-requests.html": "Leave Request",
             "incident-report.html": "Incident Report",
+            "budget-request.html": "Budget Request",
             "201-files.html": "201 Files",
             "bulletin-board.html": "Bulletin Board",
             "staff-management.html": "Staff Management",
