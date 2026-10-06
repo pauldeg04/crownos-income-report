@@ -59,6 +59,15 @@
 
             <div class="budget-filters">
                 <div>
+                    <label for="budgetBranchFilter">Branch</label>
+                    <select class="form-select" id="budgetBranchFilter">
+                        <option value="">All Branch</option>
+                        <option value="Biñan">Biñan</option>
+                        <option value="Calamba">Calamba</option>
+                        <option value="Head Office">Head Office</option>
+                    </select>
+                </div>
+                <div>
                     <label for="budgetMonthFilter">Month</label>
                     <input type="month" class="form-control" id="budgetMonthFilter">
                 </div>
@@ -137,6 +146,11 @@
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Amount (₱)</label>
                         <input type="number" min="0" step="0.01" class="form-control" id="budgetAmountInput">
+                    </div>
+
+                    <div class="col-12 d-none" id="budgetBankField">
+                        <label class="form-label fw-semibold">Bank</label>
+                        <input type="text" class="form-control" id="budgetBankInput" placeholder="Name of the bank">
                     </div>
 
                     <div class="col-md-6 d-none budget-account-field">

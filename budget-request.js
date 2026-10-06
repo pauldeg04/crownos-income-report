@@ -90,8 +90,13 @@
     function visibleRequests(){
         const month = $("budgetMonthFilter").value;
         const date = $("budgetDateFilter").value;
+        const branch = $("budgetBranchFilter").value;
 
         return requestsCache.filter(function(r){
+            if(branch && r.branch !== branch){
+                return false;
+            }
+
             if(date){
                 return r.createdDate === date;
             }
@@ -151,6 +156,10 @@
             ["Deadline", formatDay(r.deadline)],
             ["Mode of Payment", r.mop]
         ];
+
+        if(r.mop === "Bank Transfer"){
+            rows.push(["Bank", r.bank]);
+        }
 
         if(ACCOUNT_MOPS.includes(r.mop)){
             rows.push(["Account Name", r.accountName]);
@@ -275,7 +284,10 @@
     /* ---- Request form ---- */
 
     function syncAccountFields(){
-        const show = ACCOUNT_MOPS.includes($("budgetMopInput").value);
+        const mop = $("budgetMopInput").value;
+        const show = ACCOUNT_MOPS.includes(mop);
+
+        $("budgetBankField").classList.toggle("d-none", mop !== "Bank Transfer");
 
         document.querySelectorAll(".budget-account-field").forEach(function(el){
             el.classList.toggle("d-none", !show);
@@ -288,6 +300,7 @@
         $("budgetDeadlineInput").value = "";
         $("budgetDeadlineInput").min = todayKey();
         $("budgetMopInput").value = "Cash";
+        $("budgetBankInput").value = "";
         $("budgetAccountNameInput").value = "";
         $("budgetAccountNumberInput").value = "";
         $("budgetAmountInput").value = "";
@@ -305,6 +318,7 @@
         const purpose = $("budgetPurposeInput").value.trim();
         const deadline = $("budgetDeadlineInput").value;
         const mop = $("budgetMopInput").value;
+        const bank = $("budgetBankInput").value.trim();
         const accountName = $("budgetAccountNameInput").value.trim();
         const accountNumber = $("budgetAccountNumberInput").value.trim();
         const amount = parseFloat($("budgetAmountInput").value);
@@ -312,6 +326,11 @@
 
         if(!purpose){ alert("Please enter the Purpose."); return; }
         if(!deadline){ alert("Please select a Deadline."); return; }
+
+        if(mop === "Bank Transfer" && !bank){
+            alert("Please enter the Bank.");
+            return;
+        }
 
         if(ACCOUNT_MOPS.includes(mop) && (!accountName || !accountNumber)){
             alert("Please enter the Account Name and Account Number.");
@@ -330,6 +349,7 @@
                 purpose,
                 deadline,
                 mop,
+                bank: mop === "Bank Transfer" ? bank : "",
                 accountName: needsAccount ? accountName : "",
                 accountNumber: needsAccount ? accountNumber : "",
                 amount,
@@ -377,6 +397,7 @@
         $("budgetMonthFilter").value = todayKey().slice(0, 7);
         $("budgetMonthFilter").addEventListener("change", renderTable);
         $("budgetDateFilter").addEventListener("change", renderTable);
+        $("budgetBranchFilter").addEventListener("change", renderTable);
         $("budgetClearDateBtn").addEventListener("click", function(){
             $("budgetDateFilter").value = "";
             renderTable();

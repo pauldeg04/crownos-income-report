@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-06 (1) — Budget Request: Branch picker and Bank field
+
+**Requested by:** Admin.
+
+- [`budget-request.html`](budget-request.html) / [`budget-request.js`](budget-request.js): a **Branch** filter (All Branch / Biñan / Calamba / Head Office) beside Month and Date; it combines with them.
+- **Bank Transfer** now also asks for the **Bank** (required, stored as `bank`), shown in the View popup. Gcash/Gotyme unchanged. Requests made before this have no bank.
+- [`manual.html`](manual.html) Chapter 29a updated. No rules change.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-05 (1) — Budget Request page (Admin Hub)
 
 **Requested by:** Admin — a Budget Request menu with a request form, table, and Admin approval flow.
