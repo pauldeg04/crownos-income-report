@@ -162,6 +162,12 @@
             "Therapist"
         ],
 
+        "receptionist-sales.html": [
+            "Admin",
+            "Executive Assistant",
+            "Receptionist"
+        ],
+
         "data-protection.html": [
             "Admin"
         ],

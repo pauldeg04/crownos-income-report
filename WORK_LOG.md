@@ -11,6 +11,22 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-06 (2) — Receptionist Sales page (point system)
+
+**Requested by:** Admin.
+
+- New [`receptionist-sales.html`](receptionist-sales.html) / [`receptionist-sales.js`](receptionist-sales.js) / [`receptionist-sales-access-guard.js`](receptionist-sales-access-guard.js): branch-wide (not per-person) summary modeled on Therapist Sales, reusing its CSS. Date comes from the header toolbar; no therapist selector.
+- **Daily Sales:** No. | Client's Name | Service | Service Cost | Points, with daily totals. **Monthly Sales:** Date | Receptionist on Duty (from the attendance log) | Total Sales | Total Points. Cream boxes: Transactions / Total Sales / Points.
+- **Points:** matched by service name keywords, falling back to price (₱600=3, 900=4, 1000=5, 1400=7, 1500=7, 2000=10, 2300=11, 3400=17); Products and Add-ons = 1; unmatched = 0 and flagged.
+- Access: Admin, Executive Assistant, Receptionist (registered in `access-control.js`, `sidebar.js`, `account-settings.js` extra-access list).
+- [`manual.html`](manual.html) Chapter 9a + role table row added.
+
+**Open:** real service names don't all match the point table (e.g. Little Body Massage); map by name once the Admin confirms tiers.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-06 (1) — Budget Request: Branch picker and Bank field
 
 **Requested by:** Admin.

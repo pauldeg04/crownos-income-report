@@ -162,6 +162,12 @@
                                     </a>
                                 </li>
                                 <li>
+                                    <a href="#ch-receptionist-sales">
+                                        <span class="manual-ch">9a</span>
+                                        <span>Receptionist Sales</span>
+                                    </a>
+                                </li>
+                                <li>
                                     <a href="#ch-payroll">
                                         <span class="manual-ch">10</span>
                                         <span>Payroll</span>
@@ -675,6 +681,7 @@
         <tr><td>Dashboard</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td></tr>
         <tr><td>Daily Income Report</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
         <tr><td>Therapist Sales</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
+        <tr><td>Receptionist Sales</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
         <tr><td>Sales Invoice Summary</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td><td class="ctr no">—</td></tr>
         <tr><td>Client Database</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
         <tr><td>Scheduling</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td><td class="ctr yes">●</td><td class="ctr yes">●</td><td class="ctr no">—</td></tr>
@@ -1411,6 +1418,48 @@ Amount to Pay      what the client actually pays</div>
     Commission</strong> used when the service finishes <em>after</em> the
     therapist's shift officially ends.
   </p>
+</section>
+
+<section id="ch-receptionist-sales">
+  <h2><span class="h2-num">Chapter 9a</span>Receptionist Sales</h2>
+
+  <ul class="roleline">
+    <li><span class="pill pill-role">Admin</span></li>
+    <li><span class="pill pill-role">Executive Assistant</span></li>
+    <li><span class="pill pill-role">Receptionist</span></li>
+  </ul>
+
+  <p>
+    This is the branch-wide sales summary for the front desk, scored with a
+    <strong>point system</strong>. It is not per person: it covers the whole
+    selected branch. Pick the branch and date from the header.
+  </p>
+
+  <dl class="deflist">
+    <dt>Daily Sales</dt>
+    <dd>Each transaction that day: number, client's name, service, service cost, and points.</dd>
+
+    <dt>Monthly Sales</dt>
+    <dd>Each day of the month: Receptionist on Duty (from Attendance), Total Sales, and Total Points.</dd>
+  </dl>
+
+  <table class="manual-table">
+    <thead><tr><th>Item</th><th>Points</th></tr></thead>
+    <tbody>
+      <tr><td>Reset / Serenity / Detox and Glow</td><td>3 / 5 / 10</td></tr>
+      <tr><td>Relax / Relief / Recovery (massage)</td><td>4 / 7 / 10</td></tr>
+      <tr><td>Reset Duo / Serenity Set / Recovery Ritual</td><td>7 / 11 / 17</td></tr>
+      <tr><td>Add-ons, Products</td><td>1 each</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <span class="callout-label">Note</span>
+    <p>
+      Points are matched by service name, then by price. A service with no
+      matching point value shows "No point value set" and earns 0 points.
+    </p>
+  </div>
 </section>
 
 <section id="ch-payroll">

@@ -12,6 +12,7 @@ const EXTRA_ACCESS_PAGES = [
     { href: "statistics.html", label: "Statistics" },
     { href: "petty-cash.html", label: "Petty Cash" },
     { href: "therapist-sales.html", label: "Therapist Sales" },
+    { href: "receptionist-sales.html", label: "Receptionist Sales" },
     { href: "monthly-report.html", label: "Monthly Summary" },
     { href: "expenses-report.html", label: "Expenses Report" },
     { href: "clients.html", label: "Client Database" },

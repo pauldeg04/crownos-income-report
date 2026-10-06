@@ -154,6 +154,7 @@
         "Statistics": "▥",
         "Petty Cash": "¢",
         "Therapist Sales": "♙",
+        "Receptionist Sales": "♗",
         "Monthly Summary": "Σ",
         "Expenses Report": "−",
         "Cash Flow": "◑",
@@ -207,6 +208,13 @@
             label: "Therapist Sales",
             href: "therapist-sales.html",
             roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist"],
+            branchRequired: true
+        },
+
+        {
+            label: "Receptionist Sales",
+            href: "receptionist-sales.html",
+            roles: ["Admin", "Executive Assistant", "Receptionist"],
             branchRequired: true
         },
 
@@ -1616,6 +1624,7 @@
             "statistics.html": "Statistics",
             "petty-cash.html": "Petty Cash",
             "therapist-sales.html": "Therapist Sales",
+            "receptionist-sales.html": "Receptionist Sales",
             "account-settings.html": "Account Settings",
             "list-services.html": "List of Services",
             "list-products.html": "List of Products",
