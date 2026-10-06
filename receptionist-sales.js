@@ -519,6 +519,16 @@ const POINTS_BY_COST = {
     2000: 10, 2300: 11, 3400: 17
 };
 
+/* Add-ons are services in the List of Services whose category is Add-on. */
+function isAddOnService(lowerName){
+    return readList("crownServiceMasterList").some(function(service){
+        return (
+            String(service?.name || "").trim().toLowerCase() === lowerName &&
+            /add[\s-]?on/i.test(String(service?.category || ""))
+        );
+    });
+}
+
 function getPointsForItem(item, unitCost){
     const name = String(item?.name || "").toLowerCase();
     const qty = Math.max(Number(item?.quantity) || 1, 1);
@@ -528,11 +538,11 @@ function getPointsForItem(item, unitCost){
         (String(item?.productKind || "").includes("Voucher") ? "Product" : "Service");
 
     if(itemType === "Product"){
-        return { points: 1 * qty, known: true, category: "Products" };
+        return { points: 1 * qty, known: true, category: "Products", rank: 1 };
     }
 
-    if(/add[\s-]?ons?\b/.test(name)){
-        return { points: 1 * qty, known: true, category: "Add-ons" };
+    if(/add[\s-]?ons?\b/.test(name) || isAddOnService(name)){
+        return { points: 1 * qty, known: true, category: "Add-ons", rank: 1 };
     }
 
     let each = null;
@@ -548,6 +558,8 @@ function getPointsForItem(item, unitCost){
     else if(/reflief|relief/.test(name)){ each = 7; category = "Massage"; }
     else if(/recovery/.test(name)){ each = 10; category = "Massage"; }
 
+    const byName = Boolean(category);
+
     if(!category){
         category =
             /massage|foot/.test(name) ? "Massage" :
@@ -561,8 +573,8 @@ function getPointsForItem(item, unitCost){
     }
 
     return each === null
-        ? { points: 0, known: false, category: category }
-        : { points: each * qty, known: true, category: category };
+        ? { points: 0, known: false, category: category, rank: 999, tier: "" }
+        : { points: each * qty, known: true, category: category, rank: each, tier: byName ? category + ":" + each : "" };
 }
 
 /* One entry per item; transaction number is shared by items of one sale. */
@@ -589,6 +601,8 @@ function extractEntries(rows, date){
                 service: (item?.name || "—") + (qty > 1 ? ` × ${qty}` : ""),
                 baseName: item?.name || "—",
                 category: result.category,
+                rank: result.rank,
+                tier: result.tier,
                 cost: cost,
                 points: result.points,
                 known: result.known,
@@ -758,56 +772,99 @@ function renderMonthly(branch, month){
         formatNumber(days.reduce(function(s, d){ return s + d.points; }, 0));
 }
 
-/* Month totals per service/product name; every add-on and product is its
-   own row. */
+/* Fixed list, in the order the Admin set. The nine services always show
+   (0 if none sold; Little Crown Head Spa under Detox and Glow), then one Products row and one Add Ons row. Variants of
+   a service (e.g. 60/90 mins) roll up into its row. */
+const SERVICE_POINT_ROWS = [
+    { name: "Crown Reset", category: "Head Spa", tier: "Head Spa:3" },
+    { name: "Crown Serenity", category: "Head Spa", tier: "Head Spa:5" },
+    { name: "Crown Detox and Glow", category: "Head Spa", tier: "Head Spa:10" },
+    { name: "Crown Relax", category: "Massage", tier: "Massage:4" },
+    { name: "Crown Relief", category: "Massage", tier: "Massage:7" },
+    { name: "Crown Recovery", category: "Massage", tier: "Massage:10" },
+    { name: "The Reset Duo", category: "Combo", tier: "Combo:7" },
+    { name: "The Serenity Set", category: "Combo", tier: "Combo:11" },
+    { name: "The Recovery Ritual", category: "Combo", tier: "Combo:17" }
+];
+
 function renderServicePoints(entries){
     const body = document.getElementById("servicePointsBody");
+    const fixedByTier = {};
     const groups = new Map();
 
+    SERVICE_POINT_ROWS.forEach(function(row){ fixedByTier[row.tier] = row; });
+
     entries.forEach(function(entry){
-        const key = entry.category + "|" + entry.baseName;
+        const fixed = fixedByTier[entry.tier];
+
+        const general =
+            entry.category === "Products" || entry.category === "Add-ons";
+
+        const little =
+            /little crown head spa/i.test(entry.baseName);
+
+        const key = fixed
+            ? "tier|" + fixed.tier
+            : little
+                ? "special|Little Crown Head Spa"
+            : general
+                ? "general|" + entry.category
+                : entry.category + "|" + entry.baseName.trim().toLowerCase();
 
         if(!groups.has(key)){
             groups.set(key, {
-                name: entry.baseName,
+                name: fixed ? fixed.name : entry.baseName,
                 category: entry.category,
-                sales: 0,
                 points: 0
             });
         }
 
+        groups.get(key).points += entry.points;
+    });
+
+    const used = new Set();
+
+    function take(key, name, category){
+        used.add(key);
         const group = groups.get(key);
-        group.sales += entry.cost;
-        group.points += entry.points;
+        return { name: name, category: category, points: group ? group.points : 0 };
+    }
+
+    const rows = [];
+
+    SERVICE_POINT_ROWS.forEach(function(row){
+        rows.push(take("tier|" + row.tier, row.name, row.category));
+
+        /* Little Crown Head Spa sits right under Detox and Glow. */
+        if(row.name === "Crown Detox and Glow"){
+            rows.push(take("special|Little Crown Head Spa", "Little Crown Head Spa", "Head Spa"));
+        }
     });
 
-    const order = ["Head Spa", "Massage", "Combo", "Add-ons", "Products", "Other"];
+    /* Products and Add Ons are one generalized row each. */
+    rows.push(take("general|Products", "Products", "Others"));
+    rows.push(take("general|Add-ons", "Add Ons", "Others"));
 
-    const rows = Array.from(groups.values()).sort(function(a, b){
-        return (order.indexOf(a.category) - order.indexOf(b.category)) ||
-            a.name.localeCompare(b.name);
-    });
+    /* Anything else that earned points or sales but isn't in the lists. */
+    Array.from(groups.keys())
+        .filter(function(key){ return !used.has(key); })
+        .map(function(key){ return groups.get(key); })
+        .sort(function(a, b){
+            return a.category.localeCompare(b.category) || a.name.localeCompare(b.name);
+        })
+        .forEach(function(group){
+            rows.push({ name: group.name, category: group.category, points: group.points });
+        });
 
     body.innerHTML = rows.map(function(row){
         return `
             <tr>
                 <td><strong>${escapeHtml(row.name)}</strong></td>
                 <td>${escapeHtml(row.category)}</td>
-                <td class="amount-cell">${peso(row.sales)}</td>
                 <td class="commission-cell">${formatNumber(row.points)}</td>
             </tr>
         `;
     }).join("");
-
-    if(rows.length === 0){
-        body.innerHTML = `
-            <tr>
-                <td colspan="4" class="no-data-cell">
-                    No sales found for the selected month.
-                </td>
-            </tr>
-        `;
-    }
 }
 
 function updateTitles(selectedDate){

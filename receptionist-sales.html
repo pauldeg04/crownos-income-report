@@ -76,9 +76,9 @@
 
     <main id="receptionistSalesContent">
 
-        <section class="daily-layout mb-4">
+        <section class="daily-layout receptionist-pair mb-4">
 
-            <div>
+            <div class="d-none">
                 <!-- Date is now selected from the header toolbar (see
                      sidebar.js syncGlobalToolbarToPage), so this page's own
                      calendar stepper is redundant and hidden — kept in the
@@ -217,7 +217,7 @@
                                 <th>Client's Name</th>
                                 <th>Service</th>
                                 <th>Service Cost</th>
-                                <th>Points</th>
+                                <th class="points-col">Points</th>
                             </tr>
                         </thead>
 
@@ -241,6 +241,42 @@
 
                     </table>
                 </div>
+
+            </div>
+
+            <div class="daily-sales-panel services-points-panel">
+
+            <div class="section-heading monthly-heading">
+                <div>
+                    <p class="section-eyebrow">
+                        Entire Month
+                    </p>
+
+                    <h3>
+                        Services Points
+                    </h3>
+
+                    <span>
+                        Points per service, add-on and product for the selected month.
+                    </span>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table therapist-sales-table services-points-table align-middle">
+
+                    <thead>
+                        <tr>
+                            <th>Services</th>
+                            <th>Category</th>
+                            <th class="points-col">Total Points</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="servicePointsBody"></tbody>
+
+                </table>
+            </div>
 
             </div>
 
@@ -298,43 +334,6 @@
                     </thead>
 
                     <tbody id="monthlySalesBody"></tbody>
-
-                </table>
-            </div>
-
-        </section>
-
-        <section class="monthly-sales-section mt-4">
-
-            <div class="section-heading monthly-heading">
-                <div>
-                    <p class="section-eyebrow">
-                        Entire Month
-                    </p>
-
-                    <h3>
-                        Services Points
-                    </h3>
-
-                    <span>
-                        Sales and points per service, add-on and product for the selected month.
-                    </span>
-                </div>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table therapist-sales-table monthly-table align-middle">
-
-                    <thead>
-                        <tr>
-                            <th>Services</th>
-                            <th>Category</th>
-                            <th>Total Sales</th>
-                            <th>Total Points</th>
-                        </tr>
-                    </thead>
-
-                    <tbody id="servicePointsBody"></tbody>
 
                 </table>
             </div>

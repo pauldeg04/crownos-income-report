@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-06 (4) — Receptionist Sales: side-by-side layout
+
+**Requested by:** Admin.
+
+- [`receptionist-sales.html`](receptionist-sales.html) / [`receptionist-sales.js`](receptionist-sales.js) / [`therapist-sales.css`](therapist-sales.css): Daily Sales now sits on the left and Services Points on the right (stacks below 1100px). Total Sales column removed from Services Points.
+- Services Points is now a fixed list: Crown Reset, Serenity, Detox and Glow, Little Crown Head Spa, Relax, Relief, Recovery, The Reset Duo, The Serenity Set, The Recovery Ritual, then one generalized **Products** row and one **Add Ons** row (add-ons = List of Services category Add-on). Always shown (0 if none); 60/90-min variants roll up; price-only matches and unlisted items trail at the end. Columns are 50% / 25% / 25%, and Daily Sales:Services Points is 2/3 : 1/3 ([`therapist-sales.css`](therapist-sales.css)).
+- [`manual.html`](manual.html) Chapter 9a updated.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-06 (3) — Receptionist Sales: Services Points table
 
 **Requested by:** Admin.
