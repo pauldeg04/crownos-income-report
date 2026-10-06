@@ -528,24 +528,32 @@ function getPointsForItem(item, unitCost){
         (String(item?.productKind || "").includes("Voucher") ? "Product" : "Service");
 
     if(itemType === "Product"){
-        return { points: 1 * qty, known: true };
+        return { points: 1 * qty, known: true, category: "Products" };
     }
 
     if(/add[\s-]?ons?\b/.test(name)){
-        return { points: 1 * qty, known: true };
+        return { points: 1 * qty, known: true, category: "Add-ons" };
     }
 
     let each = null;
+    let category = "";
 
-    if(/reset/.test(name) && /duo/.test(name)){ each = 7; }
-    else if(/serenity/.test(name) && /set/.test(name)){ each = 11; }
-    else if(/recovery/.test(name) && /ritual/.test(name)){ each = 17; }
-    else if(/detox/.test(name) && /glow/.test(name)){ each = 10; }
-    else if(/\breset\b/.test(name)){ each = 3; }
-    else if(/serenity/.test(name)){ each = 5; }
-    else if(/relax/.test(name)){ each = 4; }
-    else if(/reflief|relief/.test(name)){ each = 7; }
-    else if(/recovery/.test(name)){ each = 10; }
+    if(/reset/.test(name) && /duo/.test(name)){ each = 7; category = "Combo"; }
+    else if(/serenity/.test(name) && /set/.test(name)){ each = 11; category = "Combo"; }
+    else if(/recovery/.test(name) && /ritual/.test(name)){ each = 17; category = "Combo"; }
+    else if(/detox/.test(name) && /glow/.test(name)){ each = 10; category = "Head Spa"; }
+    else if(/\breset\b/.test(name)){ each = 3; category = "Head Spa"; }
+    else if(/serenity/.test(name)){ each = 5; category = "Head Spa"; }
+    else if(/relax/.test(name)){ each = 4; category = "Massage"; }
+    else if(/reflief|relief/.test(name)){ each = 7; category = "Massage"; }
+    else if(/recovery/.test(name)){ each = 10; category = "Massage"; }
+
+    if(!category){
+        category =
+            /massage|foot/.test(name) ? "Massage" :
+            /head spa/.test(name) ? "Head Spa" :
+            "Other";
+    }
 
     if(each === null){
         const byCost = POINTS_BY_COST[Math.round(unitCost)];
@@ -553,8 +561,8 @@ function getPointsForItem(item, unitCost){
     }
 
     return each === null
-        ? { points: 0, known: false }
-        : { points: each * qty, known: true };
+        ? { points: 0, known: false, category: category }
+        : { points: each * qty, known: true, category: category };
 }
 
 /* One entry per item; transaction number is shared by items of one sale. */
@@ -579,6 +587,8 @@ function extractEntries(rows, date){
                 client: item?.participantName || sale?.client || "—",
                 clientOwner: sale?.client || "—",
                 service: (item?.name || "—") + (qty > 1 ? ` × ${qty}` : ""),
+                baseName: item?.name || "—",
+                category: result.category,
                 cost: cost,
                 points: result.points,
                 known: result.known,
@@ -688,6 +698,7 @@ function renderMonthly(branch, month){
     const body = document.getElementById("monthlySalesBody");
     const prefix = `${RECEPTIONIST_SALES_PREFIX}${branch}_${month}-`;
     const days = [];
+    const monthEntries = [];
 
     for(let i = 0; i < localStorage.length; i++){
         const key = localStorage.key(i);
@@ -702,6 +713,8 @@ function renderMonthly(branch, month){
         if(entries.length === 0){
             continue;
         }
+
+        monthEntries.push.apply(monthEntries, entries);
 
         days.push({
             date: date,
@@ -735,12 +748,66 @@ function renderMonthly(branch, month){
         `;
     }
 
+    renderServicePoints(monthEntries);
+
     document.getElementById("monthlyServiceCount").textContent =
         formatNumber(days.reduce(function(s, d){ return s + d.txns; }, 0));
     document.getElementById("monthlySalesCard").textContent =
         peso(days.reduce(function(s, d){ return s + d.sales; }, 0));
     document.getElementById("monthlyPointsCard").textContent =
         formatNumber(days.reduce(function(s, d){ return s + d.points; }, 0));
+}
+
+/* Month totals per service/product name; every add-on and product is its
+   own row. */
+function renderServicePoints(entries){
+    const body = document.getElementById("servicePointsBody");
+    const groups = new Map();
+
+    entries.forEach(function(entry){
+        const key = entry.category + "|" + entry.baseName;
+
+        if(!groups.has(key)){
+            groups.set(key, {
+                name: entry.baseName,
+                category: entry.category,
+                sales: 0,
+                points: 0
+            });
+        }
+
+        const group = groups.get(key);
+        group.sales += entry.cost;
+        group.points += entry.points;
+    });
+
+    const order = ["Head Spa", "Massage", "Combo", "Add-ons", "Products", "Other"];
+
+    const rows = Array.from(groups.values()).sort(function(a, b){
+        return (order.indexOf(a.category) - order.indexOf(b.category)) ||
+            a.name.localeCompare(b.name);
+    });
+
+    body.innerHTML = rows.map(function(row){
+        return `
+            <tr>
+                <td><strong>${escapeHtml(row.name)}</strong></td>
+                <td>${escapeHtml(row.category)}</td>
+                <td class="amount-cell">${peso(row.sales)}</td>
+                <td class="commission-cell">${formatNumber(row.points)}</td>
+            </tr>
+        `;
+    }).join("");
+
+    if(rows.length === 0){
+        body.innerHTML = `
+            <tr>
+                <td colspan="4" class="no-data-cell">
+                    No sales found for the selected month.
+                </td>
+            </tr>
+        `;
+    }
 }
 
 function updateTitles(selectedDate){

@@ -11,6 +11,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-06 (3) — Receptionist Sales: Services Points table
+
+**Requested by:** Admin.
+
+- [`receptionist-sales.html`](receptionist-sales.html) / [`receptionist-sales.js`](receptionist-sales.js): new **Services Points** table under Monthly Sales — Services | Category (Head Spa / Massage / Combo / Add-ons / Products / Other) | Total Sales | Total Points, per name for the selected month. Add-ons and products are listed individually.
+- [`manual.html`](manual.html) Chapter 9a updated.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-06 (2) — Receptionist Sales page (point system)
 
 **Requested by:** Admin.
