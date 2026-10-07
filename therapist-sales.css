@@ -561,3 +561,45 @@
     width:76px;
     white-space:nowrap;
 }
+
+/* Therapist Sales: extra Points column (6 daily / 5 monthly columns) and a
+   fourth summary card. Scoped so Receptionist Sales' tables are unaffected. */
+.monthly-summary-cards.has-points{
+    grid-template-columns:repeat(4,minmax(110px,1fr));
+}
+
+.therapist-sales-table.therapist-points-daily thead th:nth-child(1),
+.therapist-sales-table.therapist-points-daily tbody td:nth-child(1){ width:6%; }
+.therapist-sales-table.therapist-points-daily thead th:nth-child(2),
+.therapist-sales-table.therapist-points-daily tbody td:nth-child(2){ width:21%; }
+.therapist-sales-table.therapist-points-daily thead th:nth-child(3),
+.therapist-sales-table.therapist-points-daily tbody td:nth-child(3){ width:27%; }
+.therapist-sales-table.therapist-points-daily thead th:nth-child(4),
+.therapist-sales-table.therapist-points-daily tbody td:nth-child(4),
+.therapist-sales-table.therapist-points-daily thead th:nth-child(5),
+.therapist-sales-table.therapist-points-daily tbody td:nth-child(5){ width:16%; }
+.therapist-sales-table.therapist-points-daily thead th:nth-child(6),
+.therapist-sales-table.therapist-points-daily tbody td:nth-child(6){ width:14%; }
+
+.monthly-table.therapist-points-monthly thead th:nth-child(1),
+.monthly-table.therapist-points-monthly tbody td:nth-child(1){ width:26%; }
+.monthly-table.therapist-points-monthly thead th:nth-child(2),
+.monthly-table.therapist-points-monthly tbody td:nth-child(2){ width:14%; }
+.monthly-table.therapist-points-monthly thead th:nth-child(3),
+.monthly-table.therapist-points-monthly tbody td:nth-child(3),
+.monthly-table.therapist-points-monthly thead th:nth-child(4),
+.monthly-table.therapist-points-monthly tbody td:nth-child(4){ width:22%; }
+.monthly-table.therapist-points-monthly thead th:nth-child(5),
+.monthly-table.therapist-points-monthly tbody td:nth-child(5){ width:16%; }
+
+@media(max-width:1150px){
+    .monthly-summary-cards.has-points{
+        grid-template-columns:repeat(2,minmax(110px,1fr));
+    }
+}
+
+@media(max-width:600px){
+    .monthly-summary-cards.has-points{
+        grid-template-columns:1fr;
+    }
+}

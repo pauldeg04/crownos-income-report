@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-08 (1) — Therapist Sales: Points column
+
+**Requested by:** Admin.
+
+- [`therapist-sales.html`](therapist-sales.html) / [`therapist-sales.js`](therapist-sales.js) / [`therapist-sales.css`](therapist-sales.css): new **Points** column in Daily and Monthly Service Sales (points of the therapist's own services only), a Points total in the Daily Total row, and a fourth **Points** summary box (monthly total) at the upper right of Monthly Service Sales. Column widths scoped so Receptionist Sales is unaffected.
+- New [`points-shared.js`](points-shared.js) (`CrownPoints.getPointsForItem`): the point table moved out of `receptionist-sales.js` so both pages share it; loaded by `receptionist-sales.html` and `therapist-sales.html`.
+- [`manual.html`](manual.html) Chapter 9 updated.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-07 (1) — Receptionist Sales: separate VIP row
 
 **Requested by:** Admin.

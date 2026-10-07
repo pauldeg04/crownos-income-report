@@ -225,7 +225,7 @@
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table therapist-sales-table align-middle">
+                    <table class="table therapist-sales-table therapist-points-daily align-middle">
 
                         <thead>
                             <tr>
@@ -234,6 +234,7 @@
                                 <th>Service</th>
                                 <th>Service Cost</th>
                                 <th>Commission</th>
+                                <th>Points</th>
                             </tr>
                         </thead>
 
@@ -251,6 +252,10 @@
 
                                 <th id="dailyCommissionTotal">
                                     ₱0.00
+                                </th>
+
+                                <th id="dailyPointsTotal">
+                                    0
                                 </th>
                             </tr>
                         </tfoot>
@@ -280,7 +285,7 @@
                     </span>
                 </div>
 
-                <div class="monthly-summary-cards">
+                <div class="monthly-summary-cards has-points">
 
                     <div>
                         <span>Services</span>
@@ -297,12 +302,17 @@
                         <strong id="monthlyCommissionCard">₱0.00</strong>
                     </div>
 
+                    <div>
+                        <span>Points</span>
+                        <strong id="monthlyPointsCard">0</strong>
+                    </div>
+
                 </div>
 
             </div>
 
             <div class="table-responsive">
-                <table class="table therapist-sales-table monthly-table align-middle">
+                <table class="table therapist-sales-table monthly-table therapist-points-monthly align-middle">
 
                     <thead>
                         <tr>
@@ -310,6 +320,7 @@
                             <th>Service Rendered</th>
                             <th>Total Sales</th>
                             <th>Total Commission</th>
+                            <th>Points</th>
                         </tr>
                     </thead>
 
@@ -327,6 +338,7 @@
 <script type="text/crown-deferred" src="therapist-sales-access-guard.js"></script>
 <script type="text/crown-deferred" src="sidebar.js"></script>
 <script type="text/crown-deferred" src="commission-shared.js"></script>
+<script type="text/crown-deferred" src="points-shared.js"></script>
 <script type="text/crown-deferred" src="therapist-sales.js"></script>
 
 </body>

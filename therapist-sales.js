@@ -595,7 +595,17 @@ function extractTherapistServices(
                     commissionRate / 100
                 );
 
+            const qty = Math.max(Number(item?.quantity) || 1, 1);
+
+            const points =
+                CrownPoints.getPointsForItem(
+                    item,
+                    serviceCost / qty
+                ).points;
+
             entries.push({
+                points:
+                    points,
                 client:
                     item?.participantName ||
                     sale?.client ||
@@ -1049,6 +1059,10 @@ function renderSalesTable(
                 <td class="commission-cell">
                     ${peso(entry.commission)}
                 </td>
+
+                <td class="number-cell">
+                    ${formatNumber(entry.points)}
+                </td>
             `;
 
             body.appendChild(row);
@@ -1063,7 +1077,7 @@ function renderSalesTable(
 
         row.innerHTML = `
             <td
-                colspan="5"
+                colspan="6"
                 class="no-data-cell"
             >
                 No service sales found for the selected therapist.
@@ -1097,7 +1111,8 @@ function renderMonthlySalesTable(
                 {
                     serviceCount: 0,
                     sales: 0,
-                    commission: 0
+                    commission: 0,
+                    points: 0
                 }
             );
         }
@@ -1112,6 +1127,9 @@ function renderMonthlySalesTable(
 
         group.commission +=
             Number(entry.commission) || 0;
+
+        group.points +=
+            Number(entry.points) || 0;
     });
 
     const dateKeys =
@@ -1143,6 +1161,10 @@ function renderMonthlySalesTable(
             <td class="commission-cell">
                 ${peso(group.commission)}
             </td>
+
+            <td class="number-cell">
+                ${formatNumber(group.points)}
+            </td>
         `;
 
         body.appendChild(row);
@@ -1156,7 +1178,7 @@ function renderMonthlySalesTable(
 
         row.innerHTML = `
             <td
-                colspan="4"
+                colspan="5"
                 class="no-data-cell"
             >
                 No service sales found for the selected therapist.
@@ -1182,12 +1204,16 @@ function summarizeEntries(entries){
                     entry.commission
                 ) || 0;
 
+            summary.points +=
+                Number(entry.points) || 0;
+
             return summary;
         },
         {
             count: 0,
             sales: 0,
-            commission: 0
+            commission: 0,
+            points: 0
         }
     );
 }
@@ -1208,6 +1234,13 @@ function setDailySummary(summary){
             peso(
                 summary.commission
             );
+
+    document
+        .getElementById(
+            "dailyPointsTotal"
+        )
+        .textContent =
+            formatNumber(summary.points);
 }
 
 function setMonthlySummary(summary){
@@ -1235,6 +1268,13 @@ function setMonthlySummary(summary){
             peso(
                 summary.commission
             );
+
+    document
+        .getElementById(
+            "monthlyPointsCard"
+        )
+        .textContent =
+            formatNumber(summary.points);
 }
 
 function updateTitles(
