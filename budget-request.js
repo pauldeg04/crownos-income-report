@@ -13,7 +13,7 @@
 
 (function(){
     const COLLECTION = "budgetRequests";
-    const ACCOUNT_MOPS = ["Gcash", "Gotyme", "Bank Transfer"];
+    const ACCOUNT_MOPS = ["Gcash", "Gotyme", "Bank Transfer", "Others"];
 
     let currentUser = null;
     let isAdmin = false;
@@ -157,8 +157,9 @@
             ["Mode of Payment", r.mop]
         ];
 
-        if(r.mop === "Bank Transfer"){
-            rows.push(["Bank", r.bank]);
+        if(r.mop === "Bank Transfer" || r.mop === "Others"){
+            /* Older Bank Transfer requests stored this as "bank". */
+            rows.push(["Service Provider", r.serviceProvider || r.bank]);
         }
 
         if(ACCOUNT_MOPS.includes(r.mop)){
@@ -287,7 +288,7 @@
         const mop = $("budgetMopInput").value;
         const show = ACCOUNT_MOPS.includes(mop);
 
-        $("budgetBankField").classList.toggle("d-none", mop !== "Bank Transfer");
+        $("budgetProviderField").classList.toggle("d-none", mop !== "Bank Transfer" && mop !== "Others");
 
         document.querySelectorAll(".budget-account-field").forEach(function(el){
             el.classList.toggle("d-none", !show);
@@ -300,7 +301,7 @@
         $("budgetDeadlineInput").value = "";
         $("budgetDeadlineInput").min = todayKey();
         $("budgetMopInput").value = "Cash";
-        $("budgetBankInput").value = "";
+        $("budgetProviderInput").value = "";
         $("budgetAccountNameInput").value = "";
         $("budgetAccountNumberInput").value = "";
         $("budgetAmountInput").value = "";
@@ -318,7 +319,8 @@
         const purpose = $("budgetPurposeInput").value.trim();
         const deadline = $("budgetDeadlineInput").value;
         const mop = $("budgetMopInput").value;
-        const bank = $("budgetBankInput").value.trim();
+        const provider = $("budgetProviderInput").value.trim();
+        const needsProvider = mop === "Bank Transfer" || mop === "Others";
         const accountName = $("budgetAccountNameInput").value.trim();
         const accountNumber = $("budgetAccountNumberInput").value.trim();
         const amount = parseFloat($("budgetAmountInput").value);
@@ -327,8 +329,8 @@
         if(!purpose){ alert("Please enter the Purpose."); return; }
         if(!deadline){ alert("Please select a Deadline."); return; }
 
-        if(mop === "Bank Transfer" && !bank){
-            alert("Please enter the Bank.");
+        if(needsProvider && !provider){
+            alert("Please enter the Service Provider.");
             return;
         }
 
@@ -349,7 +351,7 @@
                 purpose,
                 deadline,
                 mop,
-                bank: mop === "Bank Transfer" ? bank : "",
+                serviceProvider: needsProvider ? provider : "",
                 accountName: needsAccount ? accountName : "",
                 accountNumber: needsAccount ? accountNumber : "",
                 amount,

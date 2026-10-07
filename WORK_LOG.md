@@ -61,6 +61,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-07 (1) — Budget Request: "Others" mode of payment, Service Provider
+
+**Requested by:** Admin.
+
+- [`budget-request.html`](budget-request.html) / [`budget-request.js`](budget-request.js): Mode of Payment gained **Others**. Bank Transfer and Others now ask for **Service Provider** (required, replaces "Bank"; stored as `serviceProvider`) plus the unchanged Account Name and Account Number. The View popup falls back to the old `bank` value for earlier Bank Transfer requests.
+- [`manual.html`](manual.html) Chapter 29a updated. No rules change.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-06 (1) — Budget Request: Branch picker and Bank field
 
 **Requested by:** Admin.
