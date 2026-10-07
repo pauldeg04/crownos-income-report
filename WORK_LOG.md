@@ -11,6 +11,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-07 (1) — Receptionist Sales: separate VIP row
+
+**Requested by:** Admin.
+
+- [`receptionist-sales.js`](receptionist-sales.js): VIP Card is counted on its own **VIP** row (1 point each) at the end of Services Points; the **Products** row now excludes VIP Card.
+- [`manual.html`](manual.html) Chapter 9a updated.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-06 (4) — Receptionist Sales: side-by-side layout
 
 **Requested by:** Admin.

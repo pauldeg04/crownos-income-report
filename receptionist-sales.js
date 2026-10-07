@@ -537,6 +537,21 @@ function getPointsForItem(item, unitCost){
         item?.itemType ||
         (String(item?.productKind || "").includes("Voucher") ? "Product" : "Service");
 
+    /* VIP Card is counted apart from other products (same names the
+       Daily Income Report treats as a VIP card). */
+    const compact = name.replace(/[^a-z]/g, "");
+
+    if(
+        itemType === "Product" &&
+        (
+            compact === "vipcard" ||
+            compact.includes("vipmembershipcard") ||
+            compact.includes("viployaltycard")
+        )
+    ){
+        return { points: 1 * qty, known: true, category: "VIP", rank: 1, tier: "" };
+    }
+
     if(itemType === "Product"){
         return { points: 1 * qty, known: true, category: "Products", rank: 1 };
     }
@@ -773,7 +788,7 @@ function renderMonthly(branch, month){
 }
 
 /* Fixed list, in the order the Admin set. The nine services always show
-   (0 if none sold; Little Crown Head Spa under Detox and Glow), then one Products row and one Add Ons row. Variants of
+   (0 if none sold; Little Crown Head Spa under Detox and Glow), then one Products row (VIP Card excluded), one Add Ons row and one VIP row. Variants of
    a service (e.g. 60/90 mins) roll up into its row. */
 const SERVICE_POINT_ROWS = [
     { name: "Crown Reset", category: "Head Spa", tier: "Head Spa:3" },
@@ -798,7 +813,9 @@ function renderServicePoints(entries){
         const fixed = fixedByTier[entry.tier];
 
         const general =
-            entry.category === "Products" || entry.category === "Add-ons";
+            entry.category === "Products" ||
+            entry.category === "Add-ons" ||
+            entry.category === "VIP";
 
         const little =
             /little crown head spa/i.test(entry.baseName);
@@ -841,9 +858,11 @@ function renderServicePoints(entries){
         }
     });
 
-    /* Products and Add Ons are one generalized row each. */
+    /* Products (except VIP Card), Add Ons and VIP are one generalized row
+       each. */
     rows.push(take("general|Products", "Products", "Others"));
     rows.push(take("general|Add-ons", "Add Ons", "Others"));
+    rows.push(take("general|VIP", "VIP", "Others"));
 
     /* Anything else that earned points or sales but isn't in the lists. */
     Array.from(groups.keys())
