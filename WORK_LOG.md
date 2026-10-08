@@ -11,6 +11,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-08 (4) — Admin Dashboard: top therapist highlight
+
+**Requested by:** Admin.
+
+- [`admin-dashboard.js`](admin-dashboard.js) / [`admin-dashboard.css`](admin-dashboard.css): in each branch's List of Therapists (already ranked highest to lowest), the top scorer's row is highlighted pale green; ties share it, 0 points never highlighted. (A top-3 bold treatment was tried and dropped as too subtle.)
+- [`manual.html`](manual.html) Chapter 5a updated.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-08 (3) — Admin Dashboard: per-branch Therapist and Service Points tables
 
 **Requested by:** Admin.

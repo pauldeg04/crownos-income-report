@@ -292,3 +292,8 @@
     .ad-stat-grid{ grid-template-columns:1fr; }
     .ad-stat-wide{ grid-column:span 1; }
 }
+
+/* Top-ranked therapist in each branch's List of Therapists */
+.ad-table tbody tr.ad-top-rank > td{
+    background:#DFF3E3;
+}

@@ -753,7 +753,9 @@
                                 ${rows.length === 0
                                     ? `<tr><td colspan="2" class="text-center text-muted">No therapists found.</td></tr>`
                                     : rows.map(function(row){
-                                        return `<tr><td class="fw-bold">${escapeHtml(row.name)}</td><td class="text-end">${formatNumber(row.points)}</td></tr>`;
+                                        /* Pale green for the top scorer (ties share it). */
+                                        const top = row.points > 0 && row.points === rows[0].points;
+                                        return `<tr${top ? ' class="ad-top-rank"' : ""}><td class="fw-bold">${escapeHtml(row.name)}</td><td class="text-end">${formatNumber(row.points)}</td></tr>`;
                                     }).join("")}
                             </tbody>
                             <tfoot>
