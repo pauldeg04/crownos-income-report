@@ -59,6 +59,18 @@
             return { points: 1 * qty, known: true, category: "VIP", rank: 1, tier: "" };
         }
 
+        /* A voucher sold (not redeemed) — 1 point each, counted on its own
+           row. Redeeming one is just the service it pays for. */
+        if(
+            itemType === "Product" &&
+            (
+                String(item?.productKind || "").includes("Voucher") ||
+                /^voucher\b/.test(name)
+            )
+        ){
+            return { points: 1 * qty, known: true, category: "Voucher", rank: 1, tier: "" };
+        }
+
         if(itemType === "Product"){
             return { points: 1 * qty, known: true, category: "Products", rank: 1 };
         }

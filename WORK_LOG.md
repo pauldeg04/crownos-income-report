@@ -77,6 +77,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-08 (2) — Receptionist Sales: Voucher Sales row
+
+**Requested by:** Admin.
+
+- [`points-shared.js`](points-shared.js) / [`receptionist-sales.js`](receptionist-sales.js): vouchers *sold* (Product items with productKind "Service Voucher" / name starting "Voucher") are 1 point each on a new **Voucher Sales** row at the end of Services Points; the Products row no longer includes them. Redemptions are unchanged (the redeemed service earns its normal tier points).
+- [`manual.html`](manual.html) Chapter 9a updated.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-08 (1) — Therapist Sales: Points column
 
 **Requested by:** Admin.

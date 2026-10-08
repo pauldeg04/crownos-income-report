@@ -711,7 +711,7 @@ function renderMonthly(branch, month){
 }
 
 /* Fixed list, in the order the Admin set. The nine services always show
-   (0 if none sold; Little Crown Head Spa under Detox and Glow), then one Products row (VIP Card excluded), one Add Ons row and one VIP row. Variants of
+   (0 if none sold; Little Crown Head Spa under Detox and Glow), then one Products row (VIP Card excluded), one Add Ons row, one VIP row and one Voucher Sales row. Variants of
    a service (e.g. 60/90 mins) roll up into its row. */
 const SERVICE_POINT_ROWS = [
     { name: "Crown Reset", category: "Head Spa", tier: "Head Spa:3" },
@@ -738,7 +738,8 @@ function renderServicePoints(entries){
         const general =
             entry.category === "Products" ||
             entry.category === "Add-ons" ||
-            entry.category === "VIP";
+            entry.category === "VIP" ||
+            entry.category === "Voucher";
 
         const little =
             /little crown head spa/i.test(entry.baseName);
@@ -781,11 +782,12 @@ function renderServicePoints(entries){
         }
     });
 
-    /* Products (except VIP Card), Add Ons and VIP are one generalized row
-       each. */
+    /* Products (except VIP Card and vouchers), Add Ons, VIP and Voucher
+       Sales are one generalized row each. */
     rows.push(take("general|Products", "Products", "Others"));
     rows.push(take("general|Add-ons", "Add Ons", "Others"));
     rows.push(take("general|VIP", "VIP", "Others"));
+    rows.push(take("general|Voucher", "Voucher Sales", "Others"));
 
     /* Anything else that earned points or sales but isn't in the lists. */
     Array.from(groups.keys())
