@@ -195,6 +195,12 @@
             roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support"]
         },
 
+        {
+            label: "Admin Dashboard",
+            href: "admin-dashboard.html",
+            roles: ["Admin"]
+        },
+
         { section: "Operations" },
 
         {
@@ -1611,6 +1617,7 @@
     function getPageTitle(currentPage){
         const titles = {
             "home.html": "Dashboard",
+            "admin-dashboard.html": "Admin Dashboard",
             "index.html": "Daily Income Report",
             "clients.html": "Client Database",
             "scheduling.html": "Scheduling",

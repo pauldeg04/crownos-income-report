@@ -138,6 +138,12 @@
                                     </a>
                                 </li>
                                 <li>
+                                    <a href="#ch-admin-dashboard">
+                                        <span class="manual-ch">5a</span>
+                                        <span>Admin Dashboard</span>
+                                    </a>
+                                </li>
+                                <li>
                                     <a href="#ch-daily-income">
                                         <span class="manual-ch">6</span>
                                         <span>Daily Income Report</span>
@@ -852,6 +858,55 @@
       Once you have been clocked in for more than 9 hours without clocking out,
       the system sends a reminder to your notification bell. If you genuinely
       forget, an Admin corrects it in <a href="#ch-attendance">Attendance</a>.
+    </p>
+  </div>
+</section>
+
+<section id="ch-admin-dashboard">
+  <h2><span class="h2-num">Chapter 5a</span>Admin Dashboard</h2>
+
+  <ul class="roleline"><li><span class="pill pill-role">Admin only</span></li></ul>
+
+  <p class="text-muted">Sidebar &rarr; <strong>Admin Dashboard</strong>, just under Dashboard. A read-only overview of every branch at once &mdash; nothing is typed or saved here.</p>
+
+  <p>
+    The <strong>Month</strong> picker at the top drives Statistics, Share Holder Summary and List of Therapists.
+    Notifications are always live and do not change with the month.
+  </p>
+
+  <h3>Notifications</h3>
+  <p>One card per branch:</p>
+  <ul>
+    <li><strong>For Payment (Next 5 Days)</strong> &mdash; same as the Expenses Report: unsettled Utilities / Installments due within 5 days, plus anything Past Due until it is marked Settled.</li>
+    <li><strong>Budget Request &mdash; New Request</strong> &mdash; number of Pending requests, with their total amount.</li>
+    <li><strong>Leave Request &mdash; Pending</strong> &mdash; requests still Pending or Processing. A requester with two branches is counted under their first branch.</li>
+    <li><strong>Incident Report</strong> &mdash; reports not yet acknowledged.</li>
+    <li><strong>Booking Request &mdash; Pending</strong> &mdash; the number only, no details.</li>
+  </ul>
+  <p>Click a request row to open its page.</p>
+
+  <h3>Statistics</h3>
+  <p>
+    Per branch: <strong>Services Availed</strong>, <strong>Products Sold</strong> and <strong>VIP Cards Sold</strong>
+    (count and amount), and <strong>Monthly Sales Trend</strong> (month total, a small daily graph, average per day and best day).
+    The Sales Trend box also shows the branch's total <strong>Points</strong> for the month, split by category
+    (Head Spa, Massage, Combo, Add-ons, Products, VIP).
+  </p>
+
+  <h3>Share Holder Summary</h3>
+  <p>Per branch: Grand Total Income, Overhead Expenses, Loyalty Card Sales, Product Sales, Monthly Net, and the dividend of each shareholder &mdash; the same figures as the <a href="#ch-shareholder">Share Holder Summary Report</a>.</p>
+
+  <h3>List of Therapists</h3>
+  <p>
+    Each therapist's points for the month in every shown branch, plus the total, highest first.
+    Points are those of the therapist's own services, as on Therapist Sales.
+  </p>
+
+  <div class="warn">
+    <span class="callout-label">Hiding a branch</span>
+    <p>
+      In <a href="#ch-masterlists">List of Branches</a>, switch off <strong>Show on Admin Dashboard</strong> for a branch to remove it from every section.
+      Therapists assigned only to hidden branches are hidden too; a therapist with several branches stays, showing the visible ones.
     </p>
   </div>
 </section>
@@ -2778,6 +2833,9 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
 
     <dt>GPS Location</dt>
     <dd>Written as <code>latitude, longitude</code>. The 150-metre clock-in radius is measured from this point. With no GPS set, there is no location verification.</dd>
+
+    <dt>Show on Admin Dashboard</dt>
+    <dd>A switch (on by default). Off removes the branch from the <a href="#ch-admin-dashboard">Admin Dashboard</a>. It saves immediately &mdash; no need to press Edit.</dd>
   </dl>
 
   <div class="warn">

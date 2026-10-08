@@ -11,6 +11,24 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-08 (2) — Admin Dashboard
+
+**Requested by:** Admin.
+
+- New Admin-only page [`admin-dashboard.html`](admin-dashboard.html) / [`admin-dashboard.js`](admin-dashboard.js) / [`admin-dashboard.css`](admin-dashboard.css), in the sidebar under Dashboard. Read-only; Month picker drives Statistics, Share Holder and Therapists.
+  - **Notifications** (per branch): For Payment (Next 5 Days), Budget Request (New Request count + total), Leave Request (Pending/Processing), Incident Report (unacknowledged), Booking Request (pending count only). Live Firestore listeners.
+  - **Statistics** (per branch): Services Availed, Products Sold, VIP Cards Sold, Monthly Sales Trend (sparkline, average, best day) with total Points split by category.
+  - **Share Holder Summary** (per branch): monthly summary + dividend table, mirrors `share-holder-report.js`.
+  - **List of Therapists**: points per branch and total.
+- [`access-control.js`](access-control.js): `admin-dashboard.html` is Admin-only and cannot be unlocked through Additional Access. [`sidebar.js`](sidebar.js): menu item + page title.
+- [`list-branches.html`](list-branches.html) / [`list-branches.js`](list-branches.js): new **Show on Admin Dashboard** switch per branch (`showOnAdminDashboard`, default on, saves immediately). `migrateExistingBranches` now preserves the field (it rebuilt each branch from known fields only). A hidden branch is removed from every dashboard section; therapists assigned only to hidden branches are hidden too.
+- Note: on a local/LAN host `firebase-sync.js` blocks pushes but still pulls, so the switch reverts on refresh there — it only persists on the deployed site.
+- [`manual.html`](manual.html): new Chapter 5a; List of Branches updated.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-08 (1) — Therapist Sales: Points column
 
 **Requested by:** Admin.

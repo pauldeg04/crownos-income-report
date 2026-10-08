@@ -16,7 +16,8 @@
     const EXTRA_ACCESS_EXCLUDED_PAGES = [
         "data-protection.html",
         "activity-log.html",
-        "cashflow.html"
+        "cashflow.html",
+        "admin-dashboard.html"
     ];
 
     /* Pages a Team Leader (a Therapist account with teamLeader === true)
@@ -50,6 +51,10 @@
             "Admin",
             "Executive Assistant",
             "Receptionist"
+        ],
+
+        "admin-dashboard.html": [
+            "Admin"
         ],
 
         "monthly-report.html": [

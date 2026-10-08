@@ -189,6 +189,13 @@ function migrateExistingBranches(){
             longitude: parseCoordinate(branch.longitude)
         };
 
+        /* Preserve the Admin Dashboard visibility switch — this rebuild
+           only copies known fields, so without this the switch reset to
+           "on" on every page load. */
+        if(branch.showOnAdminDashboard === false){
+            migrated.showOnAdminDashboard = false;
+        }
+
         if(!branch.id){
             changed = true;
         }
@@ -344,6 +351,18 @@ function createSavedRow(branch, index){
             }
         </td>
 
+        <td class="admin-dashboard-cell text-center">
+            <div class="form-check form-switch d-inline-block m-0">
+                <input
+                    type="checkbox"
+                    class="form-check-input admin-dashboard-toggle"
+                    role="switch"
+                    title="Show this branch on the Admin Dashboard"
+                    ${branch.showOnAdminDashboard === false ? "" : "checked"}
+                >
+            </div>
+        </td>
+
         <td>
             <div class="action-buttons">
 
@@ -364,6 +383,16 @@ function createSavedRow(branch, index){
             </div>
         </td>
     `;
+
+    row
+        .querySelector(".admin-dashboard-toggle")
+        .addEventListener(
+            "change",
+            function(){
+                branch.showOnAdminDashboard = this.checked;
+                saveBranchesToStorage();
+            }
+        );
 
     row
         .querySelector(".edit-btn")
@@ -463,6 +492,8 @@ function addBlankRow(){
                 autocomplete="off"
             >
         </td>
+
+        <td class="text-center text-muted">Shown</td>
 
         <td>
             <div class="action-buttons">
@@ -651,7 +682,8 @@ function saveNewBranch(row){
         openingTime: openingTime,
         closingTime: closingTime,
         latitude: coordinates ? coordinates.lat : null,
-        longitude: coordinates ? coordinates.lng : null
+        longitude: coordinates ? coordinates.lng : null,
+        showOnAdminDashboard: true
     });
 
     saveBranchesToStorage();
