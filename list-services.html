@@ -100,29 +100,6 @@ if(/[?&]embed=1/.test(location.search)){
             </select>
         </div>
 
-        <div>
-            <label class="form-label">
-                Status
-            </label>
-
-            <select
-                id="statusFilter"
-                class="form-select"
-            >
-                <option value="">
-                    All Status
-                </option>
-
-                <option value="Active">
-                    Active
-                </option>
-
-                <option value="Archived">
-                    Archived
-                </option>
-            </select>
-        </div>
-
         <div class="toolbar-action">
             <button
                 type="button"
@@ -281,7 +258,7 @@ if(/[?&]embed=1/.test(location.search)){
                         >
                     </div>
 
-                    <div class="col-md-5">
+                    <div class="col-md-5" id="serviceCategoryField">
                         <label class="form-label">
                             Category *
                         </label>
@@ -310,12 +287,8 @@ if(/[?&]embed=1/.test(location.search)){
                                 Add-on
                             </option>
 
-                            <option value="Kiddie">
-                                Kiddie
-                            </option>
-
-                            <option value="Other">
-                                Other
+                            <option value="Others">
+                                Others
                             </option>
                         </select>
                     </div>

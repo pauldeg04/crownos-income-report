@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-08 (8) — Settings cleanup: no Status filter, category set by tab, Kiddie/Other -> Others
+
+**Requested by:** Admin.
+
+- [`list-services.html`](list-services.html) / [`list-products.html`](list-products.html) (+ `.js`): removed the toolbar Status filter (Archive table now separates them).
+- [`list-services.js`](list-services.js): in the Add-ons and Others tabs the Category field and filter are hidden and the category is forced (`FORCED_CATEGORY`: Add-on / Others); the Services tab dropdown is limited to Head Spa, Massage, Combo.
+- Category **Kiddie** and **Other** merged into **Others**; `migrateExistingServices()` converts stored services on load (and saves).
+- Daily Income Report KPI row "Kiddie" renamed "Others" ([`index.html`](index.html), [`script.js`](script.js)); services formerly "Other" now count there too, and the count follows each service's current category.
+- [`manual.html`](manual.html) updated.
+
+---
+
 ## 2026-10-08 (7) — Product Settings and Branch Settings (tabbed pages)
 
 **Requested by:** Admin.

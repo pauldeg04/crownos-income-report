@@ -4,8 +4,9 @@ let services = [];
 let editingServiceId = null;
 
 /* Product Settings shows this page three times: ?view=services (Head Spa,
-   Massage, Combo), ?view=addons (only Add-on) and ?view=others (everything
-   else, e.g. Kiddie and Other). No view = all. */
+   Massage, Combo), ?view=addons (only Add-on) and ?view=others (category
+   Others). No view = all. In the Add-ons and Others tabs the category is
+   fixed by the tab, so the Category field is hidden there. */
 const SERVICE_VIEW = new URLSearchParams(location.search).get("view");
 
 /* Display order: Head Spa, Massage, Combo, then every other category.
@@ -16,6 +17,8 @@ function categoryRank(service){
     const i = CATEGORY_ORDER.indexOf(service.category);
     return i === -1 ? CATEGORY_ORDER.length : i;
 }
+
+const FORCED_CATEGORY = { addons: "Add-on", others: "Others" }[SERVICE_VIEW] || "";
 
 function isOtherCategory(service){
     return (
@@ -42,8 +45,19 @@ document.addEventListener("DOMContentLoaded", function(){
 });
 
 function attachEvents(){
-    if(SERVICE_VIEW === "addons"){
-        document.getElementById("categoryFilter").style.display = "none";
+    if(FORCED_CATEGORY){
+        document.getElementById("categoryFilter").parentElement.style.display = "none";
+        document.getElementById("serviceCategoryField").style.display = "none";
+    }
+
+    if(SERVICE_VIEW === "services"){
+        Array.from(
+            document.getElementById("serviceCategoryInput").options
+        ).forEach(function(option){
+            if(option.value && !CATEGORY_ORDER.includes(option.value)){
+                option.remove();
+            }
+        });
     }
 
     document
@@ -68,10 +82,6 @@ function attachEvents(){
 
     document
         .getElementById("categoryFilter")
-        .addEventListener("change", renderServices);
-
-    document
-        .getElementById("statusFilter")
         .addEventListener("change", renderServices);
 
     document
@@ -163,6 +173,18 @@ function saveServices(){
 function migrateExistingServices(){
     let changed = false;
 
+    /* Kiddie and Other were merged into one "Others" category. */
+    services.forEach(function(service){
+        if(
+            service &&
+            typeof service === "object" &&
+            (service.category === "Kiddie" || service.category === "Other")
+        ){
+            service.category = "Others";
+            changed = true;
+        }
+    });
+
     services =
         services.map(function(service){
             if(typeof service === "string"){
@@ -171,7 +193,7 @@ function migrateExistingServices(){
                 return {
                     id: createId(),
                     name: service,
-                    category: "Other",
+                    category: "Others",
                     duration: inferDuration(service),
                     bedOccupancy: inferDuration(service),
                     code: "",
@@ -202,7 +224,7 @@ function migrateExistingServices(){
                 category:
                     service.category === "Package"
                         ? "Combo"
-                        : (service.category || "Other"),
+                        : (service.category || "Others"),
                 duration: Number(service.duration) || 0,
                 bedOccupancy:
                     Number(service.bedOccupancy) ||
@@ -353,9 +375,6 @@ function renderServices(){
     const category =
         document.getElementById("categoryFilter").value;
 
-    const status =
-        document.getElementById("statusFilter").value;
-
     const filtered =
         services.slice().sort(function(a, b){
             return categoryRank(a) - categoryRank(b);
@@ -373,14 +392,9 @@ function renderServices(){
                 !category ||
                 service.category === category;
 
-            const matchesStatus =
-                !status ||
-                service.status === status;
-
             return (
                 matchesSearch &&
-                matchesCategory &&
-                matchesStatus
+                matchesCategory
             );
         });
 
@@ -660,8 +674,8 @@ function openAddModal(){
 
     clearForm();
 
-    if(SERVICE_VIEW === "addons"){
-        document.getElementById("serviceCategoryInput").value = "Add-on";
+    if(FORCED_CATEGORY){
+        document.getElementById("serviceCategoryInput").value = FORCED_CATEGORY;
     }
     activateTab("general");
     showModal();
@@ -823,6 +837,7 @@ function saveService(){
             .trim();
 
     const category =
+        FORCED_CATEGORY ||
         document.getElementById("serviceCategoryInput").value;
 
     const duration =

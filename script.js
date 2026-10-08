@@ -455,7 +455,7 @@ function getServiceCategoryMap(){
 
   getServices().forEach(function(service){
     map[String(service?.name || "").trim().toLowerCase()] =
-      service?.category || "Other";
+      service?.category || "Others";
   });
 
   return map;
@@ -474,7 +474,7 @@ function renderDailyKpi(salesCounts, productsCount, vipCardCount, sourceCounts, 
   setValue("kpiMassage", salesCounts["Massage"]);
   setValue("kpiCombo", salesCounts["Combo"]);
   setValue("kpiAddOn", salesCounts["Add-on"]);
-  setValue("kpiKiddie", salesCounts["Kiddie"]);
+  setValue("kpiKiddie", salesCounts["Others"]);
   setValue("kpiProducts", productsCount);
   setValue("kpiVipCard", vipCardCount);
 
@@ -7211,7 +7211,7 @@ function updateSummary(){
     "Massage": 0,
     "Combo": 0,
     "Add-on": 0,
-    "Kiddie": 0
+    "Others": 0
   };
 
   let kpiProductsCount = 0;

@@ -52,10 +52,6 @@ function attachEvents(){
         .addEventListener("change", renderProducts);
 
     document
-        .getElementById("statusFilter")
-        .addEventListener("change", renderProducts);
-
-    document
         .querySelectorAll(".product-tab")
         .forEach(function(tab){
             tab.addEventListener("click", function(){
@@ -340,9 +336,6 @@ function renderProducts(){
     const category =
         document.getElementById("categoryFilter").value;
 
-    const status =
-        document.getElementById("statusFilter").value;
-
     const filtered =
         products.filter(function(product){
             const matchesSearch =
@@ -356,14 +349,9 @@ function renderProducts(){
                 !category ||
                 product.category === category;
 
-            const matchesStatus =
-                !status ||
-                product.status === status;
-
             return (
                 matchesSearch &&
-                matchesCategory &&
-                matchesStatus
+                matchesCategory
             );
         });
 
