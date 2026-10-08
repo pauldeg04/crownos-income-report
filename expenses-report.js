@@ -857,9 +857,17 @@ function recurringAmountForMonth(item, monthKey){
 /* Only settled items count toward the total for a month — an item still
    Pending/Approaching/Past Due hasn't actually been paid out yet. */
 function recurringMonthTotal(tableKey, monthKey){
-    return (recurringData[tableKey] || [])
+    let total = (recurringData[tableKey] || [])
         .filter(item => isRecurringActiveInMonth(item, monthKey) && computeRecurringStatus(item, monthKey) === "settled")
         .reduce((sum, item) => sum + recurringAmountForMonth(item, monthKey), 0);
+
+    /* Auto Maya Terminal fee (terminal-fee.js) always counts — it is
+       computed from actual Terminal sales, not a bill awaiting payment. */
+    if(tableKey === "utilities"){
+        total += terminalFeeForMonth(getSelectedBranch(), monthKey);
+    }
+
+    return total;
 }
 
 function renderRecurringTableBody(tableKey){
@@ -871,6 +879,27 @@ function renderRecurringTableBody(tableKey){
         .filter(item => isRecurringActiveInMonth(item, monthKey))
         .sort((a, b) => (a.dueDay || 0) - (b.dueDay || 0));
 
+    let autoFeeRow = "";
+    if(tableKey === "utilities" && monthKey >= TERMINAL_FEE_START_MONTH){
+        autoFeeRow = `
+            <tr class="auto-fee-row">
+                <td class="text-start">${escapeHtml(TERMINAL_FEE_PARTICULAR)}</td>
+                <td>Rental Expense</td>
+                <td>—</td>
+                <td class="amount-cell">${peso(terminalFeeForMonth(getSelectedBranch(), monthKey))}</td>
+                <td>${formatMonthLabel(monthKey)}</td>
+                <td>${formatMonthLabel(monthKey)}</td>
+                <td><span class="status-badge status-settled">Auto</span></td>
+                <td class="text-muted small">3.5% of Terminal sales</td>
+            </tr>
+        `;
+    }
+
+    if(items.length === 0 && autoFeeRow){
+        tbody.innerHTML = autoFeeRow;
+        return;
+    }
+
     if(items.length === 0){
         tbody.innerHTML = `
             <tr class="empty-row">
@@ -880,7 +909,7 @@ function renderRecurringTableBody(tableKey){
         return;
     }
 
-    tbody.innerHTML = items.map(item => {
+    tbody.innerHTML = autoFeeRow + items.map(item => {
         let status = computeRecurringStatus(item, monthKey);
         let meta = RECURRING_STATUS_META[status];
 
@@ -1337,6 +1366,19 @@ function exportExpensesPDF(){
                     .filter(item => isRecurringActiveInMonth(item, monthValue))
                     .sort((a, b) => (a.dueDay || 0) - (b.dueDay || 0))
                 : sortedEntries(table.key);
+
+            /* Auto Maya Terminal fee line (terminal-fee.js), shaped like a settled recurring item. */
+            if(table.key === "utilities" && monthValue >= TERMINAL_FEE_START_MONTH){
+                rows.unshift({
+                    particular: TERMINAL_FEE_PARTICULAR,
+                    accountTitle: "Rental Expense",
+                    amountType: "fixed",
+                    fixedAmount: terminalFeeForMonth(getSelectedBranch(), monthValue),
+                    startDate: monthValue + "-01",
+                    endMonth: monthValue,
+                    settledMonths: { [monthValue]: true }
+                });
+            }
 
             const total = table.recurring
                 ? rows.reduce((sum, item) => sum + recurringAmountForMonth(item, monthValue), 0)

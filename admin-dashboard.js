@@ -601,6 +601,9 @@
             return sum + recurringSettledTotal(key, branch, monthKey);
         }, 0);
 
+        /* Auto Maya Terminal fee (see terminal-fee.js) — part of Utilities / Monthly Dues. */
+        total += terminalFeeForMonth(branch, monthKey);
+
         const data = readJson(EXPENSE_PREFIX + branch + "_" + monthKey, null);
         if(!data){ return total; }
 

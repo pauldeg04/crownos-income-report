@@ -463,6 +463,9 @@ function getOverheadExpenses(branch, monthValue){
         return sum + recurringMonthTotal(key, branch, monthValue);
     }, 0);
 
+    /* Auto Maya Terminal fee (see terminal-fee.js) — part of Utilities / Monthly Dues. */
+    total += terminalFeeForMonth(branch, monthValue);
+
     const saved = localStorage.getItem(EXPENSE_PREFIX + branch + "_" + monthValue);
 
     if(!saved){

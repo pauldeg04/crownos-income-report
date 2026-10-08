@@ -11,6 +11,20 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-08 (6) — Auto Maya Terminal fee (3.5%) in Expenses
+
+**Requested by:** Admin.
+
+- Daily Income Report is unchanged: Terminal payments stay at their gross amount.
+- New [`terminal-fee.js`](terminal-fee.js): `terminalFeeForMonth(branch, month)` = 3.5% of that month's Terminal payments (per branch, settled rows only; voided/deleted sales no longer exist so drop out). Computed on the fly from `crownDailySales_*`, nothing stored. Applies from **2026-10** onward only (`TERMINAL_FEE_START_MONTH`); earlier months untouched. Rate in `TERMINAL_FEE_RATE`.
+- [`expenses-report.js`](expenses-report.js): read-only "Maya Terminal (3.5% fee, auto)" row (Account Title: Rental Expense, status Auto) at the top of Utilities / Monthly Dues; counted in the Utilities total, Summary and PDF. Manual entries untouched.
+- [`share-holder-report.js`](share-holder-report.js) / [`admin-dashboard.js`](admin-dashboard.js): overhead expenses include the fee so all three agree.
+- `terminal-fee.js` loaded in the three matching HTML pages. [`manual.html`](manual.html) Expenses chapter updated.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-08 (5) — Therapist Sales: Accumulated Points card
 
 **Requested by:** Admin.
