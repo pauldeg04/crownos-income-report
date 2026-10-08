@@ -50,6 +50,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-08 (6) — Admin Dashboard: Share Holder Summary moved to the bottom
+
+**Requested by:** Admin.
+
+- [`admin-dashboard.html`](admin-dashboard.html): section order is now Notifications, Statistics, List of Therapists, Service Points, Share Holder Summary.
+- [`manual.html`](manual.html) Chapter 5a reordered to match.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-08 (5) — Therapist Sales: Accumulated Points card
 
 **Requested by:** Admin.
