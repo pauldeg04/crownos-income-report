@@ -44,6 +44,12 @@
 </head>
 
 <body>
+<script>
+if(/[?&]embed=1/.test(location.search)){
+    document.documentElement.classList.add("is-embedded");
+    document.body.dataset.noSidebar = "true";
+}
+</script>
 
 <div class="container-fluid px-3 px-lg-4 py-4">
 
@@ -483,6 +489,7 @@
 </div>
 
 <script type="text/crown-deferred" src="sidebar.js"></script>
+<script type="text/crown-deferred" src="archive-table.js"></script>
 <script type="text/crown-deferred" src="list-products.js"></script>
 
 </body>

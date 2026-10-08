@@ -10,7 +10,7 @@
 
 .branch-table{
     table-layout:fixed;
-    min-width:840px;
+    min-width:960px;
 }
 
 .branch-table th,
@@ -26,29 +26,34 @@
 
 .branch-table th:nth-child(2),
 .branch-table td:nth-child(2){
-    width:24%;
+    width:20%;
 }
 
 .branch-table th:nth-child(3),
 .branch-table td:nth-child(3){
-    width:10%;
+    width:9%;
 }
 
 .branch-table th:nth-child(4),
 .branch-table td:nth-child(4),
 .branch-table th:nth-child(5),
 .branch-table td:nth-child(5){
-    width:12%;
+    width:11%;
 }
 
 .branch-table th:nth-child(6),
 .branch-table td:nth-child(6){
-    width:21%;
+    width:17%;
 }
 
 .branch-table th:nth-child(7),
 .branch-table td:nth-child(7){
-    width:16%;
+    width:15%;
+}
+
+.branch-table th:nth-child(8),
+.branch-table td:nth-child(8){
+    width:12%;
 }
 
 .action-buttons{

@@ -3,6 +3,36 @@ const SERVICE_KEY = "crownServiceMasterList";
 let services = [];
 let editingServiceId = null;
 
+/* Product Settings shows this page three times: ?view=services (Head Spa,
+   Massage, Combo), ?view=addons (only Add-on) and ?view=others (everything
+   else, e.g. Kiddie and Other). No view = all. */
+const SERVICE_VIEW = new URLSearchParams(location.search).get("view");
+
+/* Display order: Head Spa, Massage, Combo, then every other category.
+   Array.sort is stable, so the existing order holds inside a category. */
+const CATEGORY_ORDER = ["Head Spa", "Massage", "Combo"];
+
+function categoryRank(service){
+    const i = CATEGORY_ORDER.indexOf(service.category);
+    return i === -1 ? CATEGORY_ORDER.length : i;
+}
+
+function isOtherCategory(service){
+    return (
+        service.category !== "Add-on" &&
+        !CATEGORY_ORDER.includes(service.category)
+    );
+}
+
+function inServiceView(service){
+    if(SERVICE_VIEW === "addons"){ return service.category === "Add-on"; }
+    if(SERVICE_VIEW === "others"){ return isOtherCategory(service); }
+    if(SERVICE_VIEW === "services"){
+        return CATEGORY_ORDER.includes(service.category);
+    }
+    return true;
+}
+
 document.addEventListener("DOMContentLoaded", function(){
     loadServices();
     migrateExistingServices();
@@ -12,6 +42,10 @@ document.addEventListener("DOMContentLoaded", function(){
 });
 
 function attachEvents(){
+    if(SERVICE_VIEW === "addons"){
+        document.getElementById("categoryFilter").style.display = "none";
+    }
+
     document
         .getElementById("addServiceBtn")
         .addEventListener("click", openAddModal);
@@ -281,6 +315,7 @@ function populateCategoryFilter(){
         Array.from(
             new Set(
                 services
+                    .filter(inServiceView)
                     .map(function(service){
                         return service.category;
                     })
@@ -299,7 +334,15 @@ function populateCategoryFilter(){
         }).join("");
 }
 
+let archiveTable = null;
+
 function renderServices(){
+    const archive = archiveTable || (
+        archiveTable = CrownArchive.create(
+            document.getElementById("serviceTableBody")
+        )
+    );
+
     const search =
         document
             .getElementById("serviceSearch")
@@ -314,7 +357,11 @@ function renderServices(){
         document.getElementById("statusFilter").value;
 
     const filtered =
-        services.filter(function(service){
+        services.slice().sort(function(a, b){
+            return categoryRank(a) - categoryRank(b);
+        }).filter(function(service){
+            if(!inServiceView(service)){ return false; }
+
             const matchesSearch =
                 !search ||
                 service.name.toLowerCase().includes(search) ||
@@ -341,6 +388,7 @@ function renderServices(){
         document.getElementById("serviceTableBody");
 
     tbody.innerHTML = "";
+    archive.reset();
 
     filtered.forEach(function(service){
         const row =
@@ -515,13 +563,23 @@ function renderServices(){
             });
         }
 
-        tbody.appendChild(row);
+        (
+            service.status === "Archived"
+                ? archive.body
+                : tbody
+        ).appendChild(row);
     });
+
+    const archivedShown = filtered.filter(function(service){
+        return service.status === "Archived";
+    }).length;
+
+    archive.finish(archivedShown);
 
     document.getElementById("serviceEmptyState")
         .classList.toggle(
             "d-none",
-            filtered.length > 0
+            filtered.length - archivedShown > 0
         );
 
     document.getElementById("serviceCount").textContent =
@@ -601,6 +659,10 @@ function openAddModal(){
         "Save Service";
 
     clearForm();
+
+    if(SERVICE_VIEW === "addons"){
+        document.getElementById("serviceCategoryInput").value = "Add-on";
+    }
     activateTab("general");
     showModal();
 }

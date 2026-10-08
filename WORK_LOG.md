@@ -11,6 +11,19 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-08 (7) — Product Settings and Branch Settings (tabbed pages)
+
+**Requested by:** Admin.
+
+- New [`product-settings.html`](product-settings.html) (tabs: Services, Products, Add-ons, Others) and [`branch-settings.html`](branch-settings.html) (tabs: Therapist, Branches), driven by [`settings-tabs.js`](settings-tabs.js) / [`settings-tabs.css`](settings-tabs.css). Each tab lazy-loads the original `list-*.html` page in an iframe with `?embed=1` (hides sidebar + heading card via `html.is-embedded` in [`shared.css`](shared.css)); the active tab is kept in the URL hash. Services/Add-ons frames reload when re-shown because they share one stored list.
+- [`list-services.js`](list-services.js): `?view=services` (Head Spa, Massage, Combo), `?view=addons` (Add-on), `?view=others` (everything else, e.g. Kiddie/Other). Display order Head Spa > Massage > Combo > rest. Data/storage unchanged.
+- New [`archive-table.js`](archive-table.js) + styles in `shared.css`: collapsible Archive table under Services, Products, Add-ons, Others (status Archived) and Therapist (status Inactive). Branches have no status, so no Archive there (user's choice).
+- Fixed an old bug in [`list-branches.css`](list-branches.css): column widths summed to 100% over 7 columns, squeezing the Action column to zero width.
+- [`sidebar.js`](sidebar.js): the four list items replaced by Product Settings and Branch Settings; [`access-control.js`](access-control.js) and [`account-settings.js`](account-settings.js) know the new pages. Old `list-*.html` URLs still work. **Note:** users with per-user extra access to an old `list-*.html` page need the new page ticked again.
+- [`manual.html`](manual.html) Master Lists chapter updated.
+
+---
+
 ## 2026-10-08 (6) — Auto Maya Terminal fee (3.5%) in Expenses
 
 **Requested by:** Admin.

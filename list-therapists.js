@@ -420,13 +420,25 @@ function saveTherapistsToStorage(){
     }
 }
 
+let archiveTable = null;
+
 function renderTherapists(){
     const tbody =
         document.getElementById("therapistsBody");
 
-    tbody.innerHTML = "";
+    const archive = archiveTable || (
+        archiveTable = CrownArchive.create(tbody)
+    );
 
-    therapists.forEach(function(therapist, index){
+    tbody.innerHTML = "";
+    archive.reset();
+
+    let activeNo = 0;
+    let archivedNo = 0;
+
+    therapists.forEach(function(therapist){
+        const isArchived = therapist.status === "Inactive";
+        const index = isArchived ? archivedNo++ : activeNo++;
         const row =
             document.createElement("tr");
 
@@ -509,8 +521,10 @@ function renderTherapists(){
                 deleteTherapist(therapist.id);
             });
 
-        tbody.appendChild(row);
+        (isArchived ? archive.body : tbody).appendChild(row);
     });
+
+    archive.finish(archivedNo);
 
     document.getElementById("therapistCount").textContent =
         therapists.length;

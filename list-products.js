@@ -321,7 +321,15 @@ function populateCategoryFilter(){
     }
 }
 
+let archiveTable = null;
+
 function renderProducts(){
+    const archive = archiveTable || (
+        archiveTable = CrownArchive.create(
+            document.getElementById("productsBody")
+        )
+    );
+
     const search =
         document
             .getElementById("productSearch")
@@ -363,6 +371,7 @@ function renderProducts(){
         document.getElementById("productsBody");
 
     tbody.innerHTML = "";
+    archive.reset();
 
     filtered.forEach(function(product){
         const row =
@@ -481,14 +490,24 @@ function renderProducts(){
             });
         }
 
-        tbody.appendChild(row);
+        (
+            product.status === "Archived"
+                ? archive.body
+                : tbody
+        ).appendChild(row);
     });
+
+    const archivedShown = filtered.filter(function(product){
+        return product.status === "Archived";
+    }).length;
+
+    archive.finish(archivedShown);
 
     document
         .getElementById("productEmptyState")
         .classList.toggle(
             "d-none",
-            filtered.length > 0
+            filtered.length - archivedShown > 0
         );
 
     document.getElementById("productCount").textContent =

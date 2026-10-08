@@ -441,8 +441,8 @@
         },
 
         {
-            label: "List of Services",
-            href: "list-services.html",
+            label: "Product Settings",
+            href: "product-settings.html",
             roles: ["Admin", "Executive Assistant"],
             sub: true
         },
@@ -455,22 +455,8 @@
         },
 
         {
-            label: "List of Products",
-            href: "list-products.html",
-            roles: ["Admin", "Executive Assistant"],
-            sub: true
-        },
-
-        {
-            label: "List of Therapist",
-            href: "list-therapists.html",
-            roles: ["Admin", "Executive Assistant"],
-            sub: true
-        },
-
-        {
-            label: "List of Branches",
-            href: "list-branches.html",
+            label: "Branch Settings",
+            href: "branch-settings.html",
             roles: ["Admin", "Executive Assistant"],
             sub: true
         },
@@ -1633,6 +1619,8 @@
             "therapist-sales.html": "Therapist Sales",
             "receptionist-sales.html": "Receptionist Sales",
             "account-settings.html": "Account Settings",
+            "product-settings.html": "Product Settings",
+            "branch-settings.html": "Branch Settings",
             "list-services.html": "List of Services",
             "list-products.html": "List of Products",
             "list-therapists.html": "List of Therapists",

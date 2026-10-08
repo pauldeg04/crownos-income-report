@@ -21,6 +21,8 @@ const EXTRA_ACCESS_PAGES = [
     { href: "attendance.html", label: "Attendance" },
     { href: "invoice-report.html", label: "Invoice Report" },
     { href: "list-vouchers.html", label: "List of Vouchers" },
+    { href: "product-settings.html", label: "Product Settings" },
+    { href: "branch-settings.html", label: "Branch Settings" },
     { href: "list-services.html", label: "List of Services" },
     { href: "list-products.html", label: "List of Products" },
     { href: "list-therapists.html", label: "List of Therapist" },

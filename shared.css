@@ -559,3 +559,42 @@ tr.saved{
     padding:22px;
   }
 }
+
+/* Collapsible Archive table under the Settings lists */
+.archive-section{
+    margin-top:20px;
+    border:1px solid #dee2e6;
+    border-radius:10px;
+    background:#f8f9fa;
+}
+.archive-section > summary{
+    cursor:pointer;
+    padding:12px 16px;
+    font-weight:700;
+    color:#495057;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    list-style:none;
+}
+.archive-section > summary::-webkit-details-marker{ display:none; }
+.archive-section > summary::before{
+    content:"▸";
+    transition:transform .15s;
+}
+.archive-section[open] > summary::before{ transform:rotate(90deg); }
+.archive-count{
+    background:#6c757d;
+    color:#fff;
+    border-radius:999px;
+    padding:1px 10px;
+    font-size:.8rem;
+}
+.archive-table-wrap{ padding:0 12px 12px; }
+.archive-table{ background:#fff; margin-bottom:0; }
+.archive-empty{ padding:0 16px 14px; color:#6c757d; font-size:.9rem; }
+
+/* Pages shown inside a Settings tab: no sidebar, no page heading card */
+html.is-embedded body{ background:transparent; }
+html.is-embedded body > .container-fluid{ padding-top:12px !important; }
+html.is-embedded body > .container-fluid > .card:first-child{ display:none; }

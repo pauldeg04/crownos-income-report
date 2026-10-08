@@ -128,6 +128,16 @@
             "Receptionist"
         ],
 
+        "product-settings.html": [
+            "Admin",
+            "Executive Assistant"
+        ],
+
+        "branch-settings.html": [
+            "Admin",
+            "Executive Assistant"
+        ],
+
         "list-services.html": [
             "Admin",
             "Executive Assistant"
