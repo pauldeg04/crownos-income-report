@@ -11,6 +11,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-08 (5) — Therapist Sales: Accumulated Points card
+
+**Requested by:** Admin.
+
+- [`therapist-sales.html`](therapist-sales.html) / [`therapist-sales.js`](therapist-sales.js) / [`therapist-sales.css`](therapist-sales.css): small card under the Therapist selector (shown only once a therapist is picked) with the therapist's **Accumulated Points** across all branches and all saved days (services only, same rule as the Points column), **Started <month year>**, **As of <date>** (latest day that added points), and a per-branch split when more than one branch. No hire date exists for therapists, so Started = month of their first recorded service. Independent of the selected date/month. `renderAccumulatedPoints()` scans every `crownDailySales_*` key.
+- [`manual.html`](manual.html) Chapter 9 updated.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-08 (4) — Admin Dashboard: top therapist highlight
 
 **Requested by:** Admin.

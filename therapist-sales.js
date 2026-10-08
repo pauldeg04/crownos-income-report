@@ -1008,6 +1008,8 @@ function renderTherapistSales(){
         therapist,
         selectedDate
     );
+
+    renderAccumulatedPoints(therapist);
 }
 
 function renderSalesTable(
@@ -1381,4 +1383,126 @@ function escapeHtml(value){
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+}
+
+
+/* Accumulated Points — everything this therapist has earned since they
+   started, across every branch and every saved day, up to the most recent
+   day that added points. Services only (the same rule as the Points
+   column). */
+function renderAccumulatedPoints(therapist){
+    const card = document.getElementById("accumulatedPointsCard");
+
+    if(!card){
+        return;
+    }
+
+    if(!therapist){
+        card.classList.add("d-none");
+        return;
+    }
+
+    let total = 0;
+    let lastDate = "";
+    let firstDate = "";
+    const byBranch = {};
+
+    for(let index = 0; index < localStorage.length; index++){
+        const key = localStorage.key(index);
+
+        if(!key || !key.startsWith(THERAPIST_SALES_PREFIX)){
+            continue;
+        }
+
+        /* crownDailySales_<branch>_<YYYY-MM-DD> */
+        const match = key.slice(THERAPIST_SALES_PREFIX.length).match(/^(.*)_(\d{4}-\d{2}-\d{2})$/);
+
+        if(!match){
+            continue;
+        }
+
+        let parsed;
+
+        try{
+            parsed = JSON.parse(localStorage.getItem(key));
+        }catch(error){
+            continue;
+        }
+
+        if(!Array.isArray(parsed?.rows)){
+            continue;
+        }
+
+        let dayPoints = 0;
+        let dayHasService = false;
+
+        parsed.rows.forEach(function(sale){
+            if(sale.settled === false){
+                return;
+            }
+
+            (Array.isArray(sale?.services) ? sale.services : []).forEach(function(item){
+                const assigned = String(item?.therapist || sale?.therapist || "").trim();
+
+                if(assigned !== therapist){
+                    return;
+                }
+
+                const itemType =
+                    item?.itemType ||
+                    (String(item?.productKind || "").includes("Voucher") ? "Product" : "Service");
+
+                if(itemType !== "Service"){
+                    return;
+                }
+
+                const qty = Math.max(Number(item?.quantity) || 1, 1);
+
+                const cost = item?.isFreebie
+                    ? (Number(item?.freebieValue) || 0)
+                    : (Number(item?.amount) || 0);
+
+                dayPoints += CrownPoints.getPointsForItem(item, cost / qty).points;
+                dayHasService = true;
+            });
+        });
+
+        /* No hire date is stored for therapists, so "started" is the first
+           saved day that has a service by them. */
+        if(dayHasService && (!firstDate || match[2] < firstDate)){
+            firstDate = match[2];
+        }
+
+        if(dayPoints > 0){
+            total += dayPoints;
+            byBranch[match[1]] = (byBranch[match[1]] || 0) + dayPoints;
+
+            if(match[2] > lastDate){
+                lastDate = match[2];
+            }
+        }
+    }
+
+    document.getElementById("accumulatedPointsValue").textContent = formatNumber(total);
+
+    document.getElementById("accumulatedPointsAsOf").textContent = lastDate
+        ? "As of " + new Date(lastDate + "T00:00:00").toLocaleDateString("en-PH", {
+            month: "short", day: "numeric", year: "numeric"
+        })
+        : "No points yet";
+
+    document.getElementById("accumulatedPointsStarted").textContent = firstDate
+        ? "Started " + new Date(firstDate + "T00:00:00").toLocaleDateString("en-PH", {
+            month: "long", year: "numeric"
+        })
+        : "";
+
+    const branches = Object.keys(byBranch);
+
+    document.getElementById("accumulatedPointsBranches").textContent =
+        branches.length > 1
+            ? branches.map(function(b){ return b + ": " + formatNumber(byBranch[b]); }).join(" · ")
+            : "";
+
+    card.classList.remove("d-none");
 }

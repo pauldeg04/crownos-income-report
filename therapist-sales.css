@@ -603,3 +603,38 @@
         grid-template-columns:1fr;
     }
 }
+
+/* Accumulated Points card under the Therapist selector */
+.accumulated-points-card{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    margin-bottom:14px;
+    padding:12px 16px;
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-top:4px solid var(--gold);
+    border-radius:12px;
+    box-shadow:var(--shadow-soft);
+}
+
+.accumulated-points-label{
+    color:var(--muted);
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.07em;
+    text-transform:uppercase;
+}
+
+.accumulated-points-card strong{
+    color:var(--navy);
+    font-size:26px;
+    line-height:1.1;
+    font-weight:900;
+}
+
+.accumulated-points-card small{
+    color:var(--muted);
+    font-size:11px;
+    font-weight:700;
+}
