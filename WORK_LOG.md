@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-08 (3) — Admin Dashboard: per-branch Therapist and Service Points tables
+
+**Requested by:** Admin.
+
+- [`admin-dashboard.html`](admin-dashboard.html) / [`admin-dashboard.js`](admin-dashboard.js): **List of Therapists** is now one table per branch, side by side, with only Therapist and Total Points (plus a Total row). A therapist appears under each branch they are assigned to (none assigned = all branches). Replaces the earlier hide-by-assignment filter, which per-branch tables make unnecessary.
+- New **Service Points** section: one table per branch, side by side, mirroring Receptionist Sales' Services Points (fixed service list, variants rolled up, Products / Add Ons / VIP rows, unlisted items trailing, Total row).
+- [`manual.html`](manual.html) Chapter 5a updated.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-08 (2) — Admin Dashboard
 
 **Requested by:** Admin.

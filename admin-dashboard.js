@@ -690,8 +690,8 @@
        4. List of Therapists (+ points)
        ====================================================================== */
 
-    /* Points of the therapist's own Services, per branch — same rule as the
-       Points column on Therapist Sales. */
+    /* Points of the therapist's own Services in one branch — same rule as
+       the Points column on Therapist Sales. */
     function therapistPoints(branch, month){
         const result = {};
 
@@ -709,73 +709,174 @@
         return result;
     }
 
+    /* One table per branch: Therapist | Total Points. A therapist is listed
+       under every branch they are assigned to (or who earned points there);
+       one with no assignment is listed under all. */
     function renderTherapists(month){
         $("adTherapistMonthLabel").textContent = "· " + monthLabel(month);
 
-        const branches = getBranches();
-        const byBranch = {};
-        branches.forEach(function(branch){ byBranch[branch] = therapistPoints(branch, month); });
-
         const master = readJson(THERAPIST_KEY, []);
-        const people = {};
-
-        (Array.isArray(master) ? master : []).forEach(function(entry){
-            const name = typeof entry === "string" ? entry : entry?.name;
-            if(!name){ return; }
-            people[name] = {
-                name: name,
+        const people = (Array.isArray(master) ? master : []).map(function(entry){
+            return {
+                name: typeof entry === "string" ? entry : entry?.name,
                 status: (typeof entry === "string" ? "Active" : entry?.status) || "Active",
                 branches: typeof entry === "string" ? [] : (entry?.branches || [])
             };
-        });
+        }).filter(function(person){ return person.name; });
 
-        /* A name that earned points but is no longer on the master list. */
-        branches.forEach(function(branch){
-            Object.keys(byBranch[branch]).forEach(function(name){
-                if(!people[name]){ people[name] = { name: name, status: "Not listed", branches: [] }; }
+        $("adTherapists").innerHTML = getBranches().map(function(branch){
+            const points = therapistPoints(branch, month);
+            const names = new Set(Object.keys(points));
+
+            people.forEach(function(person){
+                const here = person.branches.length === 0 || person.branches.includes(branch);
+                if(here && person.status === "Active"){ names.add(person.name); }
+            });
+
+            const rows = Array.from(names).map(function(name){
+                return { name: name, points: points[name] || 0 };
+            }).sort(function(a, b){
+                return b.points - a.points || a.name.localeCompare(b.name);
+            });
+
+            const total = rows.reduce(function(sum, row){ return sum + row.points; }, 0);
+
+            return `
+                <div class="col-lg-6">
+                    <div class="ad-card">
+                        <h4 class="ad-card-title">${escapeHtml(branch)}</h4>
+                        <table class="table table-bordered align-middle ad-table mb-0">
+                            <thead class="table-dark">
+                                <tr><th>Therapist</th><th class="text-end">Total Points</th></tr>
+                            </thead>
+                            <tbody>
+                                ${rows.length === 0
+                                    ? `<tr><td colspan="2" class="text-center text-muted">No therapists found.</td></tr>`
+                                    : rows.map(function(row){
+                                        return `<tr><td class="fw-bold">${escapeHtml(row.name)}</td><td class="text-end">${formatNumber(row.points)}</td></tr>`;
+                                    }).join("")}
+                            </tbody>
+                            <tfoot>
+                                <tr><th>Total</th><th class="text-end">${formatNumber(total)}</th></tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    /* ======================================================================
+       5. Service Points (mirrors the Services Points table on Receptionist
+          Sales: fixed list, variants roll up, Products / Add Ons / VIP are
+          one row each, anything else trails at the end)
+       ====================================================================== */
+
+    const SERVICE_POINT_ROWS = [
+        { name: "Crown Reset", category: "Head Spa", tier: "Head Spa:3" },
+        { name: "Crown Serenity", category: "Head Spa", tier: "Head Spa:5" },
+        { name: "Crown Detox and Glow", category: "Head Spa", tier: "Head Spa:10" },
+        { name: "Crown Relax", category: "Massage", tier: "Massage:4" },
+        { name: "Crown Relief", category: "Massage", tier: "Massage:7" },
+        { name: "Crown Recovery", category: "Massage", tier: "Massage:10" },
+        { name: "The Reset Duo", category: "Combo", tier: "Combo:7" },
+        { name: "The Serenity Set", category: "Combo", tier: "Combo:11" },
+        { name: "The Recovery Ritual", category: "Combo", tier: "Combo:17" }
+    ];
+
+    function servicePointRows(branch, month){
+        const fixedByTier = {};
+        const groups = new Map();
+
+        SERVICE_POINT_ROWS.forEach(function(row){ fixedByTier[row.tier] = row; });
+
+        getMonthlySales(branch, month).forEach(function(sale){
+            (Array.isArray(sale.services) ? sale.services : []).forEach(function(item){
+                const result = pointsFor(item);
+                const baseName = String(item?.name || "—");
+                const fixed = fixedByTier[result.tier];
+                const general = result.category === "Products" || result.category === "Add-ons" || result.category === "VIP";
+                const little = /little crown head spa/i.test(baseName);
+
+                const key = fixed
+                    ? "tier|" + fixed.tier
+                    : little
+                        ? "special|Little Crown Head Spa"
+                        : general
+                            ? "general|" + result.category
+                            : result.category + "|" + baseName.trim().toLowerCase();
+
+                if(!groups.has(key)){
+                    groups.set(key, { name: fixed ? fixed.name : baseName, category: result.category, points: 0 });
+                }
+
+                groups.get(key).points += result.points;
             });
         });
 
-        const rows = Object.keys(people).map(function(name){
-            const person = people[name];
-            const perBranch = branches.map(function(branch){ return byBranch[branch][name] || 0; });
-            return { person: person, perBranch: perBranch, total: perBranch.reduce(function(a, b){ return a + b; }, 0) };
-        }).filter(function(row){
-            /* Assigned only to branches switched off for the Admin
-               Dashboard → hidden. No assignment ("All") stays visible. */
-            const assigned = row.person.branches;
-            if(assigned.length > 0 && !assigned.some(function(b){ return branches.includes(b); })){
-                return false;
-            }
+        const used = new Set();
 
-            return row.person.status === "Active" || row.total > 0;
-        }).sort(function(a, b){
-            return b.total - a.total || a.person.name.localeCompare(b.person.name);
+        function take(key, name, category){
+            used.add(key);
+            const group = groups.get(key);
+            return { name: name, category: category, points: group ? group.points : 0 };
+        }
+
+        const rows = [];
+
+        SERVICE_POINT_ROWS.forEach(function(row){
+            rows.push(take("tier|" + row.tier, row.name, row.category));
+
+            if(row.name === "Crown Detox and Glow"){
+                rows.push(take("special|Little Crown Head Spa", "Little Crown Head Spa", "Head Spa"));
+            }
         });
 
-        $("adTherapistHead").innerHTML = `
-            <tr>
-                <th>Therapist</th>
-                <th>Branch</th>
-                <th>Status</th>
-                ${branches.map(function(b){ return `<th class="text-end">${escapeHtml(b)} Points</th>`; }).join("")}
-                <th class="text-end">Total Points</th>
-            </tr>
-        `;
+        rows.push(take("general|Products", "Products", "Others"));
+        rows.push(take("general|Add-ons", "Add Ons", "Others"));
+        rows.push(take("general|VIP", "VIP", "Others"));
 
-        $("adTherapistBody").innerHTML = rows.length === 0
-            ? `<tr><td colspan="${branches.length + 4}" class="text-center text-muted">No therapists found.</td></tr>`
-            : rows.map(function(row){
-                return `
-                    <tr>
-                        <td class="fw-bold">${escapeHtml(row.person.name)}</td>
-                        <td>${row.person.branches.length ? escapeHtml(row.person.branches.filter(function(b){ return branches.includes(b); }).join(", ")) : "All"}</td>
-                        <td>${escapeHtml(row.person.status)}</td>
-                        ${row.perBranch.map(function(p){ return `<td class="text-end">${formatNumber(p)}</td>`; }).join("")}
-                        <td class="text-end fw-bold">${formatNumber(row.total)}</td>
-                    </tr>
-                `;
-            }).join("");
+        Array.from(groups.keys())
+            .filter(function(key){ return !used.has(key); })
+            .map(function(key){ return groups.get(key); })
+            .sort(function(a, b){ return a.category.localeCompare(b.category) || a.name.localeCompare(b.name); })
+            .forEach(function(group){ rows.push(group); });
+
+        return rows;
+    }
+
+    function renderServicePoints(month){
+        $("adServicePointsMonthLabel").textContent = "· " + monthLabel(month);
+
+        $("adServicePoints").innerHTML = getBranches().map(function(branch){
+            const rows = servicePointRows(branch, month);
+            const total = rows.reduce(function(sum, row){ return sum + row.points; }, 0);
+
+            return `
+                <div class="col-lg-6">
+                    <div class="ad-card">
+                        <h4 class="ad-card-title">${escapeHtml(branch)}</h4>
+                        <table class="table table-bordered align-middle ad-table mb-0">
+                            <thead class="table-dark">
+                                <tr><th>Services</th><th>Category</th><th class="text-end">Total Points</th></tr>
+                            </thead>
+                            <tbody>
+                                ${rows.map(function(row){
+                                    return `<tr>
+                                        <td class="fw-bold">${escapeHtml(row.name)}</td>
+                                        <td>${escapeHtml(row.category)}</td>
+                                        <td class="text-end">${formatNumber(row.points)}</td>
+                                    </tr>`;
+                                }).join("")}
+                            </tbody>
+                            <tfoot>
+                                <tr><th colspan="2">Total</th><th class="text-end">${formatNumber(total)}</th></tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }).join("");
     }
 
     /* ======================================================================
@@ -788,6 +889,7 @@
         renderStatistics(month);
         renderShareholders(month);
         renderTherapists(month);
+        renderServicePoints(month);
     }
 
     let refreshTimer = null;
