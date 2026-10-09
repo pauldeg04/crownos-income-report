@@ -11,6 +11,26 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-09 — Inventory: new Daily Audit Report page
+
+**Request:** A Daily Audit Report under Inventory where a branch lists the items it used
+(Item / Qty with − / + / Unit), sends it (locks it), and the quantities come off the branch's
+available stock. Admin and Executive Assistant review it, one tab per branch.
+
+**Change:**
+- New [`inventory-daily-audit.html`](inventory-daily-audit.html) / [`.js`](inventory-daily-audit.js) /
+  [`.css`](inventory-daily-audit.css). One tab per branch (only branches with "Show on Admin
+  Dashboard" on; Admin/EA see all, others only their assigned branches). Sent reports table on
+  top, Today's Report form under it. Reports stored in synced `crownDailyAuditReports`; drafts
+  stay on the device. Send deducts via `CrownInventory.adjustBranchStock`.
+- [`access-control.js`](access-control.js) — page access for Admin, EA, Receptionist, Branch
+  Device, Tech Support; added to `TEAM_LEADER_AUTO_ACCESS_PAGES`.
+- [`sidebar.js`](sidebar.js) — Inventory menu entry; [`account-settings.js`](account-settings.js) —
+  extra-access checkbox; [`activity-log.js`](activity-log.js) — logs the new key.
+- [`manual.html`](manual.html) — new "Daily Audit Report" section in the inventory chapter.
+
+**Mobile:** entry rows become cards at ≤576px (verified at 375px, no horizontal scroll).
+
 ## 2026-10-09 — VIP Card sales now make the client VIP and get a card number
 
 **Problem:** Clients who bought a VIP Card landed in the Non-VIP list and got no Loyalty Card

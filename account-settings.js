@@ -30,6 +30,7 @@ const EXTRA_ACCESS_PAGES = [
     { href: "inventory-warehouse.html", label: "Inventory - Warehouse" },
     { href: "inventory-branches.html", label: "Inventory - Branches" },
     { href: "inventory-items.html", label: "Inventory - Settings" },
+    { href: "inventory-daily-audit.html", label: "Inventory - Daily Audit Report" },
     { href: "marketing-ads-daily.html", label: "Ads Monitoring" },
     { href: "marketing-ads-summary.html", label: "Monitoring Summary" },
     { href: "marketing-daily-report.html", label: "Daily Report" },

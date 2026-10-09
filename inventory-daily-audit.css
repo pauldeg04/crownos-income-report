@@ -1,0 +1,117 @@
+/* ==========================================================================
+   CrownOS — Inventory > Daily Audit Report
+   ========================================================================== */
+
+.tabs{ display:flex; gap:2px; background:var(--surface-soft); border:1px solid var(--border-light); border-radius:var(--radius-md); padding:2px; overflow-x:auto; margin-top:16px; width:fit-content; max-width:100%; }
+.tabs button,
+.tabs [role="tab"]{ font:inherit; font-size:12.5px; font-weight:700; color:var(--muted); background:none; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; white-space:nowrap; }
+.tabs [role="tab"][aria-selected="true"]{ background:#fff; color:var(--navy); box-shadow:var(--shadow-soft); }
+
+.audit-qty{
+    display:inline-flex;
+    align-items:stretch;
+    gap:6px;
+}
+
+.audit-qty-btn{
+    width:36px;
+    font-size:18px;
+    font-weight:800;
+    line-height:1;
+}
+
+.audit-qty-input{
+    width:72px;
+    text-align:center;
+}
+
+.audit-unit-select{
+    min-width:110px;
+}
+
+.audit-submitted-note{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 14px;
+    margin:0 0 12px;
+    color:var(--muted);
+    font-size:13px;
+}
+
+.audit-report-card{
+    border:1px solid var(--border-light);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:14px;
+}
+
+.audit-report-card h4{
+    margin:0;
+    color:var(--navy);
+    font-size:16px;
+    font-weight:800;
+}
+
+.audit-send-row{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:16px;
+}
+
+.audit-item-option{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    width:100%;
+    padding:10px 12px;
+    text-align:left;
+    background:#fff;
+    border:1px solid var(--border-light);
+    border-radius:10px;
+    margin-bottom:8px;
+}
+
+.audit-item-option:hover{
+    background:var(--surface-soft);
+}
+
+.audit-item-option small{
+    color:var(--muted);
+    white-space:nowrap;
+}
+
+/* Phones: each entry row becomes a small card (item name on top, then
+   qty stepper / unit / remove) so nothing needs sideways scrolling. */
+@media (max-width:576px){
+    .audit-send-row .btn{ width:100%; }
+
+    .audit-entry-table thead{ display:none; }
+
+    .audit-entry-table,
+    .audit-entry-table tbody{ display:block; width:100%; }
+
+    .audit-entry-table tr{
+        display:grid;
+        grid-template-columns:auto 1fr auto;
+        align-items:center;
+        gap:8px;
+        padding:12px;
+        margin-bottom:10px;
+        border:1px solid var(--border-light);
+        border-radius:12px;
+    }
+
+    .audit-entry-table td{
+        display:block;
+        padding:0;
+        border:0 !important;
+        background:none;
+    }
+
+    .audit-entry-table td:first-child,
+    .audit-entry-table td[colspan]{ grid-column:1 / -1; }
+
+    .audit-entry-table td:empty{ display:none; }
+
+    .audit-unit-select{ min-width:0; width:100%; }
+}

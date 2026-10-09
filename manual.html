@@ -2115,7 +2115,7 @@ Meal Allowance     none for these roles</div>
     <li><span class="pill pill-role">Tech Support — Warehouse and Tech Support pages only</span></li>
   </ul>
 
-  <p>Four pages make up inventory. Inventory Settings, Warehouse, and Branches are used in sequence; Tech Support is a separate request desk (see below).</p>
+  <p>Five pages make up inventory. Inventory Settings, Warehouse, and Branches are used in sequence; Tech Support is a separate request desk (see below).</p>
 
   <h3>Inventory Settings — the master list</h3>
 
@@ -2270,6 +2270,31 @@ Branch receives    →  it is added to the branch's Available Stock</div>
       request it from the warehouse.
     </p>
   </div>
+
+  <h3>Daily Audit Report — items used each day</h3>
+
+  <ul class="roleline">
+    <li><span class="pill pill-role">Admin</span></li>
+    <li><span class="pill pill-role">Executive Assistant</span></li>
+    <li><span class="pill pill-role">Team Leader</span></li>
+    <li><span class="pill pill-role">Receptionist · Branch Device · Tech Support</span></li>
+  </ul>
+
+  <p>
+    Open <strong>Inventory → Daily Audit Report</strong>. There is one tab per
+    branch (only branches switched on for the Admin Dashboard in List of
+    Branches). Admin and Executive Assistant see every branch tab; everyone
+    else sees only the branches assigned to their account.
+  </p>
+
+  <ol>
+    <li>The table under the tab lists the reports that branch has already sent.</li>
+    <li>Under it, <strong>Today's Report</strong>: press <strong>+ Add Item</strong> and pick from the items the branch has in stock.</li>
+    <li>For each line set the <strong>Qty</strong> with the − / + buttons (starts at 1, cannot go above the available stock) and the <strong>Unit</strong>.</li>
+    <li>Press <strong>Send Report</strong>. The report is locked — it can no longer be edited — and every quantity is deducted from that branch's available stock.</li>
+  </ol>
+
+  <p>One report per branch per day. An unsent report is kept on that device only. The page is laid out for phones: each item is a small card with no sideways scrolling.</p>
 
   <h3>Tech Support — Maintenance and Collaterals</h3>
 

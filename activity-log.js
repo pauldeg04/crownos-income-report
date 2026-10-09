@@ -82,6 +82,7 @@
         ["crownBranchStock", "Branch Inventory"],
         ["crownStockRequests", "Stock Requests"],
         ["crownStockAudit", "Stock Audit"],
+        ["crownDailyAuditReports", "Daily Audit Report"],
         ["crownInventoryItemsList", "Inventory Settings"],
         ["crownVoucherRegistry", "Vouchers"],
         ["crownShareholder", "Share Holder Report"],

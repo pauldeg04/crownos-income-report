@@ -175,6 +175,7 @@
         "Warehouse": "▣",
         "Branches": "▥",
         "Inventory Settings": "▤",
+        "Daily Audit Report": "▦",
         "201 Files": "🗂",
         "Bulletin Board": "📌",
         "Staff Management": "🧑‍💼",
@@ -336,6 +337,12 @@
             href: "inventory-branches.html",
             roles: ["Admin"],
             branchRequired: true
+        },
+
+        {
+            label: "Daily Audit Report",
+            href: "inventory-daily-audit.html",
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Branch Device", "Tech Support"]
         },
 
         {
@@ -1633,6 +1640,7 @@
             "invoice-report.html": "Sales Invoice Summary",
             "inventory-warehouse.html": "Warehouse",
             "inventory-branches.html": "Branches",
+            "inventory-daily-audit.html": "Daily Audit Report",
             "inventory-items.html": "Inventory Settings",
             "inventory-techsupport.html": "Tech Support",
             "admin-announcement.html": "Announcement",

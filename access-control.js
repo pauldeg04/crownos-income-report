@@ -33,7 +33,8 @@
         "statistics.html",
         "scheduling.html",
         "daily-monitoring.html",
-        "budget-request.html"
+        "budget-request.html",
+        "inventory-daily-audit.html"
     ];
 
     const PAGE_ACCESS = {
@@ -242,6 +243,16 @@
 
         "inventory-branches.html": [
             "Admin"
+        ],
+
+        /* Branch staff file the report; Admin/Executive Assistant review
+           it (one tab per branch) — see inventory-daily-audit.js. */
+        "inventory-daily-audit.html": [
+            "Admin",
+            "Executive Assistant",
+            "Receptionist",
+            "Branch Device",
+            "Tech Support"
         ],
 
         "admin-announcement.html": [
