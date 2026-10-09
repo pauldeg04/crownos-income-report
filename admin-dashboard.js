@@ -856,6 +856,7 @@
         $("adServicePoints").innerHTML = getBranches().map(function(branch){
             const rows = servicePointRows(branch, month);
             const total = rows.reduce(function(sum, row){ return sum + row.points; }, 0);
+            const highest = Math.max.apply(null, rows.map(function(row){ return row.points; }));
 
             return `
                 <div class="col-lg-6">
@@ -870,7 +871,7 @@
                                     return `<tr>
                                         <td class="fw-bold">${escapeHtml(row.name)}</td>
                                         <td>${escapeHtml(row.category)}</td>
-                                        <td class="text-end">${formatNumber(row.points)}</td>
+                                        <td class="text-end${highest > 0 && row.points === highest ? " fw-bold" : ""}">${formatNumber(row.points)}</td>
                                     </tr>`;
                                 }).join("")}
                             </tbody>

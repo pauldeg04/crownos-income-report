@@ -93,6 +93,17 @@ from the Product dropdown also bypassed the Add VIP Card button (the only place 
 
 ---
 
+## 2026-10-09 (1) — Admin Dashboard: highest Service Points in bold
+
+**Requested by:** Admin.
+
+- [`admin-dashboard.js`](admin-dashboard.js): in each branch's Service Points table, the highest Total Points value is bold (ties share it, 0 never bolded).
+- [`manual.html`](manual.html) Chapter 5a updated.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-08 (6) — Admin Dashboard: Share Holder Summary moved to the bottom
 
 **Requested by:** Admin.
