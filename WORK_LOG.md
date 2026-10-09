@@ -179,6 +179,17 @@ from the Product dropdown also bypassed the Add VIP Card button (the only place 
 
 ---
 
+## 2026-10-12 (1) — Budget Request: separate Completed Requests table
+
+**Requested by:** Admin — page was getting crowded.
+
+- [`budget-request.html`](budget-request.html) / [`budget-request.js`](budget-request.js): two tables. **Requests** keeps Pending (New Request); a new collapsible **Completed Requests** table (collapsed by default, Show/Hide) holds Done and Declined. Each has its own Branch / Month / Date filter (both still filter by the date the request was made, defaulting to the current month).
+- [`manual.html`](manual.html) Chapter 29a updated. No rules change.
+
+**Deployed:** `firebase deploy --only hosting`.
+
+---
+
 ## 2026-10-09 (1) — Budget Request: optional attachment and saved Payment Details
 
 **Requested by:** Admin.

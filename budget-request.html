@@ -58,6 +58,14 @@
     <div class="card shadow-sm border-0">
         <div class="card-body">
 
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h5 class="fw-bold text-primary mb-0">Requests</h5>
+                    <div class="text-muted small">New and pending budget requests.</div>
+                </div>
+            </div>
+
+            <div id="budgetSection">
             <div class="budget-filters">
                 <div>
                     <label for="budgetBranchFilter">Branch</label>
@@ -101,7 +109,68 @@
                 </table>
             </div>
 
-            <div class="empty-state d-none" id="budgetEmptyState">No budget requests for this period.</div>
+            <div class="empty-state d-none" id="budgetEmptyState">No pending budget requests for this period.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mt-4">
+        <div class="card-body">
+
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h5 class="fw-bold text-primary mb-0">Completed Requests</h5>
+                    <div class="text-muted small">Done and Declined requests.</div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="budgetClosedToggle">Show ▾</button>
+            </div>
+
+            <div id="budgetClosedSection" class="d-none">
+            <div class="budget-filters">
+                <div>
+                    <label for="budgetClosedBranchFilter">Branch</label>
+                    <select class="form-select" id="budgetClosedBranchFilter">
+                        <option value="">All Branch</option>
+                        <option value="Biñan">Biñan</option>
+                        <option value="Calamba">Calamba</option>
+                        <option value="Head Office">Head Office</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="budgetClosedMonthFilter">Month</label>
+                    <input type="month" class="form-control" id="budgetClosedMonthFilter">
+                </div>
+                <div>
+                    <label for="budgetClosedDateFilter">Date</label>
+                    <input type="date" class="form-control" id="budgetClosedDateFilter">
+                </div>
+                <div>
+                    <button type="button" class="btn btn-outline-secondary" id="budgetClosedClearDateBtn">Clear Date</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table budget-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Branch</th>
+                            <th>Purpose</th>
+                            <th>Deadline</th>
+                            <th>MOP</th>
+                            <th style="text-align:right">Amount</th>
+                            <th>Requested by</th>
+                            <th>Note</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="budgetClosedTableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="empty-state d-none" id="budgetClosedEmptyState">No completed budget requests for this period.</div>
+            </div>
         </div>
     </div>
 

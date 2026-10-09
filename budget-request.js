@@ -89,12 +89,24 @@
 
     /* ---- Table ---- */
 
-    function visibleRequests(){
-        const month = $("budgetMonthFilter").value;
-        const date = $("budgetDateFilter").value;
-        const branch = $("budgetBranchFilter").value;
+    /* Two tables share this code: open requests (Pending) and completed
+       ones (Done / Declined). Each has its own Branch / Month / Date
+       filter, with element ids built from the table's "budget<Prefix>". */
+    const TABLES = [
+        { prefix: "budget", match: function(r){ return r.status === "Pending"; } },
+        { prefix: "budgetClosed", match: function(r){ return r.status === "Done" || r.status === "Declined"; } }
+    ];
+
+    function visibleRequests(table){
+        const month = $(table.prefix + "MonthFilter").value;
+        const date = $(table.prefix + "DateFilter").value;
+        const branch = $(table.prefix + "BranchFilter").value;
 
         return requestsCache.filter(function(r){
+            if(!table.match(r)){
+                return false;
+            }
+
             if(branch && r.branch !== branch){
                 return false;
             }
@@ -108,9 +120,13 @@
     }
 
     function renderTable(){
-        const body = $("budgetTableBody");
-        const empty = $("budgetEmptyState");
-        const list = visibleRequests();
+        TABLES.forEach(renderOneTable);
+    }
+
+    function renderOneTable(table){
+        const body = $(table.prefix + "TableBody");
+        const empty = $(table.prefix + "EmptyState");
+        const list = visibleRequests(table);
 
         if(list.length === 0){
             body.innerHTML = "";
@@ -534,13 +550,23 @@
 
         isAdmin = currentUser.role === "Admin";
 
-        $("budgetMonthFilter").value = todayKey().slice(0, 7);
-        $("budgetMonthFilter").addEventListener("change", renderTable);
-        $("budgetDateFilter").addEventListener("change", renderTable);
-        $("budgetBranchFilter").addEventListener("change", renderTable);
-        $("budgetClearDateBtn").addEventListener("click", function(){
-            $("budgetDateFilter").value = "";
-            renderTable();
+        TABLES.forEach(function(table){
+            $(table.prefix + "MonthFilter").value = todayKey().slice(0, 7);
+            $(table.prefix + "MonthFilter").addEventListener("change", renderTable);
+            $(table.prefix + "DateFilter").addEventListener("change", renderTable);
+            $(table.prefix + "BranchFilter").addEventListener("change", renderTable);
+            $(table.prefix + "ClearDateBtn").addEventListener("click", function(){
+                $(table.prefix + "DateFilter").value = "";
+                renderTable();
+            });
+        });
+
+        $("budgetClosedToggle").addEventListener("click", function(){
+            const section = $("budgetClosedSection");
+            const opening = section.classList.contains("d-none");
+
+            section.classList.toggle("d-none", !opening);
+            $("budgetClosedToggle").textContent = opening ? "Hide ▴" : "Show ▾";
         });
 
         /* Admin reads everything; everyone else only their own requests
