@@ -147,21 +147,11 @@
             return `
                 <tr>
                     <td>${escapeHtml(formatDisplayDate(report.date))}</td>
-                    <td>${escapeHtml(report.inquiriesReceived ?? 0)}</td>
-                    <td>${escapeHtml(report.confirmedBookings ?? 0)}</td>
-                    <td>${escapeHtml(report.cancelledBookings ?? 0)}</td>
-                    <td>${escapeHtml(report.conversionRate ?? 0)}%</td>
-                    <td><button type="button" class="btn btn-sm btn-outline-secondary marketing-daily-remarks-btn" data-id="${escapeHtml(report.id)}">View</button></td>
+                    <td>${escapeHtml(`${report.inquiriesReceived ?? 0} / ${report.confirmedBookings ?? 0} / ${report.cancelledBookings ?? 0} / ${report.conversionRate ?? 0}%`)}</td>
                     <td><button type="button" class="btn btn-sm btn-outline-primary marketing-daily-view-btn" data-id="${escapeHtml(report.id)}">View</button></td>
                 </tr>
             `;
         }).join("");
-
-        body.querySelectorAll(".marketing-daily-remarks-btn").forEach(function(btn){
-            btn.addEventListener("click", function(){
-                openRemarksModal(btn.dataset.id);
-            });
-        });
 
         body.querySelectorAll(".marketing-daily-view-btn").forEach(function(btn){
             btn.addEventListener("click", function(){
@@ -319,28 +309,6 @@
         }
     }
 
-    /* ---- Remarks view ---- */
-
-    function openRemarksModal(reportId){
-        const report = reportsCache.find(function(item){ return item.id === reportId; });
-
-        if(!report){
-            return;
-        }
-
-        document.getElementById("marketingDailyRemarksBody").innerHTML = `
-            <div class="marketing-notes-row">
-                <span>${escapeHtml(report.remarks || "None").replace(/\n/g, "<br>")}</span>
-            </div>
-        `;
-
-        document.getElementById("marketingDailyRemarksBackdrop").classList.remove("d-none");
-    }
-
-    function closeRemarksModal(){
-        document.getElementById("marketingDailyRemarksBackdrop").classList.add("d-none");
-    }
-
     /* ---- Full report view ---- */
 
     function renderHotLeadsView(hotLeads){
@@ -484,15 +452,6 @@
 
         document.getElementById("dailyInquiriesReceivedInput").addEventListener("input", updateConversionReadout);
         document.getElementById("dailyConfirmedBookingsInput").addEventListener("input", updateConversionReadout);
-
-        document.getElementById("marketingDailyRemarksCloseBtn").addEventListener("click", closeRemarksModal);
-        document.getElementById("marketingDailyRemarksCloseFooterBtn").addEventListener("click", closeRemarksModal);
-
-        document.getElementById("marketingDailyRemarksBackdrop").addEventListener("click", function(event){
-            if(event.target === event.currentTarget){
-                closeRemarksModal();
-            }
-        });
 
         document.getElementById("marketingDailyViewCloseBtn").addEventListener("click", closeViewModal);
         document.getElementById("marketingDailyViewCloseFooterBtn").addEventListener("click", closeViewModal);

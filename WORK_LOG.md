@@ -5409,3 +5409,22 @@ horizontal scrolling on a phone. Since each report has only one row, show it as 
 - [`manual.html`](manual.html) — Daily Report section (Chapter 31) notes the list layout.
 
 **Not changed:** Hot Leads table in the same modal (still a table; multi-row).
+
+## 2026-10-09 — Daily Report: removed Remarks column
+
+**Request:** Remarks is already visible in the View button under Action, so drop the separate
+Remarks column from the Daily Report table.
+
+**Change:**
+- [`marketing-daily-report.html`](marketing-daily-report.html) — removed the Remarks `<th>` and
+  the now-unused Remarks view modal.
+- [`marketing-daily-report.js`](marketing-daily-report.js) — removed the Remarks button cell,
+  its click handler, `openRemarksModal()` / `closeRemarksModal()` and their listeners.
+- [`manual.html`](manual.html) — Daily Report section now describes one View button (Action).
+
+Remarks is still captured in the form and shown in the full report view.
+
+**Follow-up (same day):** merged the Inquiries, Bookings, Cancelled and Conversion Rate columns of
+the Daily Report table into one **Stats** column, formatted `24 / 5 / 0 / 21%`. Table is now
+Date | Stats | Action. Edited `marketing-daily-report.html` / `.js` and the manual's Daily Report
+section.
