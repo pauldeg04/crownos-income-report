@@ -13,12 +13,14 @@
 
 (function(){
     const COLLECTION = "budgetRequests";
+    const DETAILS_COLLECTION = "budgetPaymentDetails";
     const ACCOUNT_MOPS = ["Gcash", "Gotyme", "Bank Transfer", "Others"];
 
     let currentUser = null;
     let isAdmin = false;
     let requestsCache = [];
     let activeId = null;
+    let detailsCache = [];
 
     function $(id){ return document.getElementById(id); }
 
@@ -175,6 +177,10 @@
             return `<div class="budget-view-row"><strong>${escapeHtml(pair[0])}</strong><span>${escapeHtml(pair[1] || "")}</span></div>`;
         }).join("");
 
+        if(r.attachmentUrl){
+            html += `<div class="budget-view-row"><strong>Attachment</strong><span><a href="${escapeHtml(r.attachmentUrl)}" target="_blank" rel="noopener">${escapeHtml(r.attachmentName || "View attachment")}</a></span></div>`;
+        }
+
         html += `<div class="budget-view-row"><strong>Status</strong><span>${statusHtml(r)}</span></div>`;
 
         if(r.status === "Done" && r.proofUrl){
@@ -231,10 +237,10 @@
         $("budgetProofBackdrop").classList.add("d-none");
     }
 
-    function uploadProof(file, branch){
+    function uploadFile(file, branch, folder){
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
         const safeBranch = String(branch || "NoBranch").replace(/[^a-zA-Z0-9._-]/g, "_");
-        const path = `budgetRequestAttachments/${safeBranch}/${Date.now()}_${safeName}`;
+        const path = `${folder}/${safeBranch}/${Date.now()}_${safeName}`;
         const ref = firebase.storage().ref().child(path);
 
         return ref.put(file).then(function(){
@@ -260,7 +266,7 @@
         btn.textContent = "Uploading…";
 
         try{
-            const proof = await uploadProof(file, r.branch);
+            const proof = await uploadFile(file, r.branch, "budgetRequestAttachments");
 
             await firebase.firestore().collection(COLLECTION).doc(activeId).update(
                 Object.assign({
@@ -282,11 +288,132 @@
         }
     }
 
+    /* ---- Saved payment details ---- */
+
+    function detailLabel(d){
+        const parts = [d.mop];
+
+        if(d.serviceProvider){ parts.push(d.serviceProvider); }
+
+        parts.push(d.accountName + " (" + d.accountNumber + ")");
+        return parts.join(" — ");
+    }
+
+    function renderSavedSelect(){
+        const mop = $("budgetMopInput").value;
+        const matches = detailsCache.filter(function(d){ return d.mop === mop; });
+        const field = $("budgetSavedField");
+
+        if(!ACCOUNT_MOPS.includes(mop) || matches.length === 0){
+            field.classList.add("d-none");
+            $("budgetSavedSelect").innerHTML = "";
+            return;
+        }
+
+        $("budgetSavedSelect").innerHTML =
+            `<option value="">— Choose saved details (or type below) —</option>` +
+            matches.map(function(d){
+                return `<option value="${escapeHtml(d.id)}">${escapeHtml(detailLabel(d))}</option>`;
+            }).join("");
+
+        field.classList.remove("d-none");
+    }
+
+    function applySavedDetail(){
+        const d = detailsCache.find(function(item){ return item.id === $("budgetSavedSelect").value; });
+
+        if(!d){ return; }
+
+        $("budgetProviderInput").value = d.serviceProvider || "";
+        $("budgetAccountNameInput").value = d.accountName || "";
+        $("budgetAccountNumberInput").value = d.accountNumber || "";
+    }
+
+    function renderDetailsList(){
+        const list = $("budgetDetailsList");
+
+        if(detailsCache.length === 0){
+            list.innerHTML = `<div class="text-muted">Nothing saved yet.</div>`;
+            return;
+        }
+
+        list.innerHTML = detailsCache.map(function(d){
+            return `<div class="budget-detail-item"><span>${escapeHtml(detailLabel(d))}</span><button type="button" class="btn btn-sm btn-outline-danger budget-detail-delete" data-id="${escapeHtml(d.id)}">Delete</button></div>`;
+        }).join("");
+
+        list.querySelectorAll(".budget-detail-delete").forEach(function(btn){
+            btn.addEventListener("click", async function(){
+                if(!confirm("Delete these saved payment details?")){ return; }
+
+                try{
+                    await firebase.firestore().collection(DETAILS_COLLECTION).doc(btn.dataset.id).delete();
+                }catch(error){
+                    console.error("Unable to delete payment details:", error);
+                    alert("Unable to delete. Please try again.");
+                }
+            });
+        });
+    }
+
+    function syncDetailProviderField(){
+        const mop = $("budgetDetailMop").value;
+        $("budgetDetailProviderField").classList.toggle("d-none", mop !== "Bank Transfer" && mop !== "Others");
+    }
+
+    function openDetails(){
+        $("budgetDetailMop").value = "Gcash";
+        $("budgetDetailProvider").value = "";
+        $("budgetDetailAccountName").value = "";
+        $("budgetDetailAccountNumber").value = "";
+        syncDetailProviderField();
+        renderDetailsList();
+        $("budgetDetailsBackdrop").classList.remove("d-none");
+    }
+
+    function closeDetails(){
+        $("budgetDetailsBackdrop").classList.add("d-none");
+    }
+
+    async function saveDetail(){
+        const mop = $("budgetDetailMop").value;
+        const needsProvider = mop === "Bank Transfer" || mop === "Others";
+        const serviceProvider = $("budgetDetailProvider").value.trim();
+        const accountName = $("budgetDetailAccountName").value.trim();
+        const accountNumber = $("budgetDetailAccountNumber").value.trim();
+
+        if(needsProvider && !serviceProvider){ alert("Please enter the Service Provider."); return; }
+        if(!accountName || !accountNumber){ alert("Please enter the Account Name and Account Number."); return; }
+
+        const btn = $("budgetDetailSaveBtn");
+        btn.disabled = true;
+
+        try{
+            await firebase.firestore().collection(DETAILS_COLLECTION).add({
+                mop,
+                serviceProvider: needsProvider ? serviceProvider : "",
+                accountName,
+                accountNumber,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            $("budgetDetailProvider").value = "";
+            $("budgetDetailAccountName").value = "";
+            $("budgetDetailAccountNumber").value = "";
+        }catch(error){
+            console.error("Unable to save payment details:", error);
+            alert("Unable to save. Please try again.");
+        }finally{
+            btn.disabled = false;
+        }
+    }
+
     /* ---- Request form ---- */
 
     function syncAccountFields(){
         const mop = $("budgetMopInput").value;
         const show = ACCOUNT_MOPS.includes(mop);
+
+        renderSavedSelect();
 
         $("budgetProviderField").classList.toggle("d-none", mop !== "Bank Transfer" && mop !== "Others");
 
@@ -306,6 +433,7 @@
         $("budgetAccountNumberInput").value = "";
         $("budgetAmountInput").value = "";
         $("budgetNoteInput").value = "";
+        $("budgetAttachmentInput").value = "";
         syncAccountFields();
         $("budgetFormBackdrop").classList.remove("d-none");
     }
@@ -342,10 +470,17 @@
         if(!(amount > 0)){ alert("Please enter a valid Amount."); return; }
 
         const needsAccount = ACCOUNT_MOPS.includes(mop);
+        const attachmentFile = $("budgetAttachmentInput").files[0];
         const btn = $("budgetFormSubmitBtn");
         btn.disabled = true;
 
         try{
+            let attachment = null;
+
+            if(attachmentFile){
+                attachment = await uploadFile(attachmentFile, branch, "budgetRequestFiles");
+            }
+
             await firebase.firestore().collection(COLLECTION).add({
                 branch,
                 purpose,
@@ -356,6 +491,9 @@
                 accountNumber: needsAccount ? accountNumber : "",
                 amount,
                 note,
+                attachmentUrl: attachment ? attachment.url : "",
+                attachmentPath: attachment ? attachment.path : "",
+                attachmentName: attachment ? attachment.name : "",
                 status: "Pending",
                 createdDate: todayKey(),
                 requestedByAccount: currentUser.account,
@@ -425,6 +563,30 @@
         }, function(error){
             console.error("Unable to load budget requests:", error);
         });
+
+        firebase.firestore().collection(DETAILS_COLLECTION).onSnapshot(function(snapshot){
+            detailsCache = snapshot.docs.map(function(doc){
+                return Object.assign({ id: doc.id }, doc.data());
+            }).sort(function(a, b){
+                return detailLabel(a).localeCompare(detailLabel(b));
+            });
+            renderSavedSelect();
+            renderDetailsList();
+        }, function(error){
+            console.error("Unable to load payment details:", error);
+        });
+
+        if(isAdmin){
+            $("budgetDetailsBtn").classList.remove("d-none");
+        }
+
+        $("budgetDetailsBtn").addEventListener("click", openDetails);
+        $("budgetDetailsCloseBtn").addEventListener("click", closeDetails);
+        $("budgetDetailsDoneBtn").addEventListener("click", closeDetails);
+        $("budgetDetailMop").addEventListener("change", syncDetailProviderField);
+        $("budgetDetailSaveBtn").addEventListener("click", saveDetail);
+        $("budgetSavedSelect").addEventListener("change", applySavedDetail);
+        bindBackdropClose("budgetDetailsBackdrop", closeDetails);
 
         $("budgetRequestBtn").addEventListener("click", openForm);
         $("budgetFormCloseBtn").addEventListener("click", closeForm);

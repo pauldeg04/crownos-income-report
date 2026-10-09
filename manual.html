@@ -3391,7 +3391,7 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
     <li>Press <span class="ui">Request Budget</span>.</li>
     <li>Choose the Branch (Biñan, Calamba, or Head Office), type the Purpose (required), and pick the Deadline.</li>
     <li>Choose the Mode of Payment: Cash, Gcash, Gotyme, Bank Transfer, or Others. For Gcash and Gotyme, also enter the Account Name and Account Number. For Bank Transfer and Others, enter the Service Provider (the bank or other provider) as well.</li>
-    <li>Enter the Amount, add an optional Note, then press <span class="ui">Submit</span>.</li>
+    <li>Enter the Amount, optionally attach a file (image or PDF), add an optional Note, then press <span class="ui">Submit</span>.</li>
   </ol>
 
   <p>
@@ -3399,6 +3399,15 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
     <span class="ui">View</span> button. Use the <strong>Branch</strong> picker (All Branch, Biñan, Calamba, Head Office) to narrow the list, the <strong>Month</strong> picker to switch months, or the
     <strong>Date</strong> picker to see one day (<span class="ui">Clear Date</span> returns to the month).
     Requestors only see their own requests; Admin sees everyone's.
+  </p>
+
+  <p>
+    <strong>Saved payment details.</strong> For Gcash, Gotyme, Bank Transfer, and Others, a
+    <strong>Saved Payment Details</strong> list appears in the request form once details have been saved for
+    that mode of payment — pick one and the Service Provider, Account Name, and Account Number fill in
+    (you can still edit them). <strong>Admin</strong> manages the list with
+    <span class="ui">Add Payment Details</span> next to Request Budget: choose the mode of payment, enter the
+    details, and press <span class="ui">Save</span>; saved entries can be deleted from the same window.
   </p>
 
   <p><strong>Status.</strong> The requestor sees <strong>Pending</strong> until Admin acts, then <strong>Declined</strong> (red) or <strong>Done</strong> (green). Admin sees an unactioned request as <strong>New Request</strong>, coloured by the Deadline: <strong>red</strong> if due today (or overdue), <strong>orange</strong> if 3 days or less away, plain black if more than 3 days.</p>

@@ -179,6 +179,19 @@ from the Product dropdown also bypassed the Add VIP Card button (the only place 
 
 ---
 
+## 2026-10-09 (1) — Budget Request: optional attachment and saved Payment Details
+
+**Requested by:** Admin.
+
+- **Optional attachment** on the Request Budget form (image/PDF), shown as a link in the View popup. Uploaded to Storage `budgetRequestFiles/` (any signed-in user, 10 MB cap). Proof of payment remains separate.
+- **Add Payment Details** button (Admin only) next to Request Budget: saves Gcash/Gotyme/Bank Transfer/Others details (Service Provider, Account Name, Account Number) to the new `budgetPaymentDetails` collection; list with Delete. The request form shows a **Saved Payment Details** dropdown (filtered by the chosen mode) that pre-fills the fields.
+- Rules: `budgetPaymentDetails` in [`firestore.rules`](firestore.rules) (signed-in read, Admin write); `budgetRequestFiles` in [`storage.rules`](storage.rules).
+- Files: [`budget-request.html`](budget-request.html), [`budget-request.js`](budget-request.js), [`budget-request.css`](budget-request.css), [`manual.html`](manual.html) Chapter 29a.
+
+**Deployed:** `firebase deploy --only firestore:rules,storage,hosting`.
+
+---
+
 ## 2026-10-07 (1) — Receptionist Sales: separate VIP row
 
 **Requested by:** Admin.

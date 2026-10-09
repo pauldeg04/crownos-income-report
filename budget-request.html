@@ -48,6 +48,7 @@
 
                 <div class="d-flex align-items-center gap-2">
                     <button type="button" class="btn btn-primary" id="budgetRequestBtn">Request Budget</button>
+                    <button type="button" class="btn btn-outline-primary d-none" id="budgetDetailsBtn">Add Payment Details</button>
                     <a href="home.html" class="btn-dashboard text-decoration-none">← Back to Dashboard</a>
                 </div>
             </div>
@@ -149,6 +150,11 @@
                         <input type="number" min="0" step="0.01" class="form-control" id="budgetAmountInput">
                     </div>
 
+                    <div class="col-12 d-none" id="budgetSavedField">
+                        <label class="form-label fw-semibold">Saved Payment Details</label>
+                        <select class="form-select" id="budgetSavedSelect"></select>
+                    </div>
+
                     <div class="col-12 d-none" id="budgetProviderField">
                         <label class="form-label fw-semibold">Service Provider</label>
                         <input type="text" class="form-control" id="budgetProviderInput" placeholder="Name of the service provider">
@@ -162,6 +168,11 @@
                     <div class="col-md-6 d-none budget-account-field">
                         <label class="form-label fw-semibold">Account Number</label>
                         <input type="text" class="form-control" id="budgetAccountNumberInput">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Attachment <span class="text-muted fw-normal">(optional)</span></label>
+                        <input type="file" class="form-control" id="budgetAttachmentInput" accept="image/*,.pdf">
                     </div>
 
                     <div class="col-12">
@@ -192,6 +203,57 @@
                 <button type="button" class="btn btn-outline-secondary" id="budgetBackBtn">Back</button>
                 <button type="button" class="btn btn-danger d-none" id="budgetDeclineBtn">Decline</button>
                 <button type="button" class="btn btn-success d-none" id="budgetDoneBtn">Mark as Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Saved payment details modal (Admin) -->
+    <div class="budget-modal-backdrop d-none" id="budgetDetailsBackdrop">
+        <div class="budget-modal">
+            <div class="budget-modal-header">
+                <h4>Payment Details</h4>
+                <button type="button" class="budget-modal-close" id="budgetDetailsCloseBtn">&times;</button>
+            </div>
+
+            <div class="budget-modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Mode of Payment</label>
+                        <select class="form-select" id="budgetDetailMop">
+                            <option value="Gcash">Gcash</option>
+                            <option value="Gotyme">Gotyme</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Others">Others</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 d-none" id="budgetDetailProviderField">
+                        <label class="form-label fw-semibold">Service Provider</label>
+                        <input type="text" class="form-control" id="budgetDetailProvider">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Account Name</label>
+                        <input type="text" class="form-control" id="budgetDetailAccountName">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Account Number</label>
+                        <input type="text" class="form-control" id="budgetDetailAccountNumber">
+                    </div>
+
+                    <div class="col-12">
+                        <button type="button" class="btn btn-primary" id="budgetDetailSaveBtn">Save</button>
+                    </div>
+                </div>
+
+                <hr>
+                <h6 class="fw-bold text-primary">Saved</h6>
+                <div id="budgetDetailsList"></div>
+            </div>
+
+            <div class="budget-modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="budgetDetailsDoneBtn">Close</button>
             </div>
         </div>
     </div>

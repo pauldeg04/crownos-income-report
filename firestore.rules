@@ -277,6 +277,14 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    /* Saved payment details (Budget Request > Add Payment Details). Anyone
+       signed in can read them to pre-fill a request; only Admin manages. */
+    match /budgetPaymentDetails/{detailId} {
+      allow get, list: if request.auth != null;
+      allow create, update, delete: if request.auth != null &&
+        request.auth.token.role == 'Admin';
+    }
+
     /* Tech Support — Maintenance requests (Inventory > Tech Support).
        Same shape/guard as leaveRequests above, but with the
        "Request Submitted / Processing / Done" ladder instead of
