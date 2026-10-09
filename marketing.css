@@ -246,3 +246,34 @@
     font-size: 1.05rem;
     text-align: right;
 }
+
+/* Compact tables that should fit the screen instead of scrolling sideways
+   (Daily Report list, Hot Leads in the View modal). */
+.marketing-table.marketing-table-fit{
+    min-width:0;
+    width:100%;
+}
+
+@media (max-width:576px){
+    .marketing-table-fit th,
+    .marketing-table-fit td{
+        padding:8px 6px;
+    }
+
+    .marketing-table-fit th{
+        white-space:normal;
+        font-size:10px;
+    }
+
+    .marketing-table-fit td{
+        word-break:break-word;
+    }
+
+    .marketing-modal-backdrop{
+        padding:10px;
+    }
+
+    .marketing-modal-body{
+        padding:16px;
+    }
+}

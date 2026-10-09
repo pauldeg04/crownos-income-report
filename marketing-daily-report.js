@@ -328,7 +328,7 @@
 
         return `
             <div class="table-responsive">
-                <table class="table marketing-table align-middle">
+                <table class="table marketing-table marketing-table-fit align-middle">
                     <thead>
                         <tr>
                             <th>Customer Name</th>

@@ -5428,3 +5428,20 @@ Remarks is still captured in the form and shown in the full report view.
 the Daily Report table into one **Stats** column, formatted `24 / 5 / 0 / 21%`. Table is now
 Date | Stats | Action. Edited `marketing-daily-report.html` / `.js` and the manual's Daily Report
 section.
+
+## 2026-10-09 — Daily Report: fit to phone width (no sideways scroll)
+
+**Request:** On mobile the Daily Report page still needed horizontal scrolling; make it fit.
+
+**Cause:** `.marketing-table` has `min-width:960px` (shared by all Marketing tables).
+
+**Change:**
+- [`marketing.css`](marketing.css) — new `.marketing-table-fit` modifier (`min-width:0`) plus a
+  `max-width:576px` block: tighter cell padding, wrapping headers, smaller modal padding.
+- [`marketing-daily-report.html`](marketing-daily-report.html) — Reports table uses
+  `marketing-table-fit`.
+- [`marketing-daily-report.js`](marketing-daily-report.js) — Hot Leads table in the View modal
+  uses `marketing-table-fit`.
+
+**Not changed:** other Marketing pages (still 960px), and the Hot Leads input rows in the
+Create Report form (inputs would be too cramped; possible follow-up: stacked cards).
