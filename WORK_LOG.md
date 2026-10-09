@@ -5445,3 +5445,12 @@ section.
 
 **Not changed:** other Marketing pages (still 960px), and the Hot Leads input rows in the
 Create Report form (inputs would be too cramped; possible follow-up: stacked cards).
+
+## 2026-10-09 — Mobile sidebar: logo no longer hidden by the hamburger
+
+**Problem:** On phones, the fixed hamburger button (top-left) floats over the open slide-out
+sidebar and covered the start of the "Crown Head Spa" brand text.
+
+**Change:** [`sidebar.css`](sidebar.css) — inside the `max-width:900px` block, added
+`padding-left:48px` to `.app-sidebar-brand` and reduced `.app-sidebar-brand-copy > strong` to
+16px so the brand sits to the right of the button. Desktop unchanged.

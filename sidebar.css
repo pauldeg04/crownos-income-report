@@ -529,6 +529,16 @@ body.with-app-sidebar > .container-fluid{
     .app-sidebar-brand-mark{
         display:none;
     }
+
+    /* The fixed hamburger button (top-left, 42px) floats over the open
+       sidebar, so start the brand text to its right instead of under it. */
+    .app-sidebar-brand{
+        padding-left:48px;
+    }
+
+    .app-sidebar-brand-copy > strong{
+        font-size:16px;
+    }
 }
 
 
