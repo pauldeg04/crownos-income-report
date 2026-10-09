@@ -2738,7 +2738,10 @@ function renderModalItems(){
                  list, but still show one if an existing sale
                  already references it (so editing old sales works). */
               return (
-                !isServiceVoucherProduct(product) ||
+                (
+                  !isServiceVoucherProduct(product) &&
+                  !isVipCardName(product.name)
+                ) ||
                 product.name === item.name
               );
             })
@@ -3424,7 +3427,14 @@ function renderModalCompanions(){
           <select class="form-select form-select-sm item-name">
             <option value="">Select Product</option>
 
-            ${getProducts().map(function(product){
+            ${getProducts().filter(function(product){
+              /* VIP Cards are added only via the "Add VIP Card"
+                 button, which also generates the card number. */
+              return (
+                !isVipCardName(product.name) ||
+                product.name === item.name
+              );
+            }).map(function(product){
               const suffix =
                 isServiceVoucherProduct(product)
                   ? ` — ${peso(product.sellingPrice)}`
@@ -5226,7 +5236,11 @@ async function persistModalSaleData(saleData, validItems){
         return item.itemType === "Product" && isVipCardName(item.name);
       })
     ){
-      await markClientVip(saleData.client);
+      await markClientVip(
+        saleData.client,
+        saleData.branch,
+        document.getElementById("modalClientLoyaltyCardNumber").value.trim()
+      );
     }
 
     syncVoucherRedemptions(saleData);
@@ -5776,8 +5790,18 @@ async function syncClientDatabaseFromSales(){
   loadModalOptions();
 }
 
-async function markClientVip(clientName){
+function saleHasVipCard(sale){
+  return (Array.isArray(sale?.services) ? sale.services : []).some(function(item){
+    return item?.itemType === "Product" && isVipCardName(item?.name);
+  });
+}
+
+/* Marks the client VIP and makes sure they end up with a loyalty card
+   number: uses the number already typed/generated in the modal if any,
+   keeps an existing one, otherwise generates the next in sequence. */
+async function markClientVip(clientName, branchName, preferredCardNumber){
   const clients = await getClients();
+  const cardBranch = branchName || getSelectedBranch();
 
   const client =
     clients.find(function(item){
@@ -5790,6 +5814,10 @@ async function markClientVip(clientName){
   if(client){
     client.vip = "Yes";
     client.status = "VIP";
+    if(!client.loyaltyCardNumber){
+      client.loyaltyCardNumber =
+        preferredCardNumber || generateVipCardNumber(cardBranch);
+    }
     client.updatedAt = new Date().toISOString();
   }else{
     clients.push({
@@ -5798,6 +5826,8 @@ async function markClientVip(clientName){
       branch: getSelectedBranch(),
       vip: "Yes",
       status: "VIP",
+      loyaltyCardNumber:
+        preferredCardNumber || generateVipCardNumber(cardBranch),
       notes: "Automatically marked VIP after VIP Card purchase.",
       totalVisits: 0,
       totalSpent: 0,
@@ -6560,7 +6590,7 @@ function renderOngoingTransactionsTable(){
 
 /* Quick one-click promotion from the Ongoing Transactions table row —
    distinct from settleModalSale() which saves from the open modal. */
-function settleSaleRow(saleId){
+async function settleSaleRow(saleId){
   if(!canEditOngoingSales()){
     alert("Your account cannot settle this transaction.");
     return;
@@ -6583,6 +6613,16 @@ function settleSaleRow(saleId){
   syncVoucherRedemptions(sale);
 
   const newlyOfficialVouchers = finalizeSaleVouchers(sale);
+
+  /* Same client-side consequences as settling from the modal — without
+     these a VIP Card sale never made the client VIP / gave them a card
+     number, and no points were credited. */
+  if(saleHasVipCard(sale)){
+    await markClientVip(sale.client, sale.branch);
+  }
+
+  await creditVipPointsForSale(sale);
+  await redeemVipPointsForSale(sale);
 
   saveDailySales();
   transactionalSyncSaleRow(sale.id, sale);

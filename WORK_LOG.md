@@ -11,6 +11,29 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-09 — VIP Card sales now make the client VIP and get a card number
+
+**Problem:** Clients who bought a VIP Card landed in the Non-VIP list and got no Loyalty Card
+Number. 123 clients affected (64 not VIP, 109 without a card number).
+
+**Cause:** the one-click **Settle** button in Ongoing Transactions (`settleSaleRow`) only flagged
+the sale as settled; it skipped `markClientVip`, the card number, and VIP points. A VIP Card picked
+from the Product dropdown also bypassed the Add VIP Card button (the only place a number was generated).
+
+**Change ([`script.js`](script.js)):**
+- `settleSaleRow` now runs the same post-settle steps as the modal: mark VIP, ensure card number,
+  `creditVipPointsForSale`, `redeemVipPointsForSale`.
+- `markClientVip(name, branch, preferredCardNumber)` now also assigns a Loyalty Card Number when the
+  client has none; new helper `saleHasVipCard`.
+- VIP Card removed from the Select Product dropdowns (principal and companion); still shown when
+  editing an old sale that already contains it.
+- [`manual.html`](manual.html) Add VIP Card entry updated.
+
+**Data:** existing 123 affected clients are being fixed manually by the user from
+`VIP-Repair-List.pdf` / `.csv` (no live data was written by Claude).
+
+---
+
 ## 2026-10-08 (8) — Settings cleanup: no Status filter, category set by tab, Kiddie/Other -> Others
 
 **Requested by:** Admin.
