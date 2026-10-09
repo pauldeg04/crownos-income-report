@@ -214,3 +214,35 @@
 .marketing-daily-section-title{
     margin-bottom:12px;
 }
+
+.marketing-stat-list{
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.marketing-stat-row{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.marketing-stat-row:last-child{
+    border-bottom: 0;
+}
+
+.marketing-stat-row:nth-child(even){
+    background: #f9fafb;
+}
+
+.marketing-stat-row span{
+    color: #6b7280;
+}
+
+.marketing-stat-row strong{
+    font-size: 1.05rem;
+    text-align: right;
+}

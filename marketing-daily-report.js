@@ -403,31 +403,14 @@
 
             <h6 class="fw-bold text-uppercase text-muted marketing-daily-section-title">Daily Summary</h6>
 
-            <div class="table-responsive mb-3">
-                <table class="table marketing-table align-middle">
-                    <thead>
-                        <tr>
-                            <th>Inquiries Received</th>
-                            <th>Inquiries Answered</th>
-                            <th>Confirmed Bookings</th>
-                            <th>Pending Customers</th>
-                            <th>Cancelled Bookings</th>
-                            <th>Escalated Concerns</th>
-                            <th>Conversion Rate</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>${escapeHtml(report.inquiriesReceived ?? 0)}</td>
-                            <td>${escapeHtml(report.inquiriesAnswered ?? 0)}</td>
-                            <td>${escapeHtml(report.confirmedBookings ?? 0)}</td>
-                            <td>${escapeHtml(report.pendingCustomers ?? 0)}</td>
-                            <td>${escapeHtml(report.cancelledBookings ?? 0)}</td>
-                            <td>${escapeHtml(report.escalatedConcerns ?? 0)}</td>
-                            <td>${escapeHtml(report.conversionRate ?? 0)}%</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="marketing-stat-list mb-3">
+                <div class="marketing-stat-row"><span>Inquiries Received</span><strong>${escapeHtml(report.inquiriesReceived ?? 0)}</strong></div>
+                <div class="marketing-stat-row"><span>Inquiries Answered</span><strong>${escapeHtml(report.inquiriesAnswered ?? 0)}</strong></div>
+                <div class="marketing-stat-row"><span>Confirmed Bookings</span><strong>${escapeHtml(report.confirmedBookings ?? 0)}</strong></div>
+                <div class="marketing-stat-row"><span>Pending Customers</span><strong>${escapeHtml(report.pendingCustomers ?? 0)}</strong></div>
+                <div class="marketing-stat-row"><span>Cancelled Bookings</span><strong>${escapeHtml(report.cancelledBookings ?? 0)}</strong></div>
+                <div class="marketing-stat-row"><span>Escalated Concerns</span><strong>${escapeHtml(report.escalatedConcerns ?? 0)}</strong></div>
+                <div class="marketing-stat-row"><span>Conversion Rate</span><strong>${escapeHtml(report.conversionRate ?? 0)}%</strong></div>
             </div>
 
             ${report.summaryNotes ? `

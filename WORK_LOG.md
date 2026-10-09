@@ -5372,3 +5372,17 @@ and need to be manually re-entered by the user.**
 
 **Not affected (verified):** July 2026 cashflow, and Expenses/Daily Sales records for both
 branches — data was distinct per branch, no duplication found.
+
+## 2026-10-09 — Daily Report: mobile-friendly Daily Summary (Marketing)
+
+**Request:** In Marketing → Daily Report → View (Action column), the Daily Summary table needed
+horizontal scrolling on a phone. Since each report has only one row, show it as a list instead.
+
+**Change:**
+- [`marketing-daily-report.js`](marketing-daily-report.js) — in `openViewModal()`, replaced the
+  7-column Daily Summary `<table>` with a vertical list (`.marketing-stat-list` /
+  `.marketing-stat-row`): label on the left, value on the right.
+- [`marketing.css`](marketing.css) — added the `.marketing-stat-*` styles.
+- [`manual.html`](manual.html) — Daily Report section (Chapter 31) notes the list layout.
+
+**Not changed:** Hot Leads table in the same modal (still a table; multi-row).
