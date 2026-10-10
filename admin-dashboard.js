@@ -634,7 +634,10 @@
         $("adShareholders").innerHTML = getBranches().map(function(branch){
             const income = incomeTotals(branch, month);
             const overhead = overheadExpenses(branch, month);
-            const net = income.grand - overhead - income.product - income.loyalty;
+            /* Savings Fund: 10% of Net (income less overhead), minimum ₱15,000, ₱0 if Net is negative — same rule as share-holder-report.js */
+            const rawNet = income.grand - overhead;
+            const savings = rawNet < 0 ? 0 : Math.max(rawNet * 0.10, 15000);
+            const net = income.grand - overhead - savings;
             const holders = Array.isArray(allHolders?.[branch]) ? allHolders[branch] : [];
 
             let totalPercent = 0;
@@ -664,8 +667,7 @@
                             <tbody>
                                 <tr><td>Grand Total Income</td><td class="text-end">${peso(income.grand)}</td></tr>
                                 <tr><td>Overhead Expenses</td><td class="text-end">${peso(overhead)}</td></tr>
-                                <tr><td>Loyalty Card Sales</td><td class="text-end">${peso(income.loyalty)}</td></tr>
-                                <tr><td>Product Sales</td><td class="text-end">${peso(income.product)}</td></tr>
+                                <tr><td>Savings Fund</td><td class="text-end">${peso(savings)}</td></tr>
                                 <tr class="ad-net-row ${net < 0 ? "negative" : ""}">
                                     <td>Monthly Net</td><td class="text-end">${peso(net)}</td>
                                 </tr>

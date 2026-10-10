@@ -5509,3 +5509,18 @@ sidebar and covered the start of the "Crown Head Spa" brand text.
 **Change:** [`sidebar.css`](sidebar.css) — inside the `max-width:900px` block, added
 `padding-left:48px` to `.app-sidebar-brand` and reduced `.app-sidebar-brand-copy > strong` to
 16px so the brand sits to the right of the button. Desktop unchanged.
+
+## 2026-10-10 — Share Holder Summary: Savings Fund replaces Loyalty/Product deductions
+
+**Request:** Remove "Less: Loyalty Card Sale" and "Less: Product Sale"; replace with Savings Fund =
+10% of Net (Revenue less Expenses), but ₱15,000 when that is lower (changed from ₱20,000 same day).
+
+**Change:**
+- [`share-holder-report.js`](share-holder-report.js) / [`share-holder-report.html`](share-holder-report.html)
+  — new `computeSavingsFund()` = `max(10% × (Daily Net − Overhead), 15000)`; Monthly Net is now
+  Daily Net − Overhead − Savings Fund; on-screen summary and PDF show one "Less: Savings Fund" row.
+- [`admin-dashboard.js`](admin-dashboard.js) — Share Holder card uses the same rule.
+- [`manual.html`](manual.html) — Share Holder Summary sections updated.
+
+**Note:** if Net is negative the Savings Fund is ₱0 (floor only applies when Net ≥ 0).
+Loyalty Card / Product Sales Summary pages are untouched.

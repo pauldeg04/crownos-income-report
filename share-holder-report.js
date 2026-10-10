@@ -389,7 +389,7 @@ function getNetSaleAmount(row){
 }
 
 /* ==========================================================================
-   Monthly Summary — Overhead Expenses / Loyalty Card Sales / Product Sales /
+   Monthly Summary — Overhead Expenses / Savings Fund /
    Monthly Net, plus the Dividend Report split across shareholders.
    ========================================================================== */
 
@@ -536,8 +536,20 @@ function getIncomeTotals(branch, monthValue){
 
 let currentGrandTotal = 0;
 let currentOverhead = 0;
-let currentLoyalty = 0;
-let currentProduct = 0;
+let currentSavings = 0;
+
+/* Savings Fund = 10% of Net (Daily Net less Overhead), but never
+   less than ₱15,000. When Net is negative, the Savings Fund is ₱0. */
+const SAVINGS_FUND_RATE = 0.10;
+const SAVINGS_FUND_MINIMUM = 15000;
+
+function computeSavingsFund(net){
+    if(net < 0){
+        return 0;
+    }
+
+    return Math.max(net * SAVINGS_FUND_RATE, SAVINGS_FUND_MINIMUM);
+}
 
 function refreshReport(){
     const branch = getSelectedBranch();
@@ -554,10 +566,9 @@ function refreshReport(){
         currentMonthlyNet = 0;
         currentGrandTotal = 0;
         currentOverhead = 0;
-        currentLoyalty = 0;
-        currentProduct = 0;
+        currentSavings = 0;
         dividendTitle.textContent = "Dividend Report";
-        renderMonthlySummary(0, 0, 0, 0, 0);
+        renderMonthlySummary(0, 0, 0, 0);
         renderDividendReport();
         return;
     }
@@ -569,25 +580,24 @@ function refreshReport(){
         `Month of ${formatMonthLabel(monthValue)} Dividend Report`;
 
     const overhead = getOverheadExpenses(branch, monthValue);
-    const { grandTotal, loyaltyCardSales, productSales } = getIncomeTotals(branch, monthValue);
+    const { grandTotal } = getIncomeTotals(branch, monthValue);
 
-    const monthlyNet = grandTotal - overhead - productSales - loyaltyCardSales;
+    const savings = computeSavingsFund(grandTotal - overhead);
+    const monthlyNet = grandTotal - overhead - savings;
 
     currentMonthlyNet = monthlyNet;
     currentGrandTotal = grandTotal;
     currentOverhead = overhead;
-    currentLoyalty = loyaltyCardSales;
-    currentProduct = productSales;
+    currentSavings = savings;
 
-    renderMonthlySummary(grandTotal, overhead, loyaltyCardSales, productSales, monthlyNet);
+    renderMonthlySummary(grandTotal, overhead, savings, monthlyNet);
     renderDividendReport();
 }
 
-function renderMonthlySummary(grand, overhead, loyalty, product, net){
+function renderMonthlySummary(grand, overhead, savings, net){
     document.getElementById("sumGrand").textContent = peso(grand);
     document.getElementById("sumOverhead").textContent = peso(overhead);
-    document.getElementById("sumLoyalty").textContent = peso(loyalty);
-    document.getElementById("sumProduct").textContent = peso(product);
+    document.getElementById("sumSavings").textContent = peso(savings);
 
     const netCell = document.getElementById("sumNet");
     netCell.textContent = peso(net);
@@ -823,8 +833,7 @@ function exportPDF(){
         const summaryRows = [
             ["Daily Net", pesoPdf(currentGrandTotal), [23, 52, 93], false],
             ["Less: Overhead Expenses", pesoPdf(currentOverhead), [220, 53, 69], false],
-            ["Less: Loyalty Card Sale", pesoPdf(currentLoyalty), [198, 161, 91], false],
-            ["Less: Product Sale", pesoPdf(currentProduct), [100, 116, 139], false],
+            ["Less: Savings Fund", pesoPdf(currentSavings), [198, 161, 91], false],
             ["Monthly Net", pesoPdf(currentMonthlyNet), netIsNegative ? [220, 53, 69] : [23, 52, 93], true]
         ];
 
