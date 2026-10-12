@@ -190,6 +190,18 @@ from the Product dropdown also bypassed the Add VIP Card button (the only place 
 
 ---
 
+## 2026-10-12 (2) — Budget Request: Executive Assistant can manage saved Payment Details
+
+**Requested by:** Admin.
+
+- [`budget-request.js`](budget-request.js): the **Add Payment Details** button, add form, and Delete now show for Admin **and** Executive Assistant.
+- [`firestore.rules`](firestore.rules): `budgetPaymentDetails` create/update/delete widened from Admin to Admin + Executive Assistant (read unchanged: any signed-in user).
+- [`manual.html`](manual.html) Chapter 29a updated.
+
+**Deployed:** `firebase deploy --only firestore:rules,hosting`.
+
+---
+
 ## 2026-10-12 (1) — Budget Request: separate Completed Requests table
 
 **Requested by:** Admin — page was getting crowded.

@@ -18,6 +18,7 @@
 
     let currentUser = null;
     let isAdmin = false;
+    let canManageDetails = false;
     let requestsCache = [];
     let activeId = null;
     let detailsCache = [];
@@ -354,7 +355,7 @@
         }
 
         list.innerHTML = detailsCache.map(function(d){
-            return `<div class="budget-detail-item"><span>${escapeHtml(detailLabel(d))}</span><button type="button" class="btn btn-sm btn-outline-danger budget-detail-delete" data-id="${escapeHtml(d.id)}">Delete</button></div>`;
+            return `<div class="budget-detail-item"><span>${escapeHtml(detailLabel(d))}</span>${canManageDetails ? `<button type="button" class="btn btn-sm btn-outline-danger budget-detail-delete" data-id="${escapeHtml(d.id)}">Delete</button>` : ""}</div>`;
         }).join("");
 
         list.querySelectorAll(".budget-detail-delete").forEach(function(btn){
@@ -549,6 +550,7 @@
         }
 
         isAdmin = currentUser.role === "Admin";
+        canManageDetails = isAdmin || currentUser.role === "Executive Assistant";
 
         TABLES.forEach(function(table){
             $(table.prefix + "MonthFilter").value = todayKey().slice(0, 7);
@@ -602,7 +604,9 @@
             console.error("Unable to load payment details:", error);
         });
 
-        if(isAdmin){
+        /* Admin and Executive Assistant manage the saved list; everyone
+           else only picks from it in the request form. */
+        if(canManageDetails){
             $("budgetDetailsBtn").classList.remove("d-none");
         }
 
