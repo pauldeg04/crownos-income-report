@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-12 — Budget Request: Date Settled
+
+**Request:** Budget Request showed Date Requested and Deadline but no date for when a request was
+accomplished or settled.
+
+**Change:**
+- [`budget-request.html`](budget-request.html) / [`.js`](budget-request.js) — new **Date Settled**
+  column in Completed Requests (after Deadline), and a **Date Settled** row in the View window for
+  Done/Declined requests. Derived from the existing `actedAt` timestamp, so no new field, no
+  Firestore rules change, and older Done/Declined requests show a date too.
+- [`manual.html`](manual.html) — Budget Request chapter mentions Date Settled.
+
 ## 2026-10-09 — Inventory: new Daily Audit Report page
 
 **Request:** A Daily Audit Report under Inventory where a branch lists the items it used

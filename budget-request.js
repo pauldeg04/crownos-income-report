@@ -45,6 +45,18 @@
             .toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
     }
 
+    /* Day a request was settled (Done or Declined), from the actedAt
+       timestamp written when Admin acts on it. Empty while Pending. */
+    function settledDay(r){
+        if(r.status === "Pending" || !r.actedAt){ return ""; }
+
+        const d = typeof r.actedAt.toDate === "function" ? r.actedAt.toDate() : new Date(r.actedAt);
+
+        if(isNaN(d.getTime())){ return ""; }
+
+        return formatDay(d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"));
+    }
+
     function formatMoney(value){
         return "₱" + Number(value || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
@@ -137,6 +149,8 @@
 
         empty.classList.add("d-none");
 
+        const showSettled = table.prefix === "budgetClosed";
+
         body.innerHTML = list.map(function(r){
             return `
                 <tr>
@@ -144,6 +158,7 @@
                     <td>${escapeHtml(r.branch)}</td>
                     <td>${escapeHtml(r.purpose)}</td>
                     <td class="${urgencyClass(r)}">${escapeHtml(formatDay(r.deadline))}</td>
+                    ${showSettled ? `<td>${escapeHtml(settledDay(r))}</td>` : ""}
                     <td>${escapeHtml(mopText(r))}</td>
                     <td class="budget-amount">${escapeHtml(formatMoney(r.amount))}</td>
                     <td>${escapeHtml(r.requestedByName)}</td>
@@ -199,6 +214,10 @@
         }
 
         html += `<div class="budget-view-row"><strong>Status</strong><span>${statusHtml(r)}</span></div>`;
+
+        if(settledDay(r)){
+            html += `<div class="budget-view-row"><strong>Date Settled</strong><span>${escapeHtml(settledDay(r))}</span></div>`;
+        }
 
         if(r.status === "Done" && r.proofUrl){
             html += `<div class="budget-view-row"><strong>Proof of Payment</strong><span><a href="${escapeHtml(r.proofUrl)}" target="_blank" rel="noopener">${escapeHtml(r.proofName || "View attachment")}</a></span></div>`;

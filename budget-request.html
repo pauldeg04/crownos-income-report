@@ -157,6 +157,7 @@
                             <th>Branch</th>
                             <th>Purpose</th>
                             <th>Deadline</th>
+                            <th>Date Settled</th>
                             <th>MOP</th>
                             <th style="text-align:right">Amount</th>
                             <th>Requested by</th>
@@ -285,7 +286,7 @@
             </div>
 
             <div class="budget-modal-body">
-                <div class="row g-3">
+                <div class="row g-3" id="budgetDetailForm">
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Mode of Payment</label>
                         <select class="form-select" id="budgetDetailMop">
@@ -316,7 +317,7 @@
                     </div>
                 </div>
 
-                <hr>
+                <hr id="budgetDetailRule">
                 <h6 class="fw-bold text-primary">Saved</h6>
                 <div id="budgetDetailsList"></div>
             </div>
