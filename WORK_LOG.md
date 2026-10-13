@@ -11,6 +11,16 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-13 — Income Summary PDF: subtotal once per branch, one branch per page
+
+**Request:** In the BIR Compliance Desk Income Summary PDF, don't repeat the branch Subtotal on
+every page — show it only at the bottom of the branch's last page — and start each branch on a
+new page.
+
+**Change:** [`bir-compliance.js`](bir-compliance.js) `exportIncomePDF` — autoTable
+`showFoot: 'lastPage'`; every branch after the first calls `addPage()`.
+[`manual.html`](manual.html) — Export to PDF description updated.
+
 ## 2026-10-13 — BIR Compliance Desk: "Sales Invoice Summary" card renamed to "Income Summary"
 
 **Request:** In BIR Compliance Desk → Income Summary → Monthly Summary, rename the card title

@@ -829,8 +829,9 @@
         0: {cellWidth:20}, 1: {cellWidth:30}, 2: {cellWidth:32},
         3: {cellWidth:26, halign:'center'}, 4: {cellWidth:34, halign:'center'}, 5: {cellWidth:26, halign:'right'}
       };
-      sections.forEach(([label, entries]) => {
-        if (cursorY > pageHeight - 50){ doc.addPage(); cursorY = 38; }
+      sections.forEach(([label, entries], sectionIdx) => {
+        // Each branch after the first starts on its own page
+        if (sectionIdx > 0){ doc.addPage(); cursorY = 38; }
 
         // Section band
         doc.setFillColor(...GOLD_SOFT);
@@ -855,6 +856,7 @@
           head: [['Date','Sales / Services','Client','Invoice Number','TIN Number','Amount']],
           body: tableRows,
           foot: [['','','','','Subtotal', pesoPdf(subtotal)]],
+          showFoot: 'lastPage',
           theme: 'grid',
           margin: {top:34, left:14, right:14, bottom:18},
           styles: {font:'helvetica', fontSize:8.7, cellPadding:{top:3.5,bottom:3.5,left:3,right:3}, valign:'middle', overflow:'linebreak', textColor:[32,43,60], lineColor:[224,227,235], lineWidth:0.15},
