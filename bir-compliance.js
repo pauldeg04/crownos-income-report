@@ -669,7 +669,7 @@
     el.innerHTML = `
       <div class="card">
         <div class="card-head">
-          <h3>Sales Invoice Summary</h3>
+          <h3>Income Summary</h3>
           <div style="display:flex;gap:8px;">
             <button class="btn btn-ghost btn-sm" id="exportIncomePdfBtn">${icon('M6 2h9l5 5v15H6zM14 2v6h6')} Export to PDF</button>
             <button class="btn btn-primary btn-sm" id="addIncomeBtn">+ Add Entry</button>

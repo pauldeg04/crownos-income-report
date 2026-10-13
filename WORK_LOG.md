@@ -11,6 +11,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-13 — BIR Compliance Desk: "Sales Invoice Summary" card renamed to "Income Summary"
+
+**Request:** In BIR Compliance Desk → Income Summary → Monthly Summary, rename the card title
+"Sales Invoice Summary" to "Income Summary". Title only.
+
+**Change:** [`bir-compliance.js`](bir-compliance.js) — card heading text only.
+[`manual.html`](manual.html) — Monthly Summary description wording.
+
+**Not changed:** the PDF header and PDF filename still say "Sales Invoice Summary"; the Daily
+Income Report's Sales Invoice Summary page is untouched.
+
 ## 2026-10-12 — Budget Request: Date Settled
 
 **Request:** Budget Request showed Date Requested and Deadline but no date for when a request was
