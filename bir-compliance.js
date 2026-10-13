@@ -779,7 +779,7 @@
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         doc.setTextColor(255, 255, 255);
-        doc.text('Sales Invoice Summary', pageWidth - 14, 12, {align:'right'});
+        doc.text('Income Summary', pageWidth - 14, 12, {align:'right'});
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8.5);
         doc.setTextColor(200, 206, 226);
@@ -890,7 +890,7 @@
       doc.setTextColor(255,255,255);
       doc.text(pesoPdf(grandTotal), pageWidth - 20, cursorY + 9.5, {align:'right'});
 
-      doc.save(`${state.settings.businessName} - Sales Invoice Summary - ${MONTH_BY_KEY[incomeMonthKey].label}.pdf`);
+      doc.save(`${state.settings.businessName} - Income Summary - ${MONTH_BY_KEY[incomeMonthKey].label}.pdf`);
     } catch(err){
       console.error(err);
       alert('Unable to generate the Income Summary PDF.');

@@ -19,8 +19,10 @@ Running log of changes made to the CrownOS system, newest entry on top.
 **Change:** [`bir-compliance.js`](bir-compliance.js) — card heading text only.
 [`manual.html`](manual.html) — Monthly Summary description wording.
 
-**Not changed:** the PDF header and PDF filename still say "Sales Invoice Summary"; the Daily
-Income Report's Sales Invoice Summary page is untouched.
+**Follow-up (same day):** the Monthly Summary PDF export header and filename also renamed to
+"Income Summary" ([`bir-compliance.js`](bir-compliance.js)).
+
+**Not changed:** the Daily Income Report's Sales Invoice Summary page and PDF are untouched.
 
 ## 2026-10-12 — Budget Request: Date Settled
 
