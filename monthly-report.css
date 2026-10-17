@@ -107,3 +107,9 @@ tr{
     page-break-inside:avoid;
     break-inside:avoid;
 }
+
+.day-abbr{
+    margin-left:6px;
+    opacity:.7;
+    font-weight:600;
+}

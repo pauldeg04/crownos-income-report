@@ -74,6 +74,12 @@ function formatDisplayDate(dateString){
     });
 }
 
+function formatDayAbbr(dateString){
+    return new Date(dateString + "T00:00:00").toLocaleDateString("en-US", {
+        weekday: "short"
+    });
+}
+
 function formatMonthLabel(monthValue){
     if(!monthValue){
         return "";
@@ -295,7 +301,7 @@ function generateReport(){
         }
 
         row.innerHTML = `
-            <td>${formatDisplayDate(dateString)}</td>
+            <td>${formatDisplayDate(dateString)} <span class="day-abbr">${formatDayAbbr(dateString)}</span></td>
             <td>${peso(cash)}</td>
             <td>${peso(gcash)}</td>
             <td>${peso(bank)}</td>
