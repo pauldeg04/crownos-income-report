@@ -11,6 +11,20 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-17 — Family package commission split equally across therapists
+
+**Request:** Family Duo / Trio / Royal Four are handled by several therapists, so the 10% commission
+should be shared instead of going only to the principal client's therapist (companion items are ₱0).
+
+**Change:** [`commission-shared.js`](commission-shared.js) — new
+`CrownCommission.getFamilyBundleCommissionBasis(sale, item)`: bundle price ÷ number of items of that
+bundle in the sale (principal + companions). [`therapist-sales.js`](therapist-sales.js) and
+[`payroll.js`](payroll.js) (`getDayCommission`) use it as the commission basis, so both stay in sync.
+[`manual.html`](manual.html) — Therapist Sales commission section explains the split.
+
+**Note:** computed at read time, so past sales are re-split too. Companion rows in Therapist Sales
+still show ₱0 service cost but now carry a commission.
+
 ## 2026-10-17 — Monthly Summary: highlight days with ₱15,000+ income
 
 **Request:** In Monthly Summary, visually mark days with total income of ₱15,000 and up — darker

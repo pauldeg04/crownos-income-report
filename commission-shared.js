@@ -59,8 +59,43 @@
         return Number(meta.commission) || 0;
     }
 
+    /* Family bundles (Duo / Trio / Royal Four) are charged once, on the
+       principal's item; each companion's locked item is ₱0. More than
+       one therapist handles the bundle, so its commission basis is the
+       bundle price split equally across every item of that bundle in the
+       sale (principal + companions) — each therapist's own item then
+       earns rate% of its share. Returns null for any other item so the
+       caller keeps its normal basis. */
+    const FAMILY_BUNDLE_NAMES = ["Family Duo", "Family Trio", "Family Royal Four"];
+
+    function getFamilyBundleCommissionBasis(sale, item){
+        if(!item || FAMILY_BUNDLE_NAMES.indexOf(item.name) === -1){
+            return null;
+        }
+
+        const items =
+            Array.isArray(sale?.services) ? sale.services : [];
+
+        const sameBundle =
+            items.filter(function(other){
+                return other?.name === item.name;
+            });
+
+        const principal =
+            sameBundle.find(function(other){
+                return !other.isFamilyBundleItem;
+            });
+
+        if(!principal){
+            return null;
+        }
+
+        return (Number(principal.amount) || 0) / sameBundle.length;
+    }
+
     window.CrownCommission = {
         isServiceOvertime: isServiceOvertime,
-        getServiceCommissionRate: getServiceCommissionRate
+        getServiceCommissionRate: getServiceCommissionRate,
+        getFamilyBundleCommissionBasis: getFamilyBundleCommissionBasis
     };
 })();

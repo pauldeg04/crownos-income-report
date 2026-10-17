@@ -1103,7 +1103,12 @@ function getDayCommission(therapistName, date, branchFilter, shiftType){
                         shiftEndTime
                     );
 
-                total += amount * (rate / 100);
+                const familyBasis =
+                    CrownCommission.getFamilyBundleCommissionBasis(sale, item);
+
+                total +=
+                    (familyBasis === null ? amount : familyBasis) *
+                    (rate / 100);
             });
         });
     });

@@ -589,8 +589,13 @@ function extractTherapistServices(
                     shiftEndTime
                 );
 
+            /* Family bundles split the bundle price equally across
+               every therapist handling it (see commission-shared.js). */
+            const familyBasis =
+                CrownCommission.getFamilyBundleCommissionBasis(sale, item);
+
             const commission =
-                serviceCost *
+                (familyBasis === null ? serviceCost : familyBasis) *
                 (
                     commissionRate / 100
                 );
