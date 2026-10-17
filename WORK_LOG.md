@@ -21,6 +21,9 @@ green highlight with white text for readability.
 green (#1B5E2B), white bold text. Monthly tab only; Quarterly/Yearly and the PDF are unchanged.
 [`manual.html`](manual.html) — Chapter 18 notes the highlight.
 
+**Follow-up (same day):** text was still rendering black on the dark green; white is now forced
+(`!important`, including the bold Total) in [`monthly-report.css`](monthly-report.css).
+
 
 ## 2026-10-13 — Income Summary PDF: subtotal once per branch, one branch per page
 

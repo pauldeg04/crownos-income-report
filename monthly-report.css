@@ -76,10 +76,18 @@
 
 .summary-table tr.high-sales td,
 tr.high-sales{
-    background:#1B5E2B;
-    color:#fff;
+    background:#1B5E2B !important;
+    color:#fff !important;
     font-weight:700;
     box-shadow:none;
+    --bs-table-color:#fff;
+    --bs-table-color-state:#fff;
+    --bs-table-color-type:#fff;
+}
+
+tr.high-sales td strong,
+tr.high-sales td *{
+    color:#fff !important;
 }
 
 .no-sales{
