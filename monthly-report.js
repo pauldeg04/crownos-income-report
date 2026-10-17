@@ -63,6 +63,7 @@ function pesoPdf(amount){
 }
 
 let currentReportDays = [];
+const HIGH_SALES_THRESHOLD = 15000;
 let currentReportTotals = { cash: 0, gcash: 0, bank: 0, terminal: 0 };
 
 function formatDisplayDate(dateString){
@@ -288,6 +289,10 @@ function generateReport(){
                 ? "has-sales"
                 : "no-sales"
         );
+
+        if(dailyTotal >= HIGH_SALES_THRESHOLD){
+            row.classList.add("high-sales");
+        }
 
         row.innerHTML = `
             <td>${formatDisplayDate(dateString)}</td>

@@ -11,6 +11,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-17 — Monthly Summary: highlight days with ₱15,000+ income
+
+**Request:** In Monthly Summary, visually mark days with total income of ₱15,000 and up — darker
+green highlight with white text for readability.
+
+**Change:** [`monthly-report.js`](monthly-report.js) — rows with daily total ≥ `HIGH_SALES_THRESHOLD`
+(15000) get a `high-sales` class. [`monthly-report.css`](monthly-report.css) — `.high-sales` is dark
+green (#1B5E2B), white bold text. Monthly tab only; Quarterly/Yearly and the PDF are unchanged.
+[`manual.html`](manual.html) — Chapter 18 notes the highlight.
+
+
 ## 2026-10-13 — Income Summary PDF: subtotal once per branch, one branch per page
 
 **Request:** In the BIR Compliance Desk Income Summary PDF, don't repeat the branch Subtotal on
