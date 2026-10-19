@@ -180,7 +180,8 @@
             pointsByCategory: {},
             total: 0,
             daily: [],
-            hasData: sales.length > 0
+            hasData: sales.length > 0,
+            coveredDays: 0
         };
 
         const [year, mon] = month.split("-").map(Number);
@@ -227,7 +228,27 @@
             return { date: date, revenue: byDate[date] };
         });
 
+        stats.coveredDays = coveredDaysFor(month, sales, days);
+
         return stats;
+    }
+
+    /* Days counted in Avg/day: past months = all days; current month = days
+       before today, plus today once it has a DIR entry or it is 2:00 PM or later;
+       future months = 0. */
+    function coveredDaysFor(month, sales, totalDays){
+        const now = new Date();
+        const nowKey = currentMonthKey();
+
+        if(month < nowKey) return totalDays;
+        if(month > nowKey) return 0;
+
+        const todayDate = now.getDate();
+        const todayKey = month + "-" + String(todayDate).padStart(2, "0");
+        const hasEntryToday = sales.some(function(sale){ return sale.reportDate === todayKey; });
+        const includeToday = hasEntryToday || now.getHours() >= 14;
+
+        return Math.min(totalDays, todayDate - 1 + (includeToday ? 1 : 0));
     }
 
     /* ======================================================================
@@ -473,7 +494,7 @@
             const s = computeBranchStats(branch, month);
             const active = s.daily.filter(function(d){ return d.revenue > 0; });
             const highest = active.length ? active.reduce(function(a, b){ return b.revenue > a.revenue ? b : a; }) : null;
-            const average = s.daily.length ? s.total / s.daily.length : 0;
+            const average = s.coveredDays ? s.total / s.coveredDays : 0;
 
             const categoryChips = Object.keys(s.pointsByCategory)
                 .sort(function(a, b){ return s.pointsByCategory[b] - s.pointsByCategory[a]; })

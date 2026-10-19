@@ -11,6 +11,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-19 — Admin Dashboard: Avg/day now uses covered days
+
+**Request:** Avg/day in Monthly Sales Trend divided by the whole month (e.g. 31), understating the pace mid-month.
+
+**Change:** [`admin-dashboard.js`](admin-dashboard.js) — new `coveredDaysFor()`; `computeBranchStats` returns
+`coveredDays` and Avg/day = total ÷ `coveredDays`. Current month: days before today, plus today once the branch has a
+DIR entry for today or it is 2:00 PM or later (zero-sales days still count). Past months: all days. Future months: 0.
+[`manual.html`](manual.html) — Admin Dashboard section explains the rule.
+
+**Note:** the 2 PM switch applies on the next render/refresh of the dashboard; on day 1 before 2 PM with no entry, Avg/day shows ₱0.
+
 ## 2026-10-17 — Family package commission split equally across therapists
 
 **Request:** Family Duo / Trio / Royal Four are handled by several therapists, so the 10% commission
