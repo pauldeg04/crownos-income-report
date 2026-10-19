@@ -834,11 +834,35 @@
                 firebase.auth().currentUser;
 
             if(cloudUser){
-                syncStatus.className =
-                    "app-sidebar-sync-status online";
+                const lastSyncAt =
+                    window.CrownCloud?.lastSyncAt?.() || 0;
 
-                syncStatus.textContent =
-                    "☁ Synced to Cloud";
+                const ageMs = Date.now() - lastSyncAt;
+
+                /* Signed in is not the same as data arriving: show the
+                   real last server sync, and warn when it is stale. */
+                if(!lastSyncAt || window.CrownCloud?.lastSyncError?.()){
+                    syncStatus.className =
+                        "app-sidebar-sync-status offline";
+
+                    syncStatus.textContent =
+                        "⚠ Not synced yet — tap to retry";
+                }else if(ageMs > 5 * 60 * 1000){
+                    syncStatus.className =
+                        "app-sidebar-sync-status offline";
+
+                    syncStatus.textContent =
+                        "⚠ Last synced " + Math.round(ageMs / 60000) +
+                        " min ago — tap to refresh";
+                }else{
+                    syncStatus.className =
+                        "app-sidebar-sync-status online";
+
+                    syncStatus.textContent =
+                        "☁ Synced " + new Date(lastSyncAt).toLocaleTimeString(
+                            [], { hour: "numeric", minute: "2-digit" }
+                        );
+                }
             }else{
                 syncStatus.className =
                     "app-sidebar-sync-status offline";
@@ -855,6 +879,13 @@
         }
 
         window.addEventListener("crownStoreStatus", renderSyncStatus);
+        window.addEventListener("crownSyncStatus", renderSyncStatus);
+        window.setInterval(renderSyncStatus, 30000);
+
+        syncStatus.style.cursor = "pointer";
+        syncStatus.addEventListener("click", function(){
+            window.CrownCloud?.resync?.();
+        });
 
         const logoutButton =
             document.createElement("button");

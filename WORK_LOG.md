@@ -11,6 +11,19 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-19 — Phone showed stale data while badge said "Synced"
+
+**Problem:** On phones the dashboard stayed on old data (e.g. "0 of 0 present") while the laptop was current, yet the sidebar read "Synced to Cloud". That badge only meant "signed in"; the realtime listener had no error handler and nothing re-pulled when a backgrounded phone returned.
+
+**Change:**
+- [`firebase-sync.js`](firebase-sync.js) — main listener now restarts itself on error; new `resyncFromServer()` (forced server pull + listener restart) runs on return to foreground, `pageshow` from bfcache, and `online`; tracks `lastSyncAt` / `lastSyncError`, exposed on `CrownCloud` (`resync`, `lastSyncAt`, `lastSyncError`).
+- [`sidebar.js`](sidebar.js) — badge shows the real last server sync time, warns when over 5 min old or errored, and tapping it forces a resync.
+- [`manual.html`](manual.html) — Sidebar indicators updated.
+
+**Status:** deployed.
+
+---
+
 ## 2026-10-19 — Admin Dashboard: Avg/day now uses covered days
 
 **Request:** Avg/day in Monthly Sales Trend divided by the whole month (e.g. 31), understating the pace mid-month.

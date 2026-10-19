@@ -157,6 +157,11 @@
     let flushTimer = null;
     let listenerStarted = false;
     let initialSyncDone = false;
+    let lastSyncAt = 0;
+    let lastSyncError = null;
+    let unsubscribeListeners = [];
+    let listenerRetryTimer = null;
+    let resyncInFlight = false;
 
     const pendingKeys = new Set();
 
@@ -773,6 +778,7 @@
             }
 
             initialSyncDone = true;
+            markSynced();
 
             if(pendingKeys.size > 0){
                 flushPending();
@@ -783,14 +789,33 @@
         }catch(error){
             applyingRemote = false;
             console.error("CrownCloud: initial sync failed.", error);
+            markSyncError(error);
             resolveInitialSync(false);
         }
     });
+
+    /* Records that data genuinely came from the server (not just IndexedDB
+       cache) so the sidebar badge can show a real "last synced" time
+       instead of merely "signed in". */
+    function markSynced(){
+        lastSyncAt = Date.now();
+        lastSyncError = null;
+        window.dispatchEvent(new CustomEvent("crownSyncStatus"));
+    }
+
+    function markSyncError(error){
+        lastSyncError = error || new Error("sync error");
+        window.dispatchEvent(new CustomEvent("crownSyncStatus"));
+    }
 
     /* Shared by both collection listeners below — the actual
        reconstruction/apply logic doesn't care which collection a change
        came from, only the `key` field on each doc. */
     async function handleListenerSnapshot(snapshot){
+        if(!snapshot.metadata.fromCache){
+            markSynced();
+        }
+
         const changedKeys = [];
         const touchedKeys = new Set();
 
@@ -844,6 +869,28 @@
         }
     }
 
+    function stopListeners(){
+        unsubscribeListeners.forEach(function(unsubscribe){
+            try{ unsubscribe(); }catch(error){ /* ignore */ }
+        });
+
+        unsubscribeListeners = [];
+        listenerStarted = false;
+    }
+
+    /* A listener whose stream dies (mobile OS suspending the tab, token
+       expiry, network change) is terminated by Firestore and never
+       delivers again unless re-created — with no error handler it used
+       to fail silently, leaving a phone frozen on old data. */
+    function restartListenerSoon(error){
+        console.warn("CrownCloud: realtime listener stopped, restarting.", error);
+        markSyncError(error);
+        stopListeners();
+
+        clearTimeout(listenerRetryTimer);
+        listenerRetryTimer = setTimeout(startListener, 5000);
+    }
+
     function startListener(){
         if(listenerStarted){
             return;
@@ -851,18 +898,80 @@
 
         listenerStarted = true;
 
-        db.collection(COLLECTION).onSnapshot(handleListenerSnapshot);
+        unsubscribeListeners.push(
+            db.collection(COLLECTION).onSnapshot(
+                handleListenerSnapshot,
+                restartListenerSoon
+            )
+        );
 
         /* Best-effort — a non-Admin/EA session gets permission-denied
            here every time by design (firestore.rules), same as the
            equivalent one-time get() above. A listener reports that
            through the error callback instead of a rejected promise, so
            it needs its own no-op handler rather than a try/catch. */
-        db.collection(CASHFLOW_COLLECTION).onSnapshot(
-            handleListenerSnapshot,
-            function(){ /* not Admin/EA — expected */ }
+        unsubscribeListeners.push(
+            db.collection(CASHFLOW_COLLECTION).onSnapshot(
+                handleListenerSnapshot,
+                function(){ /* not Admin/EA — expected */ }
+            )
         );
     }
+
+    /* Forces a fresh server pull and a listener restart. Called when the
+       app returns to the foreground / network comes back, since phones
+       suspend the realtime connection while backgrounded and may not
+       recover it on their own. */
+    async function resyncFromServer(){
+        if(resyncInFlight || !initialSyncDone || !firebase.auth().currentUser){
+            return false;
+        }
+
+        resyncInFlight = true;
+
+        try{
+            const snapshot =
+                await db.collection(COLLECTION).get({ source: "server" });
+
+            await applySnapshotToLocalStorage(snapshot);
+
+            try{
+                const cashflowSnapshot =
+                    await db.collection(CASHFLOW_COLLECTION).get({ source: "server" });
+
+                await applySnapshotToLocalStorage(cashflowSnapshot);
+            }catch(cashflowError){
+                // Not Admin/EA — expected.
+            }
+
+            markSynced();
+
+            stopListeners();
+            startListener();
+
+            return true;
+        }catch(error){
+            console.warn("CrownCloud: resync failed.", error);
+            markSyncError(error);
+            return false;
+        }finally{
+            resyncInFlight = false;
+        }
+    }
+
+    document.addEventListener("visibilitychange", function(){
+        if(document.visibilityState === "visible"){
+            resyncFromServer();
+        }
+    });
+
+    window.addEventListener("pageshow", function(event){
+        if(event.persisted){
+            resyncFromServer();
+        }
+    });
+
+    window.addEventListener("online", resyncFromServer);
 
     /* ---------- Authentication helpers ---------- */
 
@@ -1065,6 +1174,9 @@
     window.CrownCloud = {
         isAvailable: function(){ return true; },
         isLocalTestEnv: isLocalTestEnv,
+        lastSyncAt: function(){ return lastSyncAt; },
+        lastSyncError: function(){ return lastSyncError; },
+        resync: resyncFromServer,
         login: cloudLogin,
         provision: provision,
         syncRole: syncRole,
