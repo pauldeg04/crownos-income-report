@@ -47,7 +47,19 @@
        long-polling only when needed, so it costs nothing on networks
        where streaming already works. Must be set before any other
        Firestore call. */
-    db.settings({ experimentalAutoDetectLongPolling: true });
+    /* iPad/iPhone Safari: auto-detect can settle on a WebChannel stream
+       that never delivers (initial pull hangs, badge stuck on "Not
+       synced yet" with no error), so Apple devices go straight to
+       long-polling. */
+    const isAppleTouch =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+    db.settings(
+        isAppleTouch
+            ? { experimentalForceLongPolling: true }
+            : { experimentalAutoDetectLongPolling: true }
+    );
 
     /* Caches Firestore reads in IndexedDB across page loads. This app
        does a full page reload for every navigation (not an SPA), so
@@ -718,8 +730,16 @@
                 // No local cache yet — the network fetch below is the real path.
             }
 
-            const snapshot =
-                await db.collection(COLLECTION).get();
+            /* A pull that never settles leaves the badge on "Not synced
+               yet" with no reason — turn a hang into a visible error. */
+            const snapshot = await Promise.race([
+                db.collection(COLLECTION).get(),
+                new Promise(function(resolve, reject){
+                    setTimeout(function(){
+                        reject(new Error("timeout: no reply from server in 25s"));
+                    }, 25000);
+                })
+            ]);
 
             const remoteKeys =
                 await applySnapshotToLocalStorage(snapshot);

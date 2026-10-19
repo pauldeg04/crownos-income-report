@@ -21,6 +21,8 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 **Next:** read the bracketed reason on the iPad after deploy to find the real cause.
 
+**Follow-up (same day):** after deploy the iPad badge still showed no reason in brackets, so the first server pull is hanging (not erroring). [`firebase-sync.js`](firebase-sync.js): Apple touch devices now use `experimentalForceLongPolling` (others keep auto-detect), and the initial `appData` pull has a 25 s timeout so a hang shows as "timeout" in the badge.
+
 ---
 
 ## 2026-10-19 — Mobile toolbar: small ↻ Refresh button
