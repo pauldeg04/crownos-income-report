@@ -171,6 +171,9 @@
     let initialSyncDone = false;
     let lastSyncAt = 0;
     let lastSyncError = null;
+    /* Last step the first pull reached — shown on the badge so a hang
+       on a device without a console says WHERE it hung. */
+    let syncStage = "waiting";
     let unsubscribeListeners = [];
     let listenerRetryTimer = null;
     let resyncInFlight = false;
@@ -683,6 +686,8 @@
                writes (e.g. an auto-created default admin on a fresh
                device) must never reach the cloud. */
             pendingKeys.clear();
+            syncStage = "role";
+            window.dispatchEvent(new CustomEvent("crownSyncStatus"));
 
             /* Must happen before ANY Firestore read below, not just
                before login.js's own wait — this onAuthStateChanged
@@ -703,6 +708,8 @@
                (functions/index.js syncMyRole), so it has no dependency
                on any of the data this handler is about to fetch. */
             await syncRole();
+
+            syncStage = "cache";
 
             /* Fast path: this app does a full page reload for every
                navigation (not an SPA), so without this, EVERY page —
@@ -730,6 +737,9 @@
                 // No local cache yet — the network fetch below is the real path.
             }
 
+            syncStage = "server";
+            window.dispatchEvent(new CustomEvent("crownSyncStatus"));
+
             /* A pull that never settles leaves the badge on "Not synced
                yet" with no reason — turn a hang into a visible error. */
             const snapshot = await Promise.race([
@@ -740,6 +750,8 @@
                     }, 25000);
                 })
             ]);
+
+            syncStage = "apply";
 
             const remoteKeys =
                 await applySnapshotToLocalStorage(snapshot);
@@ -1211,6 +1223,7 @@
         isLocalTestEnv: isLocalTestEnv,
         lastSyncAt: function(){ return lastSyncAt; },
         lastSyncError: function(){ return lastSyncError; },
+        syncStage: function(){ return syncStage; },
         resync: resyncFromServer,
         login: cloudLogin,
         provision: provision,

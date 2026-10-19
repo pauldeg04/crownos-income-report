@@ -854,9 +854,15 @@
                         ? String(syncErr.code || syncErr.name || syncErr.message || "error").slice(0, 60)
                         : "";
 
+                    const standalone =
+                        window.navigator.standalone === true ||
+                        window.matchMedia?.("(display-mode: standalone)").matches;
+
                     syncStatus.textContent =
                         "⚠ Not synced yet" +
                         (syncReason ? " (" + syncReason + ")" : "") +
+                        " [" + (window.CrownCloud?.syncStage?.() || "?") +
+                        (standalone ? ",app" : ",web") + "]" +
                         " — tap to retry";
 
                     syncStatus.title = syncErr

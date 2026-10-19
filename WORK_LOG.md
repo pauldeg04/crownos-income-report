@@ -23,6 +23,8 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 **Follow-up (same day):** after deploy the iPad badge still showed no reason in brackets, so the first server pull is hanging (not erroring). [`firebase-sync.js`](firebase-sync.js): Apple touch devices now use `experimentalForceLongPolling` (others keep auto-detect), and the initial `appData` pull has a 25 s timeout so a hang shows as "timeout" in the badge.
 
+**Follow-up 2:** user found the browser syncs fine but the home-screen shortcut (standalone PWA) does not. Badge now also shows `[stage,app|web]` — the last step of the first pull reached (role/cache/server/apply) and whether it is running standalone — to pin down where the app-mode hang is. Diagnostic only; cause still unconfirmed.
+
 ---
 
 ## 2026-10-19 — Mobile toolbar: small ↻ Refresh button
