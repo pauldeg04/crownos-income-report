@@ -958,8 +958,26 @@ body.with-app-sidebar{
     }
 }
 
+.global-toolbar-refresh .refresh-icon{
+    display:none;
+}
+
 @media(max-width:600px){
+    /* Compact icon-only Refresh so phones can force a re-sync. */
     .global-toolbar-refresh{
+        flex:0 0 auto;
+        order:-1;
+        width:34px;
+        padding:6px 0;
+        font-size:16px;
+        line-height:1;
+    }
+
+    .global-toolbar-refresh .refresh-icon{
+        display:inline;
+    }
+
+    .global-toolbar-refresh .refresh-label{
         display:none;
     }
 

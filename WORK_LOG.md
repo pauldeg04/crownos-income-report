@@ -11,6 +11,16 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-19 — Mobile toolbar: small ↻ Refresh button
+
+**Request:** Phones had no Refresh button (it was hidden at ≤600px).
+
+**Change:** [`sidebar.js`](sidebar.js) / [`sidebar.css`](sidebar.css) — Refresh shows as a compact ↻ icon button at the left of the toolbar filter row on phones; clicking it (and the desktop Refresh) now also calls `CrownCloud.resync()` for a forced server pull. [`manual.html`](manual.html) updated.
+
+**Status:** deployed.
+
+---
+
 ## 2026-10-19 — Phone showed stale data while badge said "Synced"
 
 **Problem:** On phones the dashboard stayed on old data (e.g. "0 of 0 present") while the laptop was current, yet the sidebar read "Synced to Cloud". That badge only meant "signed in"; the realtime listener had no error handler and nothing re-pulled when a backgrounded phone returned.

@@ -1120,8 +1120,10 @@
                     class="global-toolbar-button global-toolbar-refresh"
                     id="globalToolbarRefresh"
                     title="Refresh current page data"
+                    aria-label="Refresh"
                 >
-                    Refresh
+                    <span class="refresh-icon" aria-hidden="true">↻</span>
+                    <span class="refresh-label">Refresh</span>
                 </button>
 
                 <button
@@ -1302,6 +1304,10 @@
             .addEventListener(
                 "click",
                 function(){
+                    /* Also pull fresh data from the cloud, not just
+                       re-read this device's local copy. */
+                    window.CrownCloud?.resync?.();
+
                     syncGlobalToolbarToPage(currentPage);
 
                     window.dispatchEvent(
