@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-19 — "Not synced yet" on Calamba iPad: retry now works, reason shown
+
+**Reported by:** User — Calamba iPad always shows "⚠ Not synced yet — tap to retry" even after clearing cache, password reset and re-login.
+
+**Cause found:** `resyncFromServer()` returned immediately when `initialSyncDone` was false, so after a failed first pull the "tap to retry" did nothing and nothing else retried it. The underlying error on the iPad is still unknown (no console).
+
+**Change:** [`firebase-sync.js`](firebase-sync.js) — initial pull extracted into `runInitialSync()`; resync re-runs it when the first sync never completed. [`sidebar.js`](sidebar.js) — badge shows the error code/name in brackets (full message on hover). Manual sidebar-indicators entry updated.
+
+**Next:** read the bracketed reason on the iPad after deploy to find the real cause.
+
+---
+
 ## 2026-10-19 — Mobile toolbar: small ↻ Refresh button
 
 **Request:** Phones had no Refresh button (it was hidden at ≤600px).

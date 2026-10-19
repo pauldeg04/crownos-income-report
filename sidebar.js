@@ -845,8 +845,23 @@
                     syncStatus.className =
                         "app-sidebar-sync-status offline";
 
+                    /* Show the real reason on-screen — an iPad has no
+                       console to read it from. */
+                    const syncErr =
+                        window.CrownCloud?.lastSyncError?.();
+
+                    const syncReason = syncErr
+                        ? String(syncErr.code || syncErr.name || syncErr.message || "error").slice(0, 60)
+                        : "";
+
                     syncStatus.textContent =
-                        "⚠ Not synced yet — tap to retry";
+                        "⚠ Not synced yet" +
+                        (syncReason ? " (" + syncReason + ")" : "") +
+                        " — tap to retry";
+
+                    syncStatus.title = syncErr
+                        ? String(syncErr.message || syncErr)
+                        : "";
                 }else if(ageMs > 5 * 60 * 1000){
                     syncStatus.className =
                         "app-sidebar-sync-status offline";

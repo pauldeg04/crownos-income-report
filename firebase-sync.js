@@ -657,10 +657,14 @@
         return remoteKeys;
     }
 
-    firebase.auth().onAuthStateChanged(async function(user){
-        if(!user){
+    let initialSyncInFlight = false;
+
+    async function runInitialSync(user){
+        if(!user || initialSyncInFlight){
             return;
         }
+
+        initialSyncInFlight = true;
 
         try{
             /* Discard anything queued before authentication — those
@@ -791,8 +795,12 @@
             console.error("CrownCloud: initial sync failed.", error);
             markSyncError(error);
             resolveInitialSync(false);
+        }finally{
+            initialSyncInFlight = false;
         }
-    });
+    }
+
+    firebase.auth().onAuthStateChanged(runInitialSync);
 
     /* Records that data genuinely came from the server (not just IndexedDB
        cache) so the sidebar badge can show a real "last synced" time
@@ -923,7 +931,14 @@
        suspend the realtime connection while backgrounded and may not
        recover it on their own. */
     async function resyncFromServer(){
-        if(resyncInFlight || !initialSyncDone || !firebase.auth().currentUser){
+        if(!initialSyncDone){
+            /* The first pull failed (or never finished) — nothing else
+               ever retries it, so "tap to retry" must re-run it. */
+            await runInitialSync(firebase.auth().currentUser);
+            return initialSyncDone;
+        }
+
+        if(resyncInFlight || !firebase.auth().currentUser){
             return false;
         }
 
