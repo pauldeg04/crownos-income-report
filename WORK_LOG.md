@@ -11,6 +11,14 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-20 (4) — Promotions grid: bed column titles lined up with the table
+
+**Reported by:** User — the bed header cells didn't match the width of the body columns.
+
+- [marketing-payday-sale.css](marketing-payday-sale.css): the bed header cells hold two time inputs, so their min-content width exceeded a plain `1fr` body column and the header columns grew wider than the body's. Both `#paydayHead` and `#paydayBody` now use `minmax(170px, 1fr)` columns and the grid's min-width follows the bed count (the wrapper scrolls sideways when needed). No manual change — layout fix only.
+
+**Deployed:** `firebase deploy --only hosting`.
+
 ## 2026-10-20 (3) — Dummy schedule now starts at 4:00 PM
 
 **Requested by:** User — generated dummies should only fill from 4 PM onwards.

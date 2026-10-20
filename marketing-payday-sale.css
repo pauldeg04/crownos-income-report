@@ -200,3 +200,17 @@
     font-weight:500;
     opacity:0.8;
 }
+
+/* Header and body must share identical column widths. The bed header cells
+   hold two time inputs, so their min-content width is wider than a plain 1fr
+   body column — without a shared minimum the header columns grew past the
+   body's and drifted out of line. Both grids now use the same floor, and the
+   grid is as wide as that floor needs (the wrapper scrolls sideways). */
+#paydayHead,
+#paydayBody{
+    grid-template-columns:100px repeat(var(--bed-count, 1), minmax(170px, 1fr));
+}
+
+.timeline-grid:has(#paydayHead){
+    min-width:calc(100px + var(--bed-count, 1) * 170px);
+}
