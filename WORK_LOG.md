@@ -11,6 +11,16 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-20 — "Payday Sale" renamed to "Promotions"
+
+**Requested by:** User — rename the Payday Sale page and every "Payday Sale" wording to Promotions.
+
+- Sidebar label, page title/heading and the Marketing page's wording are now "Promotions"; "Payday Sale Price" → "Promo Price", slots → "Promo Slot"; List of Services, scheduling and voucher messages reworded; [manual.html](manual.html) updated to match.
+- Text only — no logic changed. File names (`marketing-payday-sale.*`), Cloud Function names, the `[Payday Sale Promo]` notes tag and `PAYDAY_PROMO_SOURCE` are deliberately unchanged so existing orders and links keep working. Cloud Functions / rules only had comments and one error message reworded (not redeployed).
+- The public page is now `/promotions` (see Website log); `/payday-promo` redirects to it.
+
+**Deployed:** `firebase deploy --only hosting`.
+
 ## 2026-10-19 — "Not synced yet" on Calamba iPad: retry now works, reason shown
 
 **Reported by:** User — Calamba iPad always shows "⚠ Not synced yet — tap to retry" even after clearing cache, password reset and re-login.

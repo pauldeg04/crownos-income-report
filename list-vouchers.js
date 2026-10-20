@@ -187,7 +187,7 @@ function statusBadge(status){
 }
 
 function renderVoucherList(){
-    /* Pages that embed this list (e.g. the Payday Sale page's Voucher List
+    /* Pages that embed this list (e.g. the Promotions page's Voucher List
        tab) can set window.CROWN_VOUCHER_LIST_FILTER to show only some
        vouchers; the Voucher Masterlist itself shows all of them. */
     const listFilter =

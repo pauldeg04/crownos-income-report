@@ -338,7 +338,7 @@
                                 <li>
                                     <a href="#ch-marketing">
                                         <span class="manual-ch">31</span>
-                                        <span>Ads Monitoring, Monitoring Summary, Daily Report, Client Engagement, and Payday Sale</span>
+                                        <span>Ads Monitoring, Monitoring Summary, Daily Report, Client Engagement, and Promotions</span>
                                     </a>
                                 </li>
                             </ol>
@@ -1142,7 +1142,7 @@
         <tr><td><strong>First Timer</strong></td><td>The client's first visit.</td></tr>
         <tr><td><strong>VIP</strong></td><td>Applied automatically when (a) a VIP Card is in the transaction, (b) the client is already VIP in the database, or (c) VIP is the selected price type.</td></tr>
         <tr><td><strong>Senior / PWD</strong></td><td>Discounted price. Requires an ID number to be entered.</td></tr>
-        <tr><td><strong>Payday Voucher</strong></td><td>Only appears in the dropdown when the chosen service is ticked <em>Available for Payday</em> in the List of Services. Charges that service's Payday Sale Price. Choosing a different service that isn't a Payday service switches it back to Regular. It is kept even for a VIP client.</td></tr>
+        <tr><td><strong>Payday Voucher</strong></td><td>Only appears in the dropdown when the chosen service is ticked <em>Available for Payday</em> in the List of Services. Charges that service's Promo Price. Choosing a different service that isn't a Payday service switches it back to Regular. It is kept even for a VIP client.</td></tr>
       </tbody>
     </table>
   </div>
@@ -2863,8 +2863,8 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
         <tr><td><strong>Voucher</strong></td><td>Whether it can be sold as a voucher.</td></tr>
         <tr><td><strong>Freebie</strong></td><td>Whether it can be given free.</td></tr>
         <tr><td><strong>Online Booking</strong></td><td>Whether it appears on the public website.</td></tr>
-        <tr><td><strong>Payday Sale Price</strong></td><td>Under the Pricing tab. The single price shown for this service on the Payday Sale pages. Required when Available for Payday is ticked.</td></tr>
-        <tr><td><strong>Available for Payday</strong></td><td>Checkbox under the Internal tab. Only ticked services can be chosen on the Payday Sale page (Marketing) and appear in the treatment list of the public Payday Sale page; the table shows a Payday badge and price for them.</td></tr>
+        <tr><td><strong>Promo Price</strong></td><td>Under the Pricing tab. The single price shown for this service on the Promotions page. Required when Available for Payday is ticked.</td></tr>
+        <tr><td><strong>Available for Payday</strong></td><td>Checkbox under the Internal tab. Only ticked services can be chosen on the Promotions page (Marketing) and appear in the treatment list of the public Promotions page; the table shows a Payday badge and price for them.</td></tr>
         <tr><td><strong>Status</strong></td><td>Active or Archived.</td></tr>
       </tbody>
     </table>
@@ -2886,7 +2886,7 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
       Scheduling service picker; an existing booking that already uses one
       still shows it when you open it. Exception: a service with
       <strong>Available for Payday</strong> ticked stays in Scheduling and
-      Add Sale even when archived, so Payday Sale-only services can still be
+      Add Sale even when archived, so promo-only services can still be
       booked and sold.
     </p>
   </div>
@@ -3604,7 +3604,7 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
 </div>
 
 <section id="ch-marketing">
-  <h2><span class="h2-num">Chapter 31</span>Ads Monitoring, Monitoring Summary, Daily Report, Client Engagement, and Payday Sale</h2>
+  <h2><span class="h2-num">Chapter 31</span>Ads Monitoring, Monitoring Summary, Daily Report, Client Engagement, and Promotions</h2>
 
   <ul class="roleline">
     <li><span class="pill pill-role">Admin</span></li>
@@ -3885,10 +3885,10 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
     already received it are never sent to twice.
   </p>
 
-  <h3>Payday Sale</h3>
+  <h3>Promotions</h3>
 
   <p>
-    A branch/bed grid for the Payday Sale campaign, used to control what
+    A branch/bed grid for the Promotions campaign, used to control what
     the public Crown Head Spa website will later show as available for
     the sale. It looks like the <a href="#ch-scheduling">Branch
     Schedule</a> grid, but it is a completely separate, marketing-only
@@ -3904,7 +3904,7 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
 
   <ul class="checklist">
     <li><strong>Block this date</strong> — hides the whole branch from
-      Payday Sale booking on that date; add an optional Reason.</li>
+      Promotions booking on that date; add an optional Reason.</li>
     <li><strong>Available</strong> checkbox (top of each bed's column) —
       turns that bed on/off for the sale on this date. Unchecking it also
       disables that bed's time range below and blocks new slots from
@@ -3912,7 +3912,7 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
     <li><strong>From / To</strong> time range (under each bed's Available
       checkbox) — the hours that bed is offered for the sale on this
       date.</li>
-    <li>Click an empty spot in a bed's column to add a Payday Sale slot at
+    <li>Click an empty spot in a bed's column to add a promo slot at
       that time; click an existing slot to edit or delete it. The pop-up
       is the same shape as the Scheduling page's Add Appointment form —
       Client Name, Mobile Number, Email Address, Services (+ Add
@@ -3934,19 +3934,19 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
   </p>
 
   <p>
-    Bed and Therapist conflicts are checked against other Payday Sale
+    Bed and Therapist conflicts are checked against other Promotions
     slots on this same branch/date, an unavailable bed (Available
     unchecked), <strong>and</strong> real Scheduling appointments for
     that same bed/time. A bed already booked on the Scheduling page shows
     on this grid as a plain grey <strong>Scheduled</strong> block —
     read-only, no client name or other detail, and not clickable — it
-    only exists so a Payday Sale slot can't be placed on top of a real
+    only exists so a promo slot can't be placed on top of a real
     appointment. To see or edit the actual appointment, use the
     <a href="#ch-scheduling">Scheduling</a> page.
   </p>
 
   <p>
-    The page has two tabs at the top: <strong>Payday Sale Portal</strong>
+    The page has two tabs at the top: <strong>Promotions Portal</strong>
     (everything described here) and <strong>Voucher List</strong>. The
     Voucher List has the same layout as the
     <a href="#ch-masterlists">Voucher Masterlist</a> — summary tiles (Total
@@ -3954,14 +3954,14 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
     Download PDF / Void / Reactivate actions — but shows only vouchers
     issued at the <strong>Payday</strong> price. Issue one from the Daily
     Income Report's voucher generator: services ticked <em>Available for
-    Payday</em> appear there as "… (Payday)" at their Payday Sale Price
+    Payday</em> appear there as "… (Payday)" at their Promo Price
     (they also still show on the Voucher Masterlist, which lists every
     voucher).
   </p>
 
   <p>
     Above the grid, the <strong>Voucher Request</strong> table lists the
-    voucher orders sent from the public Payday Sale page (the unlisted link
+    voucher orders sent from the public Promotions page (the unlisted link
     given to clients) for every branch you can see — Date and Time, Client,
     Service, Guests / Beds, Contact, Notes, and an <strong>Expires In</strong>
     countdown. Each order <strong>holds its beds for 1 hour</strong>: for
@@ -3995,9 +3995,9 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
     <span class="ui">Save Schedule</span> there to turn it into a real
     appointment. Any companions on the slot are <strong>not</strong>
     carried over — add them again on the Scheduling side if needed. The
-    Payday Sale slot itself is left exactly as it was; sending it to
+    promo slot itself is left exactly as it was; sending it to
     Schedule doesn't delete it or mark it as converted, so double-check
-    the Payday Sale grid isn't double-booked if the same slot gets sent
+    the Promotions grid isn't double-booked if the same slot gets sent
     more than once.
   </p>
 </section>

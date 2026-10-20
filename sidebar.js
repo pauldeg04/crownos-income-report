@@ -16,7 +16,7 @@
        This remembers the branch the page is on, and reloads the page the
        moment the branch changes outside it, before anything can be saved.
        Branch changes made BY this page (its own branch picker, Scheduling
-       / Payday Sale's jump-to-request) are tracked, not treated as
+       / Promotions' jump-to-request) are tracked, not treated as
        outside changes. A page can hold the reload while a form is open by
        setting window.crownBranchGuardBusy = () => true/false, then call
        CrownBranchGuard.check() when the form closes. */
@@ -184,7 +184,7 @@
         "Monitoring Summary": "📈",
         "Daily Report": "📋",
         "Client Engagement": "💌",
-        "Payday Sale": "💸",
+        "Promotions": "💸",
         "BIR Compliance Desk": "🧾",
         "Daily Monitoring Sheet": "✅"
     };
@@ -318,7 +318,7 @@
         },
 
         {
-            label: "Payday Sale",
+            label: "Promotions",
             href: "marketing-payday-sale.html",
             roles: ["Admin", "Marketing Agent"],
             branchRequired: true
@@ -1714,7 +1714,7 @@
             "marketing-ads-summary.html": "Monitoring Summary",
             "marketing-daily-report.html": "Daily Report",
             "marketing-client-engagement.html": "Client Engagement",
-            "marketing-payday-sale.html": "Payday Sale",
+            "marketing-payday-sale.html": "Promotions",
             "bir-compliance.html": "BIR Compliance Desk",
             "daily-monitoring.html": "Daily Monitoring Sheet"
         };

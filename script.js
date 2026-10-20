@@ -541,7 +541,7 @@ function getServices(){
       };
     })
     /* Services ticked "Available for Payday" stay sellable even when
-       archived, so Payday Sale-only services can still be rung up. */
+       archived, so promo-only services can still be rung up. */
     .filter(function(item){
       return item.name && (item.status === "Active" || item.availableForPayday === true);
     })
@@ -595,9 +595,9 @@ function getVoucherItems(){
         });
       });
 
-  /* Payday Sale vouchers: any service ticked "Available for Payday" can be
-     issued as a voucher at its Payday Sale Price. They're ordinary registry
-     entries with tier "Payday" — the Payday Sale page's Voucher List tab
+  /* promo vouchers: any service ticked "Available for Payday" can be
+     issued as a voucher at its Promo Price. They're ordinary registry
+     entries with tier "Payday" — the Promotions page's Voucher List tab
      shows exactly those. */
   const paydayServices =
     getServices()
@@ -4059,7 +4059,7 @@ async function addModalSaleToSchedule(){
 
 /* "Payday Voucher" only appears in the price-type dropdown for a service
    ticked "Available for Payday" in List of Services, and prices at that
-   service's Payday Sale Price. */
+   service's Promo Price. */
 function buildPaydayVoucherOptionHtml(item){
   const service = findService(item.name);
 

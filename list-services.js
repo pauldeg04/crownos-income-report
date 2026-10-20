@@ -947,7 +947,7 @@ function saveService(){
     }
 
     if(availableForPayday && paydaySalePrice <= 0){
-        alert("Please enter a Payday Sale Price for a service that is Available for Payday.");
+        alert("Please enter a Promo Price for a service that is Available for Payday.");
         activateTab("pricing");
         return;
     }

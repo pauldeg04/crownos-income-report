@@ -408,11 +408,11 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null;
     }
 
-    /* Payday Sale voucher orders (Website/payday-promo.html -> Cloud Function
+    /* voucher orders (Website/promotions.html -> Cloud Function
        submitPaydayVoucherOrder, Admin SDK — visitors never touch this
        collection directly). Kept separate from bookingRequests so they don't
        appear on Operations > Booking Requests. Staff read them on the
-       Payday Sale page and may only flip a pending order to converted
+       Promotions page and may only flip a pending order to converted
        (plotted) or declined. */
     match /paydayVoucherRequests/{requestId} {
       allow create: if false;
@@ -425,7 +425,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    /* Marketing / Payday Sale (see marketing-payday-sale.js) — one doc per
+    /* Marketing / Promotions (see marketing-payday-sale.js) — one doc per
        branch per day holding that day's block-this-date flag, per-bed
        availability+time-range, and the sale slots placed on the grid.
        Not connected to scheduling.js/crownSchedule_* — a separate,

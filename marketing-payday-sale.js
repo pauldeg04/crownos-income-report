@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Crown Head Spa — Marketing / Payday Sale
+   Crown Head Spa — Marketing / Promotions
 
    Data model (Firestore):
      paydaySale/{branchSlug_date}
@@ -31,7 +31,7 @@
    One read-only exception: the grid also reads (never writes)
    scheduling.js's own crownSchedule_<branch>_<date> localStorage bucket,
    so beds already booked on the real Scheduling page show as occupied
-   here too — no click-to-add on that time, and saving a Payday Sale
+   here too — no click-to-add on that time, and saving a Promotions
    slot is blocked from overlapping one. Rendered as a plain "Scheduled"
    block with no client details and no click handler — see
    renderActualScheduleBlocks() — since marketing only needs to know the
@@ -170,7 +170,7 @@
         });
     }
 
-    /* Two tabs: Payday Sale Portal (the grid + voucher requests) and
+    /* Two tabs: Promotions Portal (the grid + voucher requests) and
        Voucher List (list-vouchers.js, filtered to Payday vouchers). The
        chosen tab is remembered for the session. */
     function initPageTabs(){
@@ -530,7 +530,7 @@
                 return currentDoc;
             })
             .catch(function(error){
-                console.error("Unable to load Payday Sale doc:", error);
+                console.error("Unable to load Promotions doc:", error);
                 currentDoc = defaultDoc(branch, date);
                 return currentDoc;
             });
@@ -549,7 +549,7 @@
             .set(currentDoc)
             .then(function(){ return true; })
             .catch(function(error){
-                console.error("Unable to save Payday Sale doc:", error);
+                console.error("Unable to save Promotions doc:", error);
                 showModalMessage("danger", "Could not save — check your connection and try again.");
                 return false;
             });
@@ -571,7 +571,7 @@
             document.getElementById("bedCount").textContent = "0";
             document.getElementById("operatingHours").textContent = "—";
             document.getElementById("slotCount").textContent = "0";
-            document.getElementById("paydayGridTitle").textContent = "Branch Payday Sale";
+            document.getElementById("paydayGridTitle").textContent = "Branch Promotions";
             document.getElementById("paydayGridSubtitle").textContent = "Select a branch and date.";
 
             renderBlockDateControl(null);
@@ -684,7 +684,7 @@
         saveCurrentDoc();
     }
 
-    /* ---- Grid body: click-to-place Payday Sale slots per bed ---- */
+    /* ---- Grid body: click-to-place promo slots per bed ---- */
 
     function getHourMarks(openingMinutes, closingMinutes){
         const marks = [openingMinutes];
@@ -850,7 +850,7 @@
                 col.appendChild(block);
             });
 
-            /* Voucher orders on hold from the public Payday Sale page — same
+            /* Voucher orders on hold from the public Promotions page — same
                card + countdown the public calendar shows. Clicking one opens
                Plot on Grid for that order. */
             bedHeld.forEach(function(item){
@@ -1380,7 +1380,7 @@
             .filter(Boolean);
     }
 
-    /* ---- Conflict pool — scoped to this branch/date's Payday Sale slots only,
+    /* ---- Conflict pool — scoped to this branch/date's promo slots only,
        never the real crownSchedule_* appointments. An unavailable bed
        (Available unchecked in the header) is injected as a synthetic
        all-day block, same idea as scheduling.js's toggleBedAvailability. ---- */
@@ -1494,7 +1494,7 @@
         }
 
         /* Real Scheduling appointments (read-only, see getActualSchedules)
-           — a Payday Sale slot can't be placed on top of an actual
+           — a promo slot can't be placed on top of an actual
            booking, same bed/therapist conflict shape as everything else
            in this pool. */
         const actualSchedules =
@@ -1809,7 +1809,7 @@
 
         if(currentDoc && currentDoc.blocked){
             alert(
-                "This date is blocked for Payday Sale" +
+                "This date is blocked for promotions" +
                 (currentDoc.blockReason ? ` (${currentDoc.blockReason})` : "") +
                 ". Uncheck \"Block this date\" if you need to add a slot."
             );
@@ -1826,7 +1826,7 @@
         document.getElementById("paydayModalDate").value = document.getElementById("scheduleDate").value;
 
         document.getElementById("paydayModalModeLabel").textContent = "New Sale Slot";
-        document.getElementById("paydayModalTitle").textContent = "Add Payday Sale Slot";
+        document.getElementById("paydayModalTitle").textContent = "Add Promo Slot";
         document.getElementById("deletePaydaySlotBtn").classList.add("d-none");
         document.getElementById("addToScheduleBtn").classList.add("d-none");
         document.getElementById("savePaydayModalBtn").textContent = "Save Slot";
@@ -1854,7 +1854,7 @@
         document.getElementById("paydayModalDate").value = currentDoc.date;
 
         document.getElementById("paydayModalModeLabel").textContent = "Edit Sale Slot";
-        document.getElementById("paydayModalTitle").textContent = "Edit Payday Sale Slot";
+        document.getElementById("paydayModalTitle").textContent = "Edit Promo Slot";
 
         document.getElementById("paydayModalClient").value = item.client || "";
         document.getElementById("paydayModalMobile").value = item.mobile || "";
@@ -2124,8 +2124,8 @@
 
         const confirmMessage =
             linkedCompanionsCount > 0
-                ? `Delete the Payday Sale slot for "${item.client}" and its ${linkedCompanionsCount} companion slot(s)?`
-                : `Delete the Payday Sale slot for "${item.client}"?`;
+                ? `Delete the promo slot for "${item.client}" and its ${linkedCompanionsCount} companion slot(s)?`
+                : `Delete the promo slot for "${item.client}"?`;
 
         if(!confirm(confirmMessage)){
             return;
@@ -2143,12 +2143,12 @@
 
     /* Sends this slot's current form fields to Scheduling's Add Appointment
        modal (see openNewModalFromPaydaySale() in scheduling.js) so staff
-       can turn a Payday Sale slot into a real appointment without retyping
+       can turn a promo slot into a real appointment without retyping
        it. Reads straight from the open form (not the saved currentDoc
        entry), so any edit made in this modal before clicking is carried
        over even if it was never saved here. Companions aren't carried
        over — add them again on the Scheduling side if needed. The
-       Payday Sale slot itself is left exactly as-is; nothing here deletes
+       promo slot itself is left exactly as-is; nothing here deletes
        or marks it converted. */
     function addToSchedule(){
         if(!currentDoc || !selectedBed){
@@ -2178,7 +2178,7 @@
         location.href = "scheduling.html?" + params.toString();
     }
 
-    /* ---- Voucher requests from the public Payday Sale page ----
+    /* ---- Voucher requests from the public Promotions page ----
 
        "Order Voucher" on the public page (submitPaydayVoucherOrder Cloud
        Function) writes a doc to the paydayVoucherRequests collection —
@@ -2261,7 +2261,7 @@
 
                     renderBookingRequests();
                 }, function(error){
-                    console.error("Unable to load Payday Sale voucher requests, retrying:", error);
+                    console.error("Unable to load Promotions voucher requests, retrying:", error);
                     requestsError = error && error.code ? error.code : "error";
                     renderBookingRequests();
                     setTimeout(attach, 5000);

@@ -376,7 +376,7 @@ function getServices(){
                 id: service.id || createId(),
                 name: service.name || "",
                 duration: Number(service.duration) || 0,
-                /* Payday Sale services stay offered even when archived. */
+                /* Promotions services stay offered even when archived. */
                 archived:
                     service.availableForPayday !== true &&
                     (
@@ -3099,9 +3099,9 @@ async function openNewModalFromBookingRequest(requestId){
 
 /* Opened from marketing-payday-sale.js's "Add to Schedule" button — unlike
    openNewModalFromBookingRequest() above, there's no Firestore doc to fetch
-   or claim: the Payday Sale slot's own fields are carried straight over in
+   or claim: the promo slot's own fields are carried straight over in
    the URL's query params (nothing more than what "Add Appointment" already
-   asks for), and this only pre-fills the modal — the Payday Sale slot
+   asks for), and this only pre-fills the modal — the promo slot
    itself is untouched, so the same slot can be sent over again if the
    staff member cancels out of this modal without saving. */
 function openNewModalFromPaydaySale(params){
@@ -3118,7 +3118,7 @@ function openNewModalFromPaydaySale(params){
 
     if(!matchedBranch){
         alert(
-            "This Payday Sale slot's branch (\"" + branchName + "\") isn't set up " +
+            "This promo slot's branch (\"" + branchName + "\") isn't set up " +
             "in this system, so it can't be opened automatically."
         );
 

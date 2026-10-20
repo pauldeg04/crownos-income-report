@@ -370,10 +370,10 @@ exports.getBookableServices = onCall(async () => {
 
 /* ---------- getPaydaySaleServices ---------- */
 
-/* Backs the treatment dropdown on the unlisted public Payday Sale page
-   (Website/payday-promo.html). Only services ticked "Available for
+/* Backs the treatment dropdown on the unlisted public Promotions page
+   (Website/promotions.html). Only services ticked "Available for
    Payday" in CrownOS List of Services (and Active, with a duration and a
-   Payday Sale Price) are returned — name, duration, category and that one
+   Promo Price) are returned — name, duration, category and that one
    price; never commission or any other pricing tier. Independent of
    getBookableServices: a service can be Payday-only, online-only, both,
    or neither. */
@@ -487,9 +487,9 @@ function paydaySaleDocId(branchName, date){
     return slug + "_" + date;
 }
 
-/* A Payday Sale "voucher order" reserves the client's chosen time for one
+/* A Promotions "voucher order" reserves the client's chosen time for one
    hour (PAYDAY_HOLD_MINUTES) so nobody else can take those beds while the
-   marketing agent in CrownOS plots it on the Payday Sale grid. The hold
+   marketing agent in CrownOS plots it on the Promotions grid. The hold
    lives on the order's own doc in the paydayVoucherRequests collection
    (paydayHold: {startTime, endTime, assignments[], expiresAt}) — kept apart
    from bookingRequests so voucher orders never show up in CrownOS's
@@ -544,10 +544,10 @@ async function getActivePaydayHolds(branchName, date){
         .filter(Boolean);
 }
 
-/* Backs the unlisted public Payday Promo page (payday-promo.html) — a
-   view-only calendar of which beds are open for the Payday Sale campaign,
+/* Backs the unlisted public Promotions page (promotions.html) — a
+   view-only calendar of which beds are open for the Promotions campaign,
    not a real booking flow. Deliberately returns only start/end time
-   ranges per bed, never any client name/contact info: the Payday Sale
+   ranges per bed, never any client name/contact info: the Promotions
    slots this reads (see marketing-payday-sale.js) can carry a client's
    name/mobile/email once a marketing agent has filled them in, and none
    of that belongs on a page anyone with the link can open.
@@ -555,10 +555,10 @@ async function getActivePaydayHolds(branchName, date){
    "Occupied" here means the same thing it means on the CrownOS Payday
    Sale grid itself (see getPersistedConflictPool() in
    marketing-payday-sale.js) — a bed marked unavailable in that page's own
-   Available toggle, another Payday Sale slot already placed there, or a
+   Available toggle, another promo slot already placed there, or a
    real Scheduling appointment for that bed/time. Scheduling's own
    Block Date / per-bed Available toggle (crownBlockedDates /
-   crownUnavailableBeds) are a separate concept from Payday Sale's own
+   crownUnavailableBeds) are a separate concept from Promotions' own
    `blocked` flag and per-bed `beds[].available`, and are intentionally
    left out here too, for the same reason marketing-payday-sale.js never
    folds them in either. */
@@ -653,15 +653,15 @@ exports.getPaydaySaleAvailability = onCall(async (request) => {
 
 /* ---------- submitPaydayVoucherOrder ---------- */
 
-/* "Order Voucher" on the public Payday Sale page. The order has 1-4
+/* "Order Voucher" on the public Promotions page. The order has 1-4
    guests (guest 1 is the person ordering), each with their own Payday
    service — so each guest needs a bed free for THEIR service's length,
    all starting at the same time. Validates everything, then in a
-   transaction re-checks that a full set of beds still exists (Payday Sale
+   transaction re-checks that a full set of beds still exists (Promotions
    slots, real Scheduling appointments, bed availability windows, other
    clients' unexpired holds) and writes one paydayVoucherRequests doc
    (not bookingRequests, so it never shows on Operations > Booking Requests)
-   carrying a one-hour hold on those beds. CrownOS's Payday Sale "Voucher Request"
+   carrying a one-hour hold on those beds. CrownOS's Promotions "Voucher Request"
    table reads it from there. Bed choice: the beds the page previewed
    (`beds`, aligned to guests) if they're all still free, otherwise the
    best assignment found here. */
@@ -732,7 +732,7 @@ exports.submitPaydayVoucherOrder = onCall(async (request) => {
         });
 
         if(!service){
-            throw new HttpsError("invalid-argument", "Guest " + (index + 1) + "'s service isn't available for the Payday Sale.");
+            throw new HttpsError("invalid-argument", "Guest " + (index + 1) + "'s service isn't available for Promotions.");
         }
 
         return {
@@ -1220,7 +1220,7 @@ exports.expireStaleBookingRequests = onSchedule(
             return String(doc.data().date || "") < todayManila;
         });
 
-        /* Payday Sale voucher orders live in their own collection; one
+        /* voucher orders live in their own collection; one
            whose one-hour hold ran out unplotted is marked expired. The
            public page and CrownOS already ignore an expired hold the moment
            it lapses — this only tidies the pending list. */
