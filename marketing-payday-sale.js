@@ -813,6 +813,20 @@
                     block.title = "Dummy booking (website only) — " + formatTimeRange(item.startTime, item.endTime);
                     block.innerHTML = "<span>Dummy</span><small>" + formatTimeRange(item.startTime, item.endTime) + "</small>";
 
+                    /* × removes just this dummy (the block itself stays
+                       click-through; only the button takes clicks). */
+                    const removeBtn = document.createElement("button");
+                    removeBtn.type = "button";
+                    removeBtn.className = "dummy-schedule-remove";
+                    removeBtn.title = "Remove this dummy booking";
+                    removeBtn.setAttribute("aria-label", "Remove this dummy booking");
+                    removeBtn.textContent = "×";
+                    removeBtn.addEventListener("click", function(event){
+                        event.stopPropagation();
+                        removeDummySlot(item.id);
+                    });
+                    block.appendChild(removeBtn);
+
                     col.appendChild(block);
                 });
 
@@ -2550,6 +2564,7 @@
 
     const DUMMY_DURATIONS = [60, 90, 120];
     const DUMMY_START_MINUTES = 16 * 60; // dummies only fill from 4:00 PM onwards
+    const DUMMY_LATE_START_MINUTES = 19 * 60; // ...except one bed, which starts at 7:00 PM
 
     function renderDummyScheduleControl(doc){
         const createBtn = document.getElementById("createDummyScheduleBtn");
@@ -2563,12 +2578,22 @@
 
         status.textContent = count
             ? count + " dummy booking" + (count === 1 ? "" : "s") + " active — the website shows this date as fully booked. Website only — never in Scheduling."
-            : "Fills this date's open beds from 4:00 PM onwards with pretend bookings so the website shows it as fully booked. Website only — never in Scheduling.";
+            : "Fills this date's open beds from 4:00 PM onwards (one bed from 7:00 PM) with pretend bookings so the website shows it as fully booked. Website only — never in Scheduling.";
     }
 
     function buildDummySlots(doc){
         const slots = [];
         let counter = 0;
+
+        /* One randomly chosen available bed starts at 7:00 PM instead of
+           4:00 PM, so the day doesn't look uniformly stamped. */
+        const eligibleBeds = Object.keys(doc.beds || {}).filter(function(bedKey){
+            const setting = doc.beds[bedKey] || {};
+            return Number(bedKey) && setting.available !== false && setting.from && setting.to;
+        });
+        const lateBed = eligibleBeds.length > 1
+            ? Number(eligibleBeds[Math.floor(Math.random() * eligibleBeds.length)])
+            : 0;
 
         Object.keys(doc.beds || {}).forEach(function(bedKey){
             const bed = Number(bedKey);
@@ -2578,7 +2603,7 @@
                 return;
             }
 
-            const from = Math.max(timeToMinutes(setting.from), DUMMY_START_MINUTES);
+            const from = Math.max(timeToMinutes(setting.from), bed === lateBed ? DUMMY_LATE_START_MINUTES : DUMMY_START_MINUTES);
             const to = timeToMinutes(setting.to);
 
             /* Real promo slots, real Scheduling appointments and live voucher
@@ -2637,6 +2662,23 @@
         }
 
         currentDoc.dummySlots = buildDummySlots(currentDoc);
+
+        saveCurrentDoc().then(function(saved){
+            if(saved){
+                renderDummyScheduleControl(currentDoc);
+                renderPaydaySale();
+            }
+        });
+    }
+
+    function removeDummySlot(slotId){
+        if(!currentDoc || !Array.isArray(currentDoc.dummySlots)){
+            return;
+        }
+
+        currentDoc.dummySlots = currentDoc.dummySlots.filter(function(item){
+            return item.id !== slotId;
+        });
 
         saveCurrentDoc().then(function(saved){
             if(saved){

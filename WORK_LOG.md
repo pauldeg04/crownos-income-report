@@ -11,6 +11,15 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-20 (5) — Dummy schedule: one bed starts at 7 PM, × to remove a single dummy
+
+**Requested by:** User — vary the dummy start (one bed column at 7 PM instead of 4 PM) and let individual dummies be removed.
+
+- [marketing-payday-sale.js](marketing-payday-sale.js): `buildDummySlots` picks one random eligible bed (when 2+ are available) to start at 7:00 PM; the rest start at 4:00 PM. Each dummy block now has a **×** button (top-right) that removes only that dummy, saves, and re-renders; the block itself stays click-through. Hint text in [marketing-payday-sale.html](marketing-payday-sale.html) and [manual.html](manual.html) updated, plus the × described in the manual.
+- [marketing-payday-sale.css](marketing-payday-sale.css): `.dummy-schedule-remove` styles.
+
+**Deployed:** `firebase deploy --only hosting`.
+
 ## 2026-10-20 (4) — Promotions grid: bed column titles lined up with the table
 
 **Reported by:** User — the bed header cells didn't match the width of the body columns.
