@@ -169,6 +169,20 @@
                         disabled
                     >
                 </div>
+
+                <div class="dummy-schedule-control">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="createDummyScheduleBtn" disabled>
+                        🎭 Create Dummy Schedule
+                    </button>
+
+                    <button type="button" class="btn btn-sm btn-link" id="clearDummyScheduleBtn" hidden>
+                        Clear dummy schedule
+                    </button>
+
+                    <small id="dummyScheduleStatus">
+                        Fills this date's open beds with pretend bookings so the website shows it as fully booked. Website only — never in Scheduling.
+                    </small>
+                </div>
             </div>
 
             <div class="schedule-grid-header-right">
@@ -194,6 +208,7 @@
                     <span><i class="legend-booked"></i> Promo Slot</span>
                     <span><i class="legend-scheduled"></i> Already Scheduled</span>
                     <span><i class="legend-held"></i> Voucher On Hold</span>
+                    <span><i class="legend-dummy"></i> Dummy (website only)</span>
                     <span><i class="legend-current"></i> Current Time</span>
                 </div>
             </div>

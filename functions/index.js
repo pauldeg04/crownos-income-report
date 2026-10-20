@@ -603,7 +603,12 @@ exports.getPaydaySaleAvailability = onCall(async (request) => {
     const paydaySaleData = paydaySaleDoc.exists ? paydaySaleDoc.data() : {};
     const bedSettings = paydaySaleData.beds || {};
 
+    /* dummySlots are staff-generated "pretend" bookings (Promotions >
+       Create Dummy Schedule) so the public page shows the day as booked.
+       They live in their own field, so CrownOS's grid, conflict checks and
+       Scheduling never see them — only the public page and voucher orders do. */
     const paydaySlots = (Array.isArray(paydaySaleData.slots) ? paydaySaleData.slots : [])
+        .concat(Array.isArray(paydaySaleData.dummySlots) ? paydaySaleData.dummySlots : [])
         .filter(function(slot){ return slot && slot.status !== "Cancelled"; });
 
     const scheduleEntries = (Array.isArray(scheduleRaw) ? scheduleRaw : [])
@@ -759,6 +764,7 @@ exports.submitPaydayVoucherOrder = onCall(async (request) => {
     const bedSettings = paydaySaleData.beds || {};
 
     const fixedRanges = (Array.isArray(paydaySaleData.slots) ? paydaySaleData.slots : [])
+        .concat(Array.isArray(paydaySaleData.dummySlots) ? paydaySaleData.dummySlots : [])
         .filter(function(slot){ return slot && slot.status !== "Cancelled"; })
         .concat(
             (Array.isArray(scheduleRaw) ? scheduleRaw : [])

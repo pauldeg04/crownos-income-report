@@ -130,6 +130,12 @@
         document.getElementById("blockDateReasonInput")
             .addEventListener("change", updateBlockDateReason);
 
+        document.getElementById("createDummyScheduleBtn")
+            .addEventListener("click", createDummySchedule);
+
+        document.getElementById("clearDummyScheduleBtn")
+            .addEventListener("click", clearDummySchedule);
+
         document.getElementById("paydayAddServiceBtn")
             .addEventListener("click", addServiceRow);
 
@@ -497,6 +503,7 @@
             blockedAt: null,
             beds: beds,
             slots: [],
+            dummySlots: [],
             updatedBy: "",
             updatedAt: null
         };
@@ -524,7 +531,8 @@
 
                 currentDoc = Object.assign({}, base, data, {
                     beds: Object.assign({}, base.beds, data.beds || {}),
-                    slots: Array.isArray(data.slots) ? data.slots : []
+                    slots: Array.isArray(data.slots) ? data.slots : [],
+                    dummySlots: Array.isArray(data.dummySlots) ? data.dummySlots : []
                 });
 
                 return currentDoc;
@@ -783,6 +791,30 @@
 
                 openNewModal(bed, minutesToTimeValue(slotStart));
             });
+
+            /* Dummy schedule — website-only pretend bookings. Shown so staff
+               can see what guests see, but never clickable (clicks pass
+               through to the bed, so a real promo slot can still be placed
+               here) and drawn first so real cards sit on top of them. */
+            (Array.isArray(currentDoc.dummySlots) ? currentDoc.dummySlots : [])
+                .filter(function(item){ return Number(item.bed) === bed; })
+                .forEach(function(item){
+                    const itemStart = Math.max(timeToMinutes(item.startTime), opening);
+                    const itemEnd = Math.min(timeToMinutes(item.endTime), closing);
+
+                    if(itemEnd <= itemStart){
+                        return;
+                    }
+
+                    const block = document.createElement("div");
+                    block.className = "dummy-schedule-block";
+                    block.style.top = ((itemStart - opening) * SCHEDULE_PX_PER_MINUTE) + "px";
+                    block.style.height = ((itemEnd - itemStart) * SCHEDULE_PX_PER_MINUTE) + "px";
+                    block.title = "Dummy booking (website only) — " + formatTimeRange(item.startTime, item.endTime);
+                    block.innerHTML = "<span>Dummy</span><small>" + formatTimeRange(item.startTime, item.endTime) + "</small>";
+
+                    col.appendChild(block);
+                });
 
             bedSlots.forEach(function(slot){
                 const slotStart = timeToMinutes(slot.startTime);
@@ -2493,6 +2525,7 @@
         const reasonInput = document.getElementById("blockDateReasonInput");
 
         if(!doc){
+            renderDummyScheduleControl(null);
             checkbox.checked = false;
             checkbox.disabled = true;
             reasonInput.value = "";
@@ -2501,9 +2534,130 @@
         }
 
         checkbox.disabled = false;
+        renderDummyScheduleControl(doc);
         checkbox.checked = !!doc.blocked;
         reasonInput.disabled = !doc.blocked;
         reasonInput.value = doc.blockReason || "";
+    }
+
+    /* ---- Dummy schedule ----
+       Pretend bookings for the public Promotions page only. Stored in
+       currentDoc.dummySlots — a separate field from `slots`, so the grid, the
+       conflict checks and Scheduling never see them; only the Cloud Functions
+       (getPaydaySaleAvailability / submitPaydayVoucherOrder) fold them in as
+       occupied time. They fill every available bed's open stretches with
+       back-to-back blocks of 60/90/120 minutes so the day reads as full. */
+
+    const DUMMY_DURATIONS = [60, 90, 120];
+
+    function renderDummyScheduleControl(doc){
+        const createBtn = document.getElementById("createDummyScheduleBtn");
+        const clearBtn = document.getElementById("clearDummyScheduleBtn");
+        const status = document.getElementById("dummyScheduleStatus");
+        const count = doc && Array.isArray(doc.dummySlots) ? doc.dummySlots.length : 0;
+
+        createBtn.disabled = !doc;
+        createBtn.textContent = count ? "🎭 Regenerate Dummy Schedule" : "🎭 Create Dummy Schedule";
+        clearBtn.hidden = !count;
+
+        status.textContent = count
+            ? count + " dummy booking" + (count === 1 ? "" : "s") + " active — the website shows this date as fully booked. Website only — never in Scheduling."
+            : "Fills this date's open beds with pretend bookings so the website shows it as fully booked. Website only — never in Scheduling.";
+    }
+
+    function buildDummySlots(doc){
+        const slots = [];
+        let counter = 0;
+
+        Object.keys(doc.beds || {}).forEach(function(bedKey){
+            const bed = Number(bedKey);
+            const setting = doc.beds[bedKey] || {};
+
+            if(!bed || setting.available === false || !setting.from || !setting.to){
+                return;
+            }
+
+            const from = timeToMinutes(setting.from);
+            const to = timeToMinutes(setting.to);
+
+            /* Real promo slots, real Scheduling appointments and live voucher
+               holds on this bed stay exactly as they are — dummies only fill
+               the gaps around them. */
+            const taken = (doc.slots || [])
+                .concat(
+                    getActualSchedules(doc.branch, doc.date),
+                    heldRangesFor(doc.branch, doc.date)
+                )
+                .filter(function(slot){ return slot && slot.status !== "Cancelled" && Number(slot.bed) === bed; })
+                .map(function(slot){ return [timeToMinutes(slot.startTime), timeToMinutes(slot.endTime)]; })
+                .sort(function(a, b){ return a[0] - b[0]; });
+
+            const gaps = [];
+            let cursor = from;
+
+            taken.forEach(function(range){
+                if(range[0] > cursor){ gaps.push([cursor, Math.min(range[0], to)]); }
+                cursor = Math.max(cursor, range[1]);
+            });
+
+            if(cursor < to){ gaps.push([cursor, to]); }
+
+            gaps.forEach(function(gap){
+                let start = gap[0];
+
+                while(gap[1] - start >= 30){
+                    let length = DUMMY_DURATIONS[Math.floor(Math.random() * DUMMY_DURATIONS.length)];
+
+                    /* Don't leave a sliver (<60 min) at the end of the gap. */
+                    if(gap[1] - (start + length) < 60){
+                        length = gap[1] - start;
+                    }
+
+                    counter += 1;
+                    slots.push({
+                        id: "dummy-" + bed + "-" + counter,
+                        bed: bed,
+                        startTime: minutesToTimeValue(start),
+                        endTime: minutesToTimeValue(start + length),
+                        status: "Dummy"
+                    });
+
+                    start += length;
+                }
+            });
+        });
+
+        return slots;
+    }
+
+    function createDummySchedule(){
+        if(!currentDoc){
+            return;
+        }
+
+        currentDoc.dummySlots = buildDummySlots(currentDoc);
+
+        saveCurrentDoc().then(function(saved){
+            if(saved){
+                renderDummyScheduleControl(currentDoc);
+                renderPaydaySale();
+            }
+        });
+    }
+
+    function clearDummySchedule(){
+        if(!currentDoc){
+            return;
+        }
+
+        currentDoc.dummySlots = [];
+
+        saveCurrentDoc().then(function(saved){
+            if(saved){
+                renderDummyScheduleControl(currentDoc);
+                renderPaydaySale();
+            }
+        });
     }
 
     function toggleBlockDate(){

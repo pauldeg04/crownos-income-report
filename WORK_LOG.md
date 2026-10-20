@@ -11,6 +11,16 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-20 (2) — Promotions: Create Dummy Schedule (website shows the date as fully booked)
+
+**Requested by:** User — a button under "Block this date" that auto-generates dummy schedules so website guests see the date as fully booked, without affecting CrownOS Scheduling or real bookings.
+
+- [marketing-payday-sale.html](marketing-payday-sale.html) / [.js](marketing-payday-sale.js) / [.css](marketing-payday-sale.css): **Create Dummy Schedule** (becomes Regenerate) + **Clear dummy schedule**. Fills each available bed's open time with back-to-back 60/90/120-minute blocks, skipping real promo slots, real Scheduling appointments and live voucher holds. Stored in the day's Promotions doc as a separate `dummySlots` field, so the grid's conflict checks, voucher flow and Scheduling never read it. Shown on the Promotions grid as read-only dashed purple "Dummy" blocks (click-through; real cards sit on top) with a legend entry.
+- [functions/index.js](functions/index.js): `getPaydaySaleAvailability` and `submitPaydayVoucherOrder` fold `dummySlots` in as occupied time, so the public page shows no open times and orders can't take them.
+- [manual.html](manual.html): documented under the Promotions page.
+
+**Deployed:** `firebase deploy --only hosting,functions` (functions are required for the website to see the dummies).
+
 ## 2026-10-20 — "Payday Sale" renamed to "Promotions"
 
 **Requested by:** User — rename the Payday Sale page and every "Payday Sale" wording to Promotions.
