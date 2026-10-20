@@ -11,6 +11,14 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-20 (3) — Dummy schedule now starts at 4:00 PM
+
+**Requested by:** User — generated dummies should only fill from 4 PM onwards.
+
+- [marketing-payday-sale.js](marketing-payday-sale.js): `buildDummySlots` clamps each bed's start to 4:00 PM (beds that close before then get none); button hint text, [marketing-payday-sale.html](marketing-payday-sale.html) and [manual.html](manual.html) updated. Existing dummies are unchanged until **Regenerate Dummy Schedule** is pressed.
+
+**Deployed:** `firebase deploy --only hosting`.
+
 ## 2026-10-20 (2) — Promotions: Create Dummy Schedule (website shows the date as fully booked)
 
 **Requested by:** User — a button under "Block this date" that auto-generates dummy schedules so website guests see the date as fully booked, without affecting CrownOS Scheduling or real bookings.

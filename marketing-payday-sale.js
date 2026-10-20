@@ -2545,10 +2545,11 @@
        currentDoc.dummySlots — a separate field from `slots`, so the grid, the
        conflict checks and Scheduling never see them; only the Cloud Functions
        (getPaydaySaleAvailability / submitPaydayVoucherOrder) fold them in as
-       occupied time. They fill every available bed's open stretches with
+       occupied time. They fill every available bed's open stretches from 4:00 PM onwards with
        back-to-back blocks of 60/90/120 minutes so the day reads as full. */
 
     const DUMMY_DURATIONS = [60, 90, 120];
+    const DUMMY_START_MINUTES = 16 * 60; // dummies only fill from 4:00 PM onwards
 
     function renderDummyScheduleControl(doc){
         const createBtn = document.getElementById("createDummyScheduleBtn");
@@ -2562,7 +2563,7 @@
 
         status.textContent = count
             ? count + " dummy booking" + (count === 1 ? "" : "s") + " active — the website shows this date as fully booked. Website only — never in Scheduling."
-            : "Fills this date's open beds with pretend bookings so the website shows it as fully booked. Website only — never in Scheduling.";
+            : "Fills this date's open beds from 4:00 PM onwards with pretend bookings so the website shows it as fully booked. Website only — never in Scheduling.";
     }
 
     function buildDummySlots(doc){
@@ -2577,7 +2578,7 @@
                 return;
             }
 
-            const from = timeToMinutes(setting.from);
+            const from = Math.max(timeToMinutes(setting.from), DUMMY_START_MINUTES);
             const to = timeToMinutes(setting.to);
 
             /* Real promo slots, real Scheduling appointments and live voucher
