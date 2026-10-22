@@ -1521,6 +1521,8 @@
         });
     }
 
+    let knownUnreadIds = null;
+
     function updateNotificationBadge(recipient){
         const badge =
             notificationToolbarEl?.querySelector("#notificationBadge");
@@ -1529,12 +1531,37 @@
             return;
         }
 
-        const unreadCount =
+        const unreadItems =
             getMergedNotifications(recipient)
                 .filter(function(item){
                     return !item.read;
-                })
-                .length;
+                });
+
+        const unreadCount = unreadItems.length;
+
+        /* Vibrate (Android Chrome / installed PWA) when a notification
+           arrives while CrownOS is open. The first call only records what
+           is already unread, so opening the app never buzzes for old
+           items. Browsers without the Vibration API (iOS) skip this. */
+        const unreadIds =
+            new Set(unreadItems.map(function(item){ return item.id; }));
+
+        if(knownUnreadIds){
+            const hasNew =
+                unreadItems.some(function(item){
+                    return !knownUnreadIds.has(item.id);
+                });
+
+            if(hasNew){
+                try{
+                    navigator.vibrate?.([200, 100, 200]);
+                }catch(error){
+                    /* Blocked until the page has had a tap/click — ignore. */
+                }
+            }
+        }
+
+        knownUnreadIds = unreadIds;
 
         badge.textContent =
             unreadCount > 99 ? "99+" : String(unreadCount);

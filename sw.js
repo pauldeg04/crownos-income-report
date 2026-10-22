@@ -27,7 +27,8 @@ firebase.messaging().onBackgroundMessage(function(payload){
 
     self.registration.showNotification(title, {
         body: body,
-        icon: "icon-192.png"
+        icon: "icon-192.png",
+        vibrate: [200, 100, 200]
     });
 
     if(self.navigator?.setAppBadge){

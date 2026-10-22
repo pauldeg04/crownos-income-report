@@ -11,6 +11,16 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-23 (2) — Notifications vibrate on Android phones
+
+**Requested by:** User — phone should vibrate whenever any account gets a notification.
+
+- [sidebar.js](sidebar.js): `updateNotificationBadge()` tracks unread notification IDs and calls `navigator.vibrate([200,100,200])` when a new one appears while CrownOS is open (first call only records the baseline, so old items never buzz).
+- [sw.js](sw.js): background push `showNotification` now includes `vibrate: [200,100,200]`.
+- [manual.html](manual.html): Notifications entry mentions vibration and its limits.
+
+**Limits:** Android only — iOS has no web Vibration API (follows the phone's own settings). Chrome needs a prior tap on the page for in-app vibrate. Silent/DND may suppress it. Not deployed-tested on a device at time of writing.
+
 ## 2026-10-23 — Daily Income: Admin notified on delete; "Clear This Branch / Date" removed
 
 **Requested by:** User — notify Admin whenever someone deletes from the Daily Income Report; then drop the Clear button.
