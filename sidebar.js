@@ -1621,6 +1621,7 @@
         memo: "bulletin-board.html?tab=memo",
         announcement: "bulletin-board.html?tab=announcement",
         "booking-request": "booking-requests.html",
+        "sale-deleted": "index.html",
         "tech-support-maintenance": "inventory-techsupport.html?tab=maintenance",
         "tech-support-collaterals": "inventory-techsupport.html?tab=collaterals"
     };

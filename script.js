@@ -42,7 +42,7 @@ let calendarYear;
 let calendarMonth;
 
 /* Receptionist can record new sales but cannot edit/delete a saved
-   transaction, and cannot bulk-clear or manually re-save a day —
+   transaction —
    only Admin / Executive Assistant can, so a mistake requires
    calling a superior to void it. A Therapist marked as Team Leader
    is trusted with the same saved-sale edit/delete access so they can
@@ -104,7 +104,6 @@ function applyReceptionistRestrictions(){
     return;
   }
 
-  document.getElementById("clearBtn")?.classList.add("d-none");
   document.getElementById("salesActionHeader")?.classList.add("d-none");
 }
 
@@ -120,7 +119,6 @@ function attachEvents(){
 
   document.getElementById("addSaleBtn").addEventListener("click", openNewSaleModal);
   document.getElementById("pdfBtn").addEventListener("click", exportPDF);
-  document.getElementById("clearBtn").addEventListener("click", clearDailySales);
 
   document.getElementById("closeSaleModalBtn").addEventListener("click", closeSaleModal);
   document.getElementById("cancelSaleModalBtn").addEventListener("click", closeSaleModal);
@@ -5361,6 +5359,44 @@ function describeSaleForActivityLog(sale){
   ].filter(Boolean).join(" – ");
 }
 
+/* Tells every Admin account (bell notification) when someone deletes
+   from the Daily Income Report, so a removed sale never goes unnoticed.
+   The deleter is skipped when they are an Admin themselves — they
+   already know. Fire-and-forget, same broadcast path as Tech Support
+   requests (staffNotificationsClient). */
+function notifyAdminsOfSaleDeletion(message){
+  const currentUser =
+    window.CrownAuth?.getCurrentUser?.();
+
+  const recipients =
+    (window.CrownAuth?.getUsers?.() || [])
+      .filter(function(user){
+        return (
+          user.role === "Admin" &&
+          user.account !== currentUser?.account
+        );
+      })
+      .map(function(user){
+        return user.account;
+      });
+
+  window.CrownClientNotifications?.broadcast?.(
+    recipients,
+    message,
+    "sale-deleted"
+  );
+}
+
+function describeDeleterForNotification(){
+  const user =
+    window.CrownAuth?.getCurrentUser?.();
+
+  return (
+    (user?.nickname || user?.account || "Someone") +
+    (user?.role ? " (" + user.role + ")" : "")
+  );
+}
+
 function logSaleActivity(action, sale, details){
   window.CrownActivityLog?.log({
     module: "Daily Income",
@@ -6683,6 +6719,14 @@ function deleteSale(saleId){
 
   if(sale){
     logSaleActivity(sale.settled === false ? "Deleted ongoing transaction" : "Deleted sale", sale);
+
+    notifyAdminsOfSaleDeletion(
+      describeDeleterForNotification() + " deleted " +
+      (sale.settled === false ? "an ongoing transaction" : "a sale") +
+      " in Daily Income (" + getSelectedBranch() + ", " +
+      document.getElementById("date").value + "): " +
+      describeSaleForActivityLog(sale)
+    );
   }
 
   renderSalesTable();
@@ -7429,43 +7473,6 @@ function updateSummary(){
       selectedMonth.label;
   }
 }
-
-function clearDailySales(){
-  if(
-    !confirm(
-      `Clear all saved sales for ${getSelectedBranch()} - ${formatDate(
-        document.getElementById("date").value
-      )}?`
-    )
-  ){
-    return;
-  }
-
-  salesRows.forEach(function(sale){
-    removeSaleFromStockAudit(sale.id);
-  });
-
-  window.CrownActivityLog?.log({
-    module: "Daily Income",
-    action: "Cleared day",
-    summary: "Cleared all " + salesRows.length + " sale(s) for " + getSelectedBranch() + " – " +
-      document.getElementById("date").value,
-    details: salesRows.slice(0, 8).map(function(sale){ return "− " + describeSaleForActivityLog(sale); }),
-    branch: getSelectedBranch() || "",
-    ref: getStorageKey()
-  });
-
-  localStorage.removeItem(getStorageKey());
-  salesRows = [];
-
-  renderSalesTable();
-  updateSummary();
-  renderCalendar();
-  updateSalesRecord();
-
-  alert("Saved data for this branch and date has been cleared.");
-}
-
 
 /* ==========================================================================
    SALES RECORD

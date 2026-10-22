@@ -11,6 +11,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-23 — Daily Income: Admin notified on delete; "Clear This Branch / Date" removed
+
+**Requested by:** User — notify Admin whenever someone deletes from the Daily Income Report; then drop the Clear button.
+
+- [script.js](script.js): new `notifyAdminsOfSaleDeletion()` / `describeDeleterForNotification()` broadcast a bell notification (type `sale-deleted`, via `CrownClientNotifications.broadcast`, same path as Tech Support requests) to every Admin account when `deleteSale()` runs (ongoing or saved). The deleting Admin is skipped. Removed `clearDailySales()`, its listener, and its receptionist-hide line.
+- [index.html](index.html): removed the **Clear This Branch / Date** button.
+- [sidebar.js](sidebar.js): `sale-deleted` notifications open `index.html`.
+- [manual.html](manual.html): Chapter 6 buttons/callout, FAQ, Activity Log note and Notifications entry updated.
+
+**Not changed:** Firestore rules (existing `staffNotificationsClient` create rule covers it); old "Cleared day" Activity Log entries remain.
+
 ## 2026-10-20 (5) — Dummy schedule: one bed starts at 7 PM, × to remove a single dummy
 
 **Requested by:** User — vary the dummy start (one bed column at 7 PM instead of 4 PM) and let individual dummies be removed.
