@@ -96,6 +96,16 @@
         return `<span class="budget-pending">Pending</span>`;
     }
 
+    /* Attachments are stored as an "attachments" array; requests filed
+       before multi-upload only have the single attachmentUrl fields. */
+    function attachmentsOf(r){
+        if(Array.isArray(r.attachments)){ return r.attachments; }
+
+        return r.attachmentUrl
+            ? [{ name: r.attachmentName || "View attachment", path: r.attachmentPath || "", url: r.attachmentUrl }]
+            : [];
+    }
+
     function mopText(request){
         return request.mop || "";
     }
@@ -164,13 +174,20 @@
                     <td>${escapeHtml(r.requestedByName)}</td>
                     <td>${escapeHtml(r.note || "")}</td>
                     <td>${statusHtml(r)}</td>
-                    <td><button type="button" class="btn btn-sm btn-outline-primary budget-view-btn" data-id="${escapeHtml(r.id)}">View</button></td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-primary budget-view-btn" data-id="${escapeHtml(r.id)}">View</button>
+                        ${isAdmin ? `<button type="button" class="btn btn-sm btn-outline-secondary budget-edit-btn" data-id="${escapeHtml(r.id)}">Edit</button>` : ""}
+                    </td>
                 </tr>
             `;
         }).join("");
 
         body.querySelectorAll(".budget-view-btn").forEach(function(btn){
             btn.addEventListener("click", function(){ openView(btn.dataset.id); });
+        });
+
+        body.querySelectorAll(".budget-edit-btn").forEach(function(btn){
+            btn.addEventListener("click", function(){ openEdit(btn.dataset.id); });
         });
     }
 
@@ -209,8 +226,12 @@
             return `<div class="budget-view-row"><strong>${escapeHtml(pair[0])}</strong><span>${escapeHtml(pair[1] || "")}</span></div>`;
         }).join("");
 
-        if(r.attachmentUrl){
-            html += `<div class="budget-view-row"><strong>Attachment</strong><span><a href="${escapeHtml(r.attachmentUrl)}" target="_blank" rel="noopener">${escapeHtml(r.attachmentName || "View attachment")}</a></span></div>`;
+        const files = attachmentsOf(r);
+
+        if(files.length){
+            html += `<div class="budget-view-row"><strong>Attachment${files.length > 1 ? "s" : ""}</strong><span>${files.map(function(f){
+                return `<a href="${escapeHtml(f.url)}" target="_blank" rel="noopener">${escapeHtml(f.name || "View attachment")}</a>`;
+            }).join("<br>")}</span></div>`;
         }
 
         html += `<div class="budget-view-row"><strong>Status</strong><span>${statusHtml(r)}</span></div>`;
@@ -284,6 +305,83 @@
         }).then(function(url){
             return { name: file.name, path: path, url: url };
         });
+    }
+
+    function uploadFiles(fileList, branch){
+        return Promise.all(Array.from(fileList).map(function(file){
+            return uploadFile(file, branch, "budgetRequestFiles");
+        }));
+    }
+
+    /* ---- Edit attachments (Admin) ---- */
+
+    let editFiles = [];
+
+    function renderEditList(){
+        const list = $("budgetEditList");
+
+        if(editFiles.length === 0){
+            list.innerHTML = `<div class="text-muted">No attachments.</div>`;
+            return;
+        }
+
+        list.innerHTML = editFiles.map(function(f, i){
+            return `<div class="budget-detail-item"><span><a href="${escapeHtml(f.url)}" target="_blank" rel="noopener">${escapeHtml(f.name || "Attachment")}</a></span><button type="button" class="btn btn-sm btn-outline-danger budget-edit-remove" data-index="${i}">Remove</button></div>`;
+        }).join("");
+
+        list.querySelectorAll(".budget-edit-remove").forEach(function(btn){
+            btn.addEventListener("click", function(){
+                editFiles.splice(Number(btn.dataset.index), 1);
+                renderEditList();
+            });
+        });
+    }
+
+    function openEdit(id){
+        const r = requestsCache.find(function(item){ return item.id === id; });
+
+        if(!r || !isAdmin){ return; }
+
+        activeId = id;
+        editFiles = attachmentsOf(r).slice();
+        $("budgetEditInput").value = "";
+        renderEditList();
+        $("budgetEditBackdrop").classList.remove("d-none");
+    }
+
+    function closeEdit(){
+        $("budgetEditBackdrop").classList.add("d-none");
+    }
+
+    async function saveEdit(){
+        const r = requestsCache.find(function(item){ return item.id === activeId; });
+
+        if(!r){ return; }
+
+        const btn = $("budgetEditSaveBtn");
+        btn.disabled = true;
+        btn.textContent = "Saving…";
+
+        try{
+            const added = await uploadFiles($("budgetEditInput").files, r.branch);
+            const all = editFiles.concat(added);
+            const first = all[0];
+
+            await firebase.firestore().collection(COLLECTION).doc(activeId).update({
+                attachments: all,
+                attachmentUrl: first ? first.url : "",
+                attachmentPath: first ? first.path : "",
+                attachmentName: first ? first.name : ""
+            });
+
+            closeEdit();
+        }catch(error){
+            console.error("Unable to update attachments:", error);
+            alert("Unable to save the attachments: " + (error.message || "please try again."));
+        }finally{
+            btn.disabled = false;
+            btn.textContent = "Save";
+        }
     }
 
     async function confirmDone(){
@@ -506,16 +604,13 @@
         if(!(amount > 0)){ alert("Please enter a valid Amount."); return; }
 
         const needsAccount = ACCOUNT_MOPS.includes(mop);
-        const attachmentFile = $("budgetAttachmentInput").files[0];
+        const attachmentFiles = $("budgetAttachmentInput").files;
         const btn = $("budgetFormSubmitBtn");
         btn.disabled = true;
 
         try{
-            let attachment = null;
-
-            if(attachmentFile){
-                attachment = await uploadFile(attachmentFile, branch, "budgetRequestFiles");
-            }
+            const attachments = await uploadFiles(attachmentFiles, branch);
+            const attachment = attachments[0] || null;
 
             await firebase.firestore().collection(COLLECTION).add({
                 branch,
@@ -527,6 +622,7 @@
                 accountNumber: needsAccount ? accountNumber : "",
                 amount,
                 note,
+                attachments,
                 attachmentUrl: attachment ? attachment.url : "",
                 attachmentPath: attachment ? attachment.path : "",
                 attachmentName: attachment ? attachment.name : "",
@@ -649,6 +745,11 @@
         $("budgetDeclineBtn").addEventListener("click", declineActive);
         $("budgetDoneBtn").addEventListener("click", openProof);
         bindBackdropClose("budgetViewBackdrop", closeView);
+
+        $("budgetEditCloseBtn").addEventListener("click", closeEdit);
+        $("budgetEditCancelBtn").addEventListener("click", closeEdit);
+        $("budgetEditSaveBtn").addEventListener("click", saveEdit);
+        bindBackdropClose("budgetEditBackdrop", closeEdit);
 
         $("budgetProofCloseBtn").addEventListener("click", closeProof);
         $("budgetProofCancelBtn").addEventListener("click", closeProof);

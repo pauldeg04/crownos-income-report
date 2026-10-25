@@ -274,6 +274,12 @@ service cloud.firestore {
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['status', 'proofUrl', 'proofPath', 'proofName',
                     'actedByAccount', 'actedByName', 'actedAt']);
+      // Admin may fix the requestor's attachments on a request in any status.
+      allow update: if request.auth != null &&
+        request.auth.token.role == 'Admin' &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['attachments', 'attachmentUrl', 'attachmentPath',
+                    'attachmentName']);
       allow delete: if false;
     }
 

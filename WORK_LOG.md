@@ -5719,3 +5719,19 @@ sidebar and covered the start of the "Crown Head Spa" brand text.
 
 **Note:** if Net is negative the Savings Fund is ₱0 (floor only applies when Net ≥ 0).
 Loyalty Card / Product Sales Summary pages are untouched.
+
+## 2026-10-25 — Budget Request: Admin Edit button + multiple attachments
+
+**Request:** Add an Edit button in the Action column (Admin only) to fix wrong attachments, and allow
+multiple attachments.
+
+**Change:**
+- [`budget-request.html`](budget-request.html) / [`budget-request.js`](budget-request.js) — request form
+  file input is now `multiple`; files stored in a new `attachments` array (legacy `attachmentUrl/Path/Name`
+  still written with the first file, and read as a fallback for old requests). View modal lists all files.
+  New Admin-only **Edit** button + "Edit Attachments" modal (remove existing, add more, Save).
+- [`firestore.rules`](firestore.rules) — new `budgetRequests` update clause: Admin may change only
+  `attachments`, `attachmentUrl`, `attachmentPath`, `attachmentName`, in any status.
+- [`manual.html`](manual.html) — Budget Request chapter updated.
+
+**Note:** removing an attachment drops the link only; the file stays in Cloud Storage.

@@ -242,7 +242,8 @@
 
                     <div class="col-12">
                         <label class="form-label fw-semibold">Attachment <span class="text-muted fw-normal">(optional)</span></label>
-                        <input type="file" class="form-control" id="budgetAttachmentInput" accept="image/*,.pdf">
+                        <input type="file" class="form-control" id="budgetAttachmentInput" accept="image/*,.pdf" multiple>
+                        <div class="form-text">You can select more than one file.</div>
                     </div>
 
                     <div class="col-12">
@@ -324,6 +325,30 @@
 
             <div class="budget-modal-footer">
                 <button type="button" class="btn btn-outline-secondary" id="budgetDetailsDoneBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit attachments modal (Admin) -->
+    <div class="budget-modal-backdrop d-none" id="budgetEditBackdrop">
+        <div class="budget-modal">
+            <div class="budget-modal-header">
+                <h4>Edit Attachments</h4>
+                <button type="button" class="budget-modal-close" id="budgetEditCloseBtn">&times;</button>
+            </div>
+
+            <div class="budget-modal-body">
+                <label class="form-label fw-semibold">Current attachments</label>
+                <div id="budgetEditList" class="mb-3"></div>
+
+                <label class="form-label fw-semibold">Add attachments</label>
+                <input type="file" class="form-control" id="budgetEditInput" accept="image/*,.pdf" multiple>
+                <div class="form-text">You can select more than one file.</div>
+            </div>
+
+            <div class="budget-modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="budgetEditCancelBtn">Cancel</button>
+                <button type="button" class="btn btn-primary" id="budgetEditSaveBtn">Save</button>
             </div>
         </div>
     </div>
