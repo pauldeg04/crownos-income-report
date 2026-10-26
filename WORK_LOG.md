@@ -11,6 +11,13 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-26 — Budget Request: Completed Requests Date picker filters by Date Settled
+
+**Requested by:** User — in the history table, picking a date should list requests settled on that date.
+
+- [budget-request.js](budget-request.js): new `settledKey()`; the Date picker of the Completed Requests table now matches Date Settled (Requests table still matches the request Date). Month filter unchanged.
+- [manual.html](manual.html): Budget Request chapter notes the Date picker behaviour.
+
 ## 2026-10-23 (2) — Notifications vibrate on Android phones
 
 **Requested by:** User — phone should vibrate whenever any account gets a notification.

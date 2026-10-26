@@ -47,14 +47,18 @@
 
     /* Day a request was settled (Done or Declined), from the actedAt
        timestamp written when Admin acts on it. Empty while Pending. */
-    function settledDay(r){
+    function settledKey(r){
         if(r.status === "Pending" || !r.actedAt){ return ""; }
 
         const d = typeof r.actedAt.toDate === "function" ? r.actedAt.toDate() : new Date(r.actedAt);
 
         if(isNaN(d.getTime())){ return ""; }
 
-        return formatDay(d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"));
+        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+
+    function settledDay(r){
+        return formatDay(settledKey(r));
     }
 
     function formatMoney(value){
@@ -135,7 +139,8 @@
             }
 
             if(date){
-                return r.createdDate === date;
+                /* History table: the picked date matches Date Settled. */
+                return (table.prefix === "budgetClosed" ? settledKey(r) : r.createdDate) === date;
             }
 
             return !month || (r.createdDate || "").slice(0, 7) === month;
