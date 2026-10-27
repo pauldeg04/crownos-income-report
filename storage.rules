@@ -72,6 +72,19 @@ service firebase.storage {
         request.auth.token.role in ['Admin', 'Marketing Agent'];
     }
 
+    // Promo poster images uploaded from marketing-promo-posters.js. They are
+    // shown on the public website's Promos page, so read is open to anyone.
+    // Write is limited to Admin + Marketing Agent, images only, 10 MB cap.
+    match /promoPosters/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Marketing Agent'] &&
+        request.resource.contentType.matches('image/.*') &&
+        request.resource.size < 10 * 1024 * 1024;
+      allow delete: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Marketing Agent'];
+    }
+
     // Maintenance request supporting files uploaded from
     // inventory-techsupport.js's Maintenance tab (uploadMaintenanceAttachment()).
     // Blanket-authenticated, same posture as memoPosters — every role can

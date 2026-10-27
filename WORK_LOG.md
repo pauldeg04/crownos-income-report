@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-27 — Promotions: Promo Posters tab feeds a slideshow on the website
+
+**Requested by:** User — an automatic carousel of promo posters on the website's Promos page, with the posters uploaded from CrownOS (Marketing).
+
+- [marketing-payday-sale.html](marketing-payday-sale.html), [marketing-payday-sale.js](marketing-payday-sale.js): third tab **Promo Posters** beside Promotions Portal and Voucher List (saved-tab logic accepts it).
+- [marketing-promo-posters.js](marketing-promo-posters.js) / [.css](marketing-promo-posters.css) (new): multi-image upload (resized to max 1600px JPEG), reorder ↑/↓, Show-on-website switch, optional Show until date, label, delete. Data in Firestore `promoPosters/{id}` (imageUrl, storagePath, title, active, order, showUntil); files in Storage `promoPosters/`.
+- [firestore.rules](firestore.rules): `promoPosters` readable by anyone (the public website reads it), writes by any signed-in user (UI-gated to Admin/Marketing Agent, same as `marketingCampaigns`). [storage.rules](storage.rules): `promoPosters/` public read; write limited to Admin + Marketing Agent, images under 10 MB.
+- [manual.html](manual.html): Chapter 31 Promotions — Promo Posters tab.
+- Website side: see Website/WORK_LOG.md (carousel on promos.html).
+
+**Deployed:** `firebase deploy --only hosting,firestore:rules,storage` → CrownOS, plus rules.
+
 ## 2026-10-26 — Budget Request: Completed Requests Date picker filters by Date Settled
 
 **Requested by:** User — in the history table, picking a date should list requests settled on that date.

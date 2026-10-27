@@ -19,11 +19,13 @@
 <link rel="stylesheet" href="scheduling.css">
 <link rel="stylesheet" href="list-vouchers.css">
 <link rel="stylesheet" href="marketing-payday-sale.css">
+<link rel="stylesheet" href="marketing-promo-posters.css">
 
 <script>if(!localStorage.getItem("crownSelectedBranch")){location.href="home.html";}</script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script src="crown-store.js"></script>
 <script type="text/crown-deferred" src="firebase-init.js"></script>
@@ -66,6 +68,10 @@
 
         <button type="button" class="payday-page-tab" id="paydayTabVouchers" data-payday-tab="vouchers" role="tab">
             Voucher List
+        </button>
+
+        <button type="button" class="payday-page-tab" id="paydayTabPosters" data-payday-tab="posters" role="tab">
+            Promo Posters
         </button>
     </div>
 
@@ -562,6 +568,44 @@
 
     </div>
 
+    <div id="paydayPosterPanel" class="d-none">
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+
+                <div class="page-heading">
+                    <div>
+                        <h3 class="fw-bold text-primary mb-0">Promo Posters</h3>
+                        <p class="text-muted mb-0">
+                            Posters uploaded here appear in the slideshow on the Promos page of
+                            crownheadspa.com, in the order shown below.
+                        </p>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-primary" id="promoPosterUploadBtn">+ Upload Posters</button>
+                        <input type="file" id="promoPosterFileInput" accept="image/*" multiple class="d-none">
+                    </div>
+                </div>
+
+                <div class="alert alert-info small mt-3 mb-0">
+                    Tip: use portrait or square posters of the same size so the slideshow doesn't jump.
+                    Switch a poster off (or set a <strong>Show until</strong> date) to take it down without deleting it.
+                    Changes show on the website right away.
+                </div>
+
+                <div class="small mt-3 d-none" id="promoPosterStatus"></div>
+            </div>
+        </div>
+
+        <div class="promo-poster-grid" id="promoPosterGrid"></div>
+
+        <div class="text-center text-muted py-5 d-none" id="promoPosterEmpty">
+            No posters yet. Click <strong>+ Upload Posters</strong> to add your first one.
+        </div>
+
+    </div>
+
 </div>
 
 <script type="text/crown-deferred" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -576,6 +620,7 @@
 </script>
 <script type="text/crown-deferred" src="list-vouchers.js"></script>
 <script type="text/crown-deferred" src="marketing-payday-sale.js"></script>
+<script type="text/crown-deferred" src="marketing-promo-posters.js"></script>
 <script type="text/crown-deferred" src="sidebar.js"></script>
 
 </body>

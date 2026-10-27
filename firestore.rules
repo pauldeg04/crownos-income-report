@@ -443,6 +443,17 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null;
     }
 
+    /* Marketing / Promo Posters (see marketing-promo-posters.js) — the
+       slideshow on the public Promos page. Posters are public marketing
+       material, so reads are open to visitors (Website/js/promo-carousel.js
+       reads this collection directly). Writes: any signed-in user, gated
+       to Admin/Marketing Agent in the CrownOS UI, same pattern as
+       marketingCampaigns above. */
+    match /promoPosters/{posterId} {
+      allow get, list: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
     /* Client-writable notification feed for Admin Hub broadcasts
        (Announcement publish, Memo send) — kept separate from the
        Cloud-Function-only /staffNotifications above so that collection's
