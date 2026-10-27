@@ -20,6 +20,7 @@ Running log of changes made to the CrownOS system, newest entry on top.
 - [firestore.rules](firestore.rules): `promoPosters` readable by anyone (the public website reads it), writes by any signed-in user (UI-gated to Admin/Marketing Agent, same as `marketingCampaigns`). [storage.rules](storage.rules): `promoPosters/` public read; write limited to Admin + Marketing Agent, images under 10 MB.
 - [manual.html](manual.html): Chapter 31 Promotions — Promo Posters tab.
 - Website side: see Website/WORK_LOG.md (carousel on promos.html).
+- Fix (same day): the Promo Posters panel was first placed inside the hidden slot-modal markup, so the tab showed blank; moved it inside the page container beside the Voucher List panel.
 
 **Deployed:** `firebase deploy --only hosting,firestore:rules,storage` → CrownOS, plus rules.
 
