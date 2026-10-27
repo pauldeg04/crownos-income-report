@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-27 (2) — Promotions: Pop up Poster tab controls the Book page popup
+
+**Requested by:** User — one poster, managed from Promotions, that pops up only on the website's Book page.
+
+- [marketing-payday-sale.html](marketing-payday-sale.html) / [.js](marketing-payday-sale.js): fourth tab **Pop up Poster**.
+- [marketing-popup-poster.js](marketing-popup-poster.js) (new): upload/replace one poster (shared resize helper from marketing-promo-posters.js), Show-on-website switch, Show until, Remove. Data in Firestore `popupPoster/bookPage`; file in Storage `popupPoster/`. Remove keeps the doc (inactive) so the built-in fallback doesn't come back.
+- [firestore.rules](firestore.rules) / [storage.rules](storage.rules): `popupPoster` public read; writes signed-in (UI-gated) / Admin + Marketing Agent, images under 10 MB.
+- [manual.html](manual.html): Chapter 31 — Pop up Poster tab.
+- Website side: Website/WORK_LOG.md.
+
+**Deployed:** `firebase deploy --only hosting,firestore:rules,storage`.
+
 ## 2026-10-27 — Promotions: Promo Posters tab feeds a slideshow on the website
 
 **Requested by:** User — an automatic carousel of promo posters on the website's Promos page, with the posters uploaded from CrownOS (Marketing).

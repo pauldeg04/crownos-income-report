@@ -454,6 +454,15 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null;
     }
 
+    /* Marketing / Promotions > Pop up Poster tab (marketing-popup-poster.js) —
+       a single doc, popupPoster/bookPage, holding the poster that pops up
+       on the public Book page. Readable by visitors (Website/js/main.js
+       reads it); writes by any signed-in user, UI-gated like promoPosters. */
+    match /popupPoster/{docId} {
+      allow get, list: if true;
+      allow create, update, delete: if request.auth != null;
+    }
+
     /* Client-writable notification feed for Admin Hub broadcasts
        (Announcement publish, Memo send) — kept separate from the
        Cloud-Function-only /staffNotifications above so that collection's

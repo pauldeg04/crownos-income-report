@@ -73,6 +73,10 @@
         <button type="button" class="payday-page-tab" id="paydayTabPosters" data-payday-tab="posters" role="tab">
             Promo Posters
         </button>
+
+        <button type="button" class="payday-page-tab" id="paydayTabPopup" data-payday-tab="popup" role="tab">
+            Pop up Poster
+        </button>
     </div>
 
     <div id="paydayPortalPanel">
@@ -377,6 +381,62 @@
 
     </div>
 
+    <div id="paydayPopupPanel" class="d-none">
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+
+                <div class="page-heading">
+                    <div>
+                        <h3 class="fw-bold text-primary mb-0">Pop up Poster</h3>
+                        <p class="text-muted mb-0">
+                            One poster that pops up when someone opens the Book page of crownheadspa.com.
+                            Uploading a new one replaces the old one.
+                        </p>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-primary" id="popupPosterUploadBtn">Upload / Replace Poster</button>
+                        <input type="file" id="popupPosterFileInput" accept="image/*" class="d-none">
+                    </div>
+                </div>
+
+                <div class="small mt-3 d-none" id="popupPosterStatus"></div>
+
+                <div class="row g-4 mt-1 d-none" id="popupPosterEditor">
+                    <div class="col-12 col-md-5 col-lg-4">
+                        <div class="promo-poster-card">
+                            <div class="promo-poster-thumb">
+                                <img id="popupPosterImg" alt="Pop up poster preview">
+                                <span class="promo-poster-state d-none" id="popupPosterState"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-7 col-lg-5">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="popupPosterActive">
+                            <label class="form-check-label" for="popupPosterActive">Show on the Book page</label>
+                        </div>
+
+                        <label class="form-label small text-muted" for="popupPosterUntil">Show until (optional)</label>
+                        <input type="date" class="form-control mb-3" id="popupPosterUntil">
+
+                        <p class="small text-muted">
+                            Visitors see it once per browser session. Uploading a different poster
+                            shows it again to everyone.
+                        </p>
+
+                        <button type="button" class="btn btn-outline-danger" id="popupPosterRemoveBtn">Remove Poster</button>
+                    </div>
+                </div>
+
+                <div class="text-muted py-4 d-none" id="popupPosterEmpty"></div>
+            </div>
+        </div>
+
+    </div>
+
 </div>
 
 <div class="schedule-modal-backdrop d-none" id="paydayModalBackdrop">
@@ -621,6 +681,7 @@
 <script type="text/crown-deferred" src="list-vouchers.js"></script>
 <script type="text/crown-deferred" src="marketing-payday-sale.js"></script>
 <script type="text/crown-deferred" src="marketing-promo-posters.js"></script>
+<script type="text/crown-deferred" src="marketing-popup-poster.js"></script>
 <script type="text/crown-deferred" src="sidebar.js"></script>
 
 </body>

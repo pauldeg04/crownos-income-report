@@ -81,6 +81,8 @@
         });
     }
 
+    window.CrownPosterTools = { compressImage: compressImage };
+
     async function uploadFiles(files){
         const list = Array.from(files).filter(function(f){ return f.type.startsWith("image/"); });
 

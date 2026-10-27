@@ -176,9 +176,10 @@
         });
     }
 
-    /* Three tabs: Promotions Portal (the grid + voucher requests),
+    /* Four tabs: Promotions Portal (the grid + voucher requests),
        Voucher List (list-vouchers.js, filtered to Payday vouchers) and
-       Promo Posters (marketing-promo-posters.js, the website slideshow). The
+       Promo Posters (marketing-promo-posters.js, the website slideshow) and
+       Pop up Poster (marketing-popup-poster.js, the Book page popup). The
        chosen tab is remembered for the session. */
     function initPageTabs(){
         const tabs = document.querySelectorAll("[data-payday-tab]");
@@ -187,6 +188,7 @@
             document.getElementById("paydayPortalPanel").classList.toggle("d-none", name !== "portal");
             document.getElementById("paydayVoucherPanel").classList.toggle("d-none", name !== "vouchers");
             document.getElementById("paydayPosterPanel").classList.toggle("d-none", name !== "posters");
+            document.getElementById("paydayPopupPanel").classList.toggle("d-none", name !== "popup");
 
             tabs.forEach(function(tab){
                 tab.classList.toggle("active", tab.dataset.paydayTab === name);
@@ -213,7 +215,7 @@
             saved = "portal";
         }
 
-        show(saved === "vouchers" || saved === "posters" ? saved : "portal");
+        show(["vouchers", "posters", "popup"].includes(saved) ? saved : "portal");
     }
 
     function createId(){
