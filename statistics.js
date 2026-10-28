@@ -1659,8 +1659,74 @@ function renderPaymentDonut(sales){
     `;
 }
 
+function renderServicesShareDonut(statistics){
+    const container = document.getElementById("servicesShareChart");
+    if(!container){ return; }
+
+    const all = (statistics?.services || [])
+        .map(function(item){
+            return {label:item.name,value:Math.max(0, Number(item.amount) || 0)};
+        })
+        .filter(function(item){ return item.value > 0; })
+        .sort(function(a,b){ return b.value-a.value; });
+
+    const total = all.reduce(function(sum,item){return sum+item.value;},0);
+
+    if(total <= 0){
+        renderAnalyticsEmpty(container, "No service sales for the selected period.");
+        return;
+    }
+
+    /* Keep the legend readable: top services get their own slice,
+       the long tail is rolled into one "Other services" slice. */
+    const maxSlices = 8;
+    const items = all.slice(0, maxSlices);
+    const restValue = all.slice(maxSlices)
+        .reduce(function(sum,item){return sum+item.value;},0);
+    if(restValue > 0){
+        items.push({label:"Other services",value:restValue});
+    }
+
+    const colors = [
+        "#17345D","#C6A15B","#4F7C77","#806B9B","#B26A5C",
+        "#64748B","#8A9A5B","#5B8DB8","#A9B2C0"
+    ];
+    const colorFor = function(index){ return colors[index % colors.length]; };
+
+    let cursor = 0;
+    const segments = items.map(function(item,index){
+        const start = cursor;
+        const end = cursor + (item.value/total)*360;
+        cursor = end;
+        return `${colorFor(index)} ${start}deg ${end}deg`;
+    });
+
+    container.innerHTML = `
+        <div class="analytics-donut-layout">
+            <div class="analytics-donut" style="background:conic-gradient(${segments.join(",")})">
+                <div class="analytics-donut-center">
+                    <div>${peso(total)}<small>Total services sales</small></div>
+                </div>
+            </div>
+            <div class="analytics-legend">
+                ${items.map(function(item,index){
+                    const percent = (item.value/total)*100;
+                    return `
+                        <div class="analytics-legend-row" title="${escapeHtml(item.label)} — ${peso(item.value)}">
+                            <span class="analytics-legend-dot" style="background:${colorFor(index)}"></span>
+                            <span>${escapeHtml(item.label)}</span>
+                            <strong>${percent.toFixed(1)}%</strong>
+                        </div>
+                    `;
+                }).join("")}
+            </div>
+        </div>
+    `;
+}
+
 function renderBusinessAnalytics(sales, statistics){
     renderMonthlySalesTrend(sales);
+    renderServicesShareDonut(statistics);
 
     const serviceItems = (statistics?.services || [])
         .map(function(item){
