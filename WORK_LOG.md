@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-28 — Statistics: Services Share of Sales pie chart
+
+**Request:** Pie chart of Services under Statistics showing each service's percentage of total sales.
+
+**Change:**
+- [`statistics.html`](statistics.html) / [`statistics.js`](statistics.js) — new "Services Share of Sales" donut card
+  (`renderServicesShareDonut`) in the Business Analytics Dashboard. Percentages are of total services sales for
+  the selected branch/month; top 8 services get a slice, the rest roll into "Other services"; zero-sales services skipped.
+- [`manual.html`](manual.html) — Statistics chapter lists the new chart.
+
+**Note:** Base is services sales only (products, VIP Card, vouchers excluded). Not added to the Statistics PDF export.
+
 ## 2026-10-27 (2) — Promotions: Pop up Poster tab controls the Book page popup
 
 **Requested by:** User — one poster, managed from Promotions, that pops up only on the website's Book page.
@@ -5767,15 +5779,3 @@ multiple attachments.
 - [`manual.html`](manual.html) — Budget Request chapter updated.
 
 **Note:** removing an attachment drops the link only; the file stays in Cloud Storage.
-
-## 2026-10-28 — Statistics: Services Share of Sales pie chart
-
-**Request:** Pie chart of Services under Statistics showing each service's percentage of total sales.
-
-**Change:**
-- [`statistics.html`](statistics.html) / [`statistics.js`](statistics.js) — new "Services Share of Sales" donut card
-  (`renderServicesShareDonut`) in the Business Analytics Dashboard. Percentages are of total services sales for
-  the selected branch/month; top 8 services get a slice, the rest roll into "Other services"; zero-sales services skipped.
-- [`manual.html`](manual.html) — Statistics chapter lists the new chart.
-
-**Note:** Base is services sales only (products, VIP Card, vouchers excluded). Not added to the Statistics PDF export.
