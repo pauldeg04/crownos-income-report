@@ -5823,3 +5823,17 @@ Daily Threshold, with a week picker and a congratulations notification at 5.
 **Request:** Change the red Daily Threshold and Score text to normal black.
 
 **Change:** [`therapist-sales.css`](therapist-sales.css) — removed the red `.weekly-challenge-meta strong` color rule. Styling only; manual unchanged.
+
+## 2026-10-29 — Weekly Challenge shared; added to Therapist Sales and Admin Dashboard
+
+**Request:** Show the Weekly Challenge in Therapist Sales (own branch only) and Admin Dashboard (all branches).
+
+**Change:**
+- New [`weekly-challenge.js`](weekly-challenge.js) / [`weekly-challenge.css`](weekly-challenge.css) —
+  `CrownWeeklyChallenge.mount(el, getBranches)`: shared week picker + score board per branch, plus the
+  once-per-branch-per-week notification at 5. Receptionist Sales now uses it (old inline code removed).
+- [`therapist-sales.html`](therapist-sales.html)/[`.js`](therapist-sales.js) — board for the selected branch.
+- [`admin-dashboard.html`](admin-dashboard.html)/[`.js`](admin-dashboard.js) — one board per dashboard-visible branch, under Notifications.
+- [`manual.html`](manual.html) — Admin Dashboard and Therapist Sales chapters updated.
+
+**Note:** No rules deploy.

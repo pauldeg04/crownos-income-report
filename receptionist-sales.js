@@ -1,6 +1,7 @@
 const RECEPTIONIST_SALES_BRANCH_KEY = "crownSelectedBranch";
 const RECEPTIONIST_SALES_PREFIX = "crownDailySales_";
 
+let weeklyChallenge;
 let calendarYear;
 let calendarMonth;
 
@@ -9,7 +10,10 @@ document.addEventListener("DOMContentLoaded", function(){
     initializeCalendar();
     initializeDateDropdown();
     attachEvents();
-    initializeWeeklyChallenge();
+    weeklyChallenge = CrownWeeklyChallenge.mount(
+        document.getElementById("weeklyChallengeMount"),
+        function(){ return [getActiveBranch()]; }
+    );
     updateBranchState();
     renderReceptionistSales();
 });
@@ -613,7 +617,7 @@ function renderReceptionistSales(){
     document.getElementById("dailyPointsTotal").textContent = formatNumber(dailyPoints);
 
     renderMonthly(branch, selectedDate.slice(0, 7));
-    renderWeeklyChallenge();
+    weeklyChallenge?.refresh();
     updateTitles(selectedDate);
 }
 
@@ -908,178 +912,3 @@ function escapeHtml(value){
         .replaceAll("'", "&#039;");
 }
 
-
-/* ==========================================================================
-   Weekly Challenge Score Board — a week runs Saturday to Friday. A day
-   counts when its branch sales reach the branch's Daily Threshold (Branch
-   Settings → Branches), same rule as the Monthly Report. Score is "passed
-   of days so far" (a week still in progress counts only days up to today).
-   ========================================================================== */
-const WEEKLY_CHALLENGE_TARGET = 5;
-const WEEKLY_CHALLENGE_NOTIFIED_KEY = "crownWeeklyChallengeNotified";
-const WEEKLY_CHALLENGE_DEFAULT_THRESHOLD = 15000;
-const WEEK_DAY_LABELS = ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
-
-function toDateValue(date){
-    return [
-        date.getFullYear(),
-        String(date.getMonth() + 1).padStart(2, "0"),
-        String(date.getDate()).padStart(2, "0")
-    ].join("-");
-}
-
-function addDaysToValue(value, days){
-    const date = new Date(value + "T00:00:00");
-    date.setDate(date.getDate() + days);
-    return toDateValue(date);
-}
-
-/* Saturday on or before the given date value. */
-function getWeekStart(value){
-    const date = new Date(value + "T00:00:00");
-    return addDaysToValue(value, -((date.getDay() + 1) % 7));
-}
-
-function getBranchDailyThreshold(branch){
-    try{
-        const list = JSON.parse(localStorage.getItem("crownBranchMasterList") || "[]");
-        const match = Array.isArray(list) && list.find(function(item){
-            return item && item.name === branch;
-        });
-        const value = match ? Number(match.incomeThreshold) : 0;
-
-        return value > 0 ? value : WEEKLY_CHALLENGE_DEFAULT_THRESHOLD;
-    }catch(error){
-        return WEEKLY_CHALLENGE_DEFAULT_THRESHOLD;
-    }
-}
-
-function formatShortDate(value){
-    return new Date(value + "T00:00:00").toLocaleDateString(
-        "en-PH",
-        { month: "short", day: "numeric" }
-    );
-}
-
-function initializeWeeklyChallenge(){
-    const select = document.getElementById("weeklyChallengeWeek");
-
-    if(!select){
-        return;
-    }
-
-    const currentStart = getWeekStart(toDateValue(new Date()));
-
-    /* Current week plus the previous 25 (about six months). */
-    for(let i = 0; i < 26; i++){
-        const start = addDaysToValue(currentStart, -7 * i);
-        const option = document.createElement("option");
-
-        option.value = start;
-        option.textContent =
-            formatShortDate(start) + " – " +
-            new Date(addDaysToValue(start, 6) + "T00:00:00").toLocaleDateString(
-                "en-PH",
-                { month: "short", day: "numeric", year: "numeric" }
-            ) + (i === 0 ? " (This week)" : "");
-
-        select.appendChild(option);
-    }
-
-    select.value = currentStart;
-    select.addEventListener("change", renderWeeklyChallenge);
-}
-
-function renderWeeklyChallenge(){
-    const select = document.getElementById("weeklyChallengeWeek");
-    const daysBox = document.getElementById("weeklyChallengeDays");
-    const branch = getActiveBranch();
-
-    if(!select || !daysBox || !branch){
-        return;
-    }
-
-    const weekStart = select.value;
-    const today = toDateValue(new Date());
-    const threshold = getBranchDailyThreshold(branch);
-    let passed = 0;
-    let counted = 0;
-
-    daysBox.innerHTML = WEEK_DAY_LABELS.map(function(label, index){
-        const date = addDaysToValue(weekStart, index);
-        let hit = false;
-
-        if(date <= today){
-            counted++;
-
-            const sales =
-                extractEntries(getDailyRecord(branch, date), date)
-                    .reduce(function(sum, entry){ return sum + entry.cost; }, 0);
-
-            hit = sales >= threshold;
-
-            if(hit){
-                passed++;
-            }
-        }
-
-        return `<div class="${hit ? "passed" : ""}" title="${escapeHtml(formatShortDate(date))}">${label}</div>`;
-    }).join("");
-
-    document.getElementById("weeklyChallengeThreshold").textContent =
-        "₱" + formatNumber(threshold);
-    document.getElementById("weeklyChallengeScore").textContent =
-        passed + " of " + counted;
-
-    /* Only the running week triggers the congratulations. */
-    if(passed >= WEEKLY_CHALLENGE_TARGET && weekStart === getWeekStart(today)){
-        notifyWeeklyChallengeAchieved(branch, weekStart);
-    }
-}
-
-/* Notifies every Active staff member assigned to the branch plus all
-   Admin and Executive Assistant accounts — once per branch per week
-   (tracked in a crown-prefixed key, so it syncs across devices). */
-function notifyWeeklyChallengeAchieved(branch, weekStart){
-    const marker = branch + "|" + weekStart;
-    let notified = {};
-
-    try{
-        notified = JSON.parse(localStorage.getItem(WEEKLY_CHALLENGE_NOTIFIED_KEY) || "{}") || {};
-    }catch(error){
-        notified = {};
-    }
-
-    if(notified[marker]){
-        return;
-    }
-
-    const recipients = (window.CrownAuth?.getUsers?.() || [])
-        .filter(function(user){
-            if(!user || user.status !== "Active" || !user.account){
-                return false;
-            }
-
-            const roles = [user.role, user.secondaryRole];
-
-            return (
-                roles.includes("Admin") ||
-                roles.includes("Executive Assistant") ||
-                (Array.isArray(user.branches) && user.branches.includes(branch))
-            );
-        })
-        .map(function(user){ return user.account; });
-
-    if(recipients.length === 0 || !window.CrownClientNotifications?.broadcast){
-        return;
-    }
-
-    notified[marker] = new Date().toISOString();
-    localStorage.setItem(WEEKLY_CHALLENGE_NOTIFIED_KEY, JSON.stringify(notified));
-
-    window.CrownClientNotifications.broadcast(
-        recipients,
-        "Congratulations, You've accomplished the weekly Challenge. (" + branch + ")",
-        "weekly-challenge"
-    );
-}

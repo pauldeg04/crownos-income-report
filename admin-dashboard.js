@@ -27,6 +27,8 @@
         incident: null
     };
 
+    let weeklyChallenge;
+
     function $(id){ return document.getElementById(id); }
 
     function escapeHtml(value){
@@ -915,6 +917,7 @@
     function renderAll(){
         const month = getMonth();
         renderNotifications();
+        weeklyChallenge?.refresh();
         renderStatistics(month);
         renderShareholders(month);
         renderTherapists(month);
@@ -934,6 +937,8 @@
 
         $("adMonth").value = currentMonthKey();
         $("adMonth").addEventListener("change", renderAll);
+
+        weeklyChallenge = window.CrownWeeklyChallenge?.mount($("adWeeklyChallenge"), getBranches);
 
         renderAll();
 

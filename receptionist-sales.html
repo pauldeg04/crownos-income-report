@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="shared.css">
     <link rel="stylesheet" href="sidebar.css">
     <link rel="stylesheet" href="therapist-sales.css">
+    <link rel="stylesheet" href="weekly-challenge.css">
 
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -283,36 +284,7 @@
 
             </div>
 
-            <div class="daily-sales-panel weekly-challenge-panel">
-
-                <div class="section-heading">
-                    <div>
-                        <p class="section-eyebrow">
-                            Saturday to Friday
-                        </p>
-
-                        <h3>
-                            Weekly Challenge Score Board
-                        </h3>
-                    </div>
-
-                    <select
-                        id="weeklyChallengeWeek"
-                        class="form-select form-select-sm weekly-challenge-select"
-                        aria-label="Select week"
-                    ></select>
-                </div>
-
-                <div class="weekly-challenge-meta">
-                    <span>Daily Threshold:</span>
-                    <strong id="weeklyChallengeThreshold">₱0</strong>
-                    <span>Score:</span>
-                    <strong id="weeklyChallengeScore">0 of 0</strong>
-                </div>
-
-                <div class="weekly-challenge-days" id="weeklyChallengeDays"></div>
-
-            </div>
+            <div id="weeklyChallengeMount"></div>
 
             </div>
 
@@ -419,6 +391,7 @@
 <script type="text/crown-deferred" src="receptionist-sales-access-guard.js"></script>
 <script type="text/crown-deferred" src="sidebar.js"></script>
 <script type="text/crown-deferred" src="points-shared.js"></script>
+<script type="text/crown-deferred" src="weekly-challenge.js"></script>
 <script type="text/crown-deferred" src="receptionist-sales.js"></script>
 
 </body>

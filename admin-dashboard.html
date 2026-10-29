@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="crownos-theme.css">
 <link rel="stylesheet" href="sidebar.css">
 <link rel="stylesheet" href="admin-dashboard.css">
+<link rel="stylesheet" href="weekly-challenge.css">
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -60,6 +61,9 @@
     <h3 class="ad-section-title">Notifications</h3>
     <div class="row g-3 mb-4" id="adNotifications"></div>
 
+    <!-- Weekly Challenge (all branches) -->
+    <div id="adWeeklyChallenge" class="mb-4"></div>
+
     <!-- 2. Statistics -->
     <h3 class="ad-section-title">Statistics <span id="adStatsMonthLabel" class="ad-section-sub"></span></h3>
     <div id="adStatistics" class="mb-4"></div>
@@ -79,6 +83,7 @@
 </div>
 
 <script type="text/crown-deferred" src="terminal-fee.js"></script>
+<script type="text/crown-deferred" src="weekly-challenge.js"></script>
 <script type="text/crown-deferred" src="admin-dashboard.js"></script>
 <script type="text/crown-deferred" src="sidebar.js"></script>
 

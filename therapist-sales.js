@@ -1,3 +1,4 @@
+let weeklyChallenge;
 const THERAPIST_SALES_BRANCH_KEY = "crownSelectedBranch";
 const THERAPIST_SALES_PREFIX = "crownDailySales_";
 const THERAPIST_MASTER_KEY = "crownTherapistMasterList";
@@ -13,6 +14,10 @@ document.addEventListener("DOMContentLoaded", function(){
     initializeDateDropdown();
     attachEvents();
     updateBranchState();
+    weeklyChallenge = CrownWeeklyChallenge.mount(
+        document.getElementById("weeklyChallengeMount"),
+        function(){ return [getActiveBranch()]; }
+    );
     renderTherapistSales();
 });
 
@@ -923,6 +928,7 @@ function updateBranchState(){
 
 function renderTherapistSales(){
     updateBranchState();
+    weeklyChallenge?.refresh();
     populateTherapistDropdown();
 
     const branch =
