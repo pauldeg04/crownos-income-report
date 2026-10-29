@@ -5801,3 +5801,19 @@ multiple attachments.
 - [`manual.html`](manual.html) — Budget Request chapter updated.
 
 **Note:** removing an attachment drops the link only; the file stays in Cloud Storage.
+
+## 2026-10-29 — Receptionist Sales: Weekly Challenge Score Board
+
+**Request:** New table under Receptionist Sales showing how many days in a Sat–Fri week hit the branch's
+Daily Threshold, with a week picker and a congratulations notification at 5.
+
+**Change:**
+- [`receptionist-sales.html`](receptionist-sales.html) / [`receptionist-sales.js`](receptionist-sales.js) /
+  [`therapist-sales.css`](therapist-sales.css) — new panel under Special Incentive: week picker (current
+  week default, 26 weeks), Daily Threshold (Branch Settings `incomeThreshold`, default ₱15,000), Score
+  "N of days-so-far", Sat–Fri boxes (green = day sales ≥ threshold, same `>=` rule as Monthly Report).
+- At score ≥ 5 in the current week, `CrownClientNotifications.broadcast` notifies Active branch staff +
+  all Admin / Executive Assistant accounts. Once per branch per week via `crownWeeklyChallengeNotified`.
+- [`manual.html`](manual.html) — Receptionist Sales chapter updated.
+
+**Note:** Notification fires only when someone opens the page while the score is ≥ 5 (no server job). No rules deploy.
