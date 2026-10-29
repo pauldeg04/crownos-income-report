@@ -63,7 +63,26 @@ function pesoPdf(amount){
 }
 
 let currentReportDays = [];
-const HIGH_SALES_THRESHOLD = 15000;
+const DEFAULT_HIGH_SALES_THRESHOLD = 15000;
+
+/* Daily income threshold set per branch in Branch Settings → Branches. */
+function getHighSalesThreshold(branchName){
+    try{
+        const list = JSON.parse(
+            localStorage.getItem("crownBranchMasterList") || "[]"
+        );
+
+        const match = Array.isArray(list) && list.find(function(item){
+            return item && item.name === branchName;
+        });
+
+        const value = match ? Number(match.incomeThreshold) : 0;
+
+        return value > 0 ? value : DEFAULT_HIGH_SALES_THRESHOLD;
+    }catch(error){
+        return DEFAULT_HIGH_SALES_THRESHOLD;
+    }
+}
 let currentReportTotals = { cash: 0, gcash: 0, bank: 0, terminal: 0 };
 
 function formatDisplayDate(dateString){
@@ -265,6 +284,7 @@ function generateReport(){
 
     const [year, month] = monthValue.split("-").map(Number);
     const daysInMonth = getDaysInMonth(year, month);
+    const highSalesThreshold = getHighSalesThreshold(branch);
 
     for(let day = 1; day <= daysInMonth; day++){
         const dayString = String(day).padStart(2, "0");
@@ -296,7 +316,7 @@ function generateReport(){
                 : "no-sales"
         );
 
-        if(dailyTotal >= HIGH_SALES_THRESHOLD){
+        if(dailyTotal >= highSalesThreshold){
             row.classList.add("high-sales");
         }
 

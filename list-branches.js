@@ -19,6 +19,8 @@ const DEFAULT_BRANCHES = [
     }
 ];
 
+const DEFAULT_INCOME_THRESHOLD = 15000;
+
 let branches = [];
 let blankRowOpen = false;
 
@@ -196,6 +198,11 @@ function migrateExistingBranches(){
             migrated.showOnAdminDashboard = false;
         }
 
+        /* Same reason: keep the per-branch daily income threshold. */
+        if(Number(branch.incomeThreshold) > 0){
+            migrated.incomeThreshold = Number(branch.incomeThreshold);
+        }
+
         if(!branch.id){
             changed = true;
         }
@@ -351,6 +358,14 @@ function createSavedRow(branch, index){
             }
         </td>
 
+        <td class="threshold-cell">
+            <span class="saved-threshold">
+                ₱${(Number(branch.incomeThreshold) > 0
+                    ? Number(branch.incomeThreshold)
+                    : DEFAULT_INCOME_THRESHOLD).toLocaleString("en-PH")}
+            </span>
+        </td>
+
         <td class="admin-dashboard-cell text-center">
             <div class="form-check form-switch d-inline-block m-0">
                 <input
@@ -493,6 +508,17 @@ function addBlankRow(){
             >
         </td>
 
+        <td>
+            <input
+                type="number"
+                class="form-control threshold-input"
+                placeholder="15000"
+                value="15000"
+                min="1"
+                step="any"
+            >
+        </td>
+
         <td class="text-center text-muted">Shown</td>
 
         <td>
@@ -525,7 +551,8 @@ function addBlankRow(){
         beds: row.querySelector(".bed-count-input"),
         opening: row.querySelector(".opening-time-input"),
         closing: row.querySelector(".closing-time-input"),
-        location: row.querySelector(".location-input")
+        location: row.querySelector(".location-input"),
+        threshold: row.querySelector(".threshold-input")
     };
 
     row
@@ -594,6 +621,14 @@ function saveNewBranch(row){
             ".location-input"
         );
 
+    const thresholdInput =
+        row.querySelector(
+            ".threshold-input"
+        );
+
+    const thresholdAmount =
+        Number(thresholdInput.value);
+
     const branchName =
         nameInput.value.trim();
 
@@ -656,6 +691,15 @@ function saveNewBranch(row){
         return;
     }
 
+    if(!(thresholdAmount > 0)){
+        alert(
+            "Please enter a valid daily income threshold."
+        );
+
+        thresholdInput.focus();
+        return;
+    }
+
     const alreadyExists =
         branches.some(
             function(branch){
@@ -683,6 +727,7 @@ function saveNewBranch(row){
         closingTime: closingTime,
         latitude: coordinates ? coordinates.lat : null,
         longitude: coordinates ? coordinates.lng : null,
+        incomeThreshold: thresholdAmount,
         showOnAdminDashboard: true
     });
 
@@ -729,6 +774,11 @@ function editBranch(row, branchId){
     const locationCell =
         row.querySelector(
             ".location-cell"
+        );
+
+    const thresholdCell =
+        row.querySelector(
+            ".threshold-cell"
         );
 
     const actionCell =
@@ -781,6 +831,16 @@ function editBranch(row, branchId){
         >
     `;
 
+    thresholdCell.innerHTML = `
+        <input
+            type="number"
+            class="form-control edit-threshold-input"
+            value="${Number(branch.incomeThreshold) > 0 ? Number(branch.incomeThreshold) : DEFAULT_INCOME_THRESHOLD}"
+            min="1"
+            step="any"
+        >
+    `;
+
     actionCell.innerHTML = `
         <button
             type="button"
@@ -822,6 +882,11 @@ function editBranch(row, branchId){
             ".edit-location-input"
         );
 
+    const thresholdInput =
+        row.querySelector(
+            ".edit-threshold-input"
+        );
+
     row
         .querySelector(".update-btn")
         .addEventListener(
@@ -833,7 +898,8 @@ function editBranch(row, branchId){
                     bedsInput.value,
                     openingInput.value,
                     closingInput.value,
-                    locationInput.value
+                    locationInput.value,
+                    thresholdInput.value
                 );
             }
         );
@@ -852,7 +918,8 @@ function editBranch(row, branchId){
         bedsInput,
         openingInput,
         closingInput,
-        locationInput
+        locationInput,
+        thresholdInput
     ].forEach(function(input){
         input.addEventListener(
             "keydown",
@@ -867,7 +934,8 @@ function editBranch(row, branchId){
                         bedsInput.value,
                         openingInput.value,
                         closingInput.value,
-                        locationInput.value
+                        locationInput.value,
+                        thresholdInput.value
                     );
                 }
 
@@ -1064,7 +1132,8 @@ async function updateBranch(
     bedsValue,
     openingValue,
     closingValue,
-    locationValue
+    locationValue,
+    thresholdValue
 ){
     const newName =
         newValue.trim();
@@ -1119,6 +1188,16 @@ async function updateBranch(
         return;
     }
 
+    const newThreshold = Number(thresholdValue);
+
+    if(!(newThreshold > 0)){
+        alert(
+            "Please enter a valid daily income threshold."
+        );
+
+        return;
+    }
+
     const duplicate =
         branches.some(
             function(branch){
@@ -1159,6 +1238,7 @@ async function updateBranch(
     branch.closingTime = closingValue;
     branch.latitude = coordinates ? coordinates.lat : null;
     branch.longitude = coordinates ? coordinates.lng : null;
+    branch.incomeThreshold = newThreshold;
 
     if(
         localStorage.getItem(
