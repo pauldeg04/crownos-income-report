@@ -800,12 +800,48 @@ function renderServicePoints(entries){
             rows.push({ name: group.name, category: group.category, points: group.points });
         });
 
+    renderIncentives(rows);
+
     body.innerHTML = rows.map(function(row){
         return `
             <tr>
                 <td><strong>${escapeHtml(row.name)}</strong></td>
                 <td>${escapeHtml(row.category)}</td>
                 <td class="commission-cell">${formatNumber(row.points)}</td>
+            </tr>
+        `;
+    }).join("");
+}
+
+/* Special Incentive challenge: monthly point goals. Actuals come from the
+   Services Points rows above, so they always match that table. */
+const INCENTIVE_GOALS = [
+    { label: "Crown Detox & Glow and Recovery Ritual", names: ["Crown Detox and Glow", "The Recovery Ritual"], goal: 750 },
+    { label: "Products", names: ["Products"], goal: 50 },
+    { label: "Add Ons", names: ["Add Ons"], goal: 100 },
+    { label: "VIP", names: ["VIP"], goal: 100 }
+];
+
+function renderIncentives(rows){
+    const body = document.getElementById("incentiveBody");
+
+    if(!body){
+        return;
+    }
+
+    body.innerHTML = INCENTIVE_GOALS.map(function(item){
+        const actual = rows
+            .filter(function(row){ return item.names.indexOf(row.name) !== -1; })
+            .reduce(function(sum, row){ return sum + row.points; }, 0);
+
+        const achieved = actual >= item.goal;
+
+        return `
+            <tr class="${achieved ? "incentive-achieved" : ""}">
+                <td><strong>${escapeHtml(item.label)}</strong></td>
+                <td class="commission-cell">${formatNumber(item.goal)}</td>
+                <td class="commission-cell">${formatNumber(actual)}</td>
+                <td class="commission-cell">${achieved ? "✓ Achieved" : formatNumber(item.goal - actual) + " to go"}</td>
             </tr>
         `;
     }).join("");

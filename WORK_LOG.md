@@ -11,6 +11,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-29 — Receptionist Sales: Special Incentive challenge table
+
+**Request:** Add a table under Daily Sales with monthly point goals (no Incentive column); turn the row a different color once the goal is hit.
+
+**Change:**
+- [`receptionist-sales.html`](receptionist-sales.html) / [`receptionist-sales.js`](receptionist-sales.js) / [`therapist-sales.css`](therapist-sales.css)
+  — new "Special Incentive" table (`renderIncentives`, `INCENTIVE_GOALS`) with Goal, Actual, Status. Goals: Detox & Glow + Recovery Ritual 750, Products 50, Add Ons 100, VIP 100. Actuals are read from the Services Points rows; row turns green at/above goal.
+- [`manual.html`](manual.html) — Receptionist Sales chapter describes the table.
+
+**Note:** Little Crown Head Spa is not counted in the 750 goal.
+
 ## 2026-10-28 — Statistics: Services Share of Sales pie chart
 
 **Request:** Pie chart of Services under Statistics showing each service's percentage of total sales.
