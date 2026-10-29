@@ -5817,3 +5817,9 @@ Daily Threshold, with a week picker and a congratulations notification at 5.
 - [`manual.html`](manual.html) — Receptionist Sales chapter updated.
 
 **Note:** Notification fires only when someone opens the page while the score is ≥ 5 (no server job). No rules deploy.
+
+## 2026-10-29 — Weekly Challenge: plain black Daily Threshold / Score text
+
+**Request:** Change the red Daily Threshold and Score text to normal black.
+
+**Change:** [`therapist-sales.css`](therapist-sales.css) — removed the red `.weekly-challenge-meta strong` color rule. Styling only; manual unchanged.
