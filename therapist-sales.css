@@ -686,10 +686,6 @@
     margin:4px 0 14px;
 }
 
-.weekly-challenge-meta strong{
-    color:#c0392b;
-}
-
 .weekly-challenge-days{
     display:grid;
     grid-template-columns:repeat(7, 1fr);
