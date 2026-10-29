@@ -11,6 +11,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-29 — Per-branch Daily Income Threshold for Monthly Summary highlight
+
+**Request:** In Branch Settings, add a Threshold input per branch (Edit); use it as the basis for the
+Monthly Summary dark-green highlight instead of a fixed ₱15,000.
+
+**Change:** [`list-branches.html`](list-branches.html) / [`list-branches.js`](list-branches.js) /
+[`list-branches.css`](list-branches.css) — new "Daily Income Threshold (₱)" column, editable on Edit and
+on Add; stored as `incomeThreshold` on the branch record (₱15,000 shown when unset).
+[`monthly-report.js`](monthly-report.js) — `getHighSalesThreshold(branch)` reads it from
+`crownBranchMasterList`, falling back to 15000. [`manual.html`](manual.html) — Chapter 18 updated.
+
 ## 2026-10-29 — Receptionist Sales: Special Incentive challenge table
 
 **Request:** Add a table under Daily Sales with monthly point goals (no Incentive column); turn the row a different color once the goal is hit.
