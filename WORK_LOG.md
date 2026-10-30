@@ -11,6 +11,18 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-30 — Recovery Ritual points 17 → 20
+
+**Request:** Change The Recovery Ritual's points from 17 to 20.
+
+**Change:**
+- [`points-shared.js`](points-shared.js): name rule now gives 20, and the ₱3,400 cost fallback is 20 too.
+- [`receptionist-sales.js`](receptionist-sales.js) and [`admin-dashboard.js`](admin-dashboard.js): Services Points row tier `Combo:17` → `Combo:20`.
+- [`manual.html`](manual.html): point table now reads 7 / 11 / 20.
+- Points are computed when reports open, so past sales are re-scored at 20 too. Counts toward the Detox & Glow + Recovery Ritual challenge (goal 750).
+
+---
+
 ## 2026-10-30 — Points for Family bundles
 
 **Request:** Family Duo / Trio / Royal Four earned 0 points (no name rule, and their prices aren't on the cost table). Give them points split equally per therapist: Duo 8 (4 each), Trio 15 (5 each), Royal Four 24 (6 each).

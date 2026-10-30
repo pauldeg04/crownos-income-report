@@ -23,7 +23,7 @@
        Anything that can't be matched earns 0 and is flagged in the table. */
     const POINTS_BY_COST = {
         600: 3, 900: 4, 1000: 5, 1400: 7, 1500: 7,
-        2000: 10, 2300: 11, 3400: 17
+        2000: 10, 2300: 11, 3400: 20
     };
 
     /* Add-ons are services in the List of Services whose category is Add-on. */
@@ -90,7 +90,7 @@
         else if(/family/.test(name) && /royal/.test(name)){ each = 6; category = "Family"; }
         else if(/reset/.test(name) && /duo/.test(name)){ each = 7; category = "Combo"; }
         else if(/serenity/.test(name) && /set/.test(name)){ each = 11; category = "Combo"; }
-        else if(/recovery/.test(name) && /ritual/.test(name)){ each = 17; category = "Combo"; }
+        else if(/recovery/.test(name) && /ritual/.test(name)){ each = 20; category = "Combo"; }
         else if(/detox/.test(name) && /glow/.test(name)){ each = 10; category = "Head Spa"; }
         else if(/\breset\b/.test(name)){ each = 3; category = "Head Spa"; }
         else if(/serenity/.test(name)){ each = 5; category = "Head Spa"; }
