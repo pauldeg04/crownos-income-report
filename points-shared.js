@@ -82,7 +82,13 @@
         let each = null;
         let category = "";
 
-        if(/reset/.test(name) && /duo/.test(name)){ each = 7; category = "Combo"; }
+        /* Family bundles: every therapist's item (principal + each
+           locked ₱0 companion) earns an equal share — Duo 4×2 = 8,
+           Trio 5×3 = 15, Royal Four 6×4 = 24. */
+        if(/family/.test(name) && /duo/.test(name)){ each = 4; category = "Family"; }
+        else if(/family/.test(name) && /trio/.test(name)){ each = 5; category = "Family"; }
+        else if(/family/.test(name) && /royal/.test(name)){ each = 6; category = "Family"; }
+        else if(/reset/.test(name) && /duo/.test(name)){ each = 7; category = "Combo"; }
         else if(/serenity/.test(name) && /set/.test(name)){ each = 11; category = "Combo"; }
         else if(/recovery/.test(name) && /ritual/.test(name)){ each = 17; category = "Combo"; }
         else if(/detox/.test(name) && /glow/.test(name)){ each = 10; category = "Head Spa"; }

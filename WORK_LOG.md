@@ -11,6 +11,17 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-30 — Points for Family bundles
+
+**Request:** Family Duo / Trio / Royal Four earned 0 points (no name rule, and their prices aren't on the cost table). Give them points split equally per therapist: Duo 8 (4 each), Trio 15 (5 each), Royal Four 24 (6 each).
+
+**Change:**
+- [`points-shared.js`](points-shared.js): `getPointsForItem` now matches Family Duo / Trio / Royal Four by name (category "Family") and gives 4 / 5 / 6 points per item. The principal and each ₱0 companion are separate items, so each therapist earns their share and the bundle totals 8 / 15 / 24.
+- [`manual.html`](manual.html): point table lists the Family bundles.
+- No change to commission (still split equally by price).
+
+---
+
 ## 2026-10-30 — Receipt Gallery page (Compliance)
 
 **Request:** New Receipt Gallery page under Compliance. Details: Particular, Date, Amount, Notes, attachment; table shows who uploaded. Admin and Executive Assistant only; EA can upload, Admin controls everything.
