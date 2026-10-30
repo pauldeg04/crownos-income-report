@@ -388,7 +388,7 @@
             openView(id);
         }).catch(function(error){
             console.error("Unable to add update:", error);
-            alert("Unable to upload the attachment. Please try again.");
+            alert("Unable to add the update (" + (error && (error.code || error.message) || "unknown error") + "). Please try again.");
             btn.disabled = false;
             btn.textContent = "Add";
         });
