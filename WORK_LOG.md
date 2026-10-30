@@ -5837,3 +5837,14 @@ Daily Threshold, with a week picker and a congratulations notification at 5.
 - [`manual.html`](manual.html) — Admin Dashboard and Therapist Sales chapters updated.
 
 **Note:** No rules deploy.
+
+## 2026-10-30 — Budget Request: reason required when declining
+
+**Request:** When declining a budget request, give a text box for the reason, and show it on the declined request.
+
+**Change:**
+- [`budget-request.html`](budget-request.html) / [`budget-request.js`](budget-request.js) / [`budget-request.css`](budget-request.css) — Decline opens a "Reason for declining" modal (required); saved as `declineReason`. Shown under Declined in the table and as "Reason for Decline" in View.
+- [`firestore.rules`](firestore.rules) — `declineReason` allowed in the Pending → Declined/Done update.
+- [`manual.html`](manual.html) — Budget Request chapter updated.
+
+**Note:** Rules deploy required. Requests declined before this have no reason.

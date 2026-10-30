@@ -272,7 +272,7 @@ service cloud.firestore {
         resource.data.status == 'Pending' &&
         request.resource.data.status in ['Declined', 'Done'] &&
         request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['status', 'proofUrl', 'proofPath', 'proofName',
+          .hasOnly(['status', 'proofUrl', 'proofPath', 'proofName', 'declineReason',
                     'actedByAccount', 'actedByName', 'actedAt']);
       // Admin may fix the requestor's attachments on a request in any status.
       allow update: if request.auth != null &&

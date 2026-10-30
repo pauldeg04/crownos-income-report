@@ -150,6 +150,7 @@
 .budget-soon{ color:#fd7e14; font-weight:700; }
 .budget-normal{ color:#000; }
 .budget-declined{ color:#dc3545; font-weight:700; }
+.budget-decline-reason{ color:#6c757d; font-size:.8rem; margin-top:2px; white-space:pre-wrap; }
 .budget-done{ color:#198754; font-weight:700; }
 .budget-detail-item{
     display:flex;

@@ -278,6 +278,26 @@
         </div>
     </div>
 
+    <!-- Decline reason modal (Admin) -->
+    <div class="budget-modal-backdrop d-none" id="budgetDeclineBackdrop">
+        <div class="budget-modal">
+            <div class="budget-modal-header">
+                <h4>Decline Request</h4>
+                <button type="button" class="budget-modal-close" id="budgetDeclineCloseBtn">&times;</button>
+            </div>
+
+            <div class="budget-modal-body">
+                <label class="form-label fw-semibold" for="budgetDeclineReason">Reason for declining <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="budgetDeclineReason" rows="4" maxlength="500" placeholder="Explain why this request is declined"></textarea>
+            </div>
+
+            <div class="budget-modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="budgetDeclineCancelBtn">Cancel</button>
+                <button type="button" class="btn btn-danger" id="budgetDeclineConfirmBtn">Decline</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Saved payment details modal (Admin) -->
     <div class="budget-modal-backdrop d-none" id="budgetDetailsBackdrop">
         <div class="budget-modal">

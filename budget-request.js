@@ -86,7 +86,8 @@
 
     function statusHtml(request){
         if(request.status === "Declined"){
-            return `<span class="budget-declined">Declined</span>`;
+            return `<span class="budget-declined">Declined</span>` +
+                (request.declineReason ? `<div class="budget-decline-reason">${escapeHtml(request.declineReason)}</div>` : "");
         }
 
         if(request.status === "Done"){
@@ -245,6 +246,10 @@
             html += `<div class="budget-view-row"><strong>Date Settled</strong><span>${escapeHtml(settledDay(r))}</span></div>`;
         }
 
+        if(r.status === "Declined" && r.declineReason){
+            html += `<div class="budget-view-row"><strong>Reason for Decline</strong><span>${escapeHtml(r.declineReason)}</span></div>`;
+        }
+
         if(r.status === "Done" && r.proofUrl){
             html += `<div class="budget-view-row"><strong>Proof of Payment</strong><span><a href="${escapeHtml(r.proofUrl)}" target="_blank" rel="noopener">${escapeHtml(r.proofName || "View attachment")}</a></span></div>`;
         }
@@ -271,19 +276,37 @@
         };
     }
 
-    async function declineActive(){
-        if(!activeId || !confirm("Decline this budget request?")){ return; }
+    function declineActive(){
+        if(!activeId){ return; }
+        $("budgetDeclineReason").value = "";
+        $("budgetDeclineBackdrop").classList.remove("d-none");
+        $("budgetDeclineReason").focus();
+    }
 
-        const btn = $("budgetDeclineBtn");
+    function closeDecline(){
+        $("budgetDeclineBackdrop").classList.add("d-none");
+    }
+
+    async function confirmDecline(){
+        const reason = $("budgetDeclineReason").value.trim();
+
+        if(!reason){
+            alert("Please enter the reason for declining this request.");
+            return;
+        }
+
+        const btn = $("budgetDeclineConfirmBtn");
         btn.disabled = true;
 
         try{
             await firebase.firestore().collection(COLLECTION).doc(activeId)
-                .update(Object.assign({ status: "Declined" }, actorFields()));
+                .update(Object.assign({ status: "Declined", declineReason: reason }, actorFields()));
+            closeDecline();
             closeView();
         }catch(error){
             console.error("Unable to decline budget request:", error);
             alert("Unable to decline this request. Please try again.");
+        }finally{
             btn.disabled = false;
         }
     }
@@ -749,6 +772,10 @@
         $("budgetBackBtn").addEventListener("click", closeView);
         $("budgetDeclineBtn").addEventListener("click", declineActive);
         $("budgetDoneBtn").addEventListener("click", openProof);
+
+        $("budgetDeclineCloseBtn").addEventListener("click", closeDecline);
+        $("budgetDeclineCancelBtn").addEventListener("click", closeDecline);
+        $("budgetDeclineConfirmBtn").addEventListener("click", confirmDecline);
         bindBackdropClose("budgetViewBackdrop", closeView);
 
         $("budgetEditCloseBtn").addEventListener("click", closeEdit);
