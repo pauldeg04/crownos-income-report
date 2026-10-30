@@ -811,7 +811,7 @@
         { name: "Crown Recovery", category: "Massage", tier: "Massage:10" },
         { name: "The Reset Duo", category: "Combo", tier: "Combo:7" },
         { name: "The Serenity Set", category: "Combo", tier: "Combo:11" },
-        { name: "The Recovery Ritual", category: "Combo", tier: "Combo:20" }
+        { name: "The Recovery Ritual", category: "Combo", tier: "Combo:17" }
     ];
 
     function servicePointRows(branch, month){

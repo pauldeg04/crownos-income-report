@@ -11,6 +11,15 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-30 — Recovery Ritual points back to 17
+
+**Request:** Revert the 17 → 20 change; The Recovery Ritual stays at 17 points.
+
+**Change:**
+- [`points-shared.js`](points-shared.js), [`receptionist-sales.js`](receptionist-sales.js), [`admin-dashboard.js`](admin-dashboard.js) and [`manual.html`](manual.html) restored to 17 (name rule, ₱3,400 cost fallback, `Combo:17` tier, manual table 7 / 11 / 17).
+
+---
+
 ## 2026-10-30 — Recovery Ritual points 17 → 20
 
 **Request:** Change The Recovery Ritual's points from 17 to 20.
