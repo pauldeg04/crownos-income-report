@@ -762,6 +762,16 @@
         bindBackdropClose("budgetDetailsBackdrop", closeDetails);
 
         $("budgetRequestBtn").addEventListener("click", openForm);
+
+        /* Sent here from a Work Ticket's "Request Budget" button: open the
+           form with the Note already pointing back at that task. */
+        const fromTicket = new URLSearchParams(window.location.search).get("fromTicket");
+
+        if(fromTicket){
+            openForm();
+            $("budgetNoteInput").value = "From Work Ticket task: " + fromTicket;
+            history.replaceState(null, "", window.location.pathname);
+        }
         $("budgetFormCloseBtn").addEventListener("click", closeForm);
         $("budgetFormCancelBtn").addEventListener("click", closeForm);
         $("budgetFormSubmitBtn").addEventListener("click", submitForm);

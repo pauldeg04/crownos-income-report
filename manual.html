@@ -324,6 +324,12 @@
                                     </a>
                                 </li>
                                 <li>
+                                    <a href="#ch-work-ticket">
+                                        <span class="manual-ch">29b</span>
+                                        <span>Work Ticket</span>
+                                    </a>
+                                </li>
+                                <li>
                                     <a href="#ch-daily-monitoring">
                                         <span class="manual-ch">30</span>
                                         <span>Daily Monitoring Sheet</span>
@@ -3473,6 +3479,46 @@ Done                 →  Maintenance: tick "Mark as Done" inside View
     attachments &mdash; press <span class="ui">Remove</span> on a wrong one, and/or choose one or more new files under
     <strong>Add attachments</strong> &mdash; then press <span class="ui">Save</span>. Only the attachments change; the
     rest of the request is untouched.
+  </p>
+</section>
+
+<section id="ch-work-ticket">
+  <h2><span class="h2-num">Chapter 29b</span>Work Ticket</h2>
+
+  <ul class="roleline">
+    <li><span class="pill pill-role">Admin</span> <span class="text-muted">(sees everything, assigns Tasks)</span></li>
+    <li><span class="pill pill-role">Executive Assistant</span> <span class="text-muted">(own tickets and reports)</span></li>
+    <li><span class="pill pill-role">Marketing Agent</span> <span class="text-muted">(own tickets and reports)</span></li>
+  </ul>
+
+  <p class="text-muted">Lives in its own page in Admin Hub &mdash; <strong>Work Ticket</strong>. It can also be added to other accounts under Additional Access in Account Settings.</p>
+
+  <p>The page has two tabs: <strong>Task</strong> and <strong>Shift End Report</strong>.</p>
+
+  <p><strong>Task tab.</strong></p>
+  <ol class="steps">
+    <li>Press <span class="ui">Create Task</span>. <strong>Admin</strong> chooses <strong>Task</strong> (assigned to any user) or <strong>Planned Activities</strong> (for themselves). Executive Assistant and Marketing Agent see <span class="ui">Create Planned Activity</span> and can only plan activities for themselves.</li>
+    <li>Fill in the Task (title), Description, Start Date, Deadline, and Notes. Task and the two dates are required.</li>
+    <li>Press <span class="ui">Create</span>. For a Task, the chosen user receives a notification.</li>
+  </ol>
+
+  <p>
+    Open tickets are listed by Deadline (overdue ones show in red). <span class="ui">View</span> opens the details, where anyone with the ticket can
+    <strong>Add Note</strong> and <strong>Add Attachment</strong> as many times as needed; the other party is notified of each update.
+    <span class="ui">Done</span> marks a ticket complete. In the View window, <span class="ui">Cancel Task</span> / <span class="ui">Cancel Activity</span> (bottom left) cancels an open ticket after a confirmation, and
+    <span class="ui">Request Budget</span> opens the Budget Request form with the Note already filled in as coming from this task.
+  </p>
+
+  <p>
+    <strong>Accomplished Tasks</strong> (collapsed by default &mdash; press <span class="ui">Show</span>) holds Done and Cancelled tickets.
+    Admin sees every ticket; everyone else sees only tickets assigned to them or created by them. A Planned Activity of Admin is seen by Admin only; Planned Activities of Executive Assistant and Marketing Agent are also seen by Admin.
+  </p>
+
+  <p>
+    <strong>Shift End Report tab.</strong> A daily journal of what each person did. Press <span class="ui">File Report</span>, confirm the Date and Shift (Opening, Mid, Closing),
+    tick the open tickets you finished (they are marked Done) and/or type other work under <strong>Completed Today</strong>, then add
+    <strong>Not Finished and Why</strong>, <strong>Plan for Tomorrow</strong>, and <strong>Issues or Support Needed from Admin</strong>. If Issues is filled in, Admin is notified.
+    Admin sees every report (filter by User or Date) and a list of who has <strong>not yet filed today</strong>; everyone else sees only their own reports.
   </p>
 </section>
 

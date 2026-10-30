@@ -11,6 +11,23 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-30 — Work Ticket page (Admin Hub)
+
+**Request:** New Work Ticket page for Admin, Executive Assistant and Marketing, with a Task tab (Tasks and Planned Activities) and a Shift End Report tab.
+
+**Change:**
+- New [`work-ticket.html`](work-ticket.html) / [`work-ticket.js`](work-ticket.js) / [`work-ticket.css`](work-ticket.css). Tickets stored in `crownWorkTickets`, shift reports in `crownShiftReports` (synced by `firebase-sync.js`).
+- Admin creates Tasks (any active user, notified) and Planned Activities; EA / Marketing create Planned Activities only. Fields: Task, Description, Start Date, Deadline, Notes. Admin sees all; others see tickets they own or created.
+- View window: repeatable Add Note / Add Attachment, Cancel Task/Activity, Request Budget. Collapsible Accomplished Tasks table (Done + Cancelled).
+- Shift End Report: Date, Shift, Completed Today (tick open tickets → Done), Not Finished, Plan, Issues (notifies Admin); Admin sees all reports and who has not filed today.
+- [`access-control.js`](access-control.js), [`sidebar.js`](sidebar.js) (menu, page title, `work-ticket` notification type), [`account-settings.js`](account-settings.js) (optional access list).
+- [`budget-request.js`](budget-request.js) — `?fromTicket=` opens the form with Note "From Work Ticket task: …".
+- [`storage.rules`](storage.rules) — new `workTicketFiles` path (10 MB cap). [`manual.html`](manual.html) — Chapter 29b.
+
+**Note:** Storage rules deploy required for note attachments.
+
+---
+
 ## 2026-10-30 — Budget Request: reason required when declining
 
 **Request:** When declining a budget request, give a text box for the reason, and show it on the declined request.

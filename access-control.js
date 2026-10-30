@@ -304,6 +304,12 @@
             "Tech Support"
         ],
 
+        "work-ticket.html": [
+            "Admin",
+            "Executive Assistant",
+            "Marketing Agent"
+        ],
+
         "201-files.html": [
             "Admin",
             "Executive Assistant"

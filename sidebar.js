@@ -258,6 +258,12 @@
         },
 
         {
+            label: "Work Ticket",
+            href: "work-ticket.html",
+            roles: ["Admin", "Executive Assistant", "Marketing Agent"]
+        },
+
+        {
             label: "Bulletin Board",
             href: "bulletin-board.html",
             roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support"]
@@ -1649,6 +1655,7 @@
         memo: "bulletin-board.html?tab=memo",
         announcement: "bulletin-board.html?tab=announcement",
         "booking-request": "booking-requests.html",
+        "work-ticket": "work-ticket.html",
         "sale-deleted": "index.html",
         "tech-support-maintenance": "inventory-techsupport.html?tab=maintenance",
         "tech-support-collaterals": "inventory-techsupport.html?tab=collaterals"
@@ -1736,6 +1743,7 @@
             "leave-requests.html": "Leave Request",
             "incident-report.html": "Incident Report",
             "budget-request.html": "Budget Request",
+            "work-ticket.html": "Work Ticket",
             "201-files.html": "201 Files",
             "bulletin-board.html": "Bulletin Board",
             "staff-management.html": "Staff Management",

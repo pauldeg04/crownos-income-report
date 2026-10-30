@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crown Head Spa - Work Ticket</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0B1849">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CrownOS">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="sidebar.css">
+<link rel="stylesheet" href="work-ticket.css">
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
+    <script src="crown-store.js"></script>
+    <script type="text/crown-deferred" src="firebase-init.js"></script>
+    <script type="text/crown-deferred" src="pwa-register.js"></script>
+    <script type="text/crown-deferred" src="client-store.js"></script>
+    <script type="text/crown-deferred" src="firebase-sync.js"></script>
+    <script type="text/crown-deferred" src="activity-log.js"></script>
+    <script type="text/crown-deferred" src="access-control.js"></script>
+    <script type="text/crown-deferred" src="notifications.js"></script>
+    <script type="text/crown-deferred" src="push-notifications.js"></script>
+</head>
+
+<body>
+
+<div class="container-fluid px-3 px-lg-4 py-4">
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <div class="page-heading">
+                <div>
+                    <h2 class="fw-bold text-primary mb-0">Work Ticket</h2>
+                    <p class="text-muted mb-0">Assign tasks, plan your own activities, and file your shift end report.</p>
+                </div>
+
+                <a href="home.html" class="btn-dashboard text-decoration-none">← Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-3" id="wtTabs">
+        <li class="nav-item"><button type="button" class="nav-link active" data-tab="task">Task</button></li>
+        <li class="nav-item"><button type="button" class="nav-link" data-tab="shift">Shift End Report</button></li>
+    </ul>
+
+    <div id="wtTaskPanel">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <h5 class="fw-bold text-primary mb-0">Tasks</h5>
+                        <div class="text-muted small">Tasks and planned activities.</div>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="wtCreateBtn">Create Task</button>
+                </div>
+
+                <div class="wt-filters">
+                    <div>
+                        <label for="wtUserFilter">User</label>
+                        <select class="form-select" id="wtUserFilter"><option value="">All Users</option></select>
+                    </div>
+                    <div>
+                        <label for="wtTypeFilter">Type</label>
+                        <select class="form-select" id="wtTypeFilter">
+                            <option value="">All</option>
+                            <option value="Task">Task</option>
+                            <option value="Planned Activity">Planned Activity</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table wt-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Task</th>
+                                <th>User</th>
+                                <th>Start Date</th>
+                                <th>Deadline</th>
+                                <th>Created by</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wtTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="wt-empty d-none" id="wtEmptyState">No tickets found.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="wtDonePanel" class="card shadow-sm border-0 mt-4">
+        <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="fw-bold text-primary mb-0">Accomplished Tasks</h5>
+                    <div class="text-muted small">Completed tasks and planned activities.</div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="wtDoneToggle">Show ▾</button>
+            </div>
+
+            <div id="wtDoneSection" class="d-none mt-3">
+                <div class="table-responsive">
+                    <table class="table wt-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Task</th>
+                                <th>User</th>
+                                <th>Start Date</th>
+                                <th>Deadline</th>
+                                <th>Completed</th>
+                                <th>Created by</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wtDoneBody"></tbody>
+                    </table>
+                </div>
+                <div class="wt-empty d-none" id="wtDoneEmpty">No accomplished tasks yet.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="wtShiftPanel" class="d-none">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <h5 class="fw-bold text-primary mb-0">Shift End Report</h5>
+                        <div class="text-muted small">Daily journal of what was done each shift.</div>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="srCreateBtn">File Report</button>
+                </div>
+
+                <div class="alert alert-warning py-2 d-none" id="srMissing"></div>
+
+                <div class="wt-filters" id="srFilters">
+                    <div>
+                        <label for="srUserFilter">User</label>
+                        <select class="form-select" id="srUserFilter"><option value="">All Users</option></select>
+                    </div>
+                    <div>
+                        <label for="srDateFilter">Date</label>
+                        <input type="date" class="form-control" id="srDateFilter">
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary" id="srClearDateBtn">Clear Date</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table wt-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Shift</th>
+                                <th>User</th>
+                                <th>Done</th>
+                                <th>Not Finished</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="srTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="wt-empty d-none" id="srEmptyState">No reports found.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task type chooser -->
+    <div class="wt-modal-backdrop d-none" id="wtChooseBackdrop">
+        <div class="wt-modal wt-modal-sm">
+            <div class="wt-modal-header">
+                <h4>Create</h4>
+                <button type="button" class="wt-modal-close" data-close="wtChooseBackdrop">&times;</button>
+            </div>
+            <div class="wt-modal-body d-grid gap-2">
+                <button type="button" class="btn btn-primary" data-type="Task">Task</button>
+                <button type="button" class="btn btn-outline-primary" data-type="Planned Activity">Planned Activities</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="wt-modal-backdrop d-none" id="wtFormBackdrop">
+        <div class="wt-modal">
+            <div class="wt-modal-header">
+                <h4 id="wtFormTitle">Create Task</h4>
+                <button type="button" class="wt-modal-close" data-close="wtFormBackdrop">&times;</button>
+            </div>
+            <div class="wt-modal-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" for="wtUserInput">User</label>
+                        <select class="form-select" id="wtUserInput"></select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" for="wtTitleInput">Task <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="wtTitleInput" maxlength="150">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" for="wtDescInput">Description</label>
+                        <textarea class="form-control" id="wtDescInput" rows="3" maxlength="1000"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="wtStartInput">Start Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="wtStartInput">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="wtDeadlineInput">Deadline <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="wtDeadlineInput">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" for="wtNotesInput">Notes</label>
+                        <textarea class="form-control" id="wtNotesInput" rows="2" maxlength="1000" placeholder="Remarks and other notes"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="wt-modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-close="wtFormBackdrop">Cancel</button>
+                <button type="button" class="btn btn-primary" id="wtSubmitBtn">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shift End Report form -->
+    <div class="wt-modal-backdrop d-none" id="srFormBackdrop">
+        <div class="wt-modal">
+            <div class="wt-modal-header">
+                <h4>Shift End Report</h4>
+                <button type="button" class="wt-modal-close" data-close="srFormBackdrop">&times;</button>
+            </div>
+            <div class="wt-modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="srDateInput">Date</label>
+                        <input type="date" class="form-control" id="srDateInput">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" for="srShiftInput">Shift</label>
+                        <select class="form-select" id="srShiftInput">
+                            <option>Opening</option>
+                            <option>Mid</option>
+                            <option>Closing</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Completed Today</label>
+                        <div id="srTicketList" class="mb-2"></div>
+                        <textarea class="form-control" id="srDoneInput" rows="3" placeholder="Other work not tied to a ticket (one item per line)"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" for="srNotFinishedInput">Not Finished and Why</label>
+                        <textarea class="form-control" id="srNotFinishedInput" rows="2"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" for="srPlanInput">Plan for Tomorrow</label>
+                        <textarea class="form-control" id="srPlanInput" rows="2"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" for="srIssuesInput">Issues or Support Needed from Admin</label>
+                        <textarea class="form-control" id="srIssuesInput" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="wt-modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-close="srFormBackdrop">Cancel</button>
+                <button type="button" class="btn btn-primary" id="srSubmitBtn">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shift End Report view -->
+    <div class="wt-modal-backdrop d-none" id="srViewBackdrop">
+        <div class="wt-modal">
+            <div class="wt-modal-header">
+                <h4>Shift End Report</h4>
+                <button type="button" class="wt-modal-close" data-close="srViewBackdrop">&times;</button>
+            </div>
+            <div class="wt-modal-body" id="srViewBody"></div>
+            <div class="wt-modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-close="srViewBackdrop">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View -->
+    <div class="wt-modal-backdrop d-none" id="wtViewBackdrop">
+        <div class="wt-modal">
+            <div class="wt-modal-header">
+                <h4 id="wtViewTitle">Ticket</h4>
+                <button type="button" class="wt-modal-close" data-close="wtViewBackdrop">&times;</button>
+            </div>
+            <div class="wt-modal-body" id="wtViewBody"></div>
+            <div class="wt-modal-footer wt-footer-split">
+                <div class="d-flex gap-2" id="wtViewActions"></div>
+                <button type="button" class="btn btn-outline-secondary" data-close="wtViewBackdrop">Close</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script type="text/crown-deferred" src="work-ticket.js"></script>
+<script type="text/crown-deferred" src="sidebar.js"></script>
+</body>
+</html>
