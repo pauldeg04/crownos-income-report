@@ -74,6 +74,11 @@
             "Admin"
         ],
 
+        "receipt-gallery.html": [
+            "Admin",
+            "Executive Assistant"
+        ],
+
         "bir-compliance.html": [
             "Admin",
             "Executive Assistant"

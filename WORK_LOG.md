@@ -11,6 +11,19 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-30 — Receipt Gallery page (Compliance)
+
+**Request:** New Receipt Gallery page under Compliance. Details: Particular, Date, Amount, Notes, attachment; table shows who uploaded. Admin and Executive Assistant only; EA can upload, Admin controls everything.
+
+**Change:**
+- New [`receipt-gallery.html`](receipt-gallery.html) / [`receipt-gallery.js`](receipt-gallery.js) / [`receipt-gallery.css`](receipt-gallery.css). Receipts stored in `crownReceipts` (synced by `firebase-sync.js`); attachments in Cloud Storage `receiptGalleryFiles/`.
+- Admin and EA both see all receipts and can upload; only Admin can Edit (details, add attachments) or Delete. Filters: Month, Uploaded by, Search; running Total.
+- [`access-control.js`](access-control.js), [`sidebar.js`](sidebar.js) (Compliance menu, icon, page title), [`storage.rules`](storage.rules) (`receiptGalleryFiles`, Admin/EA, 10 MB cap), [`work-ticket.css`](work-ticket.css) (`.wt-empty` style), [`manual.html`](manual.html) (Chapter 32a).
+
+**Note:** Storage rules deploy required for attachments.
+
+---
+
 ## 2026-10-30 — Work Ticket: real error shown when an update fails
 
 **Request:** Retry after the attachment upload failed.

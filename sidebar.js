@@ -186,6 +186,7 @@
         "Client Engagement": "💌",
         "Promotions": "💸",
         "BIR Compliance Desk": "🧾",
+        "Receipt Gallery": "🖼",
         "Daily Monitoring Sheet": "✅"
     };
 
@@ -369,6 +370,12 @@
         {
             label: "BIR Compliance Desk",
             href: "bir-compliance.html",
+            roles: ["Admin", "Executive Assistant"]
+        },
+
+        {
+            label: "Receipt Gallery",
+            href: "receipt-gallery.html",
             roles: ["Admin", "Executive Assistant"]
         },
 
@@ -1753,6 +1760,7 @@
             "marketing-client-engagement.html": "Client Engagement",
             "marketing-payday-sale.html": "Promotions",
             "bir-compliance.html": "BIR Compliance Desk",
+            "receipt-gallery.html": "Receipt Gallery",
             "daily-monitoring.html": "Daily Monitoring Sheet"
         };
 

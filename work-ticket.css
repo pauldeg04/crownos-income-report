@@ -173,3 +173,11 @@
 .wt-open{ color:#fd7e14; font-weight:700; }
 .wt-overdue{ color:#dc3545; font-weight:700; }
 .wt-type{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+
+.wt-empty{
+    padding:26px;
+    color:var(--muted);
+    background:var(--surface-soft);
+    border-radius:var(--radius-md);
+    text-align:center;
+}

@@ -132,6 +132,19 @@ service firebase.storage {
         request.resource.size < 10 * 1024 * 1024;
     }
 
+    // Receipt Gallery attachments (receipt-gallery.js). Admin and Executive
+    // Assistant only, matching the page's access-control.js entry; 10 MB cap
+    // on uploads. Admin deletes attachments when a receipt is removed.
+    match /receiptGalleryFiles/{receiptId}/{fileName} {
+      allow read: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'];
+      allow create, update: if request.auth != null &&
+        request.auth.token.role in ['Admin', 'Executive Assistant'] &&
+        request.resource.size < 10 * 1024 * 1024;
+      allow delete: if request.auth != null &&
+        request.auth.token.role == 'Admin';
+    }
+
     // Announcement poster images uploaded from admin-announcement.js /
     // bulletin-board.js's announcement editor (uploadAnnouncementPoster()).
     // Same read/write split as the announcement Firestore collection.
