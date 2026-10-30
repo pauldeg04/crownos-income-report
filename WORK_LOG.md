@@ -11,6 +11,14 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-10-30 — Work Ticket: real error shown when an update fails
+
+**Request:** Retry after the attachment upload failed.
+
+**Change:** [`work-ticket.js`](work-ticket.js) — the Add Note / Add Attachment failure alert now includes the error code or message. Attachments worked once the `workTicketFiles` storage rule was deployed; no other change.
+
+---
+
 ## 2026-10-30 — Work Ticket page (Admin Hub)
 
 **Request:** New Work Ticket page for Admin, Executive Assistant and Marketing, with a Task tab (Tasks and Planned Activities) and a Shift End Report tab.
