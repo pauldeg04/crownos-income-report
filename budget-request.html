@@ -87,6 +87,20 @@
                 <div>
                     <button type="button" class="btn btn-outline-secondary" id="budgetClearDateBtn">Clear Date</button>
                 </div>
+                <div>
+                    <label for="budgetSortFilter">Sort By</label>
+                    <select class="form-select" id="budgetSortFilter">
+                        <option value="">Date Requested (Newest)</option>
+                        <option value="date-asc">Date Requested (Oldest)</option>
+                        <option value="deadline-asc">Deadline (Soonest)</option>
+                        <option value="deadline-desc">Deadline (Latest)</option>
+                        <option value="amount-desc">Amount (Highest)</option>
+                        <option value="amount-asc">Amount (Lowest)</option>
+                        <option value="branch">Branch (A–Z)</option>
+                        <option value="purpose">Purpose (A–Z)</option>
+                        <option value="requester">Requested by (A–Z)</option>
+                    </select>
+                </div>
             </div>
 
             <div class="table-responsive">
@@ -146,6 +160,22 @@
                 </div>
                 <div>
                     <button type="button" class="btn btn-outline-secondary" id="budgetClosedClearDateBtn">Clear Date</button>
+                </div>
+                <div>
+                    <label for="budgetClosedSortFilter">Sort By</label>
+                    <select class="form-select" id="budgetClosedSortFilter">
+                        <option value="">Date Requested (Newest)</option>
+                        <option value="date-asc">Date Requested (Oldest)</option>
+                        <option value="settled-desc">Date Settled (Latest)</option>
+                        <option value="settled-asc">Date Settled (Earliest)</option>
+                        <option value="deadline-asc">Deadline (Soonest)</option>
+                        <option value="deadline-desc">Deadline (Latest)</option>
+                        <option value="amount-desc">Amount (Highest)</option>
+                        <option value="amount-asc">Amount (Lowest)</option>
+                        <option value="branch">Branch (A–Z)</option>
+                        <option value="purpose">Purpose (A–Z)</option>
+                        <option value="requester">Requested by (A–Z)</option>
+                    </select>
                 </div>
             </div>
 

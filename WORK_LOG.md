@@ -11,6 +11,23 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-11-03 — Budget Request: Sort By
+
+**Request:** Add a Sort By dropdown to the Budget Request table (list was always newest-input first);
+sort by branch, date requested, deadline, amount, etc.
+
+**Change:**
+- [`budget-request.html`](budget-request.html) / [`budget-request.js`](budget-request.js) — new **Sort By**
+  dropdown in the filter row of both Requests and Completed Requests: Date Requested (Newest default /
+  Oldest), Deadline (Soonest / Latest), Amount (Highest / Lowest), Branch, Purpose, Requested by (A–Z);
+  Completed Requests also Date Settled (Latest / Earliest). Applied after the Branch / Month / Date
+  filters; ties keep newest-first; blank values (e.g. no deadline) sort last. Not saved between visits.
+- [`manual.html`](manual.html) — Budget Request chapter updated.
+
+**Note:** Display only, no data or rules change. Hosting deploy only.
+
+---
+
 ## 2026-10-30 — Recovery Ritual points back to 17
 
 **Request:** Revert the 17 → 20 change; The Recovery Ritual stays at 17 points.

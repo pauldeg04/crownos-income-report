@@ -130,7 +130,7 @@
         const date = $(table.prefix + "DateFilter").value;
         const branch = $(table.prefix + "BranchFilter").value;
 
-        return requestsCache.filter(function(r){
+        return sortRequests(requestsCache.filter(function(r){
             if(!table.match(r)){
                 return false;
             }
@@ -145,7 +145,45 @@
             }
 
             return !month || (r.createdDate || "").slice(0, 7) === month;
-        });
+        }), $(table.prefix + "SortFilter").value);
+    }
+
+    /* requestsCache is already newest-first, and Array.sort is stable, so
+       ties on the chosen key keep that order. Requests with no value for
+       the key (e.g. no deadline) always go last. */
+    function sortRequests(list, sortBy){
+        const text = function(getter){
+            return function(a, b){ return String(getter(a) || "").localeCompare(String(getter(b) || "")); };
+        };
+
+        /* "" sorts after any real value in either direction. */
+        const key = function(getter, dir){
+            return function(a, b){
+                const va = getter(a);
+                const vb = getter(b);
+
+                if(va === vb){ return 0; }
+                if(va === "" || va == null){ return 1; }
+                if(vb === "" || vb == null){ return -1; }
+
+                return (va < vb ? -1 : 1) * dir;
+            };
+        };
+
+        const comparators = {
+            "date-asc": key(function(r){ return r.createdDate || ""; }, 1),
+            "deadline-asc": key(function(r){ return r.deadline || ""; }, 1),
+            "deadline-desc": key(function(r){ return r.deadline || ""; }, -1),
+            "settled-asc": key(settledKey, 1),
+            "settled-desc": key(settledKey, -1),
+            "amount-desc": key(function(r){ return Number(r.amount || 0); }, -1),
+            "amount-asc": key(function(r){ return Number(r.amount || 0); }, 1),
+            "branch": text(function(r){ return r.branch; }),
+            "purpose": text(function(r){ return r.purpose; }),
+            "requester": text(function(r){ return r.requestedByName; })
+        };
+
+        return comparators[sortBy] ? list.slice().sort(comparators[sortBy]) : list;
     }
 
     function renderTable(){
@@ -700,6 +738,7 @@
             $(table.prefix + "MonthFilter").addEventListener("change", renderTable);
             $(table.prefix + "DateFilter").addEventListener("change", renderTable);
             $(table.prefix + "BranchFilter").addEventListener("change", renderTable);
+            $(table.prefix + "SortFilter").addEventListener("change", renderTable);
             $(table.prefix + "ClearDateBtn").addEventListener("click", function(){
                 $(table.prefix + "DateFilter").value = "";
                 renderTable();
