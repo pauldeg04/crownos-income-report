@@ -5,7 +5,7 @@
 
    A week runs Saturday to Friday. A day counts when its branch sales reach
    the branch's Daily Threshold (Branch Settings → Branches), same rule as
-   the Monthly Report. Score is "passed of days so far" — a week still in
+   the Monthly Report (net of vouchers, freebies not counted). Score is "passed of days so far" — a week still in
    progress counts only days up to today.
 
    When the current week reaches 5, every Active staff member of the branch
@@ -74,8 +74,30 @@
         }
     }
 
-    /* Settled sales for the branch on that date — same cost rule as the
-       Receptionist Sales Total Sales (freebies count at their value). */
+    /* Net sale amount for one row — same rule as the Monthly Report
+       (gross minus voucher; freebies are NOT counted). */
+    function getNetSaleAmount(row){
+        const legacyGross = (Array.isArray(row?.services) ? row.services : [])
+            .reduce(function(sum, item){
+                return sum + (parseFloat(item?.amount) || 0);
+            }, 0);
+        const gross = Number.isFinite(Number(row?.grossAmount))
+            ? Number(row.grossAmount)
+            : legacyGross;
+        const voucher = Number.isFinite(Number(row?.voucherValue))
+            ? Math.max(0, Number(row.voucherValue))
+            : 0;
+
+        if(Number.isFinite(Number(row?.netAmount))){
+            return Math.max(0, Number(row.netAmount));
+        }
+
+        return Math.max(0, gross - voucher);
+    }
+
+    /* Settled net sales for the branch on that date — matches the Monthly
+       Report, so a day only counts when the amount actually collected
+       reaches the Daily Threshold. */
     function getDaySales(branch, date){
         try{
             const parsed = JSON.parse(
@@ -85,14 +107,7 @@
             return (Array.isArray(parsed?.rows) ? parsed.rows : [])
                 .filter(function(sale){ return sale.settled !== false; })
                 .reduce(function(total, sale){
-                    return total + (Array.isArray(sale?.services) ? sale.services : [])
-                        .reduce(function(sum, item){
-                            return sum + (
-                                item?.isFreebie
-                                    ? (Number(item?.freebieValue) || 0)
-                                    : (Number(item?.amount) || 0)
-                            );
-                        }, 0);
+                    return total + getNetSaleAmount(sale);
                 }, 0);
         }catch(error){
             return 0;

@@ -5935,3 +5935,13 @@ Daily Threshold, with a week picker and a congratulations notification at 5.
 - [`manual.html`](manual.html) — Admin Dashboard and Therapist Sales chapters updated.
 
 **Note:** No rules deploy.
+
+## 2026-11-05 — Weekly Challenge: daily total now net of vouchers (matches Monthly Report)
+
+**Request:** Calamba got 1 point on the Weekly Challenge although its sales were below the ₱15,000 threshold.
+
+**Cause:** [`weekly-challenge.js`](weekly-challenge.js) summed gross item amounts and counted freebies at their value, ignoring vouchers; the Monthly Report uses net collected sales.
+
+**Change:** `getDaySales` now uses the same net rule as the Monthly Report (`netAmount`, else gross − voucher; freebies excluded). [`manual.html`](manual.html) Receptionist Sales chapter updated.
+
+**Note:** No rules deploy. Existing weeks re-score automatically on next page load.
