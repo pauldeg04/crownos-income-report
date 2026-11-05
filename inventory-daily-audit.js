@@ -16,7 +16,7 @@
 (function(){
     const REPORTS_KEY = "crownDailyAuditReports";
     const BRANCH_KEY = "crownSelectedBranch";
-    const ALL_BRANCH_ROLES = ["Admin", "Executive Assistant"];
+    const ALL_BRANCH_ROLES = ["Admin", "Executive Assistant", "AI Assistant"];
 
     let user = null;
     let tabBranches = [];

@@ -265,7 +265,7 @@ service cloud.firestore {
         request.resource.data.requesterEmail == request.auth.token.email &&
         request.resource.data.status == 'Pending';
       allow get, list: if request.auth != null &&
-        (request.auth.token.role == 'Admin' ||
+        (request.auth.token.role in ['Admin', 'AI Assistant'] ||
          resource.data.requesterEmail == request.auth.token.email);
       allow update: if request.auth != null &&
         request.auth.token.role == 'Admin' &&
@@ -571,7 +571,7 @@ service cloud.firestore {
         request.resource.data.expireAt is timestamp;
 
       allow get, list: if request.auth != null &&
-        request.auth.token.role == 'Admin';
+        request.auth.token.role in ['Admin', 'AI Assistant'];
 
       allow update, delete: if false;
     }

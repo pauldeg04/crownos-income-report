@@ -229,7 +229,7 @@ function renderClockWidget(){
     const card =
         document.getElementById("clockWidgetCard");
 
-    if(user.role === "Admin" || user.role === "Tech Support"){
+    if(user.role === "Admin" || user.role === "Tech Support" || user.role === "AI Assistant"){
         card.classList.add("d-none");
         return;
     }

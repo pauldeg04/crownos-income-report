@@ -1,7 +1,7 @@
 let editingUserId = null;
 let currentLoggedInUser = null;
 
-const AUTO_ALL_BRANCH_ROLES = ["Admin", "Executive Assistant"];
+const AUTO_ALL_BRANCH_ROLES = ["Admin", "Executive Assistant", "AI Assistant"];
 
 /* Pages that can be individually granted as "Additional Access" beyond a
    role's default. home.html and account-settings.html are always available

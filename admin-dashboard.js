@@ -933,7 +933,7 @@
 
     async function init(){
         const user = window.CrownAuth?.getCurrentUser?.();
-        if(user && user.role !== "Admin"){ return; }
+        if(user && user.role !== "Admin" && user.role !== "AI Assistant"){ return; }
 
         $("adMonth").value = currentMonthKey();
         $("adMonth").addEventListener("change", renderAll);

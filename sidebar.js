@@ -194,13 +194,13 @@
         {
             label: "Dashboard",
             href: "home.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support"]
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support", "AI Assistant"]
         },
 
         {
             label: "Admin Dashboard",
             href: "admin-dashboard.html",
-            roles: ["Admin"]
+            roles: ["Admin", "AI Assistant"]
         },
 
         { section: "Operations" },
@@ -261,19 +261,19 @@
         {
             label: "Work Ticket",
             href: "work-ticket.html",
-            roles: ["Admin", "Executive Assistant", "Marketing Agent"]
+            roles: ["Admin", "Executive Assistant", "Marketing Agent", "AI Assistant"]
         },
 
         {
             label: "Bulletin Board",
             href: "bulletin-board.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support"]
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support", "AI Assistant"]
         },
 
         {
             label: "Staff Management",
             href: "staff-management.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Tech Support"]
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Tech Support", "AI Assistant"]
         },
 
         /* Team Leader gets the full team table entirely through
@@ -286,7 +286,7 @@
         {
             label: "Budget Request",
             href: "budget-request.html",
-            roles: ["Admin", "Executive Assistant", "Marketing Agent", "Tech Support"]
+            roles: ["Admin", "Executive Assistant", "Marketing Agent", "Tech Support", "AI Assistant"]
         },
 
         {
@@ -337,32 +337,32 @@
         {
             label: "Warehouse",
             href: "inventory-warehouse.html",
-            roles: ["Admin", "Tech Support"]
+            roles: ["Admin", "Tech Support", "AI Assistant"]
         },
 
         {
             label: "Branches",
             href: "inventory-branches.html",
-            roles: ["Admin"],
+            roles: ["Admin", "AI Assistant"],
             branchRequired: true
         },
 
         {
             label: "Daily Audit Report",
             href: "inventory-daily-audit.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Branch Device", "Tech Support"]
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Branch Device", "Tech Support", "AI Assistant"]
         },
 
         {
             label: "Inventory Settings",
             href: "inventory-items.html",
-            roles: ["Admin"]
+            roles: ["Admin", "AI Assistant"]
         },
 
         {
             label: "Tech Support",
             href: "inventory-techsupport.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support"]
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support", "AI Assistant"]
         },
 
         { section: "Compliance" },
@@ -408,7 +408,7 @@
         {
             label: "Expenses Report",
             href: "expenses-report.html",
-            roles: ["Admin"],
+            roles: ["Admin", "AI Assistant"],
             branchRequired: true,
             sub: true
         },
@@ -416,7 +416,7 @@
         {
             label: "Cash Flow",
             href: "cashflow.html",
-            roles: ["Admin"],
+            roles: ["Admin", "AI Assistant"],
             branchRequired: true,
             sub: true
         },
@@ -457,7 +457,7 @@
         {
             label: "Attendance",
             href: "attendance.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist"],
+            roles: ["Admin", "Executive Assistant", "Receptionist", "AI Assistant"],
             sub: true
         },
 
@@ -492,7 +492,7 @@
         {
             label: "Activity Log",
             href: "activity-log.html",
-            roles: ["Admin"],
+            roles: ["Admin", "AI Assistant"],
             sub: true
         },
 
@@ -503,7 +503,7 @@
         {
             label: "User Manual",
             href: "manual.html",
-            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support"],
+            roles: ["Admin", "Executive Assistant", "Receptionist", "Therapist", "Marketing Agent", "Branch Device", "Tech Support", "AI Assistant"],
             sub: true
         }
     ];

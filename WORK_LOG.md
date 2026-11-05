@@ -5945,3 +5945,17 @@ Daily Threshold, with a week picker and a congratulations notification at 5.
 **Change:** `getDaySales` now uses the same net rule as the Monthly Report (`netAmount`, else gross − voucher; freebies excluded). [`manual.html`](manual.html) Receptionist Sales chapter updated.
 
 **Note:** No rules deploy. Existing weeks re-score automatically on next page load.
+
+## 2026-11-05 — New "AI Assistant" account role
+
+**Request:** A special user account for the AI assistant with access to Dashboard, Admin Dashboard, Work Ticket, Bulletin Board, Staff Management, Budget Request, all Inventory pages, Expenses Report, Cash Flow, Activity Log and Attendance only.
+
+**Change:**
+- [`access-control.js`](access-control.js) `PAGE_ACCESS` and [`sidebar.js`](sidebar.js) — added "AI Assistant" to those pages (plus Home and User Manual).
+- [`account-settings.html`](account-settings.html)/[`.js`](account-settings.js) — new role option; all branches assigned automatically.
+- [`admin-dashboard.js`](admin-dashboard.js), [`attendance.js`](attendance.js), [`inventory-daily-audit.js`](inventory-daily-audit.js) — role allowed through their in-page checks.
+- [`clock-widget.js`](clock-widget.js), [`payroll.js`](payroll.js) — no clock in/out, excluded from payroll.
+- [`firestore.rules`](firestore.rules) — AI Assistant may read `activityLog` and all `budgetRequests`.
+- [`manual.html`](manual.html) — Roles chapter.
+
+**Note:** The account itself must be created in Account Settings (role: AI Assistant). Firestore rules deployed.

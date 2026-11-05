@@ -45,7 +45,8 @@
             "Therapist",
             "Marketing Agent",
             "Branch Device",
-            "Tech Support"
+            "Tech Support",
+            "AI Assistant"
         ],
 
         "index.html": [
@@ -55,7 +56,8 @@
         ],
 
         "admin-dashboard.html": [
-            "Admin"
+            "Admin",
+            "AI Assistant"
         ],
 
         "monthly-report.html": [
@@ -63,11 +65,13 @@
         ],
 
         "expenses-report.html": [
-            "Admin"
+            "Admin",
+            "AI Assistant"
         ],
 
         "cashflow.html": [
-            "Admin"
+            "Admin",
+            "AI Assistant"
         ],
 
         "share-holder-report.html": [
@@ -194,7 +198,8 @@
         ],
 
         "activity-log.html": [
-            "Admin"
+            "Admin",
+            "AI Assistant"
         ],
 
         "account-settings.html": [
@@ -214,22 +219,26 @@
             "Therapist",
             "Marketing Agent",
             "Branch Device",
-            "Tech Support"
+            "Tech Support",
+            "AI Assistant"
         ],
 
         "attendance.html": [
             "Admin",
             "Executive Assistant",
-            "Receptionist"
+            "Receptionist",
+            "AI Assistant"
         ],
 
         "inventory-items.html": [
-            "Admin"
+            "Admin",
+            "AI Assistant"
         ],
 
         "inventory-warehouse.html": [
             "Admin",
-            "Tech Support"
+            "Tech Support",
+            "AI Assistant"
         ],
 
         /* Tech Support's request desk (Maintenance / Collaterals tabs) —
@@ -243,11 +252,13 @@
             "Therapist",
             "Marketing Agent",
             "Branch Device",
-            "Tech Support"
+            "Tech Support",
+            "AI Assistant"
         ],
 
         "inventory-branches.html": [
-            "Admin"
+            "Admin",
+            "AI Assistant"
         ],
 
         /* Branch staff file the report; Admin/Executive Assistant review
@@ -257,7 +268,8 @@
             "Executive Assistant",
             "Receptionist",
             "Branch Device",
-            "Tech Support"
+            "Tech Support",
+            "AI Assistant"
         ],
 
         "admin-announcement.html": [
@@ -306,13 +318,15 @@
             "Admin",
             "Executive Assistant",
             "Marketing Agent",
-            "Tech Support"
+            "Tech Support",
+            "AI Assistant"
         ],
 
         "work-ticket.html": [
             "Admin",
             "Executive Assistant",
-            "Marketing Agent"
+            "Marketing Agent",
+            "AI Assistant"
         ],
 
         "201-files.html": [
@@ -327,7 +341,8 @@
             "Therapist",
             "Marketing Agent",
             "Branch Device",
-            "Tech Support"
+            "Tech Support",
+            "AI Assistant"
         ],
 
         /* Tech Support also gets this page, but with the Staff Schedule,
@@ -339,7 +354,8 @@
             "Receptionist",
             "Therapist",
             "Marketing Agent",
-            "Tech Support"
+            "Tech Support",
+            "AI Assistant"
         ],
 
         "marketing-ads-daily.html": [

@@ -615,7 +615,8 @@ function getAllStaffAccounts(){
         return (
             user.status === "Active" &&
             user.role !== "Admin" &&
-            user.role !== "Tech Support"
+            user.role !== "Tech Support" &&
+            user.role !== "AI Assistant"
         );
     });
 }

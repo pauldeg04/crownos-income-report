@@ -3,7 +3,7 @@ const USER_ACCOUNTS_KEY = "crownUserAccounts";
 const BRANCH_MASTER_KEY = "crownBranchMasterList";
 const DUTY_LOG_KEY = "crownDutyLog";
 
-const ATTENDANCE_ADMIN_ROLES = ["Admin", "Executive Assistant"];
+const ATTENDANCE_ADMIN_ROLES = ["Admin", "Executive Assistant", "AI Assistant"];
 
 let currentUser = null;
 let editingEntryId = null;
