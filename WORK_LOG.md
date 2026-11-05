@@ -5959,3 +5959,9 @@ Daily Threshold, with a week picker and a congratulations notification at 5.
 - [`manual.html`](manual.html) — Roles chapter.
 
 **Note:** The account itself must be created in Account Settings (role: AI Assistant). Firestore rules deployed.
+
+## 2026-11-05 — AI Assistant: allow expense receipt attachments (storage rule)
+
+**Issue:** Attaching a receipt from the AI Assistant account failed with a Firebase "not authorized" error — [`storage.rules`](storage.rules) `expenseAttachments/` was Admin-only.
+
+**Change:** `expenseAttachments/{branch}/{fileName}` now allows read/write for `Admin` and `AI Assistant`. Storage rules deployed. No other paths changed.
