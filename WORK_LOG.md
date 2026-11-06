@@ -11,6 +11,21 @@ Running log of changes made to the CrownOS system, newest entry on top.
 
 ---
 
+## 2026-11-07 — Safari: "Not synced yet [role,web] — tap to retry" did nothing
+
+**Reported by:** User — Safari sidebar badge stuck on "⚠ NOT SYNCED YET [role,web] — tap to retry"; tapping it had no effect.
+
+**Cause (partly confirmed):** the first sync in [`firebase-sync.js`](firebase-sync.js) never finished and `initialSyncInFlight` stayed `true`, so "tap to retry" → `resync()` → `runInitialSync()` returned immediately. A diagnostic build showed `v2 role:nofn` (pages without the Functions SDK skip the role step — normal), so the freeze is after it, most likely the Firestore **cache read** (`get({source:"cache"})`), which Safari's IndexedDB can leave pending forever. Not yet confirmed in Safari.
+
+**Change:**
+- `syncRole()` bounded to 12 s; `runInitialSync` lets a new run take over when the previous one has been in flight over 45 s.
+- Cache read bounded to 6 s (then falls through to the server fetch); a `crownSyncStatus` event now fires on the `cache` stage too.
+- Sidebar badge ([`sidebar.js`](sidebar.js)) shows a build tag + note from `CrownCloud.syncNote()` (e.g. `v2 role:nofn`, `cache:timeout`).
+
+**Note:** Hosting deploy only. If Safari still freezes, the badge's stage/note says where.
+
+---
+
 ## 2026-11-03 — Budget Request: Sort By
 
 **Request:** Add a Sort By dropdown to the Budget Request table (list was always newest-input first);

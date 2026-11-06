@@ -174,6 +174,7 @@
     /* Last step the first pull reached — shown on the badge so a hang
        on a device without a console says WHERE it hung. */
     let syncStage = "waiting";
+    let syncNote = "";
     let unsubscribeListeners = [];
     let listenerRetryTimer = null;
     let resyncInFlight = false;
@@ -673,13 +674,22 @@
     }
 
     let initialSyncInFlight = false;
+    let initialSyncStartedAt = 0;
 
     async function runInitialSync(user){
+        /* A run stuck for over 45 s (a step that never settled, seen on
+           Safari at the "role" stage) must not block "tap to retry"
+           forever — let a new run take over. */
+        if(initialSyncInFlight && Date.now() - initialSyncStartedAt > 45000){
+            initialSyncInFlight = false;
+        }
+
         if(!user || initialSyncInFlight){
             return;
         }
 
         initialSyncInFlight = true;
+        initialSyncStartedAt = Date.now();
 
         try{
             /* Discard anything queued before authentication — those
@@ -710,6 +720,7 @@
             await syncRole();
 
             syncStage = "cache";
+            window.dispatchEvent(new CustomEvent("crownSyncStatus"));
 
             /* Fast path: this app does a full page reload for every
                navigation (not an SPA), so without this, EVERY page —
@@ -726,8 +737,17 @@
                — the network fetch further down covers that case
                exactly as before. */
             try{
-                const cacheSnapshot =
-                    await db.collection(COLLECTION).get({ source: "cache" });
+                /* Bounded: Safari's IndexedDB can leave a cache read
+                   pending forever, which froze the whole first sync. */
+                const cacheSnapshot = await Promise.race([
+                    db.collection(COLLECTION).get({ source: "cache" }),
+                    new Promise(function(resolve, reject){
+                        setTimeout(function(){
+                            syncNote = "cache:timeout";
+                            reject(new Error("cache read timeout"));
+                        }, 6000);
+                    })
+                ]);
 
                 if(!cacheSnapshot.empty){
                     await applySnapshotToLocalStorage(cacheSnapshot);
@@ -1195,14 +1215,28 @@
        firebase-functions-compat.js to be loaded on the page. */
     async function syncRole(){
         if(!window.firebase || !firebase.functions || !firebase.auth().currentUser){
+            syncNote = "role:nofn";
             return false;
         }
 
         try{
-            await firebase.functions().httpsCallable("syncMyRole")();
-            await firebase.auth().currentUser.getIdToken(true);
+            /* Bounded: a callable/token refresh that never replies would
+               otherwise freeze the whole first sync at the "role" stage. */
+            await Promise.race([
+                (async function(){
+                    await firebase.functions().httpsCallable("syncMyRole")();
+                    await firebase.auth().currentUser.getIdToken(true);
+                })(),
+                new Promise(function(resolve, reject){
+                    setTimeout(function(){
+                        reject(new Error("timeout: syncMyRole no reply in 12s"));
+                    }, 12000);
+                })
+            ]);
+            syncNote = "role:ok";
             return true;
         }catch(error){
+            syncNote = "role:" + String(error && (error.code || error.message) || "fail").slice(0, 40);
             console.error("CrownCloud: syncMyRole failed.", error);
             return false;
         }
@@ -1224,6 +1258,7 @@
         lastSyncAt: function(){ return lastSyncAt; },
         lastSyncError: function(){ return lastSyncError; },
         syncStage: function(){ return syncStage; },
+        syncNote: function(){ return "v2 " + syncNote; },
         resync: resyncFromServer,
         login: cloudLogin,
         provision: provision,

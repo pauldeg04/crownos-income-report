@@ -876,6 +876,7 @@
                         "⚠ Not synced yet" +
                         (syncReason ? " (" + syncReason + ")" : "") +
                         " [" + (window.CrownCloud?.syncStage?.() || "?") +
+                        " " + (window.CrownCloud?.syncNote?.() || "v1") +
                         (standalone ? ",app" : ",web") + "]" +
                         " — tap to retry";
 
