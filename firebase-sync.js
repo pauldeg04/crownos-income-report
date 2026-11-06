@@ -75,12 +75,29 @@
        support just falls back to a network fetch on every page, same
        as before this existed. Must be called before any other
        Firestore operation. */
-    db.enablePersistence({ synchronizeTabs: true }).catch(function(error){
-        console.warn(
-            "CrownCloud: Firestore persistence unavailable — falling back to per-page network fetches.",
-            error
-        );
-    });
+    /* Safari can leave Firestore's IndexedDB cache hung forever (every
+       read, cache or server, queues behind it). When the cache read
+       times out below, this device is flagged and persistence stays off
+       from then on (network-only, same as a device without IndexedDB). */
+    let persistenceOff = false;
+
+    try{
+        persistenceOff = localStorage.getItem("crownFsNoPersist") === "1";
+    }catch(e){}
+
+    if(persistenceOff){
+        try{
+            /* Drop the stuck cache so it can't block a later retry. */
+            indexedDB.deleteDatabase("firestore/[DEFAULT]/" + firebase.app().options.projectId + "/main");
+        }catch(e){}
+    }else{
+        db.enablePersistence({ synchronizeTabs: true }).catch(function(error){
+            console.warn(
+                "CrownCloud: Firestore persistence unavailable — falling back to per-page network fetches.",
+                error
+            );
+        });
+    }
 
     const COLLECTION = "appData";
     const CASHFLOW_COLLECTION = "appDataCashflow";
@@ -744,6 +761,18 @@
                     new Promise(function(resolve, reject){
                         setTimeout(function(){
                             syncNote = "cache:timeout";
+
+                            /* Flag the device and reload once so the next
+                               load starts with persistence off. */
+                            try{
+                                localStorage.setItem("crownFsNoPersist", "1");
+
+                                if(!sessionStorage.getItem("crownFsReloaded")){
+                                    sessionStorage.setItem("crownFsReloaded", "1");
+                                    location.reload();
+                                }
+                            }catch(e){}
+
                             reject(new Error("cache read timeout"));
                         }, 6000);
                     })
